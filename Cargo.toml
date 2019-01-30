@@ -1,0 +1,8 @@
+[package]
+name = "rstrace"
+version = "0.0.1"
+authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+ocl = "0.19.2"

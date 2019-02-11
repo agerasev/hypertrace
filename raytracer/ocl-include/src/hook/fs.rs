@@ -2,12 +2,16 @@ use std::io;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use super::Hook;
+use super::{Hook, Handle};
 
 
 /// Hook to search for included files in file system.
 pub struct FsHook {
     include_dirs: Vec<PathBuf>,
+}
+
+pub struct FsHandle {
+    path: PathBuf,
 }
 
 impl FsHook {
@@ -48,12 +52,13 @@ impl FsHook {
 }
 
 impl Hook for FsHook {
-    fn find(&self, dir: Option<&Path>, name: &Path) -> io::Result<PathBuf> {
+    type Handle = FsHandle;
+    fn find(&self, dir: Option<&Path>, name: &Path) -> io::Result<Self::Handle> {
         match dir {
             Some(dir) => {
                 let path = dir.join(name);
                 match self.check_file(&path) {
-                    Ok(()) => return Ok(path),
+                    Ok(()) => return Ok(FsHandle { path }),
                     Err(e) => match e.kind() {
                         io::ErrorKind::NotFound => (),
                         _ => return Err(e),
@@ -66,7 +71,7 @@ impl Hook for FsHook {
         for dir in self.include_dirs.iter() {
             let path = dir.join(name);
             match self.check_file(&path) {
-                Ok(()) => return Ok(path),
+                Ok(()) => return Ok(FsHandle { path }),
                 Err(e) => match e.kind() {
                     io::ErrorKind::NotFound => (),
                     _ => return Err(e),
@@ -82,8 +87,13 @@ impl Hook for FsHook {
             ),
         ))
     }
+}
 
-    fn read(&self, path: &Path) -> io::Result<String> {
-        fs::read_to_string(path)
+impl Handle for FsHandle {
+    fn path(&self) -> &Path {
+        self.path.as_path()
+    }
+    fn read(self) -> io::Result<String> {
+        fs::read_to_string(self.path)
     }
 }

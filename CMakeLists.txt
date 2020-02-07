@@ -5,6 +5,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14 -Wall -Wextra")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -Wextra")
 
 set(SRC
+	src/host/cl.hpp
+	src/host/cl_include.hpp
 	src/host/main.cpp
 )
 
@@ -14,4 +16,4 @@ add_definitions(-DDEBUG)
 
 add_executable(${PROJECT_NAME} ${SRC})
 
-target_link_libraries(${PROJECT_NAME} OpenCL)
+target_link_libraries(${PROJECT_NAME} OpenCL SDL2)

@@ -1,9 +1,0 @@
-[package]
-name = "ocl-include"
-version = "0.1.0"
-authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-regex = "1"
-lazy_static = "1.2.0"

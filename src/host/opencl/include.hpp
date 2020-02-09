@@ -8,16 +8,6 @@
 
 
 class cl_includer {
-public:
-	class exception : public std::exception {
-	public:
-		std::string _msg;
-		exception(const std::string &msg) : _msg(msg) {}
-		const char *what() const noexcept {
-			return _msg.c_str();
-		}
-	};
-
 private:
 	class _branch {
 	public:
@@ -51,9 +41,9 @@ private:
 	std::list<std::string> _ignore;
 	_branch _trunk;
 	
-	void _read(const std::string name, _branch *branch, int depth = 0) throw(std::exception) {
+	void _read(const std::string name, _branch *branch, int depth = 0) {
 		if(depth > 16) {
-			throw exception("include depth > 16, possibly recursion occured");
+			throw std::runtime_error("include depth > 16, possibly recursion occured");
 		}
 		branch->name = name;
 		for(const std::string &n : _ignore) {
@@ -74,7 +64,7 @@ private:
 			}
 		}
 		if(!file) {
-			throw exception("cannot open file '" + name + "'");
+			throw std::runtime_error("cannot open file '" + name + "'");
 		}
 		branch->fullname = fullname;
 		
@@ -123,7 +113,7 @@ private:
 	}
 	
 public:
-	cl_includer(const std::string &name, const std::list<std::string> &dirs) throw(std::exception)
+	cl_includer(const std::string &name, const std::list<std::string> &dirs)
 		: _name(name), _dirs(dirs), _trunk(0) {
 		_read(_name, &_trunk);
 	}
@@ -132,7 +122,30 @@ public:
 		return _data;
 	}
 	
-	bool locate(int gpos, std::string &fullname, int &lpos) const {
-		return _locate(gpos, &_trunk, fullname, lpos);
+	bool locate(int gpos, std::string *fullname, int *lpos) const {
+		return _locate(gpos, &_trunk, *fullname, *lpos);
+	}
+
+	std::string convert(const std::string &message) const {
+		std::string result;
+		std::string string(message);
+		std::regex expr("([^\\s]+):(\\d+):(\\d+):");
+		std::smatch match;
+		
+		while(std::regex_search(string, match, expr)) {
+			std::string filename;
+			int lpos;
+			result += match.prefix().str();
+			if (locate(std::stoi(std::string(match[2])), &filename, &lpos)) {
+				result += filename + ":" + std::to_string(lpos);
+			} else {
+				result += std::string(match[1]) + ":" + std::string(match[2]);
+			}
+			string = ":" + std::string(match[3]) + ":" + match.suffix().str();
+			
+		}
+		result += string;
+		
+		return result;
 	}
 };

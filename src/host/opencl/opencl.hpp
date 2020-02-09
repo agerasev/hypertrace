@@ -10,7 +10,7 @@
 #define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
 
-#include "cl_include.hpp"
+#include "include.hpp"
 
 
 namespace cl {
@@ -40,8 +40,9 @@ namespace cl {
     }
 
     void print_platform_info(cl_platform_id platform, const char *prefix = "") {
-        std::vector<cl_platform_info> params = {CL_PLATFORM_VERSION, CL_PLATFORM_NAME, CL_PLATFORM_VENDOR};
-        for (cl_platform_info p : params) {
+        cl_platform_info params[] = {CL_PLATFORM_VERSION, CL_PLATFORM_NAME, CL_PLATFORM_VENDOR};
+        for (size_t i = 0; i < sizeof(params)/sizeof(cl_platform_info); ++i) {
+            const cl_platform_info &p = params[i];
             size_t ret_size = 0;
             assert(clGetPlatformInfo(platform, p, 0, nullptr, &ret_size) == CL_SUCCESS);
             assert(ret_size > 0);
@@ -55,8 +56,9 @@ namespace cl {
     }
 
     void print_device_info(cl_device_id device, const char *prefix = "") {
-        std::vector<cl_device_info> params = {CL_DEVICE_VERSION, CL_DEVICE_NAME, CL_DEVICE_VENDOR};
-        for (cl_device_info p : params) {
+        cl_device_info params[] = {CL_DEVICE_VERSION, CL_DEVICE_NAME, CL_DEVICE_VENDOR};
+        for (size_t i = 0; i < sizeof(params)/sizeof(cl_device_info); ++i) {
+            const cl_device_info &p = params[i];
             size_t ret_size = 0;
             assert(clGetDeviceInfo(device, p, 0, nullptr, &ret_size) == CL_SUCCESS);
             assert(ret_size > 0);
@@ -124,7 +126,7 @@ namespace cl {
                 std::list<std::string> dirs;
                 dirs.push_back(std::string(base));
                 includer = std::make_unique<cl_includer>(path, dirs);
-            } catch(const cl_includer::exception &e) {
+            } catch(const std::runtime_error &e) {
                 std::cerr << e.what() << std::endl;
                 assert(0);
             }
@@ -167,7 +169,7 @@ namespace cl {
             ) == CL_SUCCESS);
             assert(buffer[buffer.size() - 1] == '\0');
 
-            return std::move(std::string(buffer.data()));
+            return includer->convert(std::string(buffer.data()));
         }
     };
 
@@ -185,6 +187,9 @@ namespace cl {
         ~Buffer() {
             assert(clReleaseMemObject(buffer) == CL_SUCCESS);
         }
+
+        Buffer(const Buffer &other) = delete;
+        Buffer &operator=(const Buffer &other) = delete;
 
         cl_mem &raw() {
             return buffer;
@@ -237,7 +242,7 @@ namespace cl {
         }
     private:
         template <typename T, typename ... Args>
-        void unwind_args(size_t n, const T &arg, Args ... args) {
+        void unwind_args(size_t n, const T &arg, const Args &... args) {
             set_arg(n, arg);
             unwind_args(n + 1, args...);
         }
@@ -249,12 +254,11 @@ namespace cl {
     public:
         template <typename T>
         void set_arg(size_t n, const T &arg) {
-            std::cout << "set_arg<T>" << std::endl;
             assert(clSetKernelArg(kernel, n, sizeof(T), (void *)&arg) == CL_SUCCESS);
         }
-        void set_arg(size_t n, const cl_mem &arg) {
-            assert(clSetKernelArg(kernel, n, sizeof(cl_mem), (void *)&arg) == CL_SUCCESS);
-        }
+        void set_arg(size_t n, const Buffer &buf) {
+            set_arg(n, buf.raw());
+        };
 
         void run(cl_command_queue queue, size_t work_size) {
             size_t global_work_size[1] = {work_size};
@@ -268,7 +272,7 @@ namespace cl {
         }
 
         template <typename ... Args>
-        void operator()(cl_command_queue queue, size_t work_size, Args ... args) {
+        void operator()(cl_command_queue queue, size_t work_size, const Args &... args) {
             unwind_args(0, args...);
             run(queue, work_size);
         }

@@ -5,8 +5,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14 -Wall -Wextra")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -Wextra")
 
 set(SRC
-	src/host/cl.hpp
-	src/host/cl_include.hpp
+	src/host/opencl/opencl.hpp
+	src/host/opencl/include.hpp
+	src/host/viewer.hpp
 	src/host/main.cpp
 )
 

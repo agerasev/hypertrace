@@ -117,19 +117,19 @@ namespace cl {
     private:
         cl_program program;
         cl_device_id device;
-        std::unique_ptr<cl_includer> includer;
+        std::unique_ptr<c_includer> includer;
 
     public:
         Program(cl_context context, cl_device_id device, const char *path, const char *base=".") {
             this->device = device;
-            try {
-                std::list<std::string> dirs;
-                dirs.push_back(std::string(base));
-                includer = std::make_unique<cl_includer>(path, dirs);
-            } catch(const std::runtime_error &e) {
-                std::cerr << e.what() << std::endl;
-                assert(0);
-            }
+
+            std::list<std::string> dirs;
+            dirs.push_back(std::string(base));
+            includer = std::make_unique<c_includer>(path, dirs);
+            
+            bool include_status = includer->include();
+            std::cout << includer->log() << std::endl;
+            assert(include_status);
 
             std::string src = includer->data();
             

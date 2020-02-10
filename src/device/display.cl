@@ -1,3 +1,8 @@
+#define OPENCL
+
+#include <common/moebius.h>
+
+
 __kernel void display(__global uchar *screen, int width, int height, float t) {
 	const float3 FREQ[2] = {
 		(float3)(3.0f, 4.0f, 5.0f),

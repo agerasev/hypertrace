@@ -7,17 +7,18 @@
 #include <regex>
 
 
-class cl_includer {
+class c_includer {
 private:
 	class _branch {
 	public:
 		int pos;
 		int size = 0;
 		int lsize = 0;
-		std::string name;
 		std::string fullname;
+		std::string name;
 		
 		std::list<_branch*> inner;
+		_branch *parent = nullptr;
 		
 		_branch(int p) : pos(p) {
 			
@@ -29,8 +30,24 @@ private:
 		}
 		_branch *add(int p) {
 			_branch *b = new _branch(p);
+			b->parent = this;
 			inner.push_back(b);
 			return b;
+		}
+		void pop() {
+			assert(inner.size() > 0);
+			delete inner.back();
+			inner.pop_back();
+		}
+
+		std::string dir() const {
+			size_t dpos = 0;
+			for (size_t i = 0; i < fullname.size(); ++i) {
+				if (fullname[i] == '/') {
+					dpos = i;
+				}
+			}
+			return fullname.substr(0, dpos);
 		}
 	};
 	
@@ -40,15 +57,16 @@ private:
 	
 	std::list<std::string> _ignore;
 	_branch _trunk;
+
+	std::string _log;
 	
-	void _read(const std::string name, _branch *branch, int depth = 0) {
-		if(depth > 16) {
-			throw std::runtime_error("include depth > 16, possibly recursion occured");
-		}
+	bool _read(const std::string name, _branch *branch, int depth = 0) {
+		assert(depth < 16);
+
 		branch->name = name;
 		for(const std::string &n : _ignore) {
 			if(n == name) {
-				return;
+				return true;
 			}
 		}
 		
@@ -56,15 +74,30 @@ private:
 		
 		// try open file in each dir
 		std::string fullname;
-		for(const std::string &dir : _dirs) {
-			fullname = dir + "/" + name;
+		if (branch->parent != nullptr) {
+			fullname = branch->parent->dir() + "/" + name;
 			file.open(fullname);
-			if(file) {
-				break;
-			}
 		}
-		if(!file) {
-			throw std::runtime_error("cannot open file '" + name + "'");
+		if(branch->parent == nullptr || !file) {
+			for(const std::string &dir : _dirs) {
+				fullname = dir + "/" + name;
+				file.open(fullname);
+				if(file) {
+					break;
+				}
+			}
+			if(!file) {
+				if (branch->parent != nullptr) {
+					_log += "\n" + (
+						branch->parent->fullname + ":" +
+						std::to_string(branch->parent->lsize + 1) + ": " +
+						"cannot open file '" + name + "'"
+					);
+				} else {
+					_log += "\n" + ("cannot open file '" + name + "'");
+				}
+				return false;
+			}
 		}
 		branch->fullname = fullname;
 		
@@ -75,13 +108,14 @@ private:
 		while(std::getline(file, line)) {
 			if(std::regex_search(line, match, include)) {
 				_branch *b = branch->add(branch->pos + branch->size);
-				_read(std::string(match[1]), b, depth + 1);
-				branch->size += b->size;
+				if (_read(std::string(match[1]), b, depth + 1)){
+					branch->size += b->size;
+				} else {
+					branch->pop();
+				}
 			} else if(std::regex_search(line, match, pragma)) {
 				std::string keyword(match[1]);
-				if(keyword == "omit") {
-					break;
-				} else if(keyword == "once") {
+				if(keyword == "once") {
 					_ignore.push_back(name);
 				}
 			} else {
@@ -91,6 +125,8 @@ private:
 			branch->size += 1;
 			branch->lsize += 1;
 		}
+
+		return true;
 	}
 	
 	bool _locate(int gp, const _branch *br, std::string &fn, int &lp) const {
@@ -113,11 +149,18 @@ private:
 	}
 	
 public:
-	cl_includer(const std::string &name, const std::list<std::string> &dirs)
-		: _name(name), _dirs(dirs), _trunk(0) {
-		_read(_name, &_trunk);
+	c_includer(const std::string &name, const std::list<std::string> &dirs):
+		_name(name), _dirs(dirs), _trunk(0)
+	{}
+
+	bool include() {
+		return _read(_name, &_trunk);
 	}
 	
+	const std::string &log() const {
+		return _log;
+	}
+
 	const std::string &data() const {
 		return _data;
 	}

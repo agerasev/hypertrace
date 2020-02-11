@@ -142,10 +142,14 @@ complex cr_div(complex a, float b) {
 #endif // OPENCL
 }
 
+complex c_inv(complex a) {
+    return cr_div(c_conj(a), c_abs2(a));
+}
+
 complex cc_div(complex a, complex b) {
-    return cr_div(cc_mul(a, c_conj(b)), c_abs2(b));
+    return cc_mul(a, c_inv(b));
 }
 
 complex rc_div(float a, complex b) {
-    return cc_div(c_new_r(a), b);
+    return rc_mul(a, c_inv(b));
 }

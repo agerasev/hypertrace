@@ -194,18 +194,22 @@ quaternion qr_div(quaternion a, float b) {
 #endif // OPENCL
 }
 
+quaternion q_inv(quaternion a) {
+    return qr_div(q_conj(a), q_abs2(a));
+}
+
 quaternion qq_div(quaternion a, quaternion b) {
-    return qr_div(qq_mul(a, q_conj(b)), q_abs2(b));
+    return qq_mul(a, q_inv(b));
 }
 
 quaternion rq_div(float a, quaternion b) {
-    return qq_div(q_new_r(a), b);
+    return rq_mul(a, q_inv(b));
 }
 
 quaternion qc_div(quaternion a, complex b) {
-    return qr_div(qc_mul(a, c_conj(b)), c_abs2(b));
+    return qc_mul(a, c_inv(b));
 }
 
 quaternion cq_div(complex a, quaternion b) {
-    return qr_div(cq_mul(a, q_conj(b)), q_abs2(b));
+    return cq_mul(a, q_inv(b));
 }

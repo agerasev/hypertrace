@@ -51,23 +51,20 @@ int main(int argc, const char *argv[]) {
 	cl::Context context(device);
 	cl::Queue queue(context, device);
 
-    cl::Program program(context, device, "device/display.cl", "src");
+    cl::Program program(context, device, "device/display.c", "src");
     cl::Kernel kernel(program, "display");
 
     int width = 800, height = 600;
     cl::Buffer buffer(context, width*height*4);
 
-    float time = 0.0;
-
     Viewer viewer(width, height);
     for(;;) {
-        kernel(queue, width*height, buffer, width, height, time);
+        kernel(queue, width*height, buffer, width, height);
         if (!viewer.display([&](uint8_t *data) {
             buffer.load(queue, data);
         })) {
             break;
         }
-        time += 1e-2;
     }
 
     return 0;

@@ -13,7 +13,12 @@ typedef float4 quaternion;
 
 #else // OPENCL
 
+#ifdef __cplusplus
+#include <cmath>
+#include <iostream>
+#else // __cplusplus
 #include <math.h>
+#endif // __cplusplus
 
 typedef struct quaternion quaternion;
 
@@ -131,89 +136,93 @@ const quaternion
     quaternion::j = quaternion(0,0,1,0),
     quaternion::k = quaternion(0,0,0,1);
 
-    quaternion operator+(quaternion a) {
-        return a;
-    }
-    quaternion operator-(quaternion a) {
-        return q_neg(a);
-    }
+quaternion operator+(quaternion a) {
+    return a;
+}
+quaternion operator-(quaternion a) {
+    return q_neg(a);
+}
 
-    quaternion operator+(quaternion a, quaternion b) {
-        return qq_add(a, b);
-    }
-    quaternion operator+(quaternion a, float b) {
-        return qr_add(a, b);
-    }
-    quaternion operator+(float a, quaternion b) {
-        return rq_add(a, b);
-    }
-    quaternion operator+(quaternion a, complex b) {
-        return qc_add(a, b);
-    }
-    quaternion operator+(complex a, quaternion b) {
-        return cq_add(a, b);
-    }
+quaternion operator+(quaternion a, quaternion b) {
+    return qq_add(a, b);
+}
+quaternion operator+(quaternion a, float b) {
+    return qr_add(a, b);
+}
+quaternion operator+(float a, quaternion b) {
+    return rq_add(a, b);
+}
+quaternion operator+(quaternion a, complex b) {
+    return qc_add(a, b);
+}
+quaternion operator+(complex a, quaternion b) {
+    return cq_add(a, b);
+}
 
-    quaternion operator-(quaternion a, quaternion b) {
-        return qq_sub(a, b);
-    }
-    quaternion operator-(quaternion a, float b) {
-        return qr_sub(a, b);
-    }
-    quaternion operator-(float a, quaternion b) {
-        return rq_sub(a, b);
-    }
-    quaternion operator-(quaternion a, complex b) {
-        return qc_sub(a, b);
-    }
-    quaternion operator-(complex a, quaternion b) {
-        return cq_sub(a, b);
-    }
+quaternion operator-(quaternion a, quaternion b) {
+    return qq_sub(a, b);
+}
+quaternion operator-(quaternion a, float b) {
+    return qr_sub(a, b);
+}
+quaternion operator-(float a, quaternion b) {
+    return rq_sub(a, b);
+}
+quaternion operator-(quaternion a, complex b) {
+    return qc_sub(a, b);
+}
+quaternion operator-(complex a, quaternion b) {
+    return cq_sub(a, b);
+}
 
-    quaternion operator*(quaternion a, quaternion b) {
-        return qq_mul(a, b);
-    }
-    quaternion operator*(quaternion a, float b) {
-        return qr_mul(a, b);
-    }
-    quaternion operator*(float a, quaternion b) {
-        return rq_mul(a, b);
-    }
-    quaternion operator*(quaternion a, complex b) {
-        return qc_mul(a, b);
-    }
-    quaternion operator*(complex a, quaternion b) {
-        return cq_mul(a, b);
-    }
+quaternion operator*(quaternion a, quaternion b) {
+    return qq_mul(a, b);
+}
+quaternion operator*(quaternion a, float b) {
+    return qr_mul(a, b);
+}
+quaternion operator*(float a, quaternion b) {
+    return rq_mul(a, b);
+}
+quaternion operator*(quaternion a, complex b) {
+    return qc_mul(a, b);
+}
+quaternion operator*(complex a, quaternion b) {
+    return cq_mul(a, b);
+}
 
-    quaternion operator/(quaternion a, float b) {
-        return qr_div(a, b);
-    }
-    quaternion operator/(quaternion a, quaternion b) {
-        return qq_div(a, b);
-    }
-    quaternion operator/(float a, quaternion b) {
-        return rq_div(a, b);
-    }
-    quaternion operator/(quaternion a, complex b) {
-        return qc_div(a, b);
-    }
-    quaternion operator/(complex a, quaternion b) {
-        return cq_div(a, b);
-    }
+quaternion operator/(quaternion a, float b) {
+    return qr_div(a, b);
+}
+quaternion operator/(quaternion a, quaternion b) {
+    return qq_div(a, b);
+}
+quaternion operator/(float a, quaternion b) {
+    return rq_div(a, b);
+}
+quaternion operator/(quaternion a, complex b) {
+    return qc_div(a, b);
+}
+quaternion operator/(complex a, quaternion b) {
+    return cq_div(a, b);
+}
 
-    quaternion operator "" _j(long double v) {
-        return float(v)*quaternion::j;
-    }
-    quaternion operator "" _j(unsigned long long v) {
-        return float(v)*quaternion::j;
-    }
-    quaternion operator "" _k(long double v) {
-        return float(v)*quaternion::k;
-    }
-    quaternion operator "" _k(unsigned long long v) {
-        return float(v)*quaternion::k;
-    }
+std::ostream &operator<<(std::ostream &s, quaternion c) {
+    return s << "(" << c.x << ", " << c.y << ", " << c.z << ", " << c.w << ")";
+}
+
+quaternion operator "" _j(long double v) {
+    return float(v)*quaternion::j;
+}
+quaternion operator "" _j(unsigned long long v) {
+    return float(v)*quaternion::j;
+}
+quaternion operator "" _k(long double v) {
+    return float(v)*quaternion::k;
+}
+quaternion operator "" _k(unsigned long long v) {
+    return float(v)*quaternion::k;
+}
 #endif // __cplusplus
 
 #endif // OPENCL
@@ -272,7 +281,7 @@ float q_abs2(quaternion a) {
 }
 
 float q_abs(quaternion a) {
-    return sqrt(q_abs(a));
+    return sqrt(q_abs2(a));
 }
 
 
@@ -417,48 +426,51 @@ quaternion cq_div(complex a, quaternion b) {
 #ifdef __cplusplus
 #include <catch.hpp>
 
-class qapprox {
+class q_approx {
 private:
     quaternion v;
 public:
-    qapprox(quaternion q) : v(q) {}
+    q_approx(quaternion q) : v(q) {}
 
-    friend bool operator==(quaternion a, qapprox b) {
+    friend bool operator==(quaternion a, q_approx b) {
         return
             a.x == Approx(b.v.x) &&
             a.y == Approx(b.v.y) &&
             a.z == Approx(b.v.z) &&
             a.w == Approx(b.v.w);
     }
-    friend bool operator==(qapprox a, quaternion b) {
+    friend bool operator==(q_approx a, quaternion b) {
         return b == a;
+    }
+    friend std::ostream &operator<<(std::ostream &s, q_approx a) {
+        return s << a.v;
     }
 };
 
 TEST_CASE("Quaternions", "[quaternion.h]") {
     SECTION("Imaginary units") {
-        REQUIRE(1_i*1_i == qapprox(-1));
-        REQUIRE(1_j*1_j == qapprox(-1));
-        REQUIRE(1_k*1_k == qapprox(-1));
-        REQUIRE(1_i*1_j*1_k == qapprox(-1));
+        REQUIRE(1_i*1_i == q_approx(-1));
+        REQUIRE(1_j*1_j == q_approx(-1));
+        REQUIRE(1_k*1_k == q_approx(-1));
+        REQUIRE(1_i*1_j*1_k == q_approx(-1));
 
-        REQUIRE(1_i*1_j == qapprox(1_k));
-        REQUIRE(1_j*1_k == qapprox(1_i));
-        REQUIRE(1_k*1_i == qapprox(1_j));
+        REQUIRE(1_i*1_j == q_approx(1_k));
+        REQUIRE(1_j*1_k == q_approx(1_i));
+        REQUIRE(1_k*1_i == q_approx(1_j));
         
-        REQUIRE(1_j*1_i == qapprox(-1_k));
-        REQUIRE(1_k*1_j == qapprox(-1_i));
-        REQUIRE(1_i*1_k == qapprox(-1_j));
+        REQUIRE(1_j*1_i == q_approx(-1_k));
+        REQUIRE(1_k*1_j == q_approx(-1_i));
+        REQUIRE(1_i*1_k == q_approx(-1_j));
     }
     SECTION("Inversion") {
         quaternion a(1, -2, -3, -4);
         quaternion c = a*a.inv();
-        REQUIRE(c == qapprox(1));
+        REQUIRE(c == q_approx(1));
     }
     SECTION("Literal") {
-        REQUIRE(-2_i == qapprox(quaternion(0,-2,0,0)));
-        REQUIRE(-3_j == qapprox(quaternion(0,0,-3,0)));
-        REQUIRE(-4_k == qapprox(quaternion(0,0,0,-4)));
+        REQUIRE(-2_i == q_approx(quaternion(0,-2,0,0)));
+        REQUIRE(-3_j == q_approx(quaternion(0,0,-3,0)));
+        REQUIRE(-4_k == q_approx(quaternion(0,0,0,-4)));
     }
 };
 

@@ -51,7 +51,7 @@ int main(int argc, const char *argv[]) {
 	cl::Context context(device);
 	cl::Queue queue(context, device);
 
-    cl::Program program(context, device, "device/display.c", "src");
+    cl::Program program(context, device, "device/display.cl", "src");
     cl::Kernel kernel(program, "display");
 
     int width = 800, height = 600;

@@ -11,7 +11,12 @@ typedef float2 complex;
 
 #else // OPENCL
 
+#ifdef __cplusplus
+#include <cmath>
+#include <iostream>
+#else // __cplusplus
 #include <math.h>
+#endif // __cplusplus
 
 typedef struct complex complex;
 
@@ -151,6 +156,10 @@ complex operator/(float a, complex b) {
     return rc_div(a, b);
 }
 
+std::ostream &operator<<(std::ostream &s, complex c) {
+    return s << "(" << c.x << ", " << c.y << ")";
+}
+
 complex operator "" _i(long double i) {
     return complex(0.0f, float(i));
 }
@@ -206,7 +215,7 @@ float c_abs2(complex a) {
 }
 
 float c_abs(complex a) {
-    return sqrt(c_abs(a));
+    return sqrt(c_abs2(a));
 }
 
 
@@ -297,6 +306,13 @@ complex rc_div(float a, complex b) {
     return rc_mul(a, c_inv(b));
 }
 
+// ### Miscellanous
+
+complex c_sqrt(complex a) {
+    float r = sqrt(c_abs(a));
+    float phi = 0.5f*atan2(a.y, a.x);
+    return c_new(r*cos(phi), r*sin(phi));
+}
 
 // ## Tests
 
@@ -304,27 +320,31 @@ complex rc_div(float a, complex b) {
 #ifdef __cplusplus
 #include <catch.hpp>
 
-class capprox {
-public:
+class c_approx {
+private:
     complex v;
-    capprox(complex c) : v(c) {}
-};
+public:
+    c_approx(complex c) : v(c) {}
 
-bool operator==(complex a, capprox b) {
-    return a.x == Approx(b.v.x) && a.y == Approx(b.v.y);
-}
-bool operator==(capprox a, complex b) {
-    return b == a;
-}
+    friend bool operator==(complex a, c_approx b) {
+        return a.x == Approx(b.v.x) && a.y == Approx(b.v.y);
+    }
+    friend bool operator==(c_approx a, complex b) {
+        return b == a;
+    }
+    friend std::ostream &operator<<(std::ostream &s, c_approx a) {
+        return s << a.v;
+    }
+};
 
 TEST_CASE("Complex numbers", "[complex.h]") {
     SECTION("Inversion") {
         complex a(1, -2);
         complex c = a*a.inv();
-        REQUIRE(c == capprox(1));
+        REQUIRE(c == c_approx(1));
     }
     SECTION("Literal") {
-        REQUIRE(-2_i == capprox(complex(0, -2)));
+        REQUIRE(-2_i == c_approx(complex(0, -2)));
     }
 };
 

@@ -4,9 +4,10 @@ mkdir -p build && \
 cd build && \
 
 cmake .. && \
-make && \
+if [ -z $1 ]; then
+    make
+else
+    make $@
+fi && \
 
-cd .. && \
-
-./build/hypertrace $@
-
+cd ..

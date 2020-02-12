@@ -1,0 +1,27 @@
+language: cpp
+
+compiler:
+  - gcc
+#  - clang
+
+os: linux
+#dist: bionic
+
+#before_install:
+#  - sudo apt-get update
+#install:
+#  - sudo apt-get install -y ocl-icd-opencl-dev pocl-opencl-icd libpocl-dev
+
+addons:
+  apt:
+    packages:
+      - cmake
+      - catch
+      - lcov
+      - curl
+
+script:
+  - ./script/test.sh
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash) -f .coverage.info || echo "Codecov did not collect coverage reports"

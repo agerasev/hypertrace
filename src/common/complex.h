@@ -13,9 +13,152 @@ typedef float2 complex;
 
 #include <math.h>
 
-typedef struct {
+typedef struct complex complex;
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif // __cplusplus
+complex c_new(float r, float i);
+complex c_new_r(float r);
+
+complex c_neg(complex a);
+complex c_conj(complex a);
+float c_abs2(complex a);
+float c_abs(complex a);
+
+complex cc_add(complex a, complex b);
+complex cr_add(complex a, float b);
+complex rc_add(float a, complex b);
+
+complex cc_sub(complex a, complex b);
+complex cr_sub(complex a, float b);
+complex rc_sub(float a, complex b);
+
+complex cr_mul(complex a, float b);
+complex rc_mul(float a, complex b);
+complex cc_mul(complex a, complex b);
+
+complex cr_div(complex a, float b);
+complex c_inv(complex a);
+complex cc_div(complex a, complex b);
+complex rc_div(float a, complex b);
+#ifdef __cplusplus
+};
+#endif // __cplusplus
+
+
+struct complex {
     float x, y;
-} complex;
+#ifdef __cplusplus
+    static const complex i;
+
+    complex() = default;
+    complex(float r, float i) {
+        *this = c_new(r, i);
+    }
+    complex(float r) {
+        *this = c_new_r(r);
+    }
+
+    complex conj() const {
+        return c_conj(*this);
+    }
+    float abs2() const {
+        return c_abs2(*this);
+    }
+    float abs() const {
+        return c_abs(*this);
+    }
+    complex inv() const {
+        return c_inv(*this);
+    }
+
+    complex &operator+=(complex b) {
+        return *this = cc_add(*this, b);
+    }
+    complex &operator+=(float b) {
+        return *this = cr_add(*this, b);
+    }
+    complex &operator-=(complex b) {
+        return *this = cc_sub(*this, b);
+    }
+    complex &operator-=(float b) {
+        return *this = cr_sub(*this, b);
+    }
+    complex &operator*=(complex b) {
+        return *this = cc_mul(*this, b);
+    }
+    complex &operator*=(float b) {
+        return *this = cr_mul(*this, b);
+    }
+    complex &operator/=(complex b) {
+        return *this = cc_div(*this, b);
+    }
+    complex &operator/=(float b) {
+        return *this = cr_div(*this, b);
+    }
+#endif // __cplusplus
+};
+
+#ifdef __cplusplus
+const complex complex::i = complex(0.0f, 1.0f);
+
+complex operator+(complex a) {
+    return a;
+}
+complex operator-(complex a) {
+    return c_neg(a);
+}
+
+complex operator+(complex a, complex b) {
+    return cc_add(a, b);
+}
+complex operator+(complex a, float b) {
+    return cr_add(a, b);
+}
+complex operator+(float a, complex b) {
+    return rc_add(a, b);
+}
+
+complex operator-(complex a, complex b) {
+    return cc_sub(a, b);
+}
+complex operator-(complex a, float b) {
+    return cr_sub(a, b);
+}
+complex operator-(float a, complex b) {
+    return rc_sub(a, b);
+}
+
+complex operator*(complex a, float b) {
+    return cr_mul(a, b);
+}
+complex operator*(float a, complex b) {
+    return rc_mul(a, b);
+}
+complex operator*(complex a, complex b) {
+    return cc_mul(a, b);
+}
+
+complex operator/(complex a, float b) {
+    return cr_div(a, b);
+}
+complex operator/(complex a, complex b) {
+    return cc_div(a, b);
+}
+complex operator/(float a, complex b) {
+    return rc_div(a, b);
+}
+
+complex operator "" _i(long double i) {
+    return complex(0.0f, float(i));
+}
+complex operator "" _i(unsigned long long i) {
+    return complex(0.0f, float(i));
+}
+
+#endif // __cplusplus
 
 #endif // OPENCL
 
@@ -153,3 +296,37 @@ complex cc_div(complex a, complex b) {
 complex rc_div(float a, complex b) {
     return rc_mul(a, c_inv(b));
 }
+
+
+// ## Tests
+
+#ifdef TEST
+#ifdef __cplusplus
+#include <catch.hpp>
+
+class capprox {
+public:
+    complex v;
+    capprox(complex c) : v(c) {}
+};
+
+bool operator==(complex a, capprox b) {
+    return a.x == Approx(b.v.x) && a.y == Approx(b.v.y);
+}
+bool operator==(capprox a, complex b) {
+    return b == a;
+}
+
+TEST_CASE("Complex numbers", "[complex.h]") {
+    SECTION("Inversion") {
+        complex a(1, -2);
+        complex c = a*a.inv();
+        REQUIRE(c == capprox(1));
+    }
+    SECTION("Literal") {
+        REQUIRE(-2_i == capprox(complex(0, -2)));
+    }
+};
+
+#endif // __cplusplus
+#endif // TEST

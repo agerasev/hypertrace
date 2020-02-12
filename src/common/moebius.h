@@ -21,21 +21,21 @@ quaternion moebius_apply_pos(const moebius *m, quaternion p) {
         qc_add(cq_mul(m->c, p), m->d)
     );
 }
-/*
 quaternion moebius_apply_dir(const moebius *m, quaternion p, quaternion v) {
     quaternion den = q_inv(qc_add(cq_mul(m->c, p), m->d));
-    return normalize(qq_mul(qq_sub(
+    return qq_mul(qq_sub(
         cq_mul(m->a, v),
         qq_mul(qq_mul(qc_add(cq_mul(m->a, p), m->b), cq_mul(m->c, v)), den)
-    ), den));
+    ), den);
 }
-*/
+/*
 quaternion moebius_apply_dir(const moebius *m, quaternion p, quaternion v) {
    quaternion one = q_new(0.0f, 0.0f, 1.0f, 0.0f);
    quaternion nv = qq_add(one, rq_mul(1e-4f, v));
    nv = moebius_apply_pos(m, nv);
-   return normalize(qq_sub(nv, one));
+   return qq_sub(nv, one);
 }
+*/
 
 void moebius_chain(moebius *o, const moebius *k, const moebius *l) {
     o->a = cc_add(cc_mul(k->a, l->a), cc_mul(k->b, l->c));
@@ -46,7 +46,7 @@ void moebius_chain(moebius *o, const moebius *k, const moebius *l) {
 
 void moebius_inverse(moebius *o, const moebius *m) {
     o->a = m->d;
-    o->b = -m->b;
-    o->c = -m->c;
+    o->b = c_neg(m->b);
+    o->c = c_neg(m->c);
     o->d = m->a;
 }

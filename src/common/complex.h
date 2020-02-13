@@ -7,9 +7,12 @@
 
 #ifdef OPENCL
 
+typedef float real;
 typedef float2 complex;
 
 #else // OPENCL
+
+typedef double real;
 
 #ifdef __cplusplus
 #include <cmath>
@@ -24,56 +27,63 @@ typedef struct complex complex;
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-complex c_new(float r, float i);
-complex c_new_r(float r);
+complex c_new(real r, real i);
+complex c_new_r(real r);
 
 complex c_neg(complex a);
 complex c_conj(complex a);
-float c_abs2(complex a);
-float c_abs(complex a);
+real c_abs2(complex a);
+real c_abs(complex a);
+complex c_norm(complex a);
 
 complex cc_add(complex a, complex b);
-complex cr_add(complex a, float b);
-complex rc_add(float a, complex b);
+complex cr_add(complex a, real b);
+complex rc_add(real a, complex b);
 
 complex cc_sub(complex a, complex b);
-complex cr_sub(complex a, float b);
-complex rc_sub(float a, complex b);
+complex cr_sub(complex a, real b);
+complex rc_sub(real a, complex b);
 
-complex cr_mul(complex a, float b);
-complex rc_mul(float a, complex b);
+complex cr_mul(complex a, real b);
+complex rc_mul(real a, complex b);
 complex cc_mul(complex a, complex b);
 
-complex cr_div(complex a, float b);
+complex cr_div(complex a, real b);
 complex c_inv(complex a);
 complex cc_div(complex a, complex b);
-complex rc_div(float a, complex b);
+complex rc_div(real a, complex b);
+
+complex c_sqrt(complex a);
+real cc_dot(complex a, complex b);
 #ifdef __cplusplus
 };
 #endif // __cplusplus
 
 
 struct complex {
-    float x, y;
+    real x, y;
 #ifdef __cplusplus
     static const complex i;
 
     complex() = default;
-    complex(float r, float i) {
+    complex(real r, real i) {
         *this = c_new(r, i);
     }
-    complex(float r) {
+    complex(real r) {
         *this = c_new_r(r);
     }
 
     complex conj() const {
         return c_conj(*this);
     }
-    float abs2() const {
+    real abs2() const {
         return c_abs2(*this);
     }
-    float abs() const {
+    real abs() const {
         return c_abs(*this);
+    }
+    complex norm() const {
+        return c_norm(*this);
     }
     complex inv() const {
         return c_inv(*this);
@@ -82,32 +92,32 @@ struct complex {
     complex &operator+=(complex b) {
         return *this = cc_add(*this, b);
     }
-    complex &operator+=(float b) {
+    complex &operator+=(real b) {
         return *this = cr_add(*this, b);
     }
     complex &operator-=(complex b) {
         return *this = cc_sub(*this, b);
     }
-    complex &operator-=(float b) {
+    complex &operator-=(real b) {
         return *this = cr_sub(*this, b);
     }
     complex &operator*=(complex b) {
         return *this = cc_mul(*this, b);
     }
-    complex &operator*=(float b) {
+    complex &operator*=(real b) {
         return *this = cr_mul(*this, b);
     }
     complex &operator/=(complex b) {
         return *this = cc_div(*this, b);
     }
-    complex &operator/=(float b) {
+    complex &operator/=(real b) {
         return *this = cr_div(*this, b);
     }
 #endif // __cplusplus
 };
 
 #ifdef __cplusplus
-const complex complex::i = complex(0.0f, 1.0f);
+const complex complex::i = complex(real(0), real(1));
 
 complex operator+(complex a) {
     return a;
@@ -119,41 +129,48 @@ complex operator-(complex a) {
 complex operator+(complex a, complex b) {
     return cc_add(a, b);
 }
-complex operator+(complex a, float b) {
+complex operator+(complex a, real b) {
     return cr_add(a, b);
 }
-complex operator+(float a, complex b) {
+complex operator+(real a, complex b) {
     return rc_add(a, b);
 }
 
 complex operator-(complex a, complex b) {
     return cc_sub(a, b);
 }
-complex operator-(complex a, float b) {
+complex operator-(complex a, real b) {
     return cr_sub(a, b);
 }
-complex operator-(float a, complex b) {
+complex operator-(real a, complex b) {
     return rc_sub(a, b);
 }
 
-complex operator*(complex a, float b) {
+complex operator*(complex a, real b) {
     return cr_mul(a, b);
 }
-complex operator*(float a, complex b) {
+complex operator*(real a, complex b) {
     return rc_mul(a, b);
 }
 complex operator*(complex a, complex b) {
     return cc_mul(a, b);
 }
 
-complex operator/(complex a, float b) {
+complex operator/(complex a, real b) {
     return cr_div(a, b);
 }
 complex operator/(complex a, complex b) {
     return cc_div(a, b);
 }
-complex operator/(float a, complex b) {
+complex operator/(real a, complex b) {
     return rc_div(a, b);
+}
+
+complex sqrt(complex a) {
+    return c_sqrt(a);
+}
+real dot(complex a, complex b) {
+    return cc_dot(a, b);
 }
 
 std::ostream &operator<<(std::ostream &s, complex c) {
@@ -161,10 +178,10 @@ std::ostream &operator<<(std::ostream &s, complex c) {
 }
 
 complex operator "" _i(long double i) {
-    return complex(0.0f, float(i));
+    return complex((real)0, real(i));
 }
 complex operator "" _i(unsigned long long i) {
-    return complex(0.0f, float(i));
+    return complex((real)0, real(i));
 }
 
 #endif // __cplusplus
@@ -174,7 +191,7 @@ complex operator "" _i(unsigned long long i) {
 
 // ## Constructors
 
-complex c_new(float r, float i) {
+complex c_new(real r, real i) {
 #ifdef OPENCL
     return (complex)(r, i);
 #else // OPENCL
@@ -185,12 +202,12 @@ complex c_new(float r, float i) {
 #endif // OPENCL
 }
 
-complex c_new_r(float r) {
-    return c_new(r, 0.0f);
+complex c_new_r(real r) {
+    return c_new(r, (real)0);
 }
 
 
-// ## Unary operators
+// ## Operators
 
 complex c_neg(complex a) {
 #ifdef OPENCL
@@ -210,18 +227,31 @@ complex c_conj(complex a) {
     return c;
 }
 
-float c_abs2(complex a) {
+real c_abs2(complex a) {
+#ifdef OPENCL
+    return dot(a, a);
+#else // OPENCL
     return a.x*a.x + a.y*a.y;
+#endif // OPENCL
 }
 
-float c_abs(complex a) {
+real c_abs(complex a) {
+#ifdef OPENCL
+    return length(a);
+#else // OPENCL
     return sqrt(c_abs2(a));
+#endif // OPENCL
 }
 
+complex c_norm(complex a) {
+#ifdef OPENCL
+    return normalize(a);
+#else // OPENCL
+    return cr_div(a, c_abs(a));
+#endif // OPENCL
+}
 
-// ## Binary operators
-
-// ### Addition
+// ## Addition
 
 complex cc_add(complex a, complex b) {
 #ifdef OPENCL
@@ -234,15 +264,15 @@ complex cc_add(complex a, complex b) {
 #endif // OPENCL
 }
 
-complex cr_add(complex a, float b) {
+complex cr_add(complex a, real b) {
     return cc_add(a, c_new_r(b));
 }
 
-complex rc_add(float a, complex b) {
+complex rc_add(real a, complex b) {
     return cc_add(c_new_r(a), b);
 }
 
-// ### Subtraction
+// ## Subtraction
 
 complex cc_sub(complex a, complex b) {
 #ifdef OPENCL
@@ -252,17 +282,17 @@ complex cc_sub(complex a, complex b) {
 #endif // OPENCL
 }
 
-complex cr_sub(complex a, float b) {
+complex cr_sub(complex a, real b) {
     return cc_sub(a, c_new_r(b));
 }
 
-complex rc_sub(float a, complex b) {
+complex rc_sub(real a, complex b) {
     return cc_sub(c_new_r(a), b);
 }
 
-// ### Multiplication
+// ## Multiplication
 
-complex cr_mul(complex a, float b) {
+complex cr_mul(complex a, real b) {
 #ifdef OPENCL
     return a * b;
 #else // OPENCL
@@ -273,7 +303,7 @@ complex cr_mul(complex a, float b) {
 #endif // OPENCL
 }
 
-complex rc_mul(float a, complex b) {
+complex rc_mul(real a, complex b) {
     return cr_mul(b, a);
 }
 
@@ -284,13 +314,13 @@ complex cc_mul(complex a, complex b) {
     return c;
 }
 
-// ### Division
+// ## Division
 
-complex cr_div(complex a, float b) {
+complex cr_div(complex a, real b) {
 #ifdef OPENCL
     return a / b;
 #else // OPENCL
-    return cr_mul(a, 1.0f/b);
+    return cr_mul(a, (real)1/b);
 #endif // OPENCL
 }
 
@@ -302,23 +332,70 @@ complex cc_div(complex a, complex b) {
     return cc_mul(a, c_inv(b));
 }
 
-complex rc_div(float a, complex b) {
+complex rc_div(real a, complex b) {
     return rc_mul(a, c_inv(b));
 }
 
-// ### Miscellanous
+// ## Miscellanous
 
 complex c_sqrt(complex a) {
-    float r = sqrt(c_abs(a));
-    float phi = 0.5f*atan2(a.y, a.x);
+    real r = sqrt(c_abs(a));
+    real phi = 0.5f*atan2(a.y, a.x);
     return c_new(r*cos(phi), r*sin(phi));
 }
 
-// ## Tests
+real cc_dot(complex a, complex b) {
+#ifdef OPENCL
+    return dot(a, b);
+#else // OPENCL
+    return a.x*b.x + a.y*b.y;
+#endif // OPENCL
+}
+
+// # Tests
 
 #ifdef TEST
 #ifdef __cplusplus
 #include <catch.hpp>
+
+#include <random>
+
+#define EPS 1e-8
+#define PI 3.14159265358979323846
+#define ATTEMPTS 16
+
+class Rng {
+private:
+    std::minstd_rand rng;
+    std::uniform_real_distribution<> unif;
+    std::normal_distribution<> norm;
+
+public:
+    Rng(uint32_t seed) : rng(seed) {}
+    Rng() : Rng(0xdeadbeef) {}
+
+    real uniform() {
+        return unif(rng);
+    }
+    real normal() {
+        return norm(rng);
+    }
+};
+
+complex rand_c_normal(Rng &rng) {
+    return complex(rng.normal(), rng.normal());
+}
+complex rand_c_unit(Rng &rng) {
+    real phi = 2*PI*rng.uniform();
+    return complex(cos(phi), sin(phi));
+}
+complex rand_c_nonzero(Rng &rng) {
+    complex a;
+    do {
+        a = rand_c_normal(rng);
+    } while(a.abs2() < EPS);
+    return a;
+}
 
 class c_approx {
 private:
@@ -338,10 +415,13 @@ public:
 };
 
 TEST_CASE("Complex numbers", "[complex.h]") {
+    Rng rng(0xbeef);
+
     SECTION("Inversion") {
-        complex a(1, -2);
-        complex c = a*a.inv();
-        REQUIRE(c == c_approx(1));
+        for (int i = 0; i < ATTEMPTS; ++i) {
+            complex a = rand_c_nonzero(rng);
+            REQUIRE(a/a == c_approx(1));
+        }
     }
     SECTION("Literal") {
         REQUIRE(-2_i == c_approx(complex(0, -2)));

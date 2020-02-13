@@ -1,11 +1,12 @@
 #pragma once
 
-#include "complex.h"
-
 
 // # Quaternion
 
 // ## Definition
+
+#include "complex.h"
+
 
 #ifdef OPENCL
 
@@ -25,53 +26,56 @@ typedef struct quaternion quaternion;
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
-quaternion q_new(float r, float i, float j, float k);
-quaternion q_new_r(float r);
+quaternion q_new(real r, real i, real j, real k);
+quaternion q_new_r(real r);
 quaternion q_new_c(complex a);
 
 quaternion q_neg(quaternion a);
 quaternion q_conj(quaternion a);
-float q_abs2(quaternion a);
-float q_abs(quaternion a);
+real q_abs2(quaternion a);
+real q_abs(quaternion a);
+quaternion q_norm(quaternion a);
 
 quaternion qq_add(quaternion a, quaternion b);
-quaternion qr_add(quaternion a, float b);
-quaternion rq_add(float a, quaternion b);
+quaternion qr_add(quaternion a, real b);
+quaternion rq_add(real a, quaternion b);
 quaternion qc_add(quaternion a, complex b);
 quaternion cq_add(complex a, quaternion b);
 
 quaternion qq_sub(quaternion a, quaternion b);
-quaternion qr_sub(quaternion a, float b);
-quaternion rq_sub(float a, quaternion b);
+quaternion qr_sub(quaternion a, real b);
+quaternion rq_sub(real a, quaternion b);
 quaternion qc_sub(quaternion a, complex b);
 quaternion cq_sub(complex a, quaternion b);
 
 quaternion qq_mul(quaternion a, quaternion b);
-quaternion qr_mul(quaternion a, float b);
-quaternion rq_mul(float a, quaternion b);
+quaternion qr_mul(quaternion a, real b);
+quaternion rq_mul(real a, quaternion b);
 quaternion qc_mul(quaternion a, complex b);
 quaternion cq_mul(complex a, quaternion b);
 
-quaternion qr_div(quaternion a, float b);
+quaternion qr_div(quaternion a, real b);
 quaternion q_inv(quaternion a);
 quaternion qq_div(quaternion a, quaternion b);
-quaternion rq_div(float a, quaternion b);
+quaternion rq_div(real a, quaternion b);
 quaternion qc_div(quaternion a, complex b);
 quaternion cq_div(complex a, quaternion b);
+
+real qq_dot(quaternion a, quaternion b);
 #ifdef __cplusplus
 };
 #endif // __cplusplus
 
 
 struct quaternion {
-    float x, y, z, w;
+    real x, y, z, w;
 #ifdef __cplusplus
     static const quaternion i, j, k;
     quaternion() = default;
-    quaternion(float r, float i, float j, float k) {
+    quaternion(real r, real i, real j, real k) {
         *this = q_new(r, i, j, k);
     }
-    quaternion(float r) {
+    quaternion(real r) {
         *this = q_new_r(r);
     }
     quaternion(complex c) {
@@ -81,11 +85,14 @@ struct quaternion {
     quaternion conj() const {
         return q_conj(*this);
     }
-    float abs2() const {
+    real abs2() const {
         return q_abs2(*this);
     }
-    float abs() const {
+    real abs() const {
         return q_abs(*this);
+    }
+    quaternion norm() const {
+        return q_norm(*this);
     }
     quaternion inv() const {
         return q_inv(*this);
@@ -97,7 +104,7 @@ struct quaternion {
     quaternion &operator+=(complex b) {
         return *this = qc_add(*this, b);
     }
-    quaternion &operator+=(float b) {
+    quaternion &operator+=(real b) {
         return *this = qr_add(*this, b);
     }
     quaternion &operator-=(quaternion b) {
@@ -106,7 +113,7 @@ struct quaternion {
     quaternion &operator-=(complex b) {
         return *this = qc_sub(*this, b);
     }
-    quaternion &operator-=(float b) {
+    quaternion &operator-=(real b) {
         return *this = qr_sub(*this, b);
     }
     quaternion &operator*=(quaternion b) {
@@ -115,7 +122,7 @@ struct quaternion {
     quaternion &operator*=(complex b) {
         return *this = qc_mul(*this, b);
     }
-    quaternion &operator*=(float b) {
+    quaternion &operator*=(real b) {
         return *this = qr_mul(*this, b);
     }
     quaternion &operator/=(quaternion b) {
@@ -124,7 +131,7 @@ struct quaternion {
     quaternion &operator/=(complex b) {
         return *this = qc_div(*this, b);
     }
-    quaternion &operator/=(float b) {
+    quaternion &operator/=(real b) {
         return *this = qr_div(*this, b);
     }
 #endif // __cplusplus
@@ -146,10 +153,10 @@ quaternion operator-(quaternion a) {
 quaternion operator+(quaternion a, quaternion b) {
     return qq_add(a, b);
 }
-quaternion operator+(quaternion a, float b) {
+quaternion operator+(quaternion a, real b) {
     return qr_add(a, b);
 }
-quaternion operator+(float a, quaternion b) {
+quaternion operator+(real a, quaternion b) {
     return rq_add(a, b);
 }
 quaternion operator+(quaternion a, complex b) {
@@ -162,10 +169,10 @@ quaternion operator+(complex a, quaternion b) {
 quaternion operator-(quaternion a, quaternion b) {
     return qq_sub(a, b);
 }
-quaternion operator-(quaternion a, float b) {
+quaternion operator-(quaternion a, real b) {
     return qr_sub(a, b);
 }
-quaternion operator-(float a, quaternion b) {
+quaternion operator-(real a, quaternion b) {
     return rq_sub(a, b);
 }
 quaternion operator-(quaternion a, complex b) {
@@ -178,10 +185,10 @@ quaternion operator-(complex a, quaternion b) {
 quaternion operator*(quaternion a, quaternion b) {
     return qq_mul(a, b);
 }
-quaternion operator*(quaternion a, float b) {
+quaternion operator*(quaternion a, real b) {
     return qr_mul(a, b);
 }
-quaternion operator*(float a, quaternion b) {
+quaternion operator*(real a, quaternion b) {
     return rq_mul(a, b);
 }
 quaternion operator*(quaternion a, complex b) {
@@ -191,13 +198,13 @@ quaternion operator*(complex a, quaternion b) {
     return cq_mul(a, b);
 }
 
-quaternion operator/(quaternion a, float b) {
+quaternion operator/(quaternion a, real b) {
     return qr_div(a, b);
 }
 quaternion operator/(quaternion a, quaternion b) {
     return qq_div(a, b);
 }
-quaternion operator/(float a, quaternion b) {
+quaternion operator/(real a, quaternion b) {
     return rq_div(a, b);
 }
 quaternion operator/(quaternion a, complex b) {
@@ -207,21 +214,25 @@ quaternion operator/(complex a, quaternion b) {
     return cq_div(a, b);
 }
 
+real dot(quaternion a, quaternion b) {
+    return qq_dot(a, b);
+}
+
 std::ostream &operator<<(std::ostream &s, quaternion c) {
     return s << "(" << c.x << ", " << c.y << ", " << c.z << ", " << c.w << ")";
 }
 
 quaternion operator "" _j(long double v) {
-    return float(v)*quaternion::j;
+    return real(v)*quaternion::j;
 }
 quaternion operator "" _j(unsigned long long v) {
-    return float(v)*quaternion::j;
+    return real(v)*quaternion::j;
 }
 quaternion operator "" _k(long double v) {
-    return float(v)*quaternion::k;
+    return real(v)*quaternion::k;
 }
 quaternion operator "" _k(unsigned long long v) {
-    return float(v)*quaternion::k;
+    return real(v)*quaternion::k;
 }
 #endif // __cplusplus
 
@@ -230,7 +241,7 @@ quaternion operator "" _k(unsigned long long v) {
 
 // ## Constructors
 
-quaternion q_new(float r, float i, float j, float k) {
+quaternion q_new(real r, real i, real j, real k) {
 #ifdef OPENCL
     return (quaternion)(r, i, j, k);
 #else // OPENCL
@@ -243,16 +254,16 @@ quaternion q_new(float r, float i, float j, float k) {
 #endif // OPENCL
 }
 
-quaternion q_new_r(float r) {
-    return q_new(r, 0.0f, 0.0f, 0.0f);
+quaternion q_new_r(real r) {
+    return q_new(r, (real)0, (real)0, (real)0);
 }
 
 quaternion q_new_c(complex a) {
-    return q_new(a.x, a.y, 0.0f, 0.0f);
+    return q_new(a.x, a.y, (real)0, (real)0);
 }
 
 
-// ## Unary operators
+// # Operators
 
 quaternion q_neg(quaternion a) {
 #ifdef OPENCL
@@ -276,18 +287,31 @@ quaternion q_conj(quaternion a) {
     return c;
 }
 
-float q_abs2(quaternion a) {
+real q_abs2(quaternion a) {
+#ifdef OPENCL
+    return dot(a, a);
+#else // OPENCL
     return a.x*a.x + a.y*a.y + a.z*a.z + a.w*a.w;
+#endif // OPENCL
 }
 
-float q_abs(quaternion a) {
+real q_abs(quaternion a) {
+#ifdef OPENCL
+    return length(a);
+#else // OPENCL
     return sqrt(q_abs2(a));
+#endif // OPENCL
 }
 
+quaternion q_norm(quaternion a) {
+#ifdef OPENCL
+    return normalize(a);
+#else // OPENCL
+    return qr_div(a, q_abs(a));
+#endif // OPENCL
+}
 
-// ## Binary operators
-
-// ### Addition
+// ## Addition
 
 quaternion qq_add(quaternion a, quaternion b) {
 #ifdef OPENCL
@@ -302,11 +326,11 @@ quaternion qq_add(quaternion a, quaternion b) {
 #endif // OPENCL
 }
 
-quaternion qr_add(quaternion a, float b) {
+quaternion qr_add(quaternion a, real b) {
     return qq_add(a, q_new_r(b));
 }
 
-quaternion rq_add(float a, quaternion b) {
+quaternion rq_add(real a, quaternion b) {
     return qq_add(q_new_r(a), b);
 }
 
@@ -318,7 +342,7 @@ quaternion cq_add(complex a, quaternion b) {
     return qq_add(q_new_c(a), b);
 }
 
-// ### Subtraction
+// ## Subtraction
 
 quaternion qq_sub(quaternion a, quaternion b) {
 #ifdef OPENCL
@@ -328,11 +352,11 @@ quaternion qq_sub(quaternion a, quaternion b) {
 #endif // OPENCL
 }
 
-quaternion qr_sub(quaternion a, float b) {
+quaternion qr_sub(quaternion a, real b) {
     return qq_sub(a, q_new_r(b));
 }
 
-quaternion rq_sub(float a, quaternion b) {
+quaternion rq_sub(real a, quaternion b) {
     return qq_sub(q_new_r(a), b);
 }
 
@@ -344,7 +368,7 @@ quaternion cq_sub(complex a, quaternion b) {
     return qq_sub(q_new_c(a), b);
 }
 
-// ### Multiplication
+// ## Multiplication
 
 quaternion qq_mul(quaternion a, quaternion b) {
     quaternion c;
@@ -355,7 +379,7 @@ quaternion qq_mul(quaternion a, quaternion b) {
     return c;
 }
 
-quaternion qr_mul(quaternion a, float b) {
+quaternion qr_mul(quaternion a, real b) {
 #ifdef OPENCL
     return a*b;
 #else // OPENCL
@@ -368,7 +392,7 @@ quaternion qr_mul(quaternion a, float b) {
 #endif // OPENCL
 }
 
-quaternion rq_mul(float a, quaternion b) {
+quaternion rq_mul(real a, quaternion b) {
     return qr_mul(b, a);
 }
 
@@ -390,13 +414,13 @@ quaternion cq_mul(complex a, quaternion b) {
     return c;
 }
 
-// ### Division
+// ## Division
 
-quaternion qr_div(quaternion a, float b) {
+quaternion qr_div(quaternion a, real b) {
 #ifdef OPENCL
     return a / b;
 #else // OPENCL
-    return qr_mul(a, 1.0f/b);
+    return qr_mul(a, (real)1/b);
 #endif // OPENCL
 }
 
@@ -408,7 +432,7 @@ quaternion qq_div(quaternion a, quaternion b) {
     return qq_mul(a, q_inv(b));
 }
 
-quaternion rq_div(float a, quaternion b) {
+quaternion rq_div(real a, quaternion b) {
     return rq_mul(a, q_inv(b));
 }
 
@@ -420,11 +444,25 @@ quaternion cq_div(complex a, quaternion b) {
     return cq_mul(a, q_inv(b));
 }
 
-// ## Tests
+// ## Miscellanous
+
+real qq_dot(quaternion a, quaternion b) {
+#ifdef OPENCL
+    return dot(a, b);
+#else // OPENCL
+    return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
+#endif // OPENCL
+}
+
+// # Tests
 
 #ifdef TEST
 #ifdef __cplusplus
 #include <catch.hpp>
+
+#include <vector>
+#include <utility>
+#include <functional>
 
 class q_approx {
 private:
@@ -447,7 +485,25 @@ public:
     }
 };
 
+
+quaternion rand_q_normal(Rng &rng) {
+    return quaternion(rng.normal(), rng.normal(), rng.normal(), rng.normal());
+}
+quaternion rand_q_nonzero(Rng &rng) {
+    quaternion a;
+    do {
+        a = rand_q_normal(rng);
+    } while(a.abs2() < EPS);
+    return a;
+}
+quaternion rand_q_unit(Rng &rng) {
+    quaternion q = rand_q_nonzero(rng);
+    return q/q.abs();
+}
+
 TEST_CASE("Quaternions", "[quaternion.h]") {
+    Rng rng(0xfeed);
+
     SECTION("Imaginary units") {
         REQUIRE(1_i*1_i == q_approx(-1));
         REQUIRE(1_j*1_j == q_approx(-1));
@@ -463,9 +519,48 @@ TEST_CASE("Quaternions", "[quaternion.h]") {
         REQUIRE(1_i*1_k == q_approx(-1_j));
     }
     SECTION("Inversion") {
-        quaternion a(1, -2, -3, -4);
-        quaternion c = a*a.inv();
-        REQUIRE(c == q_approx(1));
+        for (int i = 0; i < ATTEMPTS; ++i) {
+            quaternion a = rand_q_nonzero(rng);
+            REQUIRE(a/a == q_approx(1));
+        }
+    }
+    SECTION("Law of cosines") {
+        for (int i = 0; i < ATTEMPTS; ++i) {
+            quaternion a = rand_q_normal(rng), b = rand_q_normal(rng);
+            REQUIRE(a.abs2() + b.abs2() + 2*dot(a, b) == Approx((a + b).abs2()));
+        }
+    }
+    SECTION("Derivation") {
+        std::vector<std::pair<
+            std::function<quaternion(quaternion)>,
+            std::function<quaternion(quaternion, quaternion)>
+        >> cases = {
+            std::make_pair(
+                [](quaternion p) { return p; },
+                [](quaternion, quaternion v) { return v; }
+            ),
+            std::make_pair(
+                [](quaternion p) { return p*p; },
+                [](quaternion p, quaternion v) { return p*v + v*p; }
+            ),
+            std::make_pair(
+                [](quaternion p) { return 1/p; },
+                [](quaternion p, quaternion v) {
+                    real p2 = p.abs2();
+                    return (v.conj() - (2*dot(p, v)/p2)*p.conj())/p2;
+                }
+            )
+        };
+
+        for (auto p : cases) {
+            auto f = p.first;
+            auto dfdv = p.second;
+            for (int i = 0; i < ATTEMPTS; ++i) {
+                quaternion p = rand_q_normal(rng);
+                quaternion v = rand_q_unit(rng);
+                REQUIRE((f(p + EPS*v) - f(p))/EPS == q_approx(dfdv(p, v)));
+            }
+        }
     }
     SECTION("Literal") {
         REQUIRE(-2_i == q_approx(quaternion(0,-2,0,0)));

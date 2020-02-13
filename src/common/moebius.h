@@ -13,11 +13,8 @@ extern "C" {
 
 void moebius_new(moebius *o, complex a, complex b, complex c, complex d);
 
-complex    moebius_apply_c(const moebius *m, complex p);
-quaternion moebius_apply_q(const moebius *m, quaternion p);
-
-complex    moebius_deriv_c(const moebius *m, complex p,    complex v);
-quaternion moebius_deriv_q(const moebius *m, quaternion p, quaternion v);
+quaternion moebius_apply(const moebius *m, quaternion p);
+quaternion moebius_deriv(const moebius *m, quaternion p, quaternion v);
 
 complex moebius_det(const moebius *m);
 void moebius_inverse(moebius *o, const moebius *m);
@@ -39,17 +36,11 @@ struct moebius {
     }
 
     quaternion apply(quaternion p) const {
-        return moebius_apply_q(this, p);
-    }
-    complex apply(complex p) const {
-        return moebius_apply_c(this, p);
+        return moebius_apply(this, p);
     }
 
     quaternion deriv(quaternion p, quaternion v) const {
-        return moebius_deriv_q(this, p, v);
-    }
-    complex deriv(complex p, complex v) const {
-        return moebius_deriv_c(this, p, v);
+        return moebius_deriv(this, p, v);
     }
 
     moebius operator*(const moebius &other) const {
@@ -77,31 +68,22 @@ void moebius_new(moebius *o, complex a, complex b, complex c, complex d) {
     o->d = d;
 }
 
-complex moebius_apply_c(const moebius *m, complex p) {
-    return cc_div(
-        cc_add(cc_mul(m->a, p), m->b),
-        cc_add(cc_mul(m->c, p), m->d)
-    );
-}
-quaternion moebius_apply_q(const moebius *m, quaternion p) {
+quaternion moebius_apply(const moebius *m, quaternion p) {
     return qq_div(
         qc_add(cq_mul(m->a, p), m->b),
         qc_add(cq_mul(m->c, p), m->d)
     );
 }
-complex moebius_deriv_c(const moebius *m, complex p, complex v) {
-    complex den = c_inv(cc_add(cc_mul(m->c, p), m->d));
-    return cc_mul(cc_sub(
-        cc_mul(m->a, v),
-        cc_mul(cc_mul(cc_add(cc_mul(m->a, p), m->b), cc_mul(m->c, v)), den)
-    ), den);
-}
-quaternion moebius_deriv_q(const moebius *m, quaternion p, quaternion v) {
-    quaternion den = q_inv(qc_add(cq_mul(m->c, p), m->d));
-    return qq_mul(qq_sub(
-        cq_mul(m->a, v),
-        qq_mul(qq_mul(qc_add(cq_mul(m->a, p), m->b), cq_mul(m->c, v)), den)
-    ), den);
+
+quaternion moebius_deriv(const moebius *m, quaternion p, quaternion v) {
+    quaternion u = qc_add(cq_mul(m->a, p), m->b);
+    quaternion d = qc_add(cq_mul(m->c, p), m->d);
+    real d2 = d.abs2();
+    quaternion s1 = qq_div(cq_mul(m->a, v), d);
+    quaternion s21 = q_conj(cq_mul(m->c, v));
+    quaternion s22 = rq_mul((real)2*qq_dot(d, cq_mul(m->c, v))/d2, q_conj(d));
+    quaternion s2 = qq_mul(u, qr_div(qq_sub(s21, s22), d2));
+    return qq_add(s1, s2);
 }
 
 complex moebius_det(const moebius *m) {
@@ -124,112 +106,36 @@ void moebius_chain(moebius *o, const moebius *k, const moebius *l) {
 
 #ifdef TEST
 #ifdef __cplusplus
-
-#include <random>
-#include <vector>
-#include <utility>
-#include <functional>
-
 #include <catch.hpp>
 
-/*
-quaternion moebius_apply_dir(const moebius *m, quaternion p, quaternion v) {
-   quaternion one = q_new(0.0f, 0.0f, 1.0f, 0.0f);
-   quaternion nv = qq_add(one, rq_mul(1e-4f, v));
-   nv = moebius_apply_pos(m, nv);
-   return qq_sub(nv, one);
+
+moebius random_moebius(Rng &rng) {
+    return moebius(
+        rand_c_normal(rng),
+        rand_c_normal(rng),
+        rand_c_normal(rng),
+        rand_c_normal(rng)
+    );
 }
-*/
-
-class Rng {
-private:
-    std::minstd_rand rng;
-    float second_normal;
-    bool second_normal_stored = false;
-
-public:
-    Rng(uint32_t seed) : rng(seed) {}
-    Rng() : Rng(0xdeadbeef) {}
-
-    float uniform() {
-        return float(rng() - rng.min())/(rng.max() - rng.min());
-    }
-    float normal() {
-        if (second_normal_stored) {
-            second_normal_stored = false;
-            return second_normal;
-        } else {
-            double phi = 2.0*M_PI*uniform();
-            double r = -log(0.5*(1.0 - uniform()));
-            second_normal = r*sin(phi);
-            second_normal_stored = true;
-            return r*cos(phi);
-        }
-    }
-
-    complex normal_complex() {
-        return complex(normal(), normal());
-    }
-    quaternion normal_quaternion() {
-        return quaternion(normal(), normal(), normal(), normal());
-    }
-    quaternion unit_quaternion() {
-        quaternion q;
-        do {
-            q = normal_quaternion();
-        } while (q.abs2() < 1e-2);
-        return q/q.abs();
-    }
-    moebius random_moebius() {
-        return moebius(
-            normal_complex(),
-            normal_complex(),
-            normal_complex(),
-            normal_complex()
-        );
-    }
-};
 
 TEST_CASE("Moebius transformation", "[moebius.h]") {
     Rng rng;
 
     SECTION("Chaining") {
         for (int i = 0; i < 16; ++i) {
-            moebius a = rng.random_moebius(), b = rng.random_moebius();
-            quaternion c = rng.normal_quaternion();
+            moebius a = random_moebius(rng), b = random_moebius(rng);
+            quaternion c = rand_q_normal(rng);
             REQUIRE((a*b).apply(c) == q_approx(a.apply(b.apply(c))));
         }
     }
 
     SECTION("Derivation") {
-        std::vector<std::pair<
-            std::function<quaternion(quaternion)>,
-            std::function<quaternion(quaternion, quaternion)>
-        >> cases = {
-            std::make_pair(
-                [](quaternion p) { return p; },
-                [](quaternion p, quaternion v) { return v; }
-            )
-        };
-        float eps = 1e-4;
-
-        for (auto p : cases) {
-            auto f = p.first;
-            auto dfdv = p.second;
-            for (int i = 0; i < 16; ++i) {
-                quaternion p = rng.normal_quaternion();
-                quaternion v = rng.unit_quaternion();
-                REQUIRE((f(p + eps*v) - f(p))/eps == q_approx(dfdv(p, v)));
-            }
-        }
-
         for (int i = 0; i < 16; ++i) {
-            moebius a = rng.random_moebius();
-            quaternion p = rng.normal_quaternion();
-            quaternion v = rng.normal_quaternion();
+            moebius a = random_moebius(rng);
+            quaternion p = rand_q_normal(rng);
+            quaternion v = rand_q_nonzero(rng);
             
-            quaternion d = (a.apply(p + eps*v) - a.apply(p))/eps;
-            REQUIRE(a.deriv(p, v) == q_approx(d));
+            REQUIRE(a.deriv(p, v) == q_approx((a.apply(p + EPS*v) - a.apply(p))/EPS));
         }
     }
 };

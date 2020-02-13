@@ -103,7 +103,7 @@ quaternion moebius_apply(const moebius *m, quaternion p) {
 quaternion moebius_deriv(const moebius *m, quaternion p, quaternion v) {
     quaternion u = qc_add(cq_mul(m->a, p), m->b);
     quaternion d = qc_add(cq_mul(m->c, p), m->d);
-    real d2 = d.abs2();
+    real d2 = q_abs2(d);
     quaternion s1 = qq_div(cq_mul(m->a, v), d);
     quaternion s21 = q_conj(cq_mul(m->c, v));
     quaternion s22 = rq_mul((real)2*qq_dot(d, cq_mul(m->c, v))/d2, q_conj(d));
@@ -152,8 +152,8 @@ void moebius_new_xcoil(moebius *o, real theta) {
     real c = cos(theta/(real)2), s = sin(theta/(real)2);
     moebius_new(o,
         c_new_r(c),
-        c_new_r(s),
         c_new_r(-s),
+        c_new_r(s),
         c_new_r(c)
     );
 }
@@ -198,7 +198,7 @@ TEST_CASE("Moebius transformation", "[moebius.h]") {
         for (int i = 0; i < ATTEMPTS; ++i) {
             quaternion q = q_norm(q_new(rng.normal(), rng.normal(), 1, 0));
             real phi = -atan2(q.y, q.x);
-            real theta = atan2(sqrt(q.x*q.x + q.y*q.y), q.z);
+            real theta = -atan2(sqrt(q.x*q.x + q.y*q.y), q.z);
 
             moebius a, b, c;
             moebius_new_zrotate(&a, phi);

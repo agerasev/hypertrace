@@ -159,7 +159,29 @@ void moebius_new_xcoil(moebius *o, real theta) {
 }
 
 
-#ifdef TEST
+#ifdef OPENCL_INTEROP
+
+typedef struct __attribute__ ((packed)) moebius_packed {
+    complex_packed a, b, c, d;
+} moebius_packed;
+
+void moebius_pack(moebius_packed *p, const moebius *u) {
+    p->a = c_pack(u->a);
+    p->b = c_pack(u->b);
+    p->c = c_pack(u->c);
+    p->d = c_pack(u->d);
+}
+void moebius_unpack(moebius *u, const moebius_packed *p) {
+    u->a = c_unpack(p->a);
+    u->b = c_unpack(p->b);
+    u->c = c_unpack(p->c);
+    u->d = c_unpack(p->d);
+}
+
+#endif // OPENCL_INTEROP
+
+
+#ifdef UNIT_TEST
 #ifdef __cplusplus
 #include <catch.hpp>
 
@@ -210,4 +232,4 @@ TEST_CASE("Moebius transformation", "[moebius.h]") {
 };
 
 #endif // __cplusplus
-#endif // TEST
+#endif // UNIT_TEST

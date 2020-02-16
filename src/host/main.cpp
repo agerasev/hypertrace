@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cmath>
 
+#include <common/quaternion.h>
 #include "opencl/opencl.hpp"
 #include "viewer.hpp"
 
@@ -58,13 +59,28 @@ int main(int argc, const char *argv[]) {
     cl::Buffer buffer(context, width*height*4);
 
     Viewer viewer(width, height);
+
+    // Horosphere
+    quaternion p(0.0, 0.0, 3.0, 0.0);
+    quaternion d(0.0, 0.0, -1.0, 0.0);
+    real mu = 1.0;
+
+    double time = 0.0;
     for(;;) {
-        kernel(queue, width*height, buffer, width, height);
+        kernel(
+            queue, width*height,
+            buffer,
+            width, height,
+            q_pack(p), q_pack(d), r_pack(mu)
+        );
         if (!viewer.display([&](uint8_t *data) {
             buffer.load(queue, data);
         })) {
             break;
         }
+
+        time += 1e-2;
+        p.z = 3.0 + sin(4*time);
     }
 
     return 0;

@@ -1,11 +1,16 @@
-#define OPENCL
+#define OPENCL_DEVICE
+#define OPENCL_INTEROP
 
 #include <common/moebius.h>
 
 
 #define EPS 1e-6
 
-__kernel void display(__global uchar *screen, int width, int height) {
+__kernel void display(
+	__global uchar *screen,
+	int width, int height,
+	quaternion_packed p, quaternion_packed d, real mu
+) {
 	int idx = get_global_id(0);
 
 	float2 view = (float2)(
@@ -22,11 +27,6 @@ __kernel void display(__global uchar *screen, int width, int height) {
 	moebius_new_zrotate(&a, phi);
 	moebius_new_xcoil(&b, theta);
 	moebius_chain(&m, &b, &a);
-
-	// Horosphere
-	quaternion p = q_new(0.0f, 0.0f, 3.0f, 0.0f);
-	quaternion d = q_new(0.0f, 0.0f, -1.0f, 0.0f);
-	real mu = 1.0f;
 
 	d = q_norm(moebius_deriv(&m, p, d));
 	p = moebius_apply(&m, p);
@@ -52,12 +52,12 @@ __kernel void display(__global uchar *screen, int width, int height) {
 		quaternion g = q_new(0.0f, 0.0f, h, 0.0f);
 		moebius_inverse(&rm, &m);
 		g = moebius_apply(&rm, g);
-		quaternion f = fract(8.0f*g, &g);
+		quaternion f = fract(2.0f*g, &g);
 		float br = 0.1f;
 		if (f.x < br || f.x > 1.0f - br || f.y < br || f.y > 1.0f - br) {
-			color = (float3)(1.0f, 1.0f, 1.0f);
+			color = (float3)(0.75f, 0.75f, 1.0f);
 		} else {
-			color = (float3)(0.8f, 0.8f, 0.8f);
+			color = (float3)(0.5f, 0.5f, 0.5f);
 		}
 	}
 

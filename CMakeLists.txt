@@ -11,13 +11,17 @@ include_directories(src)
 # Main target
 
 add_executable(${PROJECT_NAME} ${SRC} src/host/main.cpp)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    -DCL_TARGET_OPENCL_VERSION=120
+    -DOPENCL_INTEROP
+)
 target_link_libraries(${PROJECT_NAME} OpenCL SDL2)
 
 
 # Test target
 
 add_executable(test ${SRC} src/host/test.cpp)
-target_compile_definitions(test PRIVATE -DTEST)
+target_compile_definitions(test PRIVATE -DUNIT_TEST)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(test PRIVATE --coverage)

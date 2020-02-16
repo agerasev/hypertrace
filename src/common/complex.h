@@ -5,12 +5,12 @@
 
 // ## Definition
 
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
 
 typedef float real;
 typedef float2 complex;
 
-#else // OPENCL
+#else // OPENCL_DEVICE
 
 typedef double real;
 
@@ -186,20 +186,20 @@ complex operator "" _i(unsigned long long i) {
 
 #endif // __cplusplus
 
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 
 
 // ## Constructors
 
 complex c_new(real r, real i) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return (complex)(r, i);
-#else // OPENCL
+#else // OPENCL_DEVICE
     complex c;
     c.x = r;
     c.y = i;
     return c;
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
 
 complex c_new_r(real r) {
@@ -210,14 +210,14 @@ complex c_new_r(real r) {
 // ## Operators
 
 complex c_neg(complex a) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return -a;
-#else // OPENCL
+#else // OPENCL_DEVICE
     complex c;
     c.x = -a.x;
     c.y = -a.y;
     return c;
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
 
 complex c_conj(complex a) {
@@ -228,40 +228,40 @@ complex c_conj(complex a) {
 }
 
 real c_abs2(complex a) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return dot(a, a);
-#else // OPENCL
+#else // OPENCL_DEVICE
     return a.x*a.x + a.y*a.y;
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
 
 real c_abs(complex a) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return length(a);
-#else // OPENCL
+#else // OPENCL_DEVICE
     return sqrt(c_abs2(a));
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
 
 complex c_norm(complex a) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return normalize(a);
-#else // OPENCL
+#else // OPENCL_DEVICE
     return cr_div(a, c_abs(a));
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
 
 // ## Addition
 
 complex cc_add(complex a, complex b) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return a + b;
-#else // OPENCL
+#else // OPENCL_DEVICE
     complex c;
     c.x = a.x + b.x;
     c.y = a.y + b.y;
     return c;
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
 
 complex cr_add(complex a, real b) {
@@ -275,11 +275,11 @@ complex rc_add(real a, complex b) {
 // ## Subtraction
 
 complex cc_sub(complex a, complex b) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return a - b;
-#else // OPENCL
+#else // OPENCL_DEVICE
     return cc_add(a, c_neg(b));
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
 
 complex cr_sub(complex a, real b) {
@@ -293,14 +293,14 @@ complex rc_sub(real a, complex b) {
 // ## Multiplication
 
 complex cr_mul(complex a, real b) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return a * b;
-#else // OPENCL
+#else // OPENCL_DEVICE
     complex c;
     c.x = a.x*b;
     c.y = a.y*b;
     return c;
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
 
 complex rc_mul(real a, complex b) {
@@ -317,11 +317,11 @@ complex cc_mul(complex a, complex b) {
 // ## Division
 
 complex cr_div(complex a, real b) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return a / b;
-#else // OPENCL
+#else // OPENCL_DEVICE
     return cr_mul(a, (real)1/b);
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
 
 complex c_inv(complex a) {
@@ -345,16 +345,70 @@ complex c_sqrt(complex a) {
 }
 
 real cc_dot(complex a, complex b) {
-#ifdef OPENCL
+#ifdef OPENCL_DEVICE
     return dot(a, b);
-#else // OPENCL
+#else // OPENCL_DEVICE
     return a.x*b.x + a.y*b.y;
-#endif // OPENCL
+#endif // OPENCL_DEVICE
 }
+
+
+// # Interoperability
+
+#ifdef OPENCL_INTEROP
+
+#ifdef OPENCL_DEVICE
+
+typedef real real_packed;
+typedef complex complex_packed;
+
+#else // OPENCL_DEVICE
+
+#include <CL/cl.h>
+
+typedef cl_float real_packed;
+typedef cl_float2 complex_packed;
+
+#endif // OPENCL_DEVICE
+
+real_packed r_pack(real a) {
+    return (real_packed)a;
+}
+real r_unpack(real_packed a) {
+    return (real)a;
+}
+
+#ifdef OPENCL_DEVICE
+
+complex_packed c_pack(complex a) {
+    return (complex_packed)a;
+}
+complex c_unpack(complex_packed a) {
+    return (complex)a;
+}
+
+#else // OPENCL_DEVICE
+
+complex_packed c_pack(complex a) {
+    complex_packed b;
+    b.s[0] = r_pack(a.x);
+    b.s[1] = r_pack(a.y);
+    return b;
+}
+complex c_unpack(complex_packed a) {
+    return c_new(
+        r_unpack(a.s[0]), 
+        r_unpack(a.s[1])
+    );
+}
+
+#endif // OPENCL_DEVICE
+
+#endif // OPENCL_INTEROP
 
 // # Tests
 
-#ifdef TEST
+#ifdef UNIT_TEST
 #ifdef __cplusplus
 #include <catch.hpp>
 
@@ -429,4 +483,4 @@ TEST_CASE("Complex numbers", "[complex.h]") {
 };
 
 #endif // __cplusplus
-#endif // TEST
+#endif // UNIT_TEST

@@ -61,16 +61,21 @@ int main(int argc, const char *argv[]) {
     Viewer viewer(width, height);
 
     // Horosphere
-    quaternion p(0.0, 0.0, 3.0, 0.0);
+    quaternion p(1.0, 0.0, 3.0, 0.0);
     quaternion d(0.0, 0.0, -1.0, 0.0);
     real mu = 1.0;
 
     double time = 0.0;
     for(;;) {
+        const Moebius &m = viewer.controller().map().inverse();
+        MoebiusPacked mp;
+        moebius_pack(&mp, &m);
+
         kernel(
             queue, width*height,
             buffer,
             width, height,
+            mp,
             q_pack(p), q_pack(d), r_pack(mu)
         );
         if (!viewer.display([&](uint8_t *data) {
@@ -80,7 +85,7 @@ int main(int argc, const char *argv[]) {
         }
 
         time += 1e-2;
-        p.z = 3.0 + sin(4*time);
+        //p.z = 3.0 + sin(4*time);
     }
 
     return 0;

@@ -23,9 +23,7 @@ typedef float4 quaternion;
 
 typedef struct quaternion quaternion;
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
+
 quaternion q_new(real r, real i, real j, real k);
 quaternion q_new_r(real r);
 quaternion q_new_c(complex a);
@@ -62,9 +60,6 @@ quaternion qc_div(quaternion a, complex b);
 quaternion cq_div(complex a, quaternion b);
 
 real qq_dot(quaternion a, quaternion b);
-#ifdef __cplusplus
-};
-#endif // __cplusplus
 
 
 struct quaternion {

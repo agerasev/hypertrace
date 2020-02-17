@@ -2,7 +2,7 @@ language: cpp
 
 compiler:
   - gcc
-#  - clang
+  - clang
 
 os: linux
 #dist: bionic
@@ -24,4 +24,5 @@ script:
   - ./script/test.sh
 
 after_success:
+  - ./script/cov.sh
   - bash <(curl -s https://codecov.io/bash) -f .coverage.info || echo "Codecov did not collect coverage reports"

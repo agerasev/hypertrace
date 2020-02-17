@@ -9,24 +9,30 @@
 __kernel void display(
 	__global uchar *screen,
 	int width, int height,
+	MoebiusPacked view,
 	quaternion_packed p, quaternion_packed d, real mu
 ) {
 	int idx = get_global_id(0);
 
-	float2 view = (float2)(
-		((float)(idx % width) - 0.5f*(width - 1))/height,
-		-((float)(idx / width) - 0.5f*(height - 1))/height
-	);
+	float2 v = (float2)(
+		(float)(idx % width) - 0.5f*(width - 1),
+		(float)(idx / width) - 0.5f*(height - 1)
+	)/height;
 
 	float3 color = (float3)(0.0f);
 
-	real phi = -atan2(view.y, view.x);
-	real theta = -atan2(length(view), 1.0f);
+	// We look at the top (along the z axis)
+	real phi = -atan2(v.y, v.x);
+	real theta = -atan2(length(v), 1.0f);
 
-	moebius a, b, m;
+	Moebius a, b, c;
 	moebius_new_zrotate(&a, phi);
 	moebius_new_xcoil(&b, theta);
-	moebius_chain(&m, &b, &a);
+	moebius_chain(&c, &b, &a);
+
+	Moebius u, m;
+	moebius_unpack(&u, &view);
+	moebius_chain(&m, &c, &u);
 
 	d = q_norm(moebius_deriv(&m, p, d));
 	p = moebius_apply(&m, p);
@@ -48,7 +54,7 @@ __kernel void display(
 	}
 
 	if (h > 1.0f) {
-		moebius rm;
+		Moebius rm;
 		quaternion g = q_new(0.0f, 0.0f, h, 0.0f);
 		moebius_inverse(&rm, &m);
 		g = moebius_apply(&rm, g);

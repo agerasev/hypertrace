@@ -21,12 +21,10 @@ typedef double real;
 #include <math.h>
 #endif // __cplusplus
 
+
 typedef struct complex complex;
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif // __cplusplus
 complex c_new(real r, real i);
 complex c_new_r(real r);
 
@@ -55,9 +53,6 @@ complex rc_div(real a, complex b);
 
 complex c_sqrt(complex a);
 real cc_dot(complex a, complex b);
-#ifdef __cplusplus
-};
-#endif // __cplusplus
 
 
 struct complex {

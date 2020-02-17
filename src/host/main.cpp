@@ -6,9 +6,10 @@
 #include <cstring>
 #include <cmath>
 
-#include <common/quaternion.h>
-#include "opencl/opencl.hpp"
-#include "viewer.hpp"
+#include <quaternion.h>
+
+#include <opencl/opencl.hpp>
+#include <viewer.hpp>
 
 
 int main(int argc, const char *argv[]) {
@@ -52,7 +53,7 @@ int main(int argc, const char *argv[]) {
 	cl::Context context(device);
 	cl::Queue queue(context, device);
 
-    cl::Program program(context, device, "device/display.cl", "src");
+    cl::Program program(context, device, "display.cl", {"src/device", "src/common"});
     cl::Kernel kernel(program, "display");
 
     int width = 800, height = 600;

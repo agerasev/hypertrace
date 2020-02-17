@@ -1,7 +1,7 @@
 #define OPENCL_DEVICE
 #define OPENCL_INTEROP
 
-#include <common/moebius.h>
+#include <moebius.h>
 
 
 #define EPS 1e-6

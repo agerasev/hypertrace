@@ -8,7 +8,7 @@
 
 #include <SDL2/SDL.h>
 
-#include <common/moebius.h>
+#include <moebius.h>
 
 
 namespace sdl {
@@ -73,7 +73,7 @@ class Controller {
     public:
     double move_speed = 1.0; // 1/s
     double rot_speed = 2.0; // rad/s
-    double mouse_sens = 1.0; // rad/window_height
+    double mouse_sens = 2.0; // rad/window_height
 
     Controller(int h) : Controller(h, Moebius::identity()) {}
     Controller(int h, const Moebius &m) : height(h), map_(m) {
@@ -150,7 +150,7 @@ class Viewer {
         window = SDL_CreateWindow(
             "HyperTrace",
             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-            800, 600,
+            width, height,
             SDL_WINDOW_RESIZABLE
         );
         assert(window != nullptr);

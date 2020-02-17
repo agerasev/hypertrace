@@ -119,11 +119,18 @@ namespace cl {
         std::unique_ptr<c_includer> includer;
 
     public:
-        Program(cl_context context, cl_device_id device, const char *path, const char *base=".") {
+        Program(
+            cl_context context,
+            cl_device_id device,
+            const char *path,
+            const std::vector<const char *> &bases
+        ) {
             this->device = device;
 
             std::list<std::string> dirs;
-            dirs.push_back(std::string(base));
+            for (const char *base : bases) {
+                dirs.push_back(std::string(base));
+            }
             includer = std::make_unique<c_includer>(path, dirs);
             
             bool include_status = includer->include();
@@ -142,6 +149,8 @@ namespace cl {
             std::cout << log() << std::endl;
             assert(status == CL_SUCCESS);
         }
+        Program(cl_context context, cl_device_id device, const char *path, const char *base=".") :
+            Program(context, device, path, std::vector<const char *>({base})) {}
         ~Program() {
             assert(clReleaseProgram(program) == CL_SUCCESS);
         }

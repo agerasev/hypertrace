@@ -15,7 +15,7 @@ typedef struct SurfacePacked SurfacePacked;
 extern "C" {
 #endif // __cplusplus
 
-bool surface_hit(
+real surface_hit(
     Surface *surface,
     Moebius *src,
     quaternion *hit_pos,
@@ -61,7 +61,7 @@ void surface_unpack(Surface *u, const SurfacePacked *p) {
 #endif // OPENCL_INTEROP
 
 
-bool surface_hit(
+real surface_hit(
     Surface *surface,
     Moebius *src,
     quaternion *hit_pos,
@@ -86,7 +86,7 @@ bool surface_hit(
             t = q_new((real)0, (real)0, h, (real)0);
             n = q_norm(t - c);
 		} else {
-            return false;
+            return (real)(-1);
         }
 	} else if(fabs(d.z) > EPS) {
 		h = dot(p, d)/d.z;
@@ -99,8 +99,8 @@ bool surface_hit(
 		moebius_inverse(&rsrc, src);
 		*hit_pos = moebius_apply(&rsrc, t);
         *hit_norm = moebius_deriv(&rsrc, t, n);
-        return true;
+        return log(h);
     } else {
-        return false;
+        return (real)(-1);
     }
 }

@@ -58,7 +58,18 @@ int main(int argc, const char *argv[]) {
     cl::Kernel kernel(program, "render");
 
     int width = 800, height = 600;
-    cl::Buffer buffer(context, width*height*4);
+    cl::Buffer screen(context, width*height*4);
+    
+    std::vector<Surface> surfaces = {
+        {q_new(0, 0, 3, 0), q_new(0, 0, -1, 0), 1}, // horosphere
+        {q_new(0, 0, 0.9, 0), q_new(0, 0, 1, 0), 0} // plane
+    };
+    cl::Buffer objects(context, sizeof(SurfacePacked)*surfaces.size());
+    std::vector<SurfacePacked> pack(surfaces.size());
+    for (size_t i = 0; i < surfaces.size(); ++i) {
+        surface_pack(&pack[i], &surfaces[i]);
+    }
+    objects.store(queue, pack.data());
 
     Viewer viewer(width, height);
 
@@ -75,13 +86,13 @@ int main(int argc, const char *argv[]) {
         surface_pack(&sp, &s);
         kernel(
             queue, width*height,
-            buffer,
+            screen,
             width, height,
             viewer.controller().map().inverse().pack(),
-            sp
+            objects, (int)surfaces.size()
         );
         if (!viewer.display([&](uint8_t *data) {
-            buffer.load(queue, data);
+            screen.load(queue, data);
         })) {
             break;
         }

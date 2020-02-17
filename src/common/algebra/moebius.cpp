@@ -1,4 +1,4 @@
-#include <moebius.h>
+#include "moebius.h"
 
 
 Moebius::Moebius() = default;
@@ -60,14 +60,19 @@ Moebius Moebius::zrotate(real phi) {
     moebius_new_zrotate(&r, phi);
     return r;
 }
-Moebius Moebius::xcoil(real theta) {
+Moebius Moebius::xrotate(real theta) {
     Moebius r;
-    moebius_new_xcoil(&r, theta);
+    moebius_new_xrotate(&r, theta);
     return r;
 }
-Moebius Moebius::ycoil(real theta) {
+Moebius Moebius::yrotate(real theta) {
     Moebius r;
-    moebius_new_ycoil(&r, theta);
+    moebius_new_yrotate(&r, theta);
+    return r;
+}
+Moebius Moebius::lookat(quaternion dir) {
+    Moebius r;
+    moebius_new_lookat(&r, dir);
     return r;
 }
 
@@ -135,7 +140,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
 
             Moebius a, b, c;
             moebius_new_zrotate(&a, phi);
-            moebius_new_xcoil(&b, theta);
+            moebius_new_xrotate(&b, theta);
             moebius_chain(&c, &b, &a);
             REQUIRE(c.deriv(quaternion::j, q) == q_approx(quaternion::j));
         }

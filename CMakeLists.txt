@@ -5,16 +5,17 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14 -Wall -Wextra")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -Wextra")
 
 set(SRC
-    "src/common/real.h"
-    "src/common/complex.h"
-    "src/common/complex.c"
-    "src/common/complex.cpp"
-    "src/common/quaternion.h"
-    "src/common/quaternion.c"
-    "src/common/quaternion.cpp"
-    "src/common/moebius.h"
-    "src/common/moebius.c"
-    "src/common/moebius.cpp"
+    "src/common/algebra/real.h"
+    "src/common/algebra/complex.h"
+    "src/common/algebra/complex.c"
+    "src/common/algebra/complex.cpp"
+    "src/common/algebra/quaternion.h"
+    "src/common/algebra/quaternion.c"
+    "src/common/algebra/quaternion.cpp"
+    "src/common/algebra/moebius.h"
+    "src/common/algebra/moebius.c"
+    "src/common/algebra/moebius.cpp"
+    "src/common/geometry/surface.h"
 )
 include_directories(
     "src/host"

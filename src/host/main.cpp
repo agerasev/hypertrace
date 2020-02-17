@@ -6,7 +6,8 @@
 #include <cstring>
 #include <cmath>
 
-#include <quaternion.h>
+#include <algebra/quaternion.h>
+#include <geometry/surface.h>
 
 #include <opencl/opencl.hpp>
 #include <viewer.hpp>
@@ -53,31 +54,31 @@ int main(int argc, const char *argv[]) {
 	cl::Context context(device);
 	cl::Queue queue(context, device);
 
-    cl::Program program(context, device, "display.cl", {"src/device", "src/common"});
-    cl::Kernel kernel(program, "display");
+    cl::Program program(context, device, "render.cl", {"src/device", "src/common"});
+    cl::Kernel kernel(program, "render");
 
     int width = 800, height = 600;
     cl::Buffer buffer(context, width*height*4);
 
     Viewer viewer(width, height);
 
-    // Horosphere
-    quaternion p(1.0, 0.0, 3.0, 0.0);
-    quaternion d(0.0, 0.0, -1.0, 0.0);
-    real mu = 1.0;
 
     double time = 0.0;
     for(;;) {
-        const Moebius &m = viewer.controller().map().inverse();
-        MoebiusPacked mp;
-        moebius_pack(&mp, &m);
-
+        // Horosphere
+        Surface s = {
+            .point = q_new(1.0, 0.0, 3.0, 0.0),
+            .normal = q_new(0.0, 0.0, -1.0, 0.0),
+            .curvature = 1.0
+        };
+        SurfacePacked sp;
+        surface_pack(&sp, &s);
         kernel(
             queue, width*height,
             buffer,
             width, height,
-            mp,
-            q_pack(p), q_pack(d), r_pack(mu)
+            viewer.controller().map().inverse().pack(),
+            sp
         );
         if (!viewer.display([&](uint8_t *data) {
             buffer.load(queue, data);

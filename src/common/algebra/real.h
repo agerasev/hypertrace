@@ -5,6 +5,8 @@
 
 typedef float real;
 
+#define EPS 1e-6
+
 #ifdef OPENCL_INTEROP
 
 typedef real real_packed;
@@ -14,6 +16,8 @@ typedef real real_packed;
 #else // OPENCL_DEVICE
 
 typedef double real;
+
+#define EPS 1e-8
 
 #ifdef OPENCL_INTEROP
 
@@ -48,7 +52,7 @@ real r_unpack(real_packed a);
 
 #include <random>
 
-#define TEST_EPS 1e-8
+#define TEST_EPS EPS
 #define TEST_PI 3.14159265358979323846
 #define TEST_ATTEMPTS 16
 

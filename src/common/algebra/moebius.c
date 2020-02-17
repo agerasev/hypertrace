@@ -57,31 +57,34 @@ void moebius_chain(Moebius *o, const Moebius *k, const Moebius *l) {
 
 void moebius_new_zshift(Moebius *o, real l) {
     real l2 = l/(real)2;
+    real e = exp(l2);
     moebius_new(o,
-        c_new_r(exp(l2)),
+        c_new_r(e),
         c_new_r((real)0),
         c_new_r((real)0),
-        c_new_r(exp(-l2))
+        c_new_r((real)1/e)
     );
 }
 
 void moebius_new_xshift(Moebius *o, real l) {
     real l2 = l/(real)2;
+    real c = cosh(l2), s = sinh(l2);
     moebius_new(o,
-        c_new_r(cosh(l2)),
-        c_new_r(sinh(l2)),
-        c_new_r(sinh(l2)),
-        c_new_r(cosh(l2))
+        c_new_r(c),
+        c_new_r(s),
+        c_new_r(s),
+        c_new_r(c)
     );
 }
 
 void moebius_new_yshift(Moebius *o, real l) {
     real l2 = l/(real)2;
+    real c = cosh(l2), s = sinh(l2);
     moebius_new(o,
-        c_new_r(cosh(l2)),
-        c_new((real)0, sinh(l2)),
-        c_new((real)0, -sinh(l2)),
-        c_new_r(cosh(l2))
+        c_new_r(c),
+        c_new((real)0, s),
+        c_new((real)0, -s),
+        c_new_r(c)
     );
 }
 
@@ -95,7 +98,7 @@ void moebius_new_zrotate(Moebius *o, real phi) {
     );
 }
 
-void moebius_new_xcoil(Moebius *o, real theta) {
+void moebius_new_xrotate(Moebius *o, real theta) {
     real c = cos(theta/(real)2), s = sin(theta/(real)2);
     moebius_new(o,
         c_new_r(c),
@@ -105,7 +108,7 @@ void moebius_new_xcoil(Moebius *o, real theta) {
     );
 }
 
-void moebius_new_ycoil(Moebius *o, real theta) {
+void moebius_new_yrotate(Moebius *o, real theta) {
     real c = cos(theta/(real)2), s = sin(theta/(real)2);
     moebius_new(o,
         c_new_r(c),
@@ -113,6 +116,17 @@ void moebius_new_ycoil(Moebius *o, real theta) {
         c_new((real)0, s),
         c_new_r(c)
     );
+}
+
+void moebius_new_lookat(Moebius *o, quaternion dir) {
+	// At first we look at the top (along the z axis)
+	real phi = -atan2(dir.y, dir.x);
+	real theta = -atan2(sqrt(dir.x*dir.x + dir.y*dir.y), dir.z);
+
+	Moebius a, b;
+	moebius_new_zrotate(&a, phi);
+	moebius_new_xrotate(&b, theta);
+	moebius_chain(o, &b, &a);
 }
 
 

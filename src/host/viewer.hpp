@@ -8,7 +8,7 @@
 
 #include <SDL2/SDL.h>
 
-#include <moebius.h>
+#include <algebra/moebius.h>
 
 
 namespace sdl {
@@ -106,9 +106,9 @@ class Controller {
                 map_ *= p.second(rot_speed*dt);
             }
         }
-        map_ *= Moebius::xcoil(mouse_sens*mouse_x);
+        map_ *= Moebius::xrotate(mouse_sens*mouse_x);
         mouse_x = 0.0;
-        map_ *= Moebius::ycoil(mouse_sens*mouse_y);
+        map_ *= Moebius::yrotate(mouse_sens*mouse_y);
         mouse_y = 0.0;
     }
     const Moebius &map() const {

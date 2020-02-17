@@ -62,13 +62,6 @@ private:
 	
 	bool _read(const std::string name, _branch *branch, int depth = 0) {
 		assert(depth < 16);
-
-		branch->name = name;
-		for(const std::string &n : _ignore) {
-			if(n == name) {
-				return true;
-			}
-		}
 		
 		std::ifstream file;
 		
@@ -99,6 +92,14 @@ private:
 				return false;
 			}
 		}
+
+		for(const std::string &n : _ignore) {
+			if(n == fullname) {
+				return false;
+			}
+		}
+
+		branch->name = name;
 		branch->fullname = fullname;
 		
 		// read file line by line
@@ -116,7 +117,7 @@ private:
 			} else if(std::regex_search(line, match, pragma)) {
 				std::string keyword(match[1]);
 				if(keyword == "once") {
-					_ignore.push_back(name);
+					_ignore.push_back(fullname);
 				}
 			} else {
 				_data += line;

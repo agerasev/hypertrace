@@ -4,7 +4,9 @@
 #include <algebra/quaternion.h>
 #include <algebra/moebius.h>
 #include <geometry/surface.h>
-#include <hash.h>
+
+#include <geometry/plane.h>
+#include <geometry/horosphere.h>
 
 #define EPS 1e-6
 
@@ -26,11 +28,30 @@ __kernel void render(
 
 	float3 color = (float3)(0.0f);
 
-	Moebius c, u, m;
-	moebius_new_lookat(&c, v);
+	Moebius u;
 	moebius_unpack(&u, &view);
-	moebius_chain(&m, &c, &u);
 
+	quaternion p = q_new((real)0, (real)0, (real)1.0, (real)0);
+	quaternion d = v;
+
+	d = q_norm(moebius_deriv(&u, p, d));
+	p = moebius_apply(&u, p);
+
+	quaternion hp;
+	if (horosphere_hit(p, d, &hp)) {
+		quaternion k;
+		quaternion f = fract(4.0f*hp, &k);
+		int hs = (int)k.x + (int)k.y;
+
+		const float br = 0.05f;
+		if (f.x < br || f.x > 1.0f - br || f.y < br || f.y > 1.0f - br) {
+			color = (float3)(0.1f, 0.1f, 0.1f);
+		} else {
+			color = (float3)(0.3f) + 0.2f*(float3)(hs & 1, (hs>>1) & 1, (hs>>2) & 1);
+		}
+	}
+
+	/*
 	int mi = -1;
 	float ml = -1.0f;
 	quaternion mp, mn;
@@ -48,25 +69,7 @@ __kernel void render(
 			mn = n;
 		}
 	}
-
-	const float br = 0.05f;
-	if (mi == 0) {
-		color = (float3)(1.0f, 1.0f, 1.0f);
-		quaternion k;
-		quaternion f = fract(mp, &k);
-		
-		int hs = 0;
-		hash(&hs, (int)k.x);
-		hash(&hs, (int)k.y);
-
-		if (f.x < br || f.x > 1.0f - br || f.y < br || f.y > 1.0f - br) {
-			color = (float3)(0.6f, 0.6f, 1.0f);
-		} else {
-			color = (float3)(0.3f) + 0.2f*(float3)(hs & 1, (hs>>1) & 1, (hs>>2) & 1);
-		}
-	} else if(mi == 1) {
-		color = (float3)(0.5f + 0.5*(mp.x > 0), 0.5f + 0.5*(mp.y > 0), 0.5f);
-	}
+	*/
 
 	uchar4 pix = (uchar4)(convert_uchar3(255*clamp(color, 0.0f, 1.0f)), 0xff);
 	vstore4(pix, idx, screen);

@@ -88,7 +88,7 @@ int main(int argc, const char *argv[]) {
             queue, width*height,
             screen,
             width, height,
-            viewer.controller().map().inverse().pack(),
+            viewer.controller().map().pack(),
             objects, (int)surfaces.size()
         );
         if (!viewer.display([&](uint8_t *data) {

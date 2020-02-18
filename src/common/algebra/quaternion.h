@@ -67,6 +67,7 @@ quaternion qc_div(quaternion a, complex b);
 quaternion cq_div(complex a, quaternion b);
 
 real qq_dot(quaternion a, quaternion b);
+real qq_dist(quaternion a, quaternion b);
 
 #ifdef OPENCL_INTEROP
 quaternion_packed q_pack(quaternion a);

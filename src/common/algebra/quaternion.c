@@ -223,6 +223,19 @@ real qq_dist(quaternion a, quaternion b) {
     return log(x + sqrt(x*x - 1));
 }
 
+quaternion qqq_move_dir(quaternion src_pos, quaternion src_dir, quaternion dst_pos) {
+    quaternion p = src_pos, d = src_dir, h = dst_pos;
+    real dxy = sqrt(d.x*d.x + d.y*d.y);
+    complex hp = c_new(p.x - h.x, p.y - h.y);
+    quaternion f = q_new(
+        h.z/p.z*d.x,
+        h.z/p.z*d.y,
+        d.z - c_abs(hp)/p.z*dxy,
+        (real)0
+    );
+    return f;
+}
+
 // Interoperability
 
 #ifdef OPENCL_INTEROP

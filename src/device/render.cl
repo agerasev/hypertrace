@@ -58,6 +58,7 @@ __kernel void render(
 			}
 		}
 
+		prev = mi;
 		if (mi >= 0) {
 			Ray new_ray;
 			Object obj = object_unpack_copy(objects[mi]);

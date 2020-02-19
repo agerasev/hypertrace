@@ -68,6 +68,7 @@ quaternion cq_div(complex a, quaternion b);
 
 real qq_dot(quaternion a, quaternion b);
 real qq_dist(quaternion a, quaternion b);
+quaternion qqq_move_dir(quaternion src_pos, quaternion src_dir, quaternion dst_pos);
 
 #ifdef OPENCL_INTEROP
 quaternion_packed q_pack(quaternion a);

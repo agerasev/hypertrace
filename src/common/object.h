@@ -142,15 +142,7 @@ bool object_emit(
     }
 
     new_ray->start = info->pos;
-    
-    Moebius a, b, c;
-    moebius_new_move_to(&a, ray->start);
-    moebius_new_move_to(&b, info->pos);
-    moebius_inverse(&c, &b);
-    moebius_chain(&b, &c, &a);
-
-    quaternion hit_dir = q_norm(moebius_deriv(&b, ray->start, ray->direction));
-
+    quaternion hit_dir = qqq_move_dir(ray->start, ray->direction, info->pos);
     new_ray->direction = qq_sub(
         hit_dir,
         rq_mul((real)2*qq_dot(hit_dir, info->norm), info->norm)

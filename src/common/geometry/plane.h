@@ -8,7 +8,7 @@ bool plane_hit(
     quaternion *hit_pos
 ) {
     quaternion p = src_pos, d = src_dir;
-    real dxy = sqrt(d.x*d.x + d.y*d.y);
+    //real dxy = sqrt(d.x*d.x + d.y*d.y);
     // FIXME: check (dxy < EPS)
 
     real pd = qq_dot(p, d);

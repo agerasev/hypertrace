@@ -118,7 +118,7 @@ void moebius_new_yrotate(Moebius *o, real theta) {
     );
 }
 
-void moebius_new_lookat(Moebius *o, quaternion dir) {
+void moebius_new_look_at(Moebius *o, quaternion dir) {
 	// At first we look at the top (along the z axis)
 	real phi = -atan2(dir.y, dir.x);
 	real theta = -atan2(sqrt(dir.x*dir.x + dir.y*dir.y), dir.z);
@@ -127,6 +127,28 @@ void moebius_new_lookat(Moebius *o, quaternion dir) {
 	moebius_new_zrotate(&a, phi);
 	moebius_new_xrotate(&b, theta);
 	moebius_chain(o, &b, &a);
+}
+
+void moebius_new_look_to(Moebius *o, quaternion pos) {
+	real phi = -atan2(pos.y, pos.x);
+	real theta = -atan2((real)2*sqrt(pos.x*pos.x + pos.y*pos.y), q_abs2(pos) - (real)1);
+
+	Moebius a, b;
+	moebius_new_zrotate(&a, phi);
+	moebius_new_xrotate(&b, theta);
+	moebius_chain(o, &b, &a);
+}
+
+void moebius_new_move_to(Moebius *o, quaternion pos) {
+    Moebius a, b, c;
+	moebius_new_look_to(&a, pos);
+
+    real dist = qq_dist(q_new((real)0, (real)0, (real)1, (real)0), pos);
+    moebius_new_zshift(&b, -dist);
+
+	moebius_chain(&c, &b, &a);
+    moebius_inverse(&b, &a);
+    moebius_chain(o, &b, &c);
 }
 
 

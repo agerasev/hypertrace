@@ -40,7 +40,7 @@ __kernel void render(
 	ray.intensity = color_new_gray(1.0f);
 
 	int prev = -1;
-	for (int k = 0; k < 2; ++k) {
+	for (int k = 0; k < 4; ++k) {
 		int mi = -1;
 		float ml = -1.0f;
 		HitInfo minfo;

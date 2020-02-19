@@ -70,9 +70,19 @@ Moebius Moebius::yrotate(real theta) {
     moebius_new_yrotate(&r, theta);
     return r;
 }
-Moebius Moebius::lookat(quaternion dir) {
+Moebius Moebius::look_at(quaternion dir) {
     Moebius r;
-    moebius_new_lookat(&r, dir);
+    moebius_new_look_at(&r, dir);
+    return r;
+}
+Moebius Moebius::look_to(quaternion pos) {
+    Moebius r;
+    moebius_new_look_to(&r, pos);
+    return r;
+}
+Moebius Moebius::move_to(quaternion pos) {
+    Moebius r;
+    moebius_new_move_to(&r, pos);
     return r;
 }
 
@@ -100,6 +110,8 @@ std::ostream &operator<<(std::ostream &s, const Moebius &m) {
 #ifdef UNIT_TEST
 
 #include <catch.hpp>
+
+#include <functional>
 
 
 Moebius random_moebius(Rng &rng) {
@@ -143,6 +155,58 @@ TEST_CASE("Moebius transformation", "[moebius]") {
             moebius_new_xrotate(&b, theta);
             moebius_chain(&c, &b, &a);
             REQUIRE(c.deriv(quaternion::j, q) == q_approx(quaternion::j));
+        }
+    }
+
+    SECTION("Look to the point") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            quaternion q = q_new(rng.normal(), rng.normal(), exp(rng.normal()), 0);
+
+            Moebius a;
+            moebius_new_look_to(&a, q);
+            quaternion p = a.apply(q);
+
+            REQUIRE(p.x == Approx(0.0));
+            REQUIRE(p.y == Approx(0.0));
+        }
+    }
+    SECTION("Distance invariance") {
+        std::vector<std::function<Moebius(Rng &)>> elem = {
+            [](Rng &rng) { return Moebius::xrotate(2*TEST_PI*rng.uniform()); },
+            [](Rng &rng) { return Moebius::zrotate(2*TEST_PI*rng.uniform()); },
+            [](Rng &rng) { return Moebius::zshift(rng.normal()); }
+        };
+
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            quaternion a = q_new(rng.normal(), rng.normal(), exp(rng.normal()), 0);
+            quaternion b = q_new(rng.normal(), rng.normal(), exp(rng.normal()), 0);
+
+            Moebius m;
+            for (int j = 0; j < 8; ++j) {
+                m *= elem[floor(3*rng.uniform())](rng);
+            }
+
+            real dist_before = qq_dist(a, b);
+            real dist_after = qq_dist(m.apply(a), m.apply(b));
+
+            REQUIRE(dist_before == Approx(dist_after));
+        }
+    }
+    
+    SECTION("Move to the point") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            quaternion p = q_new(rng.normal(), rng.normal(), exp(rng.normal()), 0);
+            quaternion q = q_new(rng.normal(), rng.normal(), exp(rng.normal()), 0);
+
+            Moebius a;
+            moebius_new_move_to(&a, p);
+            REQUIRE(a.apply(p) == q_approx(quaternion::j));
+
+            Moebius b, c;
+            moebius_new_move_to(&b, q);
+            moebius_inverse(&c, &b);
+            moebius_chain(&b, &c, &a);
+            REQUIRE(b.apply(p) == q_approx(q));
         }
     }
 };

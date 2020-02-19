@@ -219,7 +219,7 @@ real qq_dot(quaternion a, quaternion b) {
 }
 
 real qq_dist(quaternion a, quaternion b) {
-    real x = (real)1 + q_abs2(qq_sub(a, b))/(a.z*b.z);
+    real x = (real)1 + q_abs2(qq_sub(a, b))/((real)2*a.z*b.z);
     return log(x + sqrt(x*x - 1));
 }
 

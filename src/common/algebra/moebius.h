@@ -27,7 +27,9 @@ void moebius_new_yshift(Moebius *o, real l);
 void moebius_new_zrotate(Moebius *o, real phi);
 void moebius_new_xrotate(Moebius *o, real theta);
 void moebius_new_yrotate(Moebius *o, real theta);
-void moebius_new_lookat(Moebius *o, quaternion dir);
+void moebius_new_look_at(Moebius *o, quaternion dir);
+void moebius_new_look_to(Moebius *o, quaternion pos);
+void moebius_new_move_to(Moebius *o, quaternion pos);
 
 quaternion moebius_apply(const Moebius *m, quaternion p);
 quaternion moebius_deriv(const Moebius *m, quaternion p, quaternion v);
@@ -70,7 +72,9 @@ struct Moebius {
     static Moebius zrotate(real phi);
     static Moebius xrotate(real theta);
     static Moebius yrotate(real theta);
-    static Moebius lookat(quaternion dir);
+    static Moebius look_at(quaternion dir);
+    static Moebius look_to(quaternion pos);
+    static Moebius move_to(quaternion pos);
 
 #ifdef OPENCL_INTEROP
     MoebiusPacked pack() const;

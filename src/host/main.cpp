@@ -61,9 +61,9 @@ int main(int argc, const char *argv[]) {
     cl::Buffer screen(context, width*height*4);
     
     std::vector<Object> objects = {
-        {OBJECT_HOROSPHERE, Moebius::yrotate(0.5*M_PI), color(0.7, 0.8, 0.2)},
-        {OBJECT_HOROSPHERE, Moebius::yrotate(-0.5*M_PI), color(0.8, 0.2, 0.1)},
-        //{OBJECT_PLANE, Moebius::identity(), color(0.8, 0.2, 0.1)}
+        {OBJECT_HOROSPHERE, Moebius::identity(), color(0.8, 0.2, 0.1)},
+        {OBJECT_HOROSPHERE, Moebius::yrotate(M_PI), color(0.8, 0.2, 0.1)},
+        {OBJECT_PLANE, Moebius::identity(), color(0.7, 0.8, 0.2)}
     };
     cl::Buffer object_buffer(context, sizeof(ObjectPacked)*objects.size());
     {

@@ -119,7 +119,7 @@ bool object_emit(
 ) {
     color surface_color = color_new(0.0f, 0.0f, 0.0f);
 
-    if (obj->type == OBJECT_NONE) {//OBJECT_HOROSPHERE) {
+    if (obj->type == OBJECT_HOROSPHERE) {
         quaternion k, f;
 #ifdef OPENCL_DEVICE
         f = fract(4.0f*info->local_pos, &k);
@@ -142,11 +142,18 @@ bool object_emit(
     }
 
     new_ray->start = info->pos;
-    // FIXME: hit_dir != ray_dir
-    //quaternion hit_dir = ???;
+    
+    Moebius a, b, c;
+    moebius_new_move_to(&a, ray->start);
+    moebius_new_move_to(&b, info->pos);
+    moebius_inverse(&c, &b);
+    moebius_chain(&b, &c, &a);
+
+    quaternion hit_dir = q_norm(moebius_deriv(&b, ray->start, ray->direction));
+
     new_ray->direction = qq_sub(
-        ray->direction,
-        rq_mul((real)2*qq_dot(ray->direction, info->norm), info->norm)
+        hit_dir,
+        rq_mul((real)2*qq_dot(hit_dir, info->norm), info->norm)
     );
     new_ray->intensity = color_mulcc(ray->intensity, surface_color);
 

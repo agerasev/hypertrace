@@ -9,6 +9,9 @@
 #include <geometry/plane.h>
 #include <geometry/horosphere.h>
 
+#include <material/specular.h>
+#include <material/lambert.h>
+
 #ifndef OPENCL_DEVICE
 #include <assert.h>
 #endif // OPENCL_DEVICE
@@ -141,13 +144,7 @@ bool object_emit(
         surface_color = obj->surface_color;
     }
 
-    new_ray->start = info->pos;
-    quaternion hit_dir = qqq_move_dir(ray->start, ray->direction, info->pos);
-    new_ray->direction = qq_sub(
-        hit_dir,
-        rq_mul((real)2*qq_dot(hit_dir, info->norm), info->norm)
-    );
-    new_ray->intensity = color_mulcc(ray->intensity, surface_color);
+    specular_emit(surface_color, ray, new_ray, info->pos, info->norm);
 
     return true;
 }

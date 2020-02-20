@@ -67,13 +67,13 @@ class Controller {
 
     int height;
     std::unordered_map<sdl::Key, bool> keys;
-    double mouse_x = 0.0, mouse_y = 0.0;
+    int mouse_x = 0.0, mouse_y = 0.0;
     Moebius map_;
 
     public:
     double move_speed = 1.0; // 1/s
-    double rot_speed = 2.0; // rad/s
-    double mouse_sens = 2.0; // rad/window_height
+    double rot_speed = 1.0; // rad/s
+    double mouse_sens = 1.0; // rad/window_height
 
     Controller(int h) : Controller(h, Moebius::identity()) {}
     Controller(int h, const Moebius &m) : height(h), map_(m) {
@@ -91,25 +91,32 @@ class Controller {
                 it->second = (e.type == SDL_KEYDOWN);
             }
         } else if (e.type == SDL_MOUSEMOTION) {
-            mouse_x += (double)e.motion.xrel/height;
-            mouse_y -= (double)e.motion.yrel/height;
+            mouse_x += e.motion.xrel;
+            mouse_y -= e.motion.yrel;
         }
     }
-    void step(double dt) {
+    bool step(double dt) {
+        bool still = true;
         for (auto& p : MOVE_KEYS) {
             if (keys[p.first]) {
                 map_ *= p.second(move_speed*dt);
+                still = false;
             }
         }
         for (auto& p : ROT_KEYS) {
             if (keys[p.first]) {
                 map_ *= p.second(rot_speed*dt);
+                still = false;
             }
         }
-        map_ *= Moebius::xrotate(mouse_sens*mouse_x);
-        mouse_x = 0.0;
-        map_ *= Moebius::yrotate(mouse_sens*mouse_y);
-        mouse_y = 0.0;
+        if (mouse_x != 0 || mouse_y != 0) {
+            map_ *= Moebius::xrotate(mouse_sens*mouse_x/height);
+            mouse_x = 0;
+            map_ *= Moebius::yrotate(mouse_sens*mouse_y/height);
+            mouse_y = 0;
+            still = false;
+        }
+        return !still;
     }
     const Moebius &map() const {
         return map_;
@@ -197,13 +204,12 @@ class Viewer {
 
         SDL_RenderPresent(renderer);
 
-        SDL_Delay(delay_ms);
-
-        ctrl.step(1e-3*delay_ms);
-
         return true;
     }
 
+    Controller &controller() {
+        return ctrl;
+    }
     const Controller &controller() const {
         return ctrl;
     }

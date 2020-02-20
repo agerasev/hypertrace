@@ -6,6 +6,7 @@
 #include <algebra/quaternion.h>
 #include <algebra/moebius.h>
 
+#include <random.h>
 #include <color.h>
 #include <ray.h>
 #include <object.h>
@@ -14,17 +15,22 @@
 
 
 __kernel void render(
-	__global uchar *screen,
+	__global float *screen,
+	__global uchar *image,
 	int width, int height,
+	int sample_no,
+	__global uint32_t *seeds,
 	MoebiusPacked view,
 	__global ObjectPacked *objects,
 	const int object_count
 ) {
 	int idx = get_global_id(0);
+	Rng rng;
+	rand_init(&rng, seeds[idx]);
 
 	quaternion v = q_new(
-		((real)(idx % width) - 0.5f*(width - 1))/height,
-		((real)(idx / width) - 0.5f*(height - 1))/height,
+		((real)(idx % width) - 0.5f*width + rand_uniform(&rng))/height,
+		((real)(idx / width) - 0.5f*height + rand_uniform(&rng))/height,
 		1.0f, 0.0f
 	);
 
@@ -71,6 +77,11 @@ __kernel void render(
 		}
 	}
 
-	uchar4 pix = (uchar4)(convert_uchar3(255*clamp(out_color, 0.0f, 1.0f)), 0xff);
-	vstore4(pix, idx, screen);
+	seeds[idx] = rng.state;
+
+	float3 avg_color = (out_color + vload3(idx, screen)*sample_no)/(sample_no + 1);
+	vstore3(avg_color, idx, screen);
+
+	uchar4 pix = (uchar4)(convert_uchar3(255*clamp(avg_color, 0.0f, 1.0f)), 0xff);
+	vstore4(pix, idx, image);
 }

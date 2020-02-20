@@ -43,7 +43,6 @@ target_link_libraries(${PROJECT_NAME} OpenCL SDL2)
 
 add_executable(test
     #${SRC}
-    "src/common/algebra/vector.hh"
     "src/host/test.cpp"
 )
 target_compile_definitions(test PRIVATE

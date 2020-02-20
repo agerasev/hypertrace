@@ -99,9 +99,7 @@ TEST_CASE("Complex numbers", "[complex]") {
     SECTION("Inversion") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             complex a = rand_c_nonzero(rng);
-            std::cout << c_div(a, a) << std::endl;
-            c_new(1.0, 0.0);
-            //REQUIRE(c_div(a, a) == c_approx(c_new(1, 0)));
+            REQUIRE(c_div(a, a) == c_approx(c_new(1, 0)));
         }
     }
 };

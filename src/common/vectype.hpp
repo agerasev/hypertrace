@@ -29,10 +29,10 @@ struct _packed_ _vecbase<T, 2> {
         T s[2];
         struct { T x, y; };
     };
-    _vecbase() = default;
-    _vecbase(T s) : x(s), y(s) {}
+    _vecbase() {};
     _vecbase(T x, T y) : x(x), y(y) {}
-    _vecbase(vectype<T, 2> v) : x(v.x), y(v.y) {}
+    _vecbase(T c) : _vecbase(c, c) {}
+    _vecbase(vectype<T, 2> v) : _vecbase(v.x, v.y) {}
 };
 template <typename T>
 struct _packed_ _vecbase<T, 3> {
@@ -42,12 +42,12 @@ struct _packed_ _vecbase<T, 3> {
         struct _packed_ { vectype<T, 2> xy; T __0_z; };
         struct _packed_ { T __1_x; vectype<T, 2> yz; };
     };
-    _vecbase() = default;
-    _vecbase(T s) : x(s), y(s), z(s) {}
+    _vecbase() {};
     _vecbase(T x, T y, T z) : x(x), y(y), z(z) {}
-    _vecbase(vectype<T, 2> xy, T z) : xy(xy), z(z) {}
-    _vecbase(T x, vectype<T, 2> yz) : x(x), yz(yz) {}
-    _vecbase(vectype<T, 3> v) : x(v.x), y(v.y), z(v.z) {}
+    _vecbase(T c) : _vecbase(c, c, c) {}
+    _vecbase(vectype<T, 2> xy, T z) : _vecbase(xy.x, xy.y, z) {}
+    _vecbase(T x, vectype<T, 2> yz) : _vecbase(x, yz.x, yz.y) {}
+    _vecbase(vectype<T, 3> v) : _vecbase(v.x, v.y, v.z) {}
 };
 template <typename T>
 struct _packed_ _vecbase<T, 4> {
@@ -59,15 +59,16 @@ struct _packed_ _vecbase<T, 4> {
         struct _packed_ { vectype<T, 3> xyz; T __1_w; };
         struct _packed_ { T __2_x; vectype<T, 3> yzw; };
     };
-    _vecbase() = default;
-    _vecbase(T s) : x(s), y(s), z(s), w(s) {}
+    _vecbase() {};
     _vecbase(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
-    _vecbase(vectype<T, 2> xy, T z, T w) : xy(xy), z(z), w(w) {}
-    _vecbase(T x, vectype<T, 2> yz, T w) : x(x), yz(yz), w(w) {}
-    _vecbase(T x, T y, vectype<T, 2> zw) : x(x), y(y), zw(zw) {}
-    _vecbase(vectype<T, 3> xyz, T w) : xyz(xyz), w(w) {}
-    _vecbase(T x, vectype<T, 3> yzw) : x(x), yzw(yzw) {}
-    _vecbase(vectype<T, 4> v) : x(v.x), y(v.y), z(v.z), w(v.w) {}
+    _vecbase(T c) : _vecbase(c, c, c, c) {}
+    _vecbase(vectype<T, 2> xy, T z, T w) : _vecbase(xy.x, xy.y, z, w) {}
+    _vecbase(T x, vectype<T, 2> yz, T w) : _vecbase(x, yz.x, yz.y, w) {}
+    _vecbase(T x, T y, vectype<T, 2> zw) : _vecbase(x, y, zw.x, zw.y) {}
+    _vecbase(vectype<T, 2> xy, vectype<T, 2> zw) : _vecbase(xy.x, xy.y, zw.x, zw.y) {}
+    _vecbase(vectype<T, 3> xyz, T w) : _vecbase(xyz.x, xyz.y, xyz.z, w) {}
+    _vecbase(T x, vectype<T, 3> yzw) : _vecbase(x, yzw.x, yzw.y, yzw.z) {}
+    _vecbase(vectype<T, 4> v) : _vecbase(v.x, v.y, v.z, v.w) {}
 };
 
 
@@ -75,7 +76,7 @@ template <typename T, int N>
 class _packed_ vectype : public _vecbase<T, N> {
     public:
     template <typename ... Args>
-    vectype(Args ...args) : _vecbase(args...) {}
+    vectype(Args ...args) : _vecbase<T, N>(args...) {}
 
     T &operator[](size_t i) {
         return this->s[i];
@@ -241,14 +242,14 @@ TEST_CASE("Vector types", "[vectype.hpp]") {
         REQUIRE(a2[1] == 654321);
 
         vectype<int, 4> a4;
-        a4.yz = vmake(1, 2);
+        a4.yz = vectype<int, 2>(1, 2);
         REQUIRE(a4[1] == 1);
         REQUIRE(a4[2] == 2);
     }
 
     SECTION("Contruction") {
-        auto v = vmake(vmake(0, 1), 2, vmake(3, 4, 5), vmake(6, vmake(7, 8), 9));
-        for (int i = 0; i < 10; ++i) {
+        auto v = vectype<int, 4>(vectype<int, 2>(0, 1), 2, 3);
+        for (int i = 0; i < 4; ++i) {
             REQUIRE(v[i] == i);
         }
     }

@@ -8,7 +8,7 @@ real hy_distance(quaternion a, quaternion b);
 
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
-quaternion hy_move_dir(quaternion src_pos, quaternion src_dir, quaternion dst_pos);
+quaternion hy_dir_at(quaternion src_pos, quaternion src_dir, quaternion dst_pos);
 
 Moebius hy_zshift(real l);
 Moebius hy_xshift(real l);

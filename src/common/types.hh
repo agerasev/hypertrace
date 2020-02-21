@@ -28,6 +28,13 @@ typedef float2  float2_pk;
 typedef float3  float3_pk;
 typedef float4  float4_pk;
 
+#define pack_float2 (float2)
+#define pack_float3 (float3)
+#define pack_float4 (float4)
+#define unpack_float2 (float2)
+#define unpack_float3 (float3)
+#define unpack_float4 (float4)
+
 #endif // OPENCL_INTEROP
 
 #else // OPENCL
@@ -101,49 +108,24 @@ typedef cl_float2 float2_pk;
 typedef cl_float3 float3_pk;
 typedef cl_float4 float4_pk;
 
-
-float2_pk pack_float2(float2 v) {
-    return (float2_pk) { .s = {v[0], v[1]} };
-}
-float3_pk pack_float3(float3 v) {
-    return (float3_pk) { .s = {v[0], v[1], v[2]} };
-}
-float4_pk pack_float4(float4 v) {
-    return (float4_pk) { .s = {v[0], v[1], v[2], v[3]} };
-}
-float2 unpack_float2(float2_pk v) {
-    return float2::load(v.s);
-}
-float3 unpack_float3(float3_pk v) {
-    return float3::load(v.s);
-}
-float4 unpack_float4(float2_pk v) {
-    return float4::load(v.s);
-}
+float2_pk pack_float2(float2 v);
+float3_pk pack_float3(float3 v);
+float4_pk pack_float4(float4 v);
+float2 unpack_float2(float2_pk v);
+float3 unpack_float3(float3_pk v);
+float4 unpack_float4(float2_pk v);
 
 typedef float_pk  double_pk;
 typedef float2_pk double2_pk;
 typedef float3_pk double3_pk;
 typedef float4_pk double4_pk;
 
-float2_pk pack_double2(double2 v) {
-    return (float2_pk) { .s = {v[0], v[1]} };
-}
-float3_pk pack_double3(double3 v) {
-    return (float3_pk) { .s = {v[0], v[1], v[2]} };
-}
-float4_pk pack_double4(double4 v) {
-    return (float4_pk) { .s = {v[0], v[1], v[2], v[3]} };
-}
-double2 unpack_double2(float2_pk v) {
-    return float2::load(v.s).cast<double>();
-}
-double3 unpack_double3(float3_pk v) {
-    return float3::load(v.s).cast<double>();
-}
-double4 unpack_double4(float2_pk v) {
-    return float4::load(v.s).cast<double>();
-}
+float2_pk pack_double2(double2 v);
+float3_pk pack_double3(double3 v);
+float4_pk pack_double4(double4 v);
+double2 unpack_double2(float2_pk v);
+double3 unpack_double3(float3_pk v);
+double4 unpack_double4(float2_pk v);
 
 #endif // OPENCL_INTEROP
 

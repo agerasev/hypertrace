@@ -1,6 +1,6 @@
 #pragma once
 
-#include <algebra/quaternion.h>
+#include <algebra/quaternion.hh>
 
 
 bool plane_hit(
@@ -11,7 +11,7 @@ bool plane_hit(
     //real dxy = sqrt(d.x*d.x + d.y*d.y);
     // FIXME: check (dxy < EPS)
 
-    real pd = qq_dot(p, d);
+    real pd = dot(p, d);
     if (fabs(pd) < EPS) {
         return false;
     }
@@ -20,12 +20,11 @@ bool plane_hit(
         return false;
     }
     quaternion h = q_new(
-        p.x + d.x*t,
-        p.y + d.y*t,
+        p.xy + d.xy*t,
         (real)0, (real)0
     );
     
-    real pxy2 = h.x*h.x + h.y*h.y;
+    real pxy2 = c_abs2(h.xy);
     if (pxy2 > (real)1) {
         return false;
     }

@@ -7,7 +7,7 @@
 
 // Structure definition
 
-#define _packed_ __attribute__((packed))
+#define _packed_ //__attribute__((packed))
 #define _self (*this)
 
 template <typename T, int N>
@@ -78,10 +78,10 @@ class _packed_ vectype : public _vecbase<T, N> {
     template <typename ... Args>
     vectype(Args ...args) : _vecbase<T, N>(args...) {}
 
-    T &operator[](size_t i) {
+    T &operator[](int i) {
         return this->s[i];
     }
-    const T &operator[](size_t i) const {
+    const T &operator[](int i) const {
         return this->s[i];
     }
 
@@ -218,6 +218,14 @@ T dot(vectype<T, N> a, vectype<T, N> b) {
     }
     return c;
 }
+template <typename T>
+vectype<T, 3> cross(vectype<T, 3> a, vectype<T, 3> b) {
+    return vectype<T, 3>(
+        a.y*b.z - a.z*b.y,
+        a.z*b.x - a.x*b.z,
+        a.x*b.y - a.y*b.x
+    );
+}
 
 template <typename T, int N>
 T length(vectype<T, N> a) {
@@ -227,6 +235,17 @@ T length(vectype<T, N> a) {
 template <typename T, int N>
 vectype<T, N> normalize(vectype<T, N> a) {
     return a/length(a);
+}
+
+double fract(double x, double *intpart);
+
+template <typename T, int N>
+vectype<T, N> fract(vectype<T, N> x, vectype<T, N> *intpart) {
+    vectype<T, N> r;
+    for (int i = 0; i < N; ++i) {
+        r[i] = fract(x[i], intpart->s + i);
+    }
+    return r;
 }
 
 

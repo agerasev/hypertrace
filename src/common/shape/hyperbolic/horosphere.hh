@@ -1,6 +1,6 @@
 #pragma once
 
-#include <algebra/quaternion.h>
+#include <algebra/quaternion.hh>
 
 
 bool horosphere_hit(
@@ -8,7 +8,7 @@ bool horosphere_hit(
     quaternion *hit_pos
 ) {
     quaternion p = src_pos, d = src_dir;
-    real dxy = sqrt(d.x*d.x + d.y*d.y);
+    real dxy = length(d.xy);
     // FIXME: check (dxy < EPS)
 
     if (p.z < dxy) {
@@ -26,8 +26,7 @@ bool horosphere_hit(
 
     t /= dxy*dxy;
     quaternion h = q_new(
-        p.x + d.x*t,
-        p.y + d.y*t,
+        p.xy + d.xy*t,
         (real)1, (real)0
     );
 

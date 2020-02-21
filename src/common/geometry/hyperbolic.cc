@@ -12,7 +12,7 @@ real hy_distance(quaternion a, quaternion b) {
 
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
-quaternion hy_move_dir(quaternion src_pos, quaternion src_dir, quaternion dst_pos) {
+quaternion hy_dir_at(quaternion src_pos, quaternion src_dir, quaternion dst_pos) {
     quaternion p = src_pos, d = src_dir, h = dst_pos;
     return q_new(
         h.z/p.z*d.x,

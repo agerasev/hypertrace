@@ -1,20 +1,18 @@
 #pragma once
 
-#include <types.h>
-
-#define _RAND_PI 3.14159265358979323846f
+#include <types.hh>
 
 
 typedef struct Rng {
-    uint32_t state;
+    uint state;
 } Rng;
 
 
-void rand_init(Rng *rng, uint32_t seed) {
+void rand_init(Rng *rng, uint seed) {
     rng->state = seed;
 }
 
-uint32_t rand_int(Rng *rng) {
+uint rand_int(Rng *rng) {
     return (rng->state = 1103515245*rng->state + 12345);
 }
 

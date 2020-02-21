@@ -8,7 +8,7 @@ typedef real4 quaternion;
 #define q_new make_quaternion
 
 #ifdef OPENCL_INTEROP
-typedef cl_float4 quaternion_packed;
+typedef real4_pk quaternion_pk;
 #define pack_quaternion pack_real4
 #define unpack_quaternion unpack_real4
 #define q_pack pack_quaternion

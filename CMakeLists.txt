@@ -8,7 +8,9 @@ set(SRC
     "src/common/vectype.hpp"
     "src/common/vectype.cpp"
     "src/common/types.hh"
+    "src/common/types.cc"
     "src/common/algebra/real.hh"
+#    "src/common/algebra/real.cc"
     "src/common/algebra/complex.hh"
     "src/common/algebra/complex.cc"
     "src/common/algebra/quaternion.hh"
@@ -26,18 +28,18 @@ include_directories(
 
 # Main target
 
-##add_executable(${PROJECT_NAME}
-#    ${SRC}
-#    "src/host/opencl/include.hpp"
-#    "src/host/opencl/opencl.hpp"
-#    "src/host/viewer.hpp"
-#    "src/host/main.cpp"
-#)
-#target_compile_definitions(${PROJECT_NAME} PRIVATE
-#    -DCL_TARGET_OPENCL_VERSION=120
-#    -DOPENCL_INTEROP
-#)
-#target_link_libraries(${PROJECT_NAME} OpenCL SDL2)
+add_executable(${PROJECT_NAME}
+    ${SRC}
+    "src/host/opencl/include.hpp"
+    "src/host/opencl/opencl.hpp"
+    "src/host/viewer.hpp"
+    "src/host/main.cpp"
+)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    -DCL_TARGET_OPENCL_VERSION=120
+    -DOPENCL_INTEROP
+)
+target_link_libraries(${PROJECT_NAME} OpenCL SDL2)
 
 
 # Test target

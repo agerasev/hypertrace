@@ -12,8 +12,10 @@
 #include <opencl/opencl.hpp>
 #include <viewer.hpp>
 
-#include <algebra/quaternion.h>
-#include <object.h>
+#include <algebra/quaternion.hh>
+#include <algebra/moebius.hh>
+#include <geometry/hyperbolic.hh>
+#include <object.hh>
 
 
 using duration = std::chrono::duration<double>;
@@ -78,15 +80,15 @@ int main(int argc, const char *argv[]) {
     }
 
     std::vector<Object> objects = {
-        {OBJECT_HOROSPHERE, Moebius::identity(), color(0.8, 0.2, 0.1)},
-        {OBJECT_HOROSPHERE, Moebius::yrotate(M_PI), color(0.8, 0.2, 0.1)},
-        {OBJECT_PLANE, Moebius::identity(), color(0.7, 0.8, 0.2)}
+        {OBJECT_HOROSPHERE, mo_identity(), float3(0.8, 0.2, 0.1)},
+        {OBJECT_HOROSPHERE, hy_yrotate(M_PI), float3(0.8, 0.2, 0.1)},
+        {OBJECT_PLANE, mo_identity(), float3(0.7, 0.8, 0.2)}
     };
-    cl::Buffer object_buffer(context, sizeof(ObjectPacked)*objects.size());
+    cl::Buffer object_buffer(context, sizeof(ObjectPk)*objects.size());
     {
-        std::vector<ObjectPacked> package(objects.size());
+        std::vector<ObjectPk> package(objects.size());
         for (size_t i = 0; i < objects.size(); ++i) {
-            object_pack(&package[i], &objects[i]);
+            pack_object(&package[i], &objects[i]);
         }
         object_buffer.store(queue, package.data());
     }
@@ -107,7 +109,7 @@ int main(int argc, const char *argv[]) {
                 width, height,
                 monte_carlo_counter,
                 seeds,
-                viewer.controller().map().pack(),
+                mo_pack(viewer.controller().map()),
                 object_buffer, (cl_int)object_buffer.size()
             );
             sample_counter += 1;

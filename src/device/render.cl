@@ -1,17 +1,15 @@
-#define OPENCL_DEVICE
+#define OPENCL
 #define OPENCL_INTEROP
 
-#include <types.h>
+#include <types.hh>
 
-#include <algebra/quaternion.h>
-#include <algebra/moebius.h>
+#include <algebra/quaternion.hh>
+#include <algebra/moebius.hh>
+#include <geometry/hyperbolic.hh>
 
-#include <random.h>
-#include <color.h>
-#include <ray.h>
-#include <object.h>
-
-#define EPS 1e-6
+#include <random.hh>
+#include <ray.hh>
+#include <object.hh>
 
 
 __kernel void render(
@@ -19,9 +17,9 @@ __kernel void render(
 	__global uchar *image,
 	int width, int height,
 	int sample_no,
-	__global uint32_t *seeds,
-	MoebiusPacked view,
-	__global ObjectPacked *objects,
+	__global uint *seeds,
+	MoebiusPk view,
+	__global ObjectPk *objects,
 	const int object_count
 ) {
 	int idx = get_global_id(0);
@@ -36,14 +34,13 @@ __kernel void render(
 
 	float3 out_color = (float3)(0.0f);
 
-	Moebius u;
-	moebius_unpack(&u, &view);
-	quaternion p = q_new((real)0, (real)0, (real)1, (real)0);
+	Moebius u = mo_unpack(view);
+	quaternion p = QJ;
 
 	Ray ray;
-	ray.direction = q_norm(moebius_deriv(&u, p, v));
-	ray.start = moebius_apply(&u, p);
-	ray.intensity = color_new_gray(1.0f);
+	ray.direction = normalize(mo_deriv(u, p, v));
+	ray.start = mo_apply(u, p);
+	ray.intensity = (float3)(1.0f);
 
 	int prev = -1;
 	for (int k = 0; k < 4; ++k) {
@@ -54,7 +51,7 @@ __kernel void render(
 			if (prev == i) {
 				continue;
 			}
-			Object obj = object_unpack_copy(objects[i]);
+			Object obj = unpack_copy_object(objects[i]);
 			HitInfo info;
 			real l = object_hit(&obj, &info, &ray);
 			if (l > 0.0f && (l < ml || mi < 0)) {
@@ -64,10 +61,14 @@ __kernel void render(
 			}
 		}
 
+		// FIXME: ObjectPk vector content is zero on Intel HD Graphics
+		//out_color = objects[0].color;
+		//break;
+
 		prev = mi;
 		if (mi >= 0) {
 			Ray new_ray;
-			Object obj = object_unpack_copy(objects[mi]);
+			Object obj = unpack_copy_object(objects[mi]);
 			if (object_emit(&obj, &minfo, &ray, &new_ray)) {
 				ray = new_ray;
 			}

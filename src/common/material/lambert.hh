@@ -1,12 +1,12 @@
 #pragma once
 
+/*
 #include <algebra/quaternion.h>
 
 #include <random.h>
 #include <color.h>
 #include <ray.h>
 
-/*
 void lambert_emit(
     color surface_color, Rng *rng,
     const Ray *ray, Ray *new_ray,

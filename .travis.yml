@@ -23,6 +23,6 @@ addons:
 script:
   - ./script/test.sh
 
-#after_success:
-#  - ./script/cov.sh
-#  - bash <(curl -s https://codecov.io/bash) -f .coverage.info || echo "Codecov did not collect coverage reports"
+after_success:
+  - ./script/cov.sh
+  - bash <(curl -s https://codecov.io/bash) -f .coverage.info || echo "Codecov did not collect coverage reports"

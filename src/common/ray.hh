@@ -1,10 +1,9 @@
 #pragma once
 
-#include <algebra/quaternion.h>
-#include <color.h>
+#include <algebra/quaternion.hh>
 
 typedef struct Ray {
     quaternion start;
     quaternion direction;
-    color intensity;
+    float3 intensity;
 } Ray;

@@ -8,7 +8,8 @@
 
 #include <SDL2/SDL.h>
 
-#include <algebra/moebius.h>
+#include <algebra/moebius.hh>
+#include <geometry/hyperbolic.hh>
 
 
 namespace sdl {
@@ -75,7 +76,7 @@ class Controller {
     double rot_speed = 1.0; // rad/s
     double mouse_sens = 1.0; // rad/window_height
 
-    Controller(int h) : Controller(h, Moebius::identity()) {}
+    Controller(int h) : Controller(h, mo_identity()) {}
     Controller(int h, const Moebius &m) : height(h), map_(m) {
         for (auto& p : MOVE_KEYS) {
             keys[p.first] = false;
@@ -99,20 +100,20 @@ class Controller {
         bool still = true;
         for (auto& p : MOVE_KEYS) {
             if (keys[p.first]) {
-                map_ *= p.second(move_speed*dt);
+                map_ = mo_chain(map_, p.second(move_speed*dt));
                 still = false;
             }
         }
         for (auto& p : ROT_KEYS) {
             if (keys[p.first]) {
-                map_ *= p.second(rot_speed*dt);
+                map_ = mo_chain(map_, p.second(rot_speed*dt));
                 still = false;
             }
         }
         if (mouse_x != 0 || mouse_y != 0) {
-            map_ *= Moebius::xrotate(mouse_sens*mouse_x/height);
+            map_ = mo_chain(map_, hy_xrotate(mouse_sens*mouse_x/height));
             mouse_x = 0;
-            map_ *= Moebius::yrotate(mouse_sens*mouse_y/height);
+            map_ = mo_chain(map_, hy_yrotate(mouse_sens*mouse_y/height));
             mouse_y = 0;
             still = false;
         }
@@ -124,16 +125,16 @@ class Controller {
 };
 
 const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::MOVE_KEYS = {
-    std::make_pair(SDLK_w, [](double l) { return Moebius::zshift(l); }),
-    std::make_pair(SDLK_a, [](double l) { return Moebius::xshift(-l); }),
-    std::make_pair(SDLK_s, [](double l) { return Moebius::zshift(-l); }),
-    std::make_pair(SDLK_d, [](double l) { return Moebius::xshift(l); }),
-    std::make_pair(SDLK_SPACE, [](double l) { return Moebius::yshift(-l); }),
-    std::make_pair(SDLK_LSHIFT, [](double l) { return Moebius::yshift(l); })
+    std::make_pair(SDLK_w, [](double l) { return hy_zshift(l); }),
+    std::make_pair(SDLK_a, [](double l) { return hy_xshift(-l); }),
+    std::make_pair(SDLK_s, [](double l) { return hy_zshift(-l); }),
+    std::make_pair(SDLK_d, [](double l) { return hy_xshift(l); }),
+    std::make_pair(SDLK_SPACE, [](double l) { return hy_yshift(-l); }),
+    std::make_pair(SDLK_LSHIFT, [](double l) { return hy_yshift(l); })
 };
 const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::ROT_KEYS = {
-    std::make_pair(SDLK_q, [](double a) { return Moebius::zrotate(-a); }),
-    std::make_pair(SDLK_e, [](double a) { return Moebius::zrotate(a); })
+    std::make_pair(SDLK_q, [](double a) { return hy_zrotate(-a); }),
+    std::make_pair(SDLK_e, [](double a) { return hy_zrotate(a); })
 };
 
 class Viewer {

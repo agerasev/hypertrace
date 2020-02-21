@@ -5,7 +5,7 @@
 
 bool horosphere_hit(
     quaternion src_pos, quaternion src_dir,
-    quaternion *hit_pos
+    quaternion *hit_pos, quaternion *hit_norm
 ) {
     quaternion p = src_pos, d = src_dir;
     real dxy = length(d.xy);
@@ -31,5 +31,6 @@ bool horosphere_hit(
     );
 
     *hit_pos = h;
+    *hit_norm = -QJ;
     return true;
 }

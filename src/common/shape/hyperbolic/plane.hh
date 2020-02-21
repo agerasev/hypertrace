@@ -5,7 +5,7 @@
 
 bool plane_hit(
     quaternion src_pos, quaternion src_dir,
-    quaternion *hit_pos
+    quaternion *hit_pos, quaternion *hit_norm
 ) {
     quaternion p = src_pos, d = src_dir;
     //real dxy = sqrt(d.x*d.x + d.y*d.y);
@@ -31,5 +31,6 @@ bool plane_hit(
     h.z = sqrt((real)1 - pxy2);
 
     *hit_pos = h;
+    *hit_norm = h;
     return true;
 }

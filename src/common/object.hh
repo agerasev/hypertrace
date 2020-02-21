@@ -2,6 +2,7 @@
 
 #include <types.hh>
 #include <ray.hh>
+#include <random.hh>
 
 #include <algebra/moebius.hh>
 #include <geometry/hyperbolic.hh>
@@ -22,10 +23,12 @@ typedef struct ObjectPk ObjectPk;
 
 
 real object_hit(
+    Rng *rng,
     const Object *obj, HitInfo *info,
     const Ray *ray
 );
 bool object_emit(
+    Rng *rng,
     const Object *obj, const HitInfo *info,
     const Ray *ray, Ray *new_ray
 );
@@ -69,6 +72,7 @@ struct __attribute__ ((packed)) ObjectPk {
 
 
 real object_hit(
+    Rng *rng,
     const Object *obj, HitInfo *info,
     const Ray *ray
 ) {
@@ -80,15 +84,11 @@ real object_hit(
 
     quaternion hp, hn;
     if (obj->type == OBJECT_PLANE) {
-        if (plane_hit(rp, rd, &hp)) {
-            hn = hp;
-        } else {
+        if (!plane_hit(rp, rd, &hp, &hn)) {
             return (real)(-1);
         }
     } else if (obj->type == OBJECT_HOROSPHERE) {
-        if (horosphere_hit(rp, rd, &hp)) {
-            hn = q_new((real)0, (real)0, (real)(-1), (real)0);
-        } else {
+        if (!horosphere_hit(rp, rd, &hp, &hn)) {
             return (real)(-1);
         }
     } else {
@@ -104,6 +104,7 @@ real object_hit(
 }
 
 bool object_emit(
+    Rng *rng,
     const Object *obj, const HitInfo *info,
     const Ray *ray, Ray *new_ray
 ) {
@@ -124,7 +125,8 @@ bool object_emit(
         color = obj->color;
     }
 
-    specular_emit(color, ray, new_ray, info->pos, info->norm);
+    quaternion hit_dir = hy_dir_at(ray->start, ray->direction, info->pos);
+    lambert_emit(rng, color, ray, new_ray, info->pos, hit_dir, info->norm);
 
     return true;
 }

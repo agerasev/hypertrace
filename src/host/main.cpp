@@ -81,8 +81,8 @@ int main(int argc, const char *argv[]) {
 
     std::vector<Object> objects = {
         {OBJECT_HOROSPHERE, mo_identity(), float3(0.8, 0.2, 0.1)},
-        {OBJECT_HOROSPHERE, hy_yrotate(M_PI), float3(0.8, 0.2, 0.1)},
-        {OBJECT_PLANE, mo_identity(), float3(0.7, 0.8, 0.2)}
+        {OBJECT_HOROSPHERE, hy_yrotate(M_PI), float3(0.1, 0.2, 0.8)},
+        {OBJECT_PLANE, mo_identity(), float3(0.7, 0.8, 0.2)},
     };
     cl::Buffer object_buffer(context, sizeof(ObjectPk)*objects.size());
     {

@@ -53,7 +53,7 @@ __kernel void render(
 			}
 			Object obj = unpack_copy_object(objects[i]);
 			HitInfo info;
-			real l = object_hit(&obj, &info, &ray);
+			real l = object_hit(&rng, &obj, &info, &ray);
 			if (l > 0.0f && (l < ml || mi < 0)) {
 				mi = i;
 				ml = l;
@@ -65,7 +65,7 @@ __kernel void render(
 		if (mi >= 0) {
 			Ray new_ray;
 			Object obj = unpack_copy_object(objects[mi]);
-			if (object_emit(&obj, &minfo, &ray, &new_ray)) {
+			if (object_emit(&rng, &obj, &minfo, &ray, &new_ray)) {
 				ray = new_ray;
 			}
 		} else {

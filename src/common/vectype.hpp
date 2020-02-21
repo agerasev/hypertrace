@@ -226,6 +226,10 @@ vectype<T, 3> cross(vectype<T, 3> a, vectype<T, 3> b) {
         a.x*b.y - a.y*b.x
     );
 }
+template <typename T>
+vectype<T, 4> cross(vectype<T, 4> a, vectype<T, 4> b) {
+    return vectype<T, 4>(cross(a.xyz, b.xyz), (T)0);
+}
 
 template <typename T, int N>
 T length(vectype<T, N> a) {

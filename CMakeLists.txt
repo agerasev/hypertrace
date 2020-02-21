@@ -10,7 +10,6 @@ set(SRC
     "src/common/types.hh"
     "src/common/types.cc"
     "src/common/algebra/real.hh"
-#    "src/common/algebra/real.cc"
     "src/common/algebra/complex.hh"
     "src/common/algebra/complex.cc"
     "src/common/algebra/quaternion.hh"
@@ -19,6 +18,16 @@ set(SRC
     "src/common/algebra/moebius.cc"
     "src/common/geometry/hyperbolic.hh"
     "src/common/geometry/hyperbolic.cc"
+    "src/common/random.hh"
+    "src/common/random.cc"
+    "src/common/shape/hyperbolic.hh"
+    "src/common/shape/hyperbolic.cc"
+    "src/common/material.hh"
+    "src/common/material.cc"
+    "src/common/ray.hh"
+    "src/common/object.hh"
+    "src/common/object.cc"
+
 )
 include_directories(
     "src/host"

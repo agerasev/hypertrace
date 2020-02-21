@@ -61,10 +61,6 @@ __kernel void render(
 			}
 		}
 
-		// FIXME: ObjectPk vector content is zero on Intel HD Graphics
-		//out_color = objects[0].color;
-		//break;
-
 		prev = mi;
 		if (mi >= 0) {
 			Ray new_ray;

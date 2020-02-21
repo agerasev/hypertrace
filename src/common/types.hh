@@ -23,17 +23,17 @@ typedef short  short_pk;
 typedef uint   uint_pk;
 typedef int    int_pk;
 
-typedef float   float_pk;
-typedef float2  float2_pk;
-typedef float3  float3_pk;
-typedef float4  float4_pk;
+typedef float float_pk;
+typedef struct { float s[2]; } float2_pk;
+typedef struct { float s[4]; } float3_pk;
+typedef struct { float s[4]; } float4_pk;
 
-#define pack_float2 (float2)
-#define pack_float3 (float3)
-#define pack_float4 (float4)
-#define unpack_float2 (float2)
-#define unpack_float3 (float3)
-#define unpack_float4 (float4)
+float2_pk pack_float2(float2 v) { float2_pk p; vstore2(v, 0, p.s); return p; } 
+float3_pk pack_float3(float3 v) { float3_pk p; vstore3(v, 0, p.s); return p; } 
+float4_pk pack_float4(float4 v) { float4_pk p; vstore4(v, 0, p.s); return p; } 
+float2 unpack_float2(float2_pk p) { return vload2(0, p.s); }
+float3 unpack_float3(float3_pk p) { return vload3(0, p.s); }
+float4 unpack_float4(float4_pk p) { return vload4(0, p.s); }
 
 #endif // OPENCL_INTEROP
 

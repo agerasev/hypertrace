@@ -14,10 +14,10 @@ typedef float4 real4;
 #define make_real4 make_float4
 
 #ifdef OPENCL_INTEROP
-typedef real  real_pk;
-typedef real2 real2_pk;
-typedef real3 real3_pk;
-typedef real4 real4_pk;
+typedef float_pk  real_pk;
+typedef float2_pk real2_pk;
+typedef float3_pk real3_pk;
+typedef float4_pk real4_pk;
 #define pack_real2 pack_float2
 #define pack_real3 pack_float3
 #define pack_real4 pack_float4

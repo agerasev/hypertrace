@@ -65,12 +65,11 @@ typedef float4_pk real4_pk;
 
 
 #ifdef UNIT_TEST
-#ifdef __cplusplus
+#include <catch.hpp>
 
 #include <random>
 
 #define TEST_ATTEMPTS 16
-
 
 class Rng {
 private:
@@ -90,5 +89,4 @@ public:
     }
 };
 
-#endif // __cplusplus
 #endif // UNIT_TEST

@@ -22,7 +22,7 @@ struct _packed_ _vecbase {
     static constexpr int size = N;
 };
 template <typename T>
-struct _packed_ _vecbase<T, 1>;
+struct _vecbase<T, 1>;
 template <typename T>
 struct _packed_ _vecbase<T, 2> {
     union _packed_ {
@@ -233,26 +233,29 @@ vectype<T, N> normalize(vectype<T, N> a) {
 #ifdef UNIT_TEST
 #include <catch.hpp>
 
-TEST_CASE("Vector types", "[vectype.hpp]") {
-    SECTION("Field alignment") {
-        vectype<int, 2> a2;
-        a2[0] = 123456;
-        REQUIRE(a2.x == 123456);
-        a2.y = 654321;
-        REQUIRE(a2[1] == 654321);
-
-        vectype<int, 4> a4;
-        a4.yz = vectype<int, 2>(1, 2);
-        REQUIRE(a4[1] == 1);
-        REQUIRE(a4[2] == 2);
-    }
-
-    SECTION("Contruction") {
-        auto v = vectype<int, 4>(vectype<int, 2>(0, 1), 2, 3);
-        for (int i = 0; i < 4; ++i) {
-            REQUIRE(v[i] == i);
+template <typename T, int N>
+class VecApprox {
+    public:
+    typedef vectype<T, N> vtype;
+    vtype v;
+    VecApprox(vtype c) : v(c) {}
+    friend bool operator==(vtype a, VecApprox b) {
+        for (int i = 0; i < N; ++i) {
+            if (a[i] != Approx(b.v[i])) {
+                return false;
+            }
         }
+        return true;
+    }
+    friend bool operator==(VecApprox a, vtype b){
+        return b == a;
+    }
+    friend std::ostream &operator<<(std::ostream &s, VecApprox a) {
+        return s << a.v;
     }
 };
-
+template <typename T, int N>
+VecApprox<T, N> ApproxV(vectype<T, N> v) {
+    return VecApprox<T, N>(v);
+}
 #endif // UNIT_TEST

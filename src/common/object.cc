@@ -41,17 +41,22 @@ bool object_emit(
     float3 color = make_float3(0.0f, 0.0f, 0.0f);
 
     if (obj->type == OBJECT_HOROSPHERE) {
-        complex k, f;
-        complex g = info->local_pos.xy;
-        f = fract(4.0f*g, &k);
-        int hs = (int)k.x + (int)k.y;
+        real2 k, f;
+        real2 g = info->local_pos.xy;
+        real2 bx = make_real2(2/sqrt(3.0f), (real)0);
+        real2 by = make_real2(-1/sqrt(3.0f), (real)1);
+        real2 h = 4*c_new(dot(bx, g), dot(by, g));
+        int hx = (int)floor((floor(h.x) - floor(h.y))/3);
+        int hy = (int)floor((floor(h.x + h.y) - hx)/2);
+        int hs = hx - hy;
 
-		const float br = 0.05f;
-		if (f.x < br || f.x > 1.0f - br || f.y < br || f.y > 1.0f - br) {
-			color = make_float3(0.0f);
-		} else {
-			color = obj->color*make_float3(hs & 1, (hs>>1) & 1, (hs>>2) & 1);
-		}
+        h -= hx*make_real2(2.0f, -1.0f) + hy*make_real2(1.0f, 1.0f);
+        real br = 0.05f;
+        if (fabs(h.x - 1) > 1 - br || fabs(h.y) > 1 - br || fabs(h.x + h.y - 1.0f) > 1 - br) {
+            color = obj->color*make_float3(0.0f);
+        } else {
+		    color = obj->color*(0.2f + 0.8f*make_float3(hs & 1, (hs>>1) & 1, (hs>>2) & 1));
+        }
     } else {
         color = obj->color;
     }

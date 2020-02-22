@@ -28,12 +28,16 @@ typedef struct { float s[2]; } float2_pk;
 typedef struct { float s[4]; } float3_pk;
 typedef struct { float s[4]; } float4_pk;
 
-float2_pk pack_float2(float2 v) { float2_pk p; vstore2(v, 0, p.s); return p; } 
-float3_pk pack_float3(float3 v) { float3_pk p; vstore3(v, 0, p.s); return p; } 
-float4_pk pack_float4(float4 v) { float4_pk p; vstore4(v, 0, p.s); return p; } 
-float2 unpack_float2(float2_pk p) { return vload2(0, p.s); }
-float3 unpack_float3(float3_pk p) { return vload3(0, p.s); }
-float4 unpack_float4(float4_pk p) { return vload4(0, p.s); }
+#define DEF_VEC_PACK(type, n) \
+type##n##_pk pack_##type##n(type##n v) { type##n##_pk p; vstore##n(v, 0, p.s); return p; } \
+type##n unpack_##type##n(type##n##_pk p) { return vload##n(0, p.s); }
+
+#define DEF_VEC_PACK_234(type) \
+    DEF_VEC_PACK(type, 2) \
+    DEF_VEC_PACK(type, 3) \
+    DEF_VEC_PACK(type, 4)
+
+DEF_VEC_PACK_234(float)
 
 #endif // OPENCL_INTEROP
 
@@ -78,19 +82,13 @@ typedef vectype<double, 2> double2;
 typedef vectype<double, 3> double3;
 typedef vectype<double, 4> double4;
 
-template <typename ... Args>
-float2 make_float2(Args ...args) { return float2(args...); }
-template <typename ... Args>
-float3 make_float3(Args ...args) { return float3(args...); }
-template <typename ... Args>
-float4 make_float4(Args ...args) { return float4(args...); }
+#define make_float2 float2
+#define make_float3 float3
+#define make_float4 float4
 
-template <typename ... Args>
-double2 make_double2(Args ...args) { return double2(args...); }
-template <typename ... Args>
-double3 make_double3(Args ...args) { return double3(args...); }
-template <typename ... Args>
-double4 make_double4(Args ...args) { return double4(args...); }
+#define make_double2 double2
+#define make_double3 double3
+#define make_double4 double4
 
 #ifdef OPENCL_INTEROP
 

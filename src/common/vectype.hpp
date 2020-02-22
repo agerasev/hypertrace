@@ -252,6 +252,16 @@ vectype<T, N> fract(vectype<T, N> x, vectype<T, N> *intpart) {
     return r;
 }
 
+template <typename T, int N>
+vectype<T, N> floor(vectype<T, N> v) {
+    return v.map([](T x){ return floor(x); });
+}
+
+template <typename T, int N>
+vectype<T, N> ceil(vectype<T, N> v) {
+    return v.map([](T x){ return ceil(x); });
+}
+
 
 #ifdef UNIT_TEST
 #include <catch.hpp>

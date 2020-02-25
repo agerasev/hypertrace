@@ -76,15 +76,15 @@ typedef float4_pk real4_pk;
 
 #define TEST_ATTEMPTS 16
 
-class Rng {
+class TestRng {
 private:
     std::minstd_rand rng;
     std::uniform_real_distribution<> unif;
     std::normal_distribution<> norm;
 
 public:
-    Rng(uint32_t seed) : rng(seed) {}
-    Rng() : Rng(0xdeadbeef) {}
+    TestRng(uint32_t seed) : rng(seed) {}
+    TestRng() : TestRng(0xdeadbeef) {}
 
     real uniform() {
         return unif(rng);

@@ -91,18 +91,18 @@ Moebius hy_move_to(quaternion dir, real dist) {
 
 #include <functional>
 
-quaternion rand_hy_pos(Rng &rng) {
+quaternion rand_hy_pos(TestRng &rng) {
     return q_new(rand_c_normal(rng), exp(rng.normal()), 0);
 }
 
 TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
-    Rng rng;
+    TestRng rng;
 
     SECTION("Distance invariance") {
-        std::vector<std::function<Moebius(Rng &)>> elem = {
-            [](Rng &rng) { return hy_xrotate(2*PI*rng.uniform()); },
-            [](Rng &rng) { return hy_zrotate(2*PI*rng.uniform()); },
-            [](Rng &rng) { return hy_zshift(rng.normal()); }
+        std::vector<std::function<Moebius(TestRng &)>> elem = {
+            [](TestRng &rng) { return hy_xrotate(2*PI*rng.uniform()); },
+            [](TestRng &rng) { return hy_zrotate(2*PI*rng.uniform()); },
+            [](TestRng &rng) { return hy_zshift(rng.normal()); }
         };
 
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {

@@ -42,14 +42,14 @@ complex c_sqrt(complex a) {
 
 #include <iostream>
 
-complex rand_c_normal(Rng &rng) {
+complex rand_c_normal(TestRng &rng) {
     return complex(rng.normal(), rng.normal());
 }
-complex rand_c_unit(Rng &rng) {
+complex rand_c_unit(TestRng &rng) {
     real phi = 2*PI*rng.uniform();
     return complex(cos(phi), sin(phi));
 }
-complex rand_c_nonzero(Rng &rng) {
+complex rand_c_nonzero(TestRng &rng) {
     complex a;
     do {
         a = rand_c_normal(rng);
@@ -58,7 +58,7 @@ complex rand_c_nonzero(Rng &rng) {
 }
 
 TEST_CASE("Complex numbers", "[complex]") {
-    Rng rng(0xbeef);
+    TestRng rng(0xbeef);
 
     SECTION("Constructor") {
         complex a = c_new(0.0, 1.0);

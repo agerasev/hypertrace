@@ -81,7 +81,7 @@ std::ostream &operator<<(std::ostream &s, const Moebius &m) {
 #ifdef UNIT_TEST
 #include <catch.hpp>
 
-Moebius random_moebius(Rng &rng) {
+Moebius random_moebius(TestRng &rng) {
     return mo_new(
         rand_c_normal(rng),
         rand_c_normal(rng),
@@ -91,7 +91,7 @@ Moebius random_moebius(Rng &rng) {
 }
 
 TEST_CASE("Moebius transformation", "[moebius]") {
-    Rng rng;
+    TestRng rng;
 
     SECTION("Chaining") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {

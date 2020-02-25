@@ -41,7 +41,7 @@ std::ostream &operator<<(std::ostream &s, const Moebius &m);
 
 
 #ifdef UNIT_TEST
-Moebius random_moebius(Rng &rng);
+Moebius random_moebius(TestRng &rng);
 #endif // UNIT_TEST
 
 

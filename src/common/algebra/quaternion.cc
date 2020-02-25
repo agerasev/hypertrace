@@ -67,23 +67,23 @@ quaternion cq_div(complex a, quaternion b) {
 #include <utility>
 #include <functional>
 
-quaternion rand_q_normal(Rng &rng) {
+quaternion rand_q_normal(TestRng &rng) {
     return quaternion(rng.normal(), rng.normal(), rng.normal(), rng.normal());
 }
-quaternion rand_q_nonzero(Rng &rng) {
+quaternion rand_q_nonzero(TestRng &rng) {
     quaternion a;
     do {
         a = rand_q_normal(rng);
     } while(q_abs2(a) < EPS);
     return a;
 }
-quaternion rand_q_unit(Rng &rng) {
+quaternion rand_q_unit(TestRng &rng) {
     quaternion q = rand_q_nonzero(rng);
     return q/q_abs(q);
 }
 
 TEST_CASE("Quaternions", "[quaternion]") {
-    Rng rng(0xfeed);
+    TestRng rng(0xfeed);
 
     SECTION("Imaginary units") {
         REQUIRE(q_mul(QI, QI) == ApproxV(-Q1));

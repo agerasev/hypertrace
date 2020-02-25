@@ -8,13 +8,13 @@
 
 #include <geometry/hyperbolic/ray.hh>
 #include <geometry/hyperbolic/plane.hh>
-//#include <geometry/hyperbolic/horosphere.hh>
+#include <geometry/hyperbolic/horosphere.hh>
 
 
 typedef enum {
     OBJECT_NONE = 0,
-    OBJECT_PLANE
-    //OBJECT_HOROSPHERE
+    OBJECT_PLANE,
+    OBJECT_HOROSPHERE
 } ObjectType;
 
 typedef struct {
@@ -22,11 +22,13 @@ typedef struct {
     Moebius map;
     union {
         HyPlane plane;
+        Horosphere horosphere;
     };
 } Object;
 
 typedef union {
     HyPlaneHit plane;
+    HorosphereHit horosphere;
 } ObjectHit;
 
 #ifdef OPENCL_INTEROP
@@ -36,6 +38,7 @@ typedef struct __attribute__ ((packed)) {
     MoebiusPk map;
     union __attribute__ ((packed)) {
         HyPlanePk plane;
+        HorospherePk horosphere;
     };
 } ObjectPk;
 
@@ -52,7 +55,7 @@ bool object_bounce(
     const Object *object, const ObjectHit *cache,
     Rng *rng,
     HyRay *ray,
-    float3 light_in, float3 *light_out, float3 *emission
+    float3 *light, float3 *emission
 );
 
 #ifdef OPENCL_INTEROP

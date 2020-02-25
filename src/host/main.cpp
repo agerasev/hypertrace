@@ -15,6 +15,8 @@
 #include <algebra/quaternion.hh>
 #include <algebra/moebius.hh>
 #include <geometry/hyperbolic.hh>
+#include <geometry/hyperbolic/plane.hh>
+#include <geometry/hyperbolic/horosphere.hh>
 #include <object.hh>
 
 
@@ -80,27 +82,37 @@ int main(int argc, const char *argv[]) {
     }
 
     std::vector<Object> objects = {
-        /*
         Object {
-            OBJECT_HOROSPHERE,
-            mo_identity(),
-            Material {float3(1.0, 0.5, 0.25), 0.1},
+            .type = OBJECT_HOROSPHERE,
+            .map = mo_identity(),
+            .horosphere = Horosphere {
+                HOROSPHERE_TILING_HEXAGONAL,
+                Material {float3(1.0, 0.5, 0.25), 0.1},
+            },
         },
         Object {
-            OBJECT_HOROSPHERE,
-            mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
-            Material {float3(0.25, 0.5, 1.0), 0.1},
+            .type = OBJECT_HOROSPHERE,
+            .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
+            .horosphere = Horosphere {
+                HOROSPHERE_TILING_SQUARE,
+                Material {float3(0.25, 0.5, 1.0), 0.1},
+            },
         },
-        */
         Object {
             .type = OBJECT_PLANE,
             .map = mo_identity(),
-            .plane = {HYPLANE_TILING_PENTAGONAL, Material {float3(0.5, 1.0, 0.25), 0.1}},
+            .plane = HyPlane {
+                HYPLANE_TILING_NONE,
+                Material {float3(0.5, 1.0, 0.25), 0.1}
+            },
         },
         Object {
             .type = OBJECT_PLANE,
             .map = mo_new(C1, 2*CI, C0, C1),
-            .plane = {HYPLANE_TILING_PENTAGONAL, Material {float3(1.0, 1.0, 0.25), 0.1}},
+            .plane = HyPlane {
+                HYPLANE_TILING_PENTAGONAL,
+                Material {float3(1.0, 1.0, 0.25), 0.1}
+            },
         },
     };
     cl::Buffer object_buffer(context, sizeof(ObjectPk)*objects.size());

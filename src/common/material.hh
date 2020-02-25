@@ -13,20 +13,20 @@ bool material_bounce(
     Material *material,
     Rng *rng,
     real3 hit_dir, real3 normal, real3 *bounce_dir,
-    float3 light_in, float3 *light_out, float3 *emission
+    float3 *light, float3 *emission
 );
 
 void specular_bounce(
     float3 color,
     real3 hit_dir, real3 normal, real3 *bounce_dir,
-    float3 light_in, float3 *light_out
+    float3 *light
 );
 
 void lambert_bounce(
     float3 color,
     Rng *rng,
     real3 hit_dir, real3 normal, real3 *bounce_dir,
-    float3 light_in, float3 *light_out
+    float3 *light
 );
 
 #ifdef OPENCL_INTEROP

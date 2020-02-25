@@ -2,11 +2,50 @@
 
 #include <algebra/quaternion.hh>
 
+#include <material.hh>
+#include "ray.hh"
+
+
+typedef enum {
+    HOROSPHERE_TILING_NONE = 0,
+    HOROSPHERE_TILING_SQUARE,
+    HOROSPHERE_TILING_HEXAGONAL,
+} HorosphereTiling;
+
+typedef struct {
+    HorosphereTiling tiling;
+    Material material;
+} Horosphere;
+
+typedef struct {
+    quaternion hit_pos;
+    quaternion hit_dir;
+} HorosphereHit;
+
+#ifdef OPENCL_INTEROP
+typedef struct __attribute__((packed)) {
+    uint tiling;
+    MaterialPk material;
+} HorospherePk;
+#endif // OPENCL_INTEROP
+
 
 bool horosphere_hit(
-    quaternion src_pos, quaternion src_dir,
-    quaternion *hit_pos, quaternion *hit_norm
+    const Horosphere *plane, HorosphereHit *cache,
+    HyRay ray, quaternion *hit_pos
 );
+
+bool horosphere_bounce(
+    const Horosphere *plane, const HorosphereHit *cache,
+    Rng *rng,
+    HyRay *ray,
+    float3 *light, float3 *emission
+);
+
+#ifdef OPENCL_INTEROP
+void pack_horosphere(HorospherePk *dst, const Horosphere *src);
+void unpack_horosphere(Horosphere *dst, const HorospherePk *src);
+#endif // OPENCL_INTEROP
 
 
 #ifdef OPENCL

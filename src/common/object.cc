@@ -9,25 +9,31 @@ real object_hit(
     HyRay r = hyray_map(mo_inverse(object->map), ray);
 
     quaternion hp;
+    bool h = false;
     if (object->type == OBJECT_PLANE) {
-        if (!hyplane_hit(
+        h = hyplane_hit(
             &object->plane, &cache->plane,
             r, &hp
-        )) {
-            return (real)(-1);
-        }
+        );
+    } else if (object->type == OBJECT_HOROSPHERE) {
+        h = horosphere_hit(
+            &object->horosphere, &cache->horosphere,
+            r, &hp
+        );
+    }
+
+    if (h) {
+        return hy_distance(hp, r.start);
     } else {
         return (real)(-1);
     }
-
-    return hy_distance(hp, r.start);
 }
 
 bool object_bounce(
     const Object *object, const ObjectHit *cache,
     Rng *rng,
     HyRay *ray,
-    float3 light_in, float3 *light_out, float3 *emission
+    float3 *light, float3 *emission
 ) {
     bool b = false;
 
@@ -36,12 +42,18 @@ bool object_bounce(
             &object->plane, &cache->plane,
             rng,
             ray,
-            light_in, light_out, emission
+            light, emission
         );
-    } else {
-        b = false;
+    } else if (object->type == OBJECT_HOROSPHERE) {
+        b = horosphere_bounce(
+            &object->horosphere, &cache->horosphere,
+            rng,
+            ray,
+            light, emission
+        );
     }
 
+    *ray = hyray_map(object->map, *ray);
     return b;
 }
 
@@ -55,6 +67,10 @@ void pack_object(ObjectPk *dst, const Object *src) {
         HyPlanePk tmp;
         pack_hyplane(&tmp, &src->plane);
         dst->plane = tmp;
+    } else if (src->type == OBJECT_HOROSPHERE) {
+        HorospherePk tmp;
+        pack_horosphere(&tmp, &src->horosphere);
+        dst->horosphere = tmp;
     }
 }
 
@@ -65,6 +81,9 @@ void unpack_object(Object *dst, const ObjectPk *src) {
     if ((ObjectType)src->type == OBJECT_PLANE) {
         HyPlanePk tmp = src->plane;
         unpack_hyplane(&dst->plane, &tmp);
+    } else if ((ObjectType)src->type == OBJECT_HOROSPHERE) {
+        HorospherePk tmp = src->horosphere;
+        unpack_horosphere(&dst->horosphere, &tmp);
     }
 }
 

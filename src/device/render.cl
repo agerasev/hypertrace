@@ -2,13 +2,13 @@
 #define OPENCL_INTEROP
 
 #include <types.hh>
+#include <random.hh>
 
 #include <algebra/quaternion.hh>
 #include <algebra/moebius.hh>
 #include <geometry/hyperbolic.hh>
+#include <geometry/hyperbolic/ray.hh>
 
-#include <random.hh>
-#include <ray.hh>
 #include <object.hh>
 
 
@@ -66,12 +66,8 @@ __kernel void render(
 		if (mi >= 0) {
 			HyRay new_ray;
 			Object obj = unpack_copy_object(objects[mi]);
-			float3 new_light, emission;
-			bool b = object_bounce(&obj, &mcache, &rng, &new_ray, light, &new_light, &emission);
-			color += emission*light;
-			if (b) {
-				ray = new_ray;
-				light = new_light;
+			if (!object_bounce(&obj, &mcache, &rng, &ray, &light, &color)) {
+				break;
 			}
 		} else {
 			color += (float3)(1.0f)*light;

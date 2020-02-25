@@ -8,7 +8,6 @@
 
 typedef enum {
     HYPLANE_TILING_NONE = 0,
-    HYPLANE_TILING_UNIFORM,
     HYPLANE_TILING_PENTAGONAL,
 } HyPlaneTiling;
 
@@ -39,13 +38,14 @@ bool hyplane_bounce(
     const HyPlane *plane, const HyPlaneHit *cache,
     Rng *rng,
     HyRay *ray,
-    float3 light_in, float3 *light_out, float3 *emission
+    float3 *light, float3 *emission
 );
 
 #ifdef OPENCL_INTEROP
 void pack_hyplane(HyPlanePk *dst, const HyPlane *src);
 void unpack_hyplane(HyPlane *dst, const HyPlanePk *src);
 #endif // OPENCL_INTEROP
+
 
 #ifdef OPENCL
 #include "plane.cc"

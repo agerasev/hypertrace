@@ -5,8 +5,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14 -Wall -Wextra")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -Wextra")
 
 set(SRC
-    "src/common/vectype.hpp"
-    "src/common/vectype.cpp"
+    "src/host/vectype.hpp"
+    "src/host/vectype.cpp"
     "src/common/types.hh"
     "src/common/types.cc"
     "src/common/algebra/real.hh"
@@ -24,8 +24,8 @@ set(SRC
     "src/common/geometry/hyperbolic/ray.cc"
     "src/common/geometry/hyperbolic/plane.hh"
     "src/common/geometry/hyperbolic/plane.cc"
-#    "src/common/geometry/hyperbolic/horosphere.hh"
-#    "src/common/geometry/hyperbolic/horosphere.cc"
+    "src/common/geometry/hyperbolic/horosphere.hh"
+    "src/common/geometry/hyperbolic/horosphere.cc"
     "src/common/random.hh"
     "src/common/random.cc"
     "src/common/material.hh"

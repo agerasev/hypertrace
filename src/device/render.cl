@@ -37,39 +37,44 @@ __kernel void render(
 	Moebius u = mo_unpack(view);
 	quaternion p = QJ;
 
-	Ray ray;
+	HyRay ray;
 	ray.direction = normalize(mo_deriv(u, p, v));
 	ray.start = mo_apply(u, p);
-	ray.intensity = (float3)(1.0f);
+
+	float3 light = (float3)(1.0f);
 
 	int prev = -1;
 	for (int k = 0; k < 3; ++k) {
 		int mi = -1;
 		float ml = -1.0f;
-		HitInfo minfo;
+		ObjectHit mcache;
 		for (int i = 0; i < object_count; ++i) {
 			if (prev == i) {
 				continue;
 			}
 			Object obj = unpack_copy_object(objects[i]);
-			HitInfo info;
-			real l = object_intersect(&rng, &obj, &info, &ray);
-			if (l > 0.0f && (l < ml || mi < 0)) {
+			ObjectHit cache;
+			real l = object_hit(&obj, &cache, &rng, ray);
+			if (l > (real)0 && (l < ml || mi < 0)) {
 				mi = i;
 				ml = l;
-				minfo = info;
+				mcache = cache;
 			}
 		}
 
 		prev = mi;
 		if (mi >= 0) {
-			Ray new_ray;
+			HyRay new_ray;
 			Object obj = unpack_copy_object(objects[mi]);
-			if (object_interact(&rng, &obj, &minfo, &ray, &new_ray)) {
+			float3 new_light, emission;
+			bool b = object_bounce(&obj, &mcache, &rng, &new_ray, light, &new_light, &emission);
+			color += emission*light;
+			if (b) {
 				ray = new_ray;
+				light = new_light;
 			}
 		} else {
-			color += (float3)(1.0f)*ray.intensity;
+			color += (float3)(1.0f)*light;
 			break;
 		}
 	}

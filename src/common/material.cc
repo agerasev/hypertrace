@@ -3,30 +3,61 @@
 #include <algebra/rotation.hh>
 
 
-void specular_interact(
-    float3 color,
-    const Ray *ray, Ray *new_ray,
-    quaternion pos, quaternion dir, quaternion norm
+bool material_bounce(
+    Material *material,
+    Rng *rng,
+    real3 hit_dir, real3 normal, real3 *bounce_dir,
+    float3 light_in, float3 *light_out, float3 *emission
 ) {
-    new_ray->start = pos;
-    new_ray->direction = dir - ((real)2*dot(dir, norm))*norm;
-    new_ray->intensity = ray->intensity*color;
-}
-
-void lambert_interact(
-    Rng *rng, float3 color,
-    const Ray *ray, Ray *new_ray,
-    quaternion pos, quaternion dir, quaternion norm
-) {
-    new_ray->start = pos;
-
-    if (dot(norm, dir) > 0) {
-        norm = -norm;
+    if (rand_uniform(rng) < material->gloss) {
+        specular_bounce(
+            make_float3(0.0f),
+            hit_dir, normal, bounce_dir,
+            light_in, light_out
+        );
+    } else {
+        lambert_bounce(
+            material->diffuse_color,
+            rng,
+            hit_dir, normal, bounce_dir,
+            light_in, light_out
+        );
     }
-
-    real3 rand = rand_hemisphere_cosine(rng);
-    rotation3 rot = rot3_look_at(norm.xyz);
-    new_ray->direction = q_new(rot3_apply(rot, rand), (real)0);
-    
-    new_ray->intensity = ray->intensity*color;
+    return true;
 }
+
+void specular_bounce(
+    float3 color,
+    real3 hit_dir, real3 normal, real3 *bounce_dir,
+    float3 light_in, float3 *light_out
+) {
+    *bounce_dir = hit_dir - (2*dot(hit_dir, normal))*normal;
+    *light_out = light_in;
+}
+
+void lambert_bounce(
+    float3 color,
+    Rng *rng,
+    real3 hit_dir, real3 normal, real3 *bounce_dir,
+    float3 light_in, float3 *light_out
+) {
+    if (dot(normal, hit_dir) > 0) {
+        normal = -normal;
+    }
+    real3 rand = rand_hemisphere_cosine(rng);
+    rotation3 rot = rot3_look_at(normal);
+    *bounce_dir = rot3_apply(rot, rand);
+    
+    *light_out = color*light_in;
+}
+
+#ifdef OPENCL_INTEROP
+void pack_material(MaterialPk *dst, const Material *src) {
+    dst->diffuse_color = pack_float3(src->diffuse_color);
+    dst->gloss = src->gloss;
+}
+void unpack_material(Material *dst, const MaterialPk *src) {
+    dst->diffuse_color = unpack_float3(src->diffuse_color);
+    dst->gloss = src->gloss;
+}
+#endif // OPENCL_INTEROP

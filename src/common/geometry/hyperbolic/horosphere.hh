@@ -3,7 +3,7 @@
 #include <algebra/quaternion.hh>
 
 
-bool horosphere_intersect(
+bool horosphere_hit(
     quaternion src_pos, quaternion src_dir,
     quaternion *hit_pos, quaternion *hit_norm
 );

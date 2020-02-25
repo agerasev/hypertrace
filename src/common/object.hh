@@ -1,34 +1,58 @@
 #pragma once
 
 #include <types.hh>
-#include <ray.hh>
 #include <random.hh>
 
 #include <algebra/moebius.hh>
 #include <geometry/hyperbolic.hh>
 
+#include <geometry/hyperbolic/ray.hh>
 #include <geometry/hyperbolic/plane.hh>
-#include <geometry/hyperbolic/horosphere.hh>
-#include <material.hh>
+//#include <geometry/hyperbolic/horosphere.hh>
 
 
-typedef struct Object Object;
-typedef struct HitInfo HitInfo;
+typedef enum {
+    OBJECT_NONE = 0,
+    OBJECT_PLANE
+    //OBJECT_HOROSPHERE
+} ObjectType;
+
+typedef struct {
+    ObjectType type;
+    Moebius map;
+    union {
+        HyPlane plane;
+    };
+} Object;
+
+typedef union {
+    HyPlaneHit plane;
+} ObjectHit;
 
 #ifdef OPENCL_INTEROP
-typedef struct ObjectPk ObjectPk;
+
+typedef struct __attribute__ ((packed)) {
+    uint_pk type;
+    MoebiusPk map;
+    union __attribute__ ((packed)) {
+        HyPlanePk plane;
+    };
+} ObjectPk;
+
 #endif // OPENCL_INTEROP
 
 
-real object_intersect(
+real object_hit(
+    const Object *object, ObjectHit *cache,
     Rng *rng,
-    const Object *obj, HitInfo *info,
-    const Ray *ray
+    HyRay ray
 );
-bool object_interact(
+
+bool object_bounce(
+    const Object *object, const ObjectHit *cache,
     Rng *rng,
-    const Object *obj, const HitInfo *info,
-    const Ray *ray, Ray *new_ray
+    HyRay *ray,
+    float3 light_in, float3 *light_out, float3 *emission
 );
 
 #ifdef OPENCL_INTEROP
@@ -36,38 +60,6 @@ void pack_object(ObjectPk *dst, const Object *src);
 void unpack_object(Object *dst, const ObjectPk *src);
 ObjectPk pack_copy_object(Object src);
 Object unpack_copy_object(ObjectPk src);
-#endif // OPENCL_INTEROP
-
-
-typedef enum ObjectType {
-    OBJECT_NONE = 0,
-    OBJECT_PLANE,
-    OBJECT_HOROSPHERE
-} ObjectType;
-
-
-struct Object {
-    ObjectType type;
-    Moebius map;
-    float3 color;
-    float gloss;
-};
-
-struct HitInfo {
-    quaternion pos;
-    quaternion norm;
-    quaternion local_pos;
-};
-
-#ifdef OPENCL_INTEROP
-
-struct __attribute__ ((packed)) ObjectPk {
-    uint_pk type;
-    MoebiusPk map;
-    float3_pk color;
-    float_pk gloss;
-};
-
 #endif // OPENCL_INTEROP
 
 

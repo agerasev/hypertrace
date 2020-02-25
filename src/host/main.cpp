@@ -80,22 +80,27 @@ int main(int argc, const char *argv[]) {
     }
 
     std::vector<Object> objects = {
-        {OBJECT_HOROSPHERE,
+        /*
+        Object {
+            OBJECT_HOROSPHERE,
             mo_identity(),
-            float3(0.8, 0.4, 0.2), 0.1
+            Material {float3(1.0, 0.5, 0.25), 0.1},
         },
-        {OBJECT_HOROSPHERE,
+        Object {
+            OBJECT_HOROSPHERE,
             mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
-            float3(0.2, 0.4, 0.8), 0.1
+            Material {float3(0.25, 0.5, 1.0), 0.1},
         },
-        {OBJECT_PLANE,
-            mo_identity(),
-            float3(0.4, 0.8, 0.2), 0.1
+        */
+        Object {
+            .type = OBJECT_PLANE,
+            .map = mo_identity(),
+            .plane = {HYPLANE_TILING_PENTAGONAL, Material {float3(0.5, 1.0, 0.25), 0.1}},
         },
-        {OBJECT_PLANE,
-            mo_new(C1, 2*CI, C0, C1),
-            //hy_zshift(1.5),
-            float3(0.8, 0.8, 0.2), 0.1
+        Object {
+            .type = OBJECT_PLANE,
+            .map = mo_new(C1, 2*CI, C0, C1),
+            .plane = {HYPLANE_TILING_PENTAGONAL, Material {float3(1.0, 1.0, 0.25), 0.1}},
         },
     };
     cl::Buffer object_buffer(context, sizeof(ObjectPk)*objects.size());

@@ -1,24 +1,45 @@
 #pragma once
 
-#include <ray.hh>
+#include <algebra/real.hh>
 #include <random.hh>
-#include <algebra/quaternion.hh>
-#include <geometry/hyperbolic.hh>
-
-#define DEF_MATERIAL_INTERACT()
 
 
-void specular_interact(
+typedef struct Material {
+    float3 diffuse_color;
+    float gloss;
+} Material;
+
+bool material_bounce(
+    Material *material,
+    Rng *rng,
+    real3 hit_dir, real3 normal, real3 *bounce_dir,
+    float3 light_in, float3 *light_out, float3 *emission
+);
+
+void specular_bounce(
     float3 color,
-    const Ray *ray, Ray *new_ray,
-    quaternion pos, quaternion dir, quaternion norm
+    real3 hit_dir, real3 normal, real3 *bounce_dir,
+    float3 light_in, float3 *light_out
 );
 
-void lambert_interact(
-    Rng *rng, float3 color,
-    const Ray *ray, Ray *new_ray,
-    quaternion pos, quaternion dir, quaternion norm
+void lambert_bounce(
+    float3 color,
+    Rng *rng,
+    real3 hit_dir, real3 normal, real3 *bounce_dir,
+    float3 light_in, float3 *light_out
 );
+
+#ifdef OPENCL_INTEROP
+typedef struct __attribute__ ((packed)) MaterialPk {
+    float3_pk diffuse_color;
+    float_pk gloss;
+} MaterialPk;
+
+void pack_material(MaterialPk *dst, const Material *src);
+void unpack_material(Material *dst, const MaterialPk *src);
+#endif // OPENCL_INTEROP
+
+
 
 #ifdef OPENCL
 #include "material.cc"

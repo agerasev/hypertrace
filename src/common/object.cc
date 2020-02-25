@@ -1,7 +1,7 @@
 #include "object.hh"
 
 
-real object_hit(
+real object_intersect(
     Rng *rng,
     const Object *obj, HitInfo *info,
     const Ray *ray
@@ -14,11 +14,11 @@ real object_hit(
 
     quaternion hp, hn;
     if (obj->type == OBJECT_PLANE) {
-        if (!plane_hit(rp, rd, &hp, &hn)) {
+        if (!plane_intersect(rp, rd, &hp, &hn)) {
             return (real)(-1);
         }
     } else if (obj->type == OBJECT_HOROSPHERE) {
-        if (!horosphere_hit(rp, rd, &hp, &hn)) {
+        if (!horosphere_intersect(rp, rd, &hp, &hn)) {
             return (real)(-1);
         }
     } else {
@@ -33,7 +33,7 @@ real object_hit(
     return dist;
 }
 
-bool object_emit(
+bool object_interact(
     Rng *rng,
     const Object *obj, const HitInfo *info,
     const Ray *ray, Ray *new_ray
@@ -138,13 +138,13 @@ bool object_emit(
 
     quaternion hit_dir = hy_dir_at(ray->start, ray->direction, info->pos);
     if (rand_uniform(rng) < obj->gloss) {
-        specular_emit(
+        specular_interact(
             make_float3(1.0f),
             ray, new_ray,
             info->pos, hit_dir, info->norm
         );
     } else {
-        lambert_emit(
+        lambert_interact(
             rng, color,
             ray, new_ray,
             info->pos, hit_dir, info->norm

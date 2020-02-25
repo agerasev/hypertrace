@@ -7,7 +7,8 @@
 #include <algebra/moebius.hh>
 #include <geometry/hyperbolic.hh>
 
-#include <shape/hyperbolic.hh>
+#include <geometry/hyperbolic/plane.hh>
+#include <geometry/hyperbolic/horosphere.hh>
 #include <material.hh>
 
 
@@ -19,12 +20,12 @@ typedef struct ObjectPk ObjectPk;
 #endif // OPENCL_INTEROP
 
 
-real object_hit(
+real object_intersect(
     Rng *rng,
     const Object *obj, HitInfo *info,
     const Ray *ray
 );
-bool object_emit(
+bool object_interact(
     Rng *rng,
     const Object *obj, const HitInfo *info,
     const Ray *ray, Ray *new_ray

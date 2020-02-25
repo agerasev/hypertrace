@@ -1,7 +1,9 @@
 #include "material.hh"
 
+#include <algebra/rotation.hh>
 
-void specular_emit(
+
+void specular_interact(
     float3 color,
     const Ray *ray, Ray *new_ray,
     quaternion pos, quaternion dir, quaternion norm
@@ -11,7 +13,7 @@ void specular_emit(
     new_ray->intensity = ray->intensity*color;
 }
 
-void lambert_emit(
+void lambert_interact(
     Rng *rng, float3 color,
     const Ray *ray, Ray *new_ray,
     quaternion pos, quaternion dir, quaternion norm
@@ -22,21 +24,9 @@ void lambert_emit(
         norm = -norm;
     }
 
-    real3 r = rand_hemisphere_cosine(rng);
-    quaternion d;
-
-    quaternion a = cross(QJ, norm);
-    real al = length(a);
-    if (al > EPS) {
-        a /= al;
-        real theta = atan2(al, norm.z)/(real)2;
-        quaternion q = q_new(cos(theta), sin(theta)*a.xyz);
-        d = q_new(q_div(q_mul(q, q_new(R0, r)), q).yzw, R0);
-    } else {
-        d = q_new(norm.z < 0 ? -r : r, R0);
-    }
-
-    new_ray->direction = d;
+    real3 rand = rand_hemisphere_cosine(rng);
+    rotation3 rot = rot3_look_at(norm.xyz);
+    new_ray->direction = q_new(rot3_apply(rot, rand), (real)0);
     
     new_ray->intensity = ray->intensity*color;
 }

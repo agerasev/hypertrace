@@ -26,6 +26,7 @@ Moebius hy_look_at(quaternion pos);
 // Translates point `pos` to the origin preserving orientation
 // relative to the line that connects `pos` to the origin.
 Moebius hy_move_at(quaternion pos);
+Moebius hy_move_to(quaternion dir, real dist);
 
 
 #ifdef OPENCL

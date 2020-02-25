@@ -262,6 +262,11 @@ vectype<T, N> ceil(vectype<T, N> v) {
     return v.map([](T x){ return ceil(x); });
 }
 
+template <typename T, int N>
+vectype<T, N> fabs(vectype<T, N> v) {
+    return v.map([](T x){ return fabs(x); });
+}
+
 
 #ifdef UNIT_TEST
 #include <catch.hpp>

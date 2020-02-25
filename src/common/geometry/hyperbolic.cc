@@ -79,6 +79,12 @@ Moebius hy_move_at(quaternion pos) {
     return mo_chain(mo_inverse(a), mo_chain(b, a));
 }
 
+Moebius hy_move_to(quaternion dir, real dist) {
+    Moebius a = hy_look_to(dir);
+    Moebius b = hy_zshift(-dist);
+    return mo_chain(mo_inverse(a), mo_chain(b, a));
+}
+
 
 #ifdef UNIT_TEST
 #include <catch.hpp>

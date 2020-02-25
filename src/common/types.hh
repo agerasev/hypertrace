@@ -90,6 +90,14 @@ typedef vectype<double, 4> double4;
 #define make_double3 double3
 #define make_double4 double4
 
+#define convert_float2(x) (x).cast<float>()
+#define convert_float3(x) (x).cast<float>()
+#define convert_float4(x) (x).cast<float>()
+
+#define convert_double2(x) (x).cast<double>()
+#define convert_double3(x) (x).cast<double>()
+#define convert_double4(x) (x).cast<double>()
+
 #ifdef OPENCL_INTEROP
 
 #include <CL/cl.h>

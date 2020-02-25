@@ -84,7 +84,6 @@ int main(int argc, const char *argv[]) {
             mo_identity(),
             float3(0.8, 0.4, 0.2), 0.1
         },
-        /*
         {OBJECT_HOROSPHERE,
             mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
             float3(0.2, 0.4, 0.8), 0.1
@@ -95,9 +94,9 @@ int main(int argc, const char *argv[]) {
         },
         {OBJECT_PLANE,
             mo_new(C1, 2*CI, C0, C1),
+            //hy_zshift(1.5),
             float3(0.8, 0.8, 0.2), 0.1
         },
-        */
     };
     cl::Buffer object_buffer(context, sizeof(ObjectPk)*objects.size());
     {

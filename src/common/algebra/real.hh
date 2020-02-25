@@ -12,6 +12,9 @@ typedef float4 real4;
 #define make_real2 make_float2
 #define make_real3 make_float3
 #define make_real4 make_float4
+#define convert_real2 convert_float2
+#define convert_real3 convert_float3
+#define convert_real4 convert_float4
 
 #ifdef OPENCL_INTEROP
 typedef float_pk  real_pk;
@@ -41,7 +44,9 @@ typedef double4 real4;
 #define make_real2 make_double2
 #define make_real3 make_double3
 #define make_real4 make_double4
-
+#define convert_real2 convert_double2
+#define convert_real3 convert_double3
+#define convert_real4 convert_double4
 
 #ifdef OPENCL_INTEROP
 typedef float_pk  real_pk;

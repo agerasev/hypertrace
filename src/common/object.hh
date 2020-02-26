@@ -17,6 +17,11 @@ typedef enum {
     OBJECT_HOROSPHERE
 } ObjectType;
 
+// FIXME:
+// Bug in union copying on Nvidia GPUs.
+// So don't copy `Object` using `=` or passing by value or returning it.
+// A special function that checks `type` and copies appropriate union member
+// should be implemented instead.
 typedef struct {
     ObjectType type;
     Moebius map;
@@ -61,8 +66,6 @@ bool object_bounce(
 #ifdef OPENCL_INTEROP
 void pack_object(ObjectPk *dst, const Object *src);
 void unpack_object(Object *dst, const ObjectPk *src);
-ObjectPk pack_copy_object(Object src);
-Object unpack_copy_object(ObjectPk src);
 #endif // OPENCL_INTEROP
 
 

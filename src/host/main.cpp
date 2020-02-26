@@ -86,32 +86,36 @@ int main(int argc, const char *argv[]) {
             .type = OBJECT_HOROSPHERE,
             .map = mo_identity(),
             .horosphere = Horosphere {
-                HOROSPHERE_TILING_HEXAGONAL,
-                Material {float3(1.0, 0.5, 0.25), 0.1},
+                .tiling = HOROSPHERE_TILING_HEXAGONAL,
+                .material = Material {float3(1.0, 0.5, 0.25), 0.1},
+                .size = 0.25, .border = 0.02
             },
         },
         Object {
             .type = OBJECT_HOROSPHERE,
             .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
             .horosphere = Horosphere {
-                HOROSPHERE_TILING_SQUARE,
-                Material {float3(0.25, 0.5, 1.0), 0.1},
+                .tiling = HOROSPHERE_TILING_SQUARE,
+                .material = Material {float3(0.25, 0.5, 1.0), 0.1},
+                .size = 0.25, .border = 0.02
             },
         },
         Object {
             .type = OBJECT_PLANE,
             .map = mo_identity(),
             .plane = HyPlane {
-                HYPLANE_TILING_NONE,
-                Material {float3(0.5, 1.0, 0.25), 0.1}
+                .tiling = HYPLANE_TILING_NONE,
+                .material = Material {float3(0.5, 1.0, 0.25), 0.1},
+                .border = 0.02
             },
         },
         Object {
             .type = OBJECT_PLANE,
             .map = mo_new(C1, 2*CI, C0, C1),
             .plane = HyPlane {
-                HYPLANE_TILING_PENTAGONAL,
-                Material {float3(1.0, 1.0, 0.25), 0.1}
+                .tiling = HYPLANE_TILING_PENTAGONAL,
+                .material = Material {float3(1.0, 1.0, 0.25), 0.1},
+                .border = 0.02
             },
         },
     };

@@ -29,7 +29,7 @@ struct _packed_ _vecbase<T, 2> {
         T s[2];
         struct { T x, y; };
     };
-    _vecbase() {};
+    _vecbase() = default;
     _vecbase(T x, T y) : x(x), y(y) {}
     _vecbase(T c) : _vecbase(c, c) {}
     _vecbase(vectype<T, 2> v) : _vecbase(v.x, v.y) {}
@@ -42,7 +42,7 @@ struct _packed_ _vecbase<T, 3> {
         struct _packed_ { vectype<T, 2> xy; T __0_z; };
         struct _packed_ { T __1_x; vectype<T, 2> yz; };
     };
-    _vecbase() {};
+    _vecbase() = default;
     _vecbase(T x, T y, T z) : x(x), y(y), z(z) {}
     _vecbase(T c) : _vecbase(c, c, c) {}
     _vecbase(vectype<T, 2> xy, T z) : _vecbase(xy.x, xy.y, z) {}
@@ -59,7 +59,7 @@ struct _packed_ _vecbase<T, 4> {
         struct _packed_ { vectype<T, 3> xyz; T __1_w; };
         struct _packed_ { T __2_x; vectype<T, 3> yzw; };
     };
-    _vecbase() {};
+    _vecbase() = default;
     _vecbase(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
     _vecbase(T c) : _vecbase(c, c, c, c) {}
     _vecbase(vectype<T, 2> xy, T z, T w) : _vecbase(xy.x, xy.y, z, w) {}
@@ -75,6 +75,7 @@ struct _packed_ _vecbase<T, 4> {
 template <typename T, int N>
 class _packed_ vectype : public _vecbase<T, N> {
     public:
+    vectype() = default;
     template <typename ... Args>
     vectype(Args ...args) : _vecbase<T, N>(args...) {}
 

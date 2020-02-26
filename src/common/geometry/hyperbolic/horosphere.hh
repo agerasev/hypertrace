@@ -15,6 +15,7 @@ typedef enum {
 typedef struct {
     HorosphereTiling tiling;
     Material material;
+    real size, border;
 } Horosphere;
 
 typedef struct {
@@ -24,8 +25,9 @@ typedef struct {
 
 #ifdef OPENCL_INTEROP
 typedef struct __attribute__((packed)) {
-    uint tiling;
+    uint_pk tiling;
     MaterialPk material;
+    real_pk size, border;
 } HorospherePk;
 #endif // OPENCL_INTEROP
 

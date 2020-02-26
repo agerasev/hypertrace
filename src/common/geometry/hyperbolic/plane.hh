@@ -14,6 +14,7 @@ typedef enum {
 typedef struct {
     HyPlaneTiling tiling;
     Material material;
+    real border;
 } HyPlane;
 
 typedef struct {
@@ -23,8 +24,9 @@ typedef struct {
 
 #ifdef OPENCL_INTEROP
 typedef struct __attribute__((packed)) {
-    uint tiling;
+    uint_pk tiling;
     MaterialPk material;
+    real_pk border;
 } HyPlanePk;
 #endif // OPENCL_INTEROP
 

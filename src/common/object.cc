@@ -87,15 +87,4 @@ void unpack_object(Object *dst, const ObjectPk *src) {
     }
 }
 
-ObjectPk pack_copy_object(Object src) {
-    ObjectPk dst;
-    pack_object(&dst, &src);
-    return dst;
-}
-Object unpack_copy_object(ObjectPk src) {
-    Object dst = {};
-    unpack_object(&dst, &src);
-    return dst;
-}
-
 #endif // OPENCL_INTEROP

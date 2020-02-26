@@ -11,6 +11,8 @@
 
 #include <object.hh>
 
+#include <number.cl>
+
 
 __kernel void render(
 	__global float *screen,
@@ -25,6 +27,16 @@ __kernel void render(
 	int idx = get_global_id(0);
 	Rng rng;
 	rand_init(&rng, seeds[idx]);
+
+	/*
+	uint num = sizeof(ObjectPk);
+	int2 pp = (int2)(idx % width, idx / width);
+	int ts = 4;
+	if (get_number_pixel(num, pp - (int2)(width - 1 - ts, 6*ts), ts)) {
+		vstore4((uchar4)((uchar3)(0), 0xff), idx, image);
+		return;
+	}
+	*/
 
 	quaternion v = q_new(
 		((real)(idx % width) - 0.5f*width + rand_uniform(&rng))/height,
@@ -52,7 +64,10 @@ __kernel void render(
 			if (prev == i) {
 				continue;
 			}
-			Object obj = unpack_copy_object(objects[i]);
+			ObjectPk obj_pk = objects[i];
+			Object obj;
+			unpack_object(&obj, &obj_pk);
+			
 			ObjectHit cache;
 			real l = object_hit(&obj, &cache, &rng, ray);
 			if (l > (real)0 && (l < ml || mi < 0)) {
@@ -65,7 +80,9 @@ __kernel void render(
 		prev = mi;
 		if (mi >= 0) {
 			HyRay new_ray;
-			Object obj = unpack_copy_object(objects[mi]);
+			ObjectPk obj_pk = objects[mi];
+			Object obj;
+			unpack_object(&obj, &obj_pk);
 			if (!object_bounce(&obj, &mcache, &rng, &ray, &light, &color)) {
 				break;
 			}

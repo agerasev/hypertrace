@@ -107,7 +107,7 @@ bool hyplane_bounce(
             }
             b = bb;
         }
-        const real br = 0.03f;
+        const real br = plane->border;
         int bh = 0;
         for (int i = 0; i < 5; ++i) {
             real o = 2*PI*i/5;
@@ -148,16 +148,20 @@ bool hyplane_bounce(
 
 #ifdef OPENCL_INTEROP
 void pack_hyplane(HyPlanePk *dst, const HyPlane *src) {
+    dst->tiling = (uint)src->tiling;
+
     MaterialPk tmp_mat;
     pack_material(&tmp_mat, &src->material);
     dst->material = tmp_mat;
 
-    dst->tiling = (uint)src->tiling;
+    dst->border = (real_pk)src->border;
 }
 void unpack_hyplane(HyPlane *dst, const HyPlanePk *src) {
+    dst->tiling = (HyPlaneTiling)src->tiling;
+
     MaterialPk tmp_mat = src->material;
     unpack_material(&dst->material, &tmp_mat);
 
-    dst->tiling = (HyPlaneTiling)src->tiling;
+    dst->border = (real)src->border;
 }
 #endif // OPENCL_INTEROP

@@ -63,30 +63,33 @@ Moebius mo_chain(Moebius k, Moebius l) {
     );
 }
 
-void mo_eigen(Moebius m, complex *l, Moebius *v) {
+void mo_eigen(Moebius m, Moebius *l, Moebius *v) {
     if (c_abs2(m.b) < EPS && c_abs2(m.c) < EPS) {
-        l[0] = m.a;
-        l[1] = m.d;
-        *v = mo_new(
-            C1, C0,
-            C0, C1
-        );
+        *l = mo_new(m.a, C0, C0, m.d);
+        *v = mo_new(C1, C0, C0, C1);
     } else {
         complex ad = (m.a + m.d)/2;
-        complex D = c_sqrt(c_mul(ad, ad) - mo_det(m));
-        l[0] = ad + D;
-        l[1] = ad - D;
-
-        if (c_abs2(m.c) > EPS) {
-            *v = mo_new(
-                l[0] - m.d, l[1] - m.d,
-                m.c, m.c
-            );
+        complex D = c_mul(ad, ad) -
+#ifdef MOEBIUS_DENORMALIZED
+            mo_det(m);
+#else // MOEBIUS_DENORMALIZED
+            C1;
+#endif // MOEBIUS_DENORMALIZED
+        if (c_abs2(D) > EPS) {
+            D = c_sqrt(D);
+            *l = mo_new(ad + D, C0, C0, ad - D);
+            if (c_abs2(m.c) > EPS) {
+                *v = mo_new(l->a - m.d, l->d - m.d, m.c, m.c);
+            } else {
+                *v = mo_new(m.b, m.b, l->a - m.a, l->d - m.a);
+            }
         } else {
-            *v = mo_new(
-                m.b, m.b,
-                l[0] - m.a, l[1] - m.a
-            );
+            *l = mo_new(ad, C1, C0, ad);
+            if (c_abs2(m.c) > EPS) {
+                *v = mo_new(l->a - m.d, m.c, m.c, m.d - l->d);
+            } else {
+                *v = mo_new(m.b, m.a - l->d, l->a - m.a, m.b);
+            }
         }
 #ifndef MOEBIUS_DENORMALIZED
         *v = mo_normalize(*v);
@@ -95,12 +98,15 @@ void mo_eigen(Moebius m, complex *l, Moebius *v) {
 }
 
 Moebius mo_pow(Moebius m, real p) {
-    complex l[2];
-    Moebius v;
-    mo_eigen(m, l, &v);
-    return mo_chain(mo_chain(v, mo_new(
-        c_powr(l[0], p), C0, C0, c_powr(l[1], p)
-    )), mo_inverse(v));
+    Moebius j, v;
+    mo_eigen(m, &j, &v);
+    Moebius k;
+    if (c_abs2(j.b) < EPS) {
+        k = mo_new(c_powr(j.a, p), C0, C0, c_powr(j.d, p));
+    } else {
+        k = mo_new(c_powr(j.a, p), p*c_powr(j.a, p - 1), C0, c_powr(j.d, p));
+    }
+    return mo_chain(mo_chain(v, k), mo_inverse(v));
 }
 
 
@@ -180,21 +186,32 @@ TEST_CASE("Moebius transformation", "[moebius]") {
     SECTION("Eigenvalues and eigenvectors") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             Moebius m = random_moebius(rng);
-            complex l[2];
-            Moebius v;
-            mo_eigen(m, l, &v);
+            Moebius l, v;
+            mo_eigen(m, &l, &v);
 
-            REQUIRE(c_mul(m.a, v.a) + c_mul(m.b, v.c) == ApproxV(c_mul(l[0], v.a)));
-            REQUIRE(c_mul(m.c, v.a) + c_mul(m.d, v.c) == ApproxV(c_mul(l[0], v.c)));
-            REQUIRE(c_mul(m.a, v.b) + c_mul(m.b, v.d) == ApproxV(c_mul(l[1], v.b)));
-            REQUIRE(c_mul(m.c, v.b) + c_mul(m.d, v.d) == ApproxV(c_mul(l[1], v.d)));
+            REQUIRE(c_mul(m.a, v.a) + c_mul(m.b, v.c) == ApproxV(c_mul(l.a, v.a)));
+            REQUIRE(c_mul(m.c, v.a) + c_mul(m.d, v.c) == ApproxV(c_mul(l.a, v.c)));
+            REQUIRE(c_mul(m.a, v.b) + c_mul(m.b, v.d) == ApproxV(c_mul(l.d, v.b)));
+            REQUIRE(c_mul(m.c, v.b) + c_mul(m.d, v.d) == ApproxV(c_mul(l.d, v.d)));
 
-            Moebius o = mo_chain(mo_chain(v, mo_new(l[0], C0, C0, l[1])), mo_inverse(v));
+            Moebius o = mo_chain(mo_chain(v, l), mo_inverse(v));
             REQUIRE(o.a == ApproxV(m.a));
             REQUIRE(o.b == ApproxV(m.b));
             REQUIRE(o.c == ApproxV(m.c));
             REQUIRE(o.d == ApproxV(m.d));
         }
+    }
+
+    SECTION("Non-diagonalizable matrix") {
+        Moebius m = mo_new(C1, C1, C0, C1);
+        Moebius l, v;
+        mo_eigen(m, &l, &v);
+
+        Moebius o = mo_chain(mo_chain(v, l), mo_inverse(v));
+        REQUIRE(o.a == ApproxV(m.a));
+        REQUIRE(o.b == ApproxV(m.b));
+        REQUIRE(o.c == ApproxV(m.c));
+        REQUIRE(o.d == ApproxV(m.d));
     }
 
     SECTION("Power") {
@@ -213,6 +230,30 @@ TEST_CASE("Moebius transformation", "[moebius]") {
             REQUIRE(o.b == ApproxV(m.b));
             REQUIRE(o.c == ApproxV(m.c));
             REQUIRE(o.d == ApproxV(m.d));
+        }
+    }
+
+    SECTION("Non-diagonalizable power") {
+        Moebius m = mo_new(C1, C1, C0, C1);
+
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            int p = (int)floor(8*rng.uniform()) + 2;
+            int q = (int)floor(8*rng.uniform()) + 2;
+
+            Moebius n = mo_identity();
+            for (int i = 0; i < p; ++i) {
+                n = mo_chain(n, m);
+            }
+            Moebius l = mo_pow(m, real(p)/q);
+            Moebius o = mo_identity();
+            for (int i = 0; i < q; ++i) {
+                o = mo_chain(o, l);
+            }
+
+            REQUIRE(o.a == ApproxV(n.a));
+            REQUIRE(o.b == ApproxV(n.b));
+            REQUIRE(o.c == ApproxV(n.c));
+            REQUIRE(o.d == ApproxV(n.d));
         }
     }
 };

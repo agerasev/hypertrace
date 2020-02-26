@@ -29,7 +29,7 @@ Moebius mo_inverse(Moebius m);
 
 Moebius mo_chain(Moebius k, Moebius l);
 
-void mo_eigen(Moebius m, complex *values, Moebius *vectors);
+void mo_eigen(Moebius m, Moebius *jordan, Moebius *vectors);
 Moebius mo_pow(Moebius m, real p);
 
 

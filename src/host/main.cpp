@@ -144,7 +144,7 @@ int main(int argc, const char *argv[]) {
                 width, height,
                 monte_carlo_counter,
                 seeds,
-                mo_pack(viewer.controller().map()),
+                mo_pack(viewer.controller().map()), mo_pack(viewer.controller().motion()),
                 object_buffer, (cl_int)object_buffer.size()
             );
             sample_counter += 1;

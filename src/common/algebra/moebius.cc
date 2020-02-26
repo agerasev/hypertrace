@@ -64,30 +64,34 @@ Moebius mo_chain(Moebius k, Moebius l) {
 }
 
 void mo_eigen(Moebius m, complex *l, Moebius *v) {
-    complex ad = (m.a + m.d)/2;
-    complex D = c_sqrt(c_mul(ad, ad) - mo_det(m));
-    l[0] = ad + D;
-    l[1] = ad - D;
-
-    if (c_abs2(m.c) > EPS) {
-        *v = mo_new(
-            l[0] - m.d, l[1] - m.d,
-            m.c, m.c
-        );
-    } else if (c_abs2(m.b) > EPS) {
-        *v = mo_new(
-            m.b, m.b,
-            l[0] - m.a, l[1] - m.a
-        );
-    } else {
+    if (c_abs2(m.b) < EPS && c_abs2(m.c) < EPS) {
+        l[0] = m.a;
+        l[1] = m.d;
         *v = mo_new(
             C1, C0,
             C0, C1
         );
-    }
+    } else {
+        complex ad = (m.a + m.d)/2;
+        complex D = c_sqrt(c_mul(ad, ad) - mo_det(m));
+        l[0] = ad + D;
+        l[1] = ad - D;
+
+        if (c_abs2(m.c) > EPS) {
+            *v = mo_new(
+                l[0] - m.d, l[1] - m.d,
+                m.c, m.c
+            );
+        } else {
+            *v = mo_new(
+                m.b, m.b,
+                l[0] - m.a, l[1] - m.a
+            );
+        }
 #ifndef MOEBIUS_DENORMALIZED
-    *v = mo_normalize(*v);
+        *v = mo_normalize(*v);
 #endif // MOEBIUS_DENORMALIZED
+    }
 }
 
 Moebius mo_pow(Moebius m, real p) {

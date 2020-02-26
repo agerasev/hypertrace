@@ -20,7 +20,7 @@ __kernel void render(
 	int width, int height,
 	int sample_no,
 	__global uint *seeds,
-	MoebiusPk view,
+	MoebiusPk view, MoebiusPk motion,
 	__global ObjectPk *objects,
 	const int object_count
 ) {
@@ -46,7 +46,9 @@ __kernel void render(
 
 	float3 color = (float3)(0.0f);
 
-	Moebius u = mo_unpack(view);
+	Moebius u = mo_unpack(view), w = mo_unpack(motion);
+	u = mo_chain(u, mo_pow(w, rand_uniform(&rng)));
+
 	quaternion p = QJ;
 
 	HyRay ray;

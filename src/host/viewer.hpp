@@ -69,15 +69,19 @@ class Controller {
     int height;
     std::unordered_map<sdl::Key, bool> keys;
     int mouse_x = 0.0, mouse_y = 0.0;
-    Moebius map_;
+    Moebius map_, motion_;
 
     public:
     double move_speed = 1.0; // 1/s
-    double rot_speed = 1.0; // rad/s
+    double rot_speed = 2.0; // rad/s
     double mouse_sens = 1.0; // rad/window_height
 
     Controller(int h) : Controller(h, mo_identity()) {}
-    Controller(int h, const Moebius &m) : height(h), map_(m) {
+    Controller(int h, const Moebius &m) :
+        height(h),
+        map_(m),
+        motion_(mo_identity())
+    {
         for (auto& p : MOVE_KEYS) {
             keys[p.first] = false;
         }
@@ -98,6 +102,7 @@ class Controller {
     }
     bool step(double dt) {
         bool still = true;
+        Moebius prev_map = map_;
         for (auto& p : MOVE_KEYS) {
             if (keys[p.first]) {
                 map_ = mo_chain(map_, p.second(move_speed*dt));
@@ -117,10 +122,18 @@ class Controller {
             mouse_y = 0;
             still = false;
         }
+        if (!still) {
+            motion_ = mo_inverse(mo_chain(mo_inverse(prev_map), map_));
+        } else {
+            motion_ = mo_identity();
+        }
         return !still;
     }
     const Moebius &map() const {
         return map_;
+    }
+    const Moebius &motion() const {
+        return motion_;
     }
 };
 

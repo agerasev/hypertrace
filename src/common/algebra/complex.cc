@@ -30,6 +30,14 @@ complex c_div(complex a, complex b) {
     return c_mul(a, c_inverse(b));
 }
 
+complex c_exp(complex p) {
+    return exp(p.x)*c_new(cos(p.y), sin(p.y));
+}
+complex c_powr(complex a, real p) {
+    real r = pow(c_abs2(a), p/2);
+    real phi = p*atan2(a.y, a.x);
+    return c_new(r*cos(phi), r*sin(phi));
+}
 complex c_sqrt(complex a) {
     real r = sqrt(c_abs(a));
     real phi = 0.5f*atan2(a.y, a.x);

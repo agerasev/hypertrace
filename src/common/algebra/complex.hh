@@ -27,6 +27,9 @@ real c_abs(complex a);
 complex c_mul(complex a, complex b);
 complex c_inverse(complex a);
 complex c_div(complex a, complex b);
+
+complex c_exp(complex p);
+complex c_powr(complex a, real p);
 complex c_sqrt(complex a);
 
 

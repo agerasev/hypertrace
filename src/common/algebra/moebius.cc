@@ -33,9 +33,25 @@ quaternion mo_deriv(Moebius m, quaternion p, quaternion v) {
 complex mo_det(Moebius m) {
     return c_mul(m.a, m.d) - c_mul(m.b, m.c);
 }
+Moebius mo_normalize(Moebius m) {
+    complex d = c_sqrt(mo_det(m));
+    m.a = c_div(m.a, d);
+    m.b = c_div(m.b, d);
+    m.c = c_div(m.c, d);
+    m.d = c_div(m.d, d);
+    return m;
+}
 
 Moebius mo_inverse(Moebius m) {
+#ifdef MOEBIUS_DENORMALIZED
+    complex det = mo_det(m);
+    return mo_new(
+        c_div(m.d, det), c_div(-m.b, det),
+        c_div(-m.c, det), c_div(m.a, det)
+    );
+#else  // MOEBIUS_DENORMALIZED
     return mo_new(m.d, -m.b, -m.c, m.a);
+#endif // MOEBIUS_DENORMALIZED
 }
 
 Moebius mo_chain(Moebius k, Moebius l) {
@@ -45,6 +61,42 @@ Moebius mo_chain(Moebius k, Moebius l) {
         c_mul(k.c, l.a) + c_mul(k.d, l.c),
         c_mul(k.c, l.b) + c_mul(k.d, l.d)
     );
+}
+
+void mo_eigen(Moebius m, complex *l, Moebius *v) {
+    complex ad = (m.a + m.d)/2;
+    complex D = c_sqrt(c_mul(ad, ad) - mo_det(m));
+    l[0] = ad + D;
+    l[1] = ad - D;
+
+    if (c_abs2(m.c) > EPS) {
+        *v = mo_new(
+            l[0] - m.d, l[1] - m.d,
+            m.c, m.c
+        );
+    } else if (c_abs2(m.b) > EPS) {
+        *v = mo_new(
+            m.b, m.b,
+            l[0] - m.a, l[1] - m.a
+        );
+    } else {
+        *v = mo_new(
+            C1, C0,
+            C0, C1
+        );
+    }
+#ifndef MOEBIUS_DENORMALIZED
+    *v = mo_normalize(*v);
+#endif // MOEBIUS_DENORMALIZED
+}
+
+Moebius mo_pow(Moebius m, real p) {
+    complex l[2];
+    Moebius v;
+    mo_eigen(m, l, &v);
+    return mo_chain(mo_chain(v, mo_new(
+        c_powr(l[0], p), C0, C0, c_powr(l[1], p)
+    )), mo_inverse(v));
 }
 
 
@@ -82,12 +134,16 @@ std::ostream &operator<<(std::ostream &s, const Moebius &m) {
 #include <catch.hpp>
 
 Moebius random_moebius(TestRng &rng) {
-    return mo_new(
+    Moebius m = mo_new(
         rand_c_normal(rng),
         rand_c_normal(rng),
         rand_c_normal(rng),
         rand_c_normal(rng)
     );
+#ifndef MOEBIUS_DENORMALIZED
+    m = mo_normalize(m);
+#endif // MOEBIUS_DENORMALIZED
+    return m;
 }
 
 TEST_CASE("Moebius transformation", "[moebius]") {
@@ -114,6 +170,45 @@ TEST_CASE("Moebius transformation", "[moebius]") {
                 mo_deriv(a, p, v) ==
                 ApproxV((mo_apply(a, p + EPS*v) - mo_apply(a, p))/EPS)
             );
+        }
+    }
+
+    SECTION("Eigenvalues and eigenvectors") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            Moebius m = random_moebius(rng);
+            complex l[2];
+            Moebius v;
+            mo_eigen(m, l, &v);
+
+            REQUIRE(c_mul(m.a, v.a) + c_mul(m.b, v.c) == ApproxV(c_mul(l[0], v.a)));
+            REQUIRE(c_mul(m.c, v.a) + c_mul(m.d, v.c) == ApproxV(c_mul(l[0], v.c)));
+            REQUIRE(c_mul(m.a, v.b) + c_mul(m.b, v.d) == ApproxV(c_mul(l[1], v.b)));
+            REQUIRE(c_mul(m.c, v.b) + c_mul(m.d, v.d) == ApproxV(c_mul(l[1], v.d)));
+
+            Moebius o = mo_chain(mo_chain(v, mo_new(l[0], C0, C0, l[1])), mo_inverse(v));
+            REQUIRE(o.a == ApproxV(m.a));
+            REQUIRE(o.b == ApproxV(m.b));
+            REQUIRE(o.c == ApproxV(m.c));
+            REQUIRE(o.d == ApproxV(m.d));
+        }
+    }
+
+    SECTION("Power") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            Moebius m = random_moebius(rng);
+            int n = int(floor(8*rng.uniform())) + 2;
+
+            Moebius p = mo_pow(m, 1.0/n);
+            Moebius o = mo_identity();
+
+            for(int i = 0; i < n; ++i) {
+                o = mo_chain(o, p);
+            }
+
+            REQUIRE(o.a == ApproxV(m.a));
+            REQUIRE(o.b == ApproxV(m.b));
+            REQUIRE(o.c == ApproxV(m.c));
+            REQUIRE(o.d == ApproxV(m.d));
         }
     }
 };

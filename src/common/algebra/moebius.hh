@@ -3,6 +3,8 @@
 #include "complex.hh"
 #include "quaternion.hh"
 
+// Enable this if you want to use transformations which `mo_det(..) != 1`
+//#define MOEBIUS_DENORMALIZED
 
 typedef struct Moebius {
     complex a, b, c, d;
@@ -22,9 +24,14 @@ quaternion mo_apply(Moebius m, quaternion p);
 quaternion mo_deriv(Moebius m, quaternion p, quaternion v);
 
 complex mo_det(Moebius m);
+Moebius mo_normalize(Moebius m);
 Moebius mo_inverse(Moebius m);
 
 Moebius mo_chain(Moebius k, Moebius l);
+
+void mo_eigen(Moebius m, complex *values, Moebius *vectors);
+Moebius mo_pow(Moebius m, real p);
+
 
 #ifdef OPENCL_INTEROP
 MoebiusPk pack_moebius(Moebius m);

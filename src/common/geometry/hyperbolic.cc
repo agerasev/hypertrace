@@ -149,5 +149,21 @@ TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
             REQUIRE(mo_apply(b, p) == ApproxV(q));
         }
     }
+    SECTION("Rotation interpolation at small angles") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            Moebius m = hy_xrotate(1e-2*PI*rng.uniform());
+            int q = (int)floor(8*rng.uniform()) + 2;
+
+            Moebius l = mo_pow(m, 1.0/q);
+            Moebius o = mo_identity();
+            for (int i = 0; i < q; ++i) {
+                o = mo_chain(o, l);
+            }
+            REQUIRE(o.a == ApproxV(m.a));
+            REQUIRE(o.b == ApproxV(m.b));
+            REQUIRE(o.c == ApproxV(m.c));
+            REQUIRE(o.d == ApproxV(m.d));
+        }
+    }
 };
 #endif // UNIT_TEST

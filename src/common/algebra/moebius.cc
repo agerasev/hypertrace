@@ -64,28 +64,28 @@ Moebius mo_chain(Moebius k, Moebius l) {
 }
 
 void mo_eigen(Moebius m, Moebius *l, Moebius *v) {
-    if (c_abs2(m.b) < EPS && c_abs2(m.c) < EPS) {
+    if (c_fabs(m.b) < EPS && c_fabs(m.c) < EPS) {
         *l = mo_new(m.a, C0, C0, m.d);
         *v = mo_new(C1, C0, C0, C1);
     } else {
         complex ad = (m.a + m.d)/2;
-        complex D = c_mul(ad, ad) -
+        complex D = c_sqrt(c_mul(ad, ad) -
 #ifdef MOEBIUS_DENORMALIZED
-            mo_det(m);
+            mo_det(m)
 #else // MOEBIUS_DENORMALIZED
-            C1;
+            C1
 #endif // MOEBIUS_DENORMALIZED
-        if (c_abs2(D) > EPS) {
-            D = c_sqrt(D);
+        );
+        if (c_fabs(D) > EPS) {
             *l = mo_new(ad + D, C0, C0, ad - D);
-            if (c_abs2(m.c) > EPS) {
+            if (c_fabs(m.c) > EPS) {
                 *v = mo_new(l->a - m.d, l->d - m.d, m.c, m.c);
             } else {
                 *v = mo_new(m.b, m.b, l->a - m.a, l->d - m.a);
             }
         } else {
             *l = mo_new(ad, C1, C0, ad);
-            if (c_abs2(m.c) > EPS) {
+            if (c_fabs(m.c) > EPS) {
                 *v = mo_new(l->a - m.d, m.c, m.c, m.d - l->d);
             } else {
                 *v = mo_new(m.b, m.a - l->d, l->a - m.a, m.b);
@@ -101,10 +101,16 @@ Moebius mo_pow(Moebius m, real p) {
     Moebius j, v;
     mo_eigen(m, &j, &v);
     Moebius k;
-    if (c_abs2(j.b) < EPS) {
+    if (c_fabs(j.b) < EPS) {
         k = mo_new(c_powr(j.a, p), C0, C0, c_powr(j.d, p));
     } else {
-        k = mo_new(c_powr(j.a, p), p*c_powr(j.a, p - 1), C0, c_powr(j.d, p));
+        // Assume j.a == j.d and j.b == 1
+        k = mo_new(
+            c_powr(j.a, p),
+            p*c_powr(j.a, p - 1),
+            C0,
+            c_powr(j.d, p)
+        );
     }
     return mo_chain(mo_chain(v, k), mo_inverse(v));
 }

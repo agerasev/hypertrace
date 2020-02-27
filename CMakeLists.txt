@@ -1,8 +1,21 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.0)
 project(hypertrace)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -std=c++14 -Wall -Wextra")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -Wextra")
+set(COMMON_FLAGS "\
+    -g \
+    -Wall \
+    -Wextra \
+    -Wno-unused-parameter \
+")
+set(CMAKE_C_FLAGS "\
+    ${CMAKE_C_FLAGS} \
+    ${COMMON_FLAGS} \
+")
+set(CMAKE_CXX_FLAGS "\
+    ${CMAKE_CXX_FLAGS} \
+    ${COMMON_FLAGS} \
+    -std=c++14 \
+")
 
 set(SRC
     "src/host/vectype.hpp"
@@ -49,8 +62,8 @@ add_executable(${PROJECT_NAME}
     "src/host/main.cpp"
 )
 target_compile_definitions(${PROJECT_NAME} PRIVATE
-    -DCL_TARGET_OPENCL_VERSION=120
-    -DOPENCL_INTEROP
+    "-DCL_TARGET_OPENCL_VERSION=120"
+    "-DOPENCL_INTEROP"
 )
 target_link_libraries(${PROJECT_NAME} OpenCL SDL2)
 
@@ -62,12 +75,12 @@ add_executable(test
     "src/host/test.cpp"
 )
 target_compile_definitions(test PRIVATE
-    -DUNIT_TEST
+    "-DUNIT_TEST"
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     target_compile_options(test PRIVATE
-        --coverage
+        "--coverage"
     )
 endif()
 

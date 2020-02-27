@@ -14,6 +14,9 @@ real c_abs2(complex a) {
 real c_abs(complex a) {
     return length(a);
 }
+real c_fabs(complex a) {
+    return fabs(a.x) + fabs(a.y);
+}
 
 complex c_mul(complex a, complex b) {
     return c_new(

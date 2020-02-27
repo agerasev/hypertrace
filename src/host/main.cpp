@@ -134,6 +134,7 @@ int main(int argc, const char *argv[]) {
     int sample_counter = 0;
     const duration frame_time(0.04);
     int monte_carlo_counter = 0;
+    bool refresh = true;
     for(;;) {
         duration elapsed;
         auto start = std::chrono::system_clock::now();
@@ -160,7 +161,13 @@ int main(int argc, const char *argv[]) {
 
         elapsed = std::chrono::system_clock::now() - start;
         if (viewer.controller().step(elapsed.count())) {
+            refresh = true;
             monte_carlo_counter = 0;
+        } else {
+            if (refresh) {
+                monte_carlo_counter = 0;
+            }
+            refresh = false;
         }
         
         time_counter += elapsed;

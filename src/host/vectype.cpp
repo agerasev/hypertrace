@@ -8,7 +8,7 @@ double fract(double x, double *intpart) {
 #ifdef UNIT_TEST
 #include <catch.hpp>
 
-TEST_CASE("Vector types", "[vectype.hpp]") {
+TEST_CASE("Vector types", "[vectype]") {
     SECTION("Field alignment") {
         vectype<int, 2> a2;
         a2[0] = 123456;

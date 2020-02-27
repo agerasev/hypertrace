@@ -23,6 +23,7 @@ typedef real2_pk complex_pk;
 complex c_conj(complex a);
 real c_abs2(complex a);
 real c_abs(complex a);
+real c_fabs(complex a);
 
 complex c_mul(complex a, complex b);
 complex c_inverse(complex a);

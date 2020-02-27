@@ -1,5 +1,4 @@
-#define OPENCL
-#define OPENCL_INTEROP
+#include <config.cl>
 
 #include <types.hh>
 #include <random.hh>
@@ -48,28 +47,28 @@ __kernel void render(
 
 	Moebius u = mo_unpack(view), w = mo_unpack(motion);
 
-	// Motion blur
+#ifdef MOTION_BLUR
 	u = mo_chain(u, mo_pow(w, rand_uniform(&rng)));
-
-	quaternion p = QJ;
-
-	real lr = 1e-1f;
-	real fd = 0.5f;
-
-	// FIXME: denormalized inversion, may break on further changes
-	quaternion f = mo_apply(
-		mo_new(C0, C1, C1, C0),
-		mo_apply(mo_inverse(hy_look_to(v)), fd*QJ)
-	);
-	f.x *= (real)(-1);
-	real r = lr*sqrt(rand_uniform(&rng));
-	Moebius lm = mo_chain(hy_xshift(r), hy_zrotate(2*PI*rand_uniform(&rng)));
-
-	v = mo_deriv(mo_inverse(mo_chain(hy_look_at(mo_apply(lm, f)), lm)), QJ, QJ);
+#endif // MOTION_BLUR
 
 	HyRay ray;
-	ray.direction = normalize(mo_deriv(u, p, v));
-	ray.start = mo_apply(mo_chain(u, mo_inverse(lm)), p);
+#ifdef LENS_BLUR
+	real lr = 2e-2f; // lens radius
+	real fd = 5.0f; // focal distance
+
+	quaternion f = mo_apply(mo_chain(mo_inverse(hy_look_to(v)), hy_zshift(fd)), QJ);
+	// FIXME: Draw values from uniform distribution on hyperbolic disk instead of Euclidean one.
+	real r = lr*sqrt(rand_uniform(&rng)), phi = 2*PI*rand_uniform(&rng);
+	Moebius lm = mo_chain(hy_zrotate(phi), hy_xshift(r));
+	v = mo_deriv(mo_inverse(hy_look_at(mo_apply(mo_inverse(lm), f))), QJ, QJ);
+
+	Moebius ulm = mo_chain(u, lm);
+	ray.direction = normalize(mo_deriv(ulm, QJ, v));
+	ray.start = mo_apply(ulm, QJ);
+#else // LENS_BLUR
+	ray.direction = normalize(mo_deriv(u, QJ, v));
+	ray.start = mo_apply(u, QJ);
+#endif // LENS_BLUR
 
 	float3 light = (float3)(1.0f);
 

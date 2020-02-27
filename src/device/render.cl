@@ -47,13 +47,29 @@ __kernel void render(
 	float3 color = (float3)(0.0f);
 
 	Moebius u = mo_unpack(view), w = mo_unpack(motion);
+
+	// Motion blur
 	u = mo_chain(u, mo_pow(w, rand_uniform(&rng)));
 
 	quaternion p = QJ;
 
+	real lr = 1e-1f;
+	real fd = 0.5f;
+
+	// FIXME: denormalized inversion, may break on further changes
+	quaternion f = mo_apply(
+		mo_new(C0, C1, C1, C0),
+		mo_apply(mo_inverse(hy_look_to(v)), fd*QJ)
+	);
+	f.x *= (real)(-1);
+	real r = lr*sqrt(rand_uniform(&rng));
+	Moebius lm = mo_chain(hy_xshift(r), hy_zrotate(2*PI*rand_uniform(&rng)));
+
+	v = mo_deriv(mo_inverse(mo_chain(hy_look_at(mo_apply(lm, f)), lm)), QJ, QJ);
+
 	HyRay ray;
 	ray.direction = normalize(mo_deriv(u, p, v));
-	ray.start = mo_apply(u, p);
+	ray.start = mo_apply(mo_chain(u, mo_inverse(lm)), p);
 
 	float3 light = (float3)(1.0f);
 

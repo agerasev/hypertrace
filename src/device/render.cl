@@ -11,7 +11,8 @@
 
 #include <object.hh>
 
-#include <number.cl>
+
+#include <source.cl>
 
 
 __kernel void render(
@@ -27,16 +28,6 @@ __kernel void render(
 	int idx = get_global_id(0);
 	Rng rng;
 	rand_init(&rng, seeds[idx]);
-
-	/*
-	uint num = sizeof(ObjectPk);
-	int2 pp = (int2)(idx % width, idx / width);
-	int ts = 4;
-	if (get_number_pixel(num, pp - (int2)(width - 1 - ts, 6*ts), ts)) {
-		vstore4((uchar4)((uchar3)(0), 0xff), idx, image);
-		return;
-	}
-	*/
 
 	quaternion v = q_new(
 		((real)(idx % width) - 0.5f*width + rand_uniform(&rng))/height,

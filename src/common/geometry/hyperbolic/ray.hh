@@ -11,8 +11,3 @@ typedef struct HyRay {
 
 
 HyRay hyray_map(Moebius map, HyRay src);
-
-
-#ifdef OPENCL
-#include "ray.cc"
-#endif // OPENCL

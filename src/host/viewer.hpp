@@ -161,7 +161,6 @@ class Viewer {
     SDL_Texture *texture;
 
     Controller ctrl;
-    int delay_ms = 16;
 
     public:
     Viewer(int width=800, int height=600) : ctrl(height) {

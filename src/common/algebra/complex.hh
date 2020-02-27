@@ -42,8 +42,3 @@ complex rand_c_unit(TestRng &rng);
 complex rand_c_nonzero(TestRng &rng);
 
 #endif // UNIT_TEST
-
-
-#ifdef OPENCL
-#include "complex.cc"
-#endif // OPENCL

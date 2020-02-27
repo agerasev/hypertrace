@@ -67,8 +67,3 @@ bool object_bounce(
 void pack_object(ObjectPk *dst, const Object *src);
 void unpack_object(Object *dst, const ObjectPk *src);
 #endif // OPENCL_INTEROP
-
-
-#ifdef OPENCL
-#include "object.cc"
-#endif // OPENCL

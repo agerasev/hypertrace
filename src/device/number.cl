@@ -13,7 +13,7 @@ __constant ushort DIGITS[10] = {
     0b111101111001111  // 9
 };
 
-bool get_number_pixel(uint number, int2 shift, int scale) {
+bool print_number(uint number, int2 shift, int scale) {
     //bool minus = number < 0;
     //number = abs(number);
     shift.x = -shift.x;
@@ -39,3 +39,15 @@ bool get_number_pixel(uint number, int2 shift, int scale) {
     }
     return (DIGITS[number % 10] >> (shift.x + shift.y*3)) & 1;
 }
+
+
+// Sample usage
+/*
+	uint num = ...; // number to print
+	int2 pp = (int2)(idx % width, idx / width); // pixel position
+	int ts = 4; // text size
+	if (print_number(num, pp - (int2)(width - 1 - ts, 6*ts), ts)) {
+		vstore4((uchar4)((uchar3)(0), 0xff), idx, image);
+		return;
+	}
+*/

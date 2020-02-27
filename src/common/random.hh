@@ -17,8 +17,3 @@ real3 rand_sphere(Rng *rng);
 real3 rand_hemisphere(Rng *rng);
 real3 rand_hemisphere_cosine(Rng *rng);
 real3 rand_sphere_cap(Rng *rng, float cos_alpha);
-
-
-#ifdef OPENCL
-#include "random.cc"
-#endif // OPENCL

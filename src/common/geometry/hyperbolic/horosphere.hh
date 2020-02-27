@@ -48,8 +48,3 @@ bool horosphere_bounce(
 void pack_horosphere(HorospherePk *dst, const Horosphere *src);
 void unpack_horosphere(Horosphere *dst, const HorospherePk *src);
 #endif // OPENCL_INTEROP
-
-
-#ifdef OPENCL
-#include "horosphere.cc"
-#endif // OPENCL

@@ -3,7 +3,8 @@
 #include "complex.hh"
 #include "quaternion.hh"
 
-// Enable this if you want to use transformations which `mo_det(..) != 1`
+// Without this flag all Moebius transformations are assumed
+// to be normalized (i.e. to have determinant equal to 1).
 //#define MOEBIUS_DENORMALIZED
 
 typedef struct Moebius {
@@ -50,8 +51,3 @@ std::ostream &operator<<(std::ostream &s, const Moebius &m);
 #ifdef UNIT_TEST
 Moebius random_moebius(TestRng &rng);
 #endif // UNIT_TEST
-
-
-#ifdef OPENCL
-#include "moebius.cc"
-#endif // OPENCL

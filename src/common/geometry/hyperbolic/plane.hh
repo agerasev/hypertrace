@@ -47,8 +47,3 @@ bool hyplane_bounce(
 void pack_hyplane(HyPlanePk *dst, const HyPlane *src);
 void unpack_hyplane(HyPlane *dst, const HyPlanePk *src);
 #endif // OPENCL_INTEROP
-
-
-#ifdef OPENCL
-#include "plane.cc"
-#endif // OPENCL

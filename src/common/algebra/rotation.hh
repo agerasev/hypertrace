@@ -19,8 +19,3 @@ rotation3 rot3_chain(rotation3 a, rotation3 b);
 
 rotation2 rot2_look_at(real2 pos);
 rotation3 rot3_look_at(real3 pos);
-
-
-#ifdef OPENCL
-#include "rotation.cc"
-#endif // OPENCL

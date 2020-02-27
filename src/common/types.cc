@@ -1,5 +1,6 @@
 #include "types.hh"
 
+#ifndef OPENCL
 
 #ifdef OPENCL_INTEROP
 
@@ -45,3 +46,5 @@ double4 unpack_double4(float2_pk v) {
 }
 
 #endif // OPENCL_INTEROP
+
+#endif // OPENCL

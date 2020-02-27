@@ -38,9 +38,3 @@ typedef struct __attribute__ ((packed)) MaterialPk {
 void pack_material(MaterialPk *dst, const Material *src);
 void unpack_material(Material *dst, const MaterialPk *src);
 #endif // OPENCL_INTEROP
-
-
-
-#ifdef OPENCL
-#include "material.cc"
-#endif // OPENCL

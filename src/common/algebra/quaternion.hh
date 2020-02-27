@@ -42,8 +42,3 @@ quaternion rand_q_normal(TestRng &rng);
 quaternion rand_q_nonzero(TestRng &rng);
 quaternion rand_q_unit(TestRng &rng);
 #endif // UNIT_TEST
-
-
-#ifdef OPENCL
-#include "quaternion.cc"
-#endif // OPENCL

@@ -16,3 +16,4 @@
 #include <random.cc>
 #include <material.cc>
 #include <object.cc>
+#include <view.cc>

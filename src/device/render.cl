@@ -10,7 +10,7 @@
 #include <geometry/hyperbolic/ray.hh>
 
 #include <object.hh>
-
+#include <view.hh>
 
 #include <source.cl>
 
@@ -21,7 +21,7 @@ __kernel void render(
 	int width, int height,
 	int sample_no,
 	__global uint *seeds,
-	MoebiusPk view, MoebiusPk motion,
+	ViewPk view,
 	__global ObjectPk *objects,
 	const int object_count
 ) {
@@ -29,15 +29,19 @@ __kernel void render(
 	Rng rng;
 	rand_init(&rng, seeds[idx]);
 
+	View vu;
+	unpack_view(&vu, &view);
+
 	quaternion v = q_new(
 		((real)(idx % width) - 0.5f*width + rand_uniform(&rng))/height,
 		((real)(idx / width) - 0.5f*height + rand_uniform(&rng))/height,
-		1.0f, 0.0f
+		vu.fov, 0.0f
 	);
 
 	float3 color = (float3)(0.0f);
 
-	Moebius u = mo_unpack(view), w = mo_unpack(motion);
+
+	Moebius u = vu.position, w = vu.motion;
 	u = mo_chain(u, mo_pow(w, rand_uniform(&rng)));
 
 	quaternion p = QJ;

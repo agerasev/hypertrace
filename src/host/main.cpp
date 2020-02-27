@@ -10,7 +10,8 @@
 #include <random>
 
 #include <opencl/opencl.hpp>
-#include <viewer.hpp>
+#include <sdl/viewer.hpp>
+#include <sdl/controller.hpp>
 
 #include <algebra/quaternion.hh>
 #include <algebra/moebius.hh>
@@ -129,6 +130,8 @@ int main(int argc, const char *argv[]) {
     }
 
     Viewer viewer(width, height);
+    Controller controller(height);
+    controller.grab_mouse(true);
 
     duration time_counter;
     int sample_counter = 0;
@@ -137,6 +140,10 @@ int main(int argc, const char *argv[]) {
     bool refresh = true;
     for(;;) {
         duration elapsed;
+
+        ViewPk view;
+        pack_view(&view, &controller.get_view());
+
         auto start = std::chrono::system_clock::now();
         do {
             kernel(
@@ -145,7 +152,7 @@ int main(int argc, const char *argv[]) {
                 width, height,
                 monte_carlo_counter,
                 seeds,
-                mo_pack(viewer.controller().map()), mo_pack(viewer.controller().motion()),
+                view,
                 object_buffer, (cl_int)object_buffer.size()
             );
             sample_counter += 1;
@@ -153,14 +160,15 @@ int main(int argc, const char *argv[]) {
             elapsed = std::chrono::system_clock::now() - start;
         } while(elapsed < frame_time);
 
-        if (!viewer.display([&](uint8_t *data) {
+        viewer.display([&](uint8_t *data) {
             image.load(queue, data);
-        })) {
+        });
+        if (!controller.handle()) {
             break;
         }
 
         elapsed = std::chrono::system_clock::now() - start;
-        if (viewer.controller().step(elapsed.count())) {
+        if (controller.step(elapsed.count())) {
             refresh = true;
             monte_carlo_counter = 0;
         } else {

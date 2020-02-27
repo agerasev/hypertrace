@@ -17,7 +17,7 @@ set(CMAKE_CXX_FLAGS "\
     -std=c++14 \
 ")
 
-set(SRC
+set(COMMON_SRC
     "src/host/vectype.hpp"
     "src/host/vectype.cpp"
     "src/common/types.hh"
@@ -45,6 +45,8 @@ set(SRC
     "src/common/material.cc"
     "src/common/object.hh"
     "src/common/object.cc"
+    "src/common/view.hh"
+    "src/common/view.cc"
 )
 include_directories(
     "src/host"
@@ -55,10 +57,15 @@ include_directories(
 # Main target
 
 add_executable(${PROJECT_NAME}
-    ${SRC}
+    ${COMMON_SRC}
     "src/host/opencl/include.hpp"
     "src/host/opencl/opencl.hpp"
-    "src/host/viewer.hpp"
+    "src/host/sdl/base.hpp"
+    "src/host/sdl/base.cpp"
+    "src/host/sdl/controller.hpp"
+    "src/host/sdl/controller.cpp"
+    "src/host/sdl/viewer.hpp"
+    "src/host/sdl/viewer.cpp"
     "src/host/main.cpp"
 )
 target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -71,7 +78,7 @@ target_link_libraries(${PROJECT_NAME} OpenCL SDL2)
 # Test target
 
 add_executable(test
-    ${SRC}
+    ${COMMON_SRC}
     "src/host/test.cpp"
 )
 target_compile_definitions(test PRIVATE

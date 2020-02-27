@@ -17,6 +17,7 @@ class Controller {
     std::unordered_map<sdl::Key, bool> keys;
     int mouse_x = 0.0, mouse_y = 0.0;
     bool grab = false, update = false;
+    bool ctrl = false, shift = false;
 
     double move_speed = 1.0; // 1/s
     double rot_speed = 2.0; // rad/s
@@ -24,9 +25,10 @@ class Controller {
     double wheel_sens = 0.1;
 
     int height;
-    View view;
 
     public:
+    View view;
+
     Controller(int h);
     Controller(int h, const View &v);
 
@@ -34,5 +36,4 @@ class Controller {
     bool step(double dt);
 
     void grab_mouse(bool g);
-    const View &get_view() const;
 };

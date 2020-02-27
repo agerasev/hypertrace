@@ -1,5 +1,4 @@
-#define OPENCL
-#define OPENCL_INTEROP
+#include <config.cl>
 
 #include <types.hh>
 #include <random.hh>
@@ -12,7 +11,7 @@
 #include <object.hh>
 #include <view.hh>
 
-#include <source.cl>
+#include <lens_blur.cl>
 
 
 __kernel void render(
@@ -35,20 +34,22 @@ __kernel void render(
 	quaternion v = q_new(
 		((real)(idx % width) - 0.5f*width + rand_uniform(&rng))/height,
 		((real)(idx / width) - 0.5f*height + rand_uniform(&rng))/height,
-		vu.fov, 0.0f
+		vu.field_of_view, 0.0f
 	);
 
 	float3 color = (float3)(0.0f);
 
-
 	Moebius u = vu.position, w = vu.motion;
+
+#ifdef MOTION_BLUR
 	u = mo_chain(u, mo_pow(w, rand_uniform(&rng)));
+#endif // MOTION_BLUR
 
-	quaternion p = QJ;
-
-	HyRay ray;
-	ray.direction = normalize(mo_deriv(u, p, v));
-	ray.start = mo_apply(u, p);
+	HyRay ray = hyray_init();
+#ifdef LENS_BLUR
+	ray = draw_from_lens(&rng, v, vu.focal_length, vu.lens_radius);
+#endif // LENS_BLUR
+	ray = hyray_map(u, ray);
 
 	float3 light = (float3)(1.0f);
 
@@ -97,3 +98,6 @@ __kernel void render(
 	uchar4 pix = (uchar4)(convert_uchar3(255*clamp(avg_color, 0.0f, 1.0f)), 0xff);
 	vstore4(pix, idx, image);
 }
+
+
+#include <source.cl>

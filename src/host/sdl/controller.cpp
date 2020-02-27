@@ -9,7 +9,7 @@ const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::M
     std::make_pair(SDLK_s, [](double l) { return hy_zshift(-l); }),
     std::make_pair(SDLK_d, [](double l) { return hy_xshift(l); }),
     std::make_pair(SDLK_SPACE, [](double l) { return hy_yshift(-l); }),
-    std::make_pair(SDLK_LSHIFT, [](double l) { return hy_yshift(l); })
+    std::make_pair(SDLK_c, [](double l) { return hy_yshift(l); })
 };
 const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::ROT_KEYS = {
     std::make_pair(SDLK_q, [](double a) { return hy_zrotate(-a); }),
@@ -44,9 +44,18 @@ bool Controller::handle() {
         }
         
         if (e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
+            bool down = (e.type == SDL_KEYDOWN);
             auto it = keys.find(e.key.keysym.sym);
             if (it != keys.end()) {
-                it->second = (e.type == SDL_KEYDOWN);
+                it->second = down;
+            }
+            switch (e.key.keysym.sym) {
+                case SDLK_LSHIFT:
+                    shift = down;
+                    break;
+                case SDLK_LCTRL:
+                    ctrl = down;
+                    break;
             }
         } else if (e.type == SDL_MOUSEMOTION && grab) {
             mouse_x += e.motion.xrel;
@@ -62,7 +71,12 @@ bool Controller::handle() {
         }
         if (e.type == SDL_MOUSEWHEEL) {
             if (e.wheel.y) {
-                view.fov *= exp(wheel_sens*e.wheel.y);
+                real f = exp(wheel_sens*e.wheel.y);
+                if (ctrl) {
+                    view.focal_length *= f;
+                } else {
+                    view.field_of_view *= f;
+                }
                 update = true;
             }
         }
@@ -116,8 +130,4 @@ bool Controller::step(double dt) {
 void Controller::grab_mouse(bool g) {
     grab = g;
     SDL_SetRelativeMouseMode((SDL_bool)g);
-}
-
-const View &Controller::get_view() const {
-    return view;
 }

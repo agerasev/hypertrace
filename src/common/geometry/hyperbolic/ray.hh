@@ -10,4 +10,5 @@ typedef struct HyRay {
 } HyRay;
 
 
+HyRay hyray_init();
 HyRay hyray_map(Moebius map, HyRay src);

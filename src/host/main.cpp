@@ -133,6 +133,14 @@ int main(int argc, const char *argv[]) {
     Controller controller(height);
     controller.grab_mouse(true);
 
+    controller.view.position = mo_new(
+        c_new(0.114543, 0.285363),
+        c_new(2.9287, -0.678274),
+        c_new(-0.0461927, -0.0460196),
+        c_new(0.697521, -2.64087)
+    );
+    //controller.view.lens_radius = 1e-1;
+
     duration time_counter;
     int sample_counter = 0;
     const duration frame_time(0.04);
@@ -142,7 +150,7 @@ int main(int argc, const char *argv[]) {
         duration elapsed;
 
         ViewPk view;
-        pack_view(&view, &controller.get_view());
+        pack_view(&view, &controller.view);
 
         auto start = std::chrono::system_clock::now();
         do {
@@ -180,9 +188,12 @@ int main(int argc, const char *argv[]) {
         
         time_counter += elapsed;
         if (time_counter.count() > 1.0) {
-            double seconds;
-            time_counter = duration(modf(time_counter.count(), &seconds));
-            std::cout << "SPS: " << sample_counter/seconds << std::endl;
+            std::cout << "Current position: " <<
+                controller.view.position << std::endl;
+
+            std::cout << "Samples per second: " <<
+                sample_counter/time_counter.count() << std::endl;
+            time_counter = duration(0.0);
             sample_counter = 0;
         }
     }

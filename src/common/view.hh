@@ -7,7 +7,9 @@
 typedef struct {
     Moebius position;
     Moebius motion;
-    real fov;
+    real field_of_view;
+    real lens_radius;
+    real focal_length;
 } View;
 
 #ifdef OPENCL_INTEROP
@@ -15,7 +17,9 @@ typedef struct {
 typedef struct __attribute__((packed)) {
     MoebiusPk position;
     MoebiusPk motion;
-    real_pk fov;
+    real_pk field_of_view;
+    real_pk lens_radius;
+    real_pk focal_length;
 } ViewPk;
 
 #endif // OPENCL_INTEROP

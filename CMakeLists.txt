@@ -58,14 +58,20 @@ include_directories(
 
 add_executable(${PROJECT_NAME}
     ${COMMON_SRC}
+    "src/host/opencl/crawler.hpp"
+    "src/host/opencl/crawler.cpp"
     "src/host/opencl/include.hpp"
+    "src/host/opencl/include.cpp"
     "src/host/opencl/opencl.hpp"
+    "src/host/opencl/opencl.cpp"
     "src/host/sdl/base.hpp"
     "src/host/sdl/base.cpp"
     "src/host/sdl/controller.hpp"
     "src/host/sdl/controller.cpp"
     "src/host/sdl/viewer.hpp"
     "src/host/sdl/viewer.cpp"
+    "src/host/renderer.hpp"
+    "src/host/renderer.cpp"
     "src/host/main.cpp"
 )
 target_compile_definitions(${PROJECT_NAME} PRIVATE

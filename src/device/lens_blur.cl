@@ -20,9 +20,8 @@ HyRay draw_from_lens(
 		hy_zshift(focal_length)
 	), QJ);
 
-	// FIXME: Draw values from uniform distribution on hyperbolic disk
-	//        instead of Euclidean one.
-	real r = lens_radius*sqrt(rand_uniform(rng));
+	real q = rand_uniform(rng)*(cosh(lens_radius) - 1) + 1;
+	real r = log(q + sqrt(q*q - 1));
 	real phi = 2*PI*rand_uniform(rng);
 	Moebius m = mo_chain(hy_zrotate(phi), hy_xshift(r));
 	v = mo_deriv(

@@ -17,7 +17,7 @@ const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::R
 };
 
 
-Controller::Controller(int h) : height(h) {
+Controller::Controller() {
     for (auto& p : MOVE_KEYS) {
         keys[p.first] = false;
     }
@@ -27,7 +27,7 @@ Controller::Controller(int h) : height(h) {
     init_view(&view);
 }
 
-Controller::Controller(int h, const View &v) : Controller(h) {
+Controller::Controller(const View &v) : Controller() {
     view = v;
 }
 
@@ -105,9 +105,9 @@ bool Controller::step(double dt) {
     }
 
     if (mouse_x != 0 || mouse_y != 0) {
-        pos = mo_chain(pos, hy_xrotate(mouse_sens*mouse_x/height));
+        pos = mo_chain(pos, hy_xrotate(mouse_sens*mouse_x));
         mouse_x = 0;
-        pos = mo_chain(pos, hy_yrotate(mouse_sens*mouse_y/height));
+        pos = mo_chain(pos, hy_yrotate(mouse_sens*mouse_y));
         mouse_y = 0;
         still = false;
     }

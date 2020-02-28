@@ -45,7 +45,7 @@ int main(int argc, const char *argv[]) {
     Renderer renderer(device, width, height);
 
     std::vector<Object> objects = {
-        Object {
+        Object{
             .type = OBJECT_HOROSPHERE,
             .map = mo_identity(),
             .horosphere = Horosphere {
@@ -54,7 +54,7 @@ int main(int argc, const char *argv[]) {
                 .size = 0.25, .border = 0.02
             },
         },
-        Object {
+        Object{
             .type = OBJECT_HOROSPHERE,
             .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
             .horosphere = Horosphere {
@@ -63,7 +63,7 @@ int main(int argc, const char *argv[]) {
                 .size = 0.25, .border = 0.02
             },
         },
-        Object {
+        Object{
             .type = OBJECT_PLANE,
             .map = mo_identity(),
             .plane = HyPlane {
@@ -72,7 +72,7 @@ int main(int argc, const char *argv[]) {
                 .border = 0.02
             },
         },
-        Object {
+        Object{
             .type = OBJECT_PLANE,
             .map = mo_new(C1, 2*CI, C0, C1),
             .plane = HyPlane {
@@ -85,7 +85,7 @@ int main(int argc, const char *argv[]) {
     renderer.store_objects(objects);
 
     Viewer viewer(width, height);
-    Controller controller(height);
+    Controller controller;
     controller.grab_mouse(true);
 
     controller.view.position = mo_new(

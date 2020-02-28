@@ -70,7 +70,6 @@ void Renderer::render(const View &view, bool fresh) {
 }
 
 int Renderer::render_for(const View &view, double sec, bool fresh) {
-    duration time_counter;
     const duration render_time(sec);
     
     int sample_counter = 0;

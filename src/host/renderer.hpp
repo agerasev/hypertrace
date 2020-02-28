@@ -8,7 +8,7 @@
 #include <view.hh>
 #include <object.hh>
 
-
+// FIXME: Add `set_view()` method and use it instead of `fresh` argument
 class Renderer {
     private:
     int width, height;

@@ -96,7 +96,12 @@ __kernel void render(
 	float3 avg_color = (color + vload3(idx, screen)*sample_no)/(sample_no + 1);
 	vstore3(avg_color, idx, screen);
 
-	uchar4 pix = (uchar4)(convert_uchar3(255*clamp(avg_color, 0.0f, 1.0f)), 0xff);
+	float3 out_color = clamp(avg_color, 0.0f, 1.0f);
+#ifdef GAMMA_CORRECTION
+	out_color = pow(out_color, 1/GAMMA_VALUE);
+#endif // GAMMA_CORRECTION
+
+	uchar4 pix = (uchar4)(convert_uchar3(255*out_color), 0xff);
 	vstore4(pix, idx, image);
 }
 

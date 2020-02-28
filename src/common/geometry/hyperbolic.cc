@@ -165,5 +165,18 @@ TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
             REQUIRE(o.d == ApproxV(m.d));
         }
     }
+    SECTION("Interpolation") {
+        Moebius a = hy_xshift(1.0);
+        Moebius b = hy_yshift(1.0);
+        quaternion aq = mo_apply(a, QJ), bq = mo_apply(b, QJ);
+        real d = hy_distance(aq, bq);
+        int n = 10;
+        for (int i = 0; i < n; ++i) {
+            real t = real(i)/(n - 1);
+            Moebius c = mo_chain(a, mo_pow(mo_chain(mo_inverse(a), b), t));
+            quaternion cq = mo_apply(c, QJ);
+            REQUIRE(hy_distance(aq, cq)/d == Approx(t).epsilon(0.01));
+        }
+    }
 };
 #endif // UNIT_TEST

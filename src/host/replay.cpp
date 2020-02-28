@@ -207,7 +207,7 @@ int main(int argc, const char *argv[]) {
     for(;;) {
         auto start = std::chrono::system_clock::now();
 
-        sample_counter += renderer.render_for(scenario.get_view(time, 0.0), frame_time, true);
+        sample_counter += renderer.render_for(scenario.get_view(time, frame_time), frame_time, true);
         time += frame_time;
 
         viewer.display([&](uint8_t *data) {

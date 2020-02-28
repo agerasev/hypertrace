@@ -66,6 +66,8 @@ set(HOST_SRC
     "src/host/sdl/viewer.cpp"
     "src/host/renderer.hpp"
     "src/host/renderer.cpp"
+    "src/host/scenario.hpp"
+    "src/host/scenario.cpp"
 )
 include_directories(
     "src/host"
@@ -87,15 +89,15 @@ target_link_libraries(${PROJECT_NAME} OpenCL SDL2)
 
 # Flight target
 
-add_executable(flight
+add_executable(replay
     ${HOST_SRC}
-    "src/host/flight.cpp"
+    "src/host/replay.cpp"
 )
-target_compile_definitions(flight PRIVATE
+target_compile_definitions(replay PRIVATE
     "-DCL_TARGET_OPENCL_VERSION=120"
     "-DOPENCL_INTEROP"
 )
-target_link_libraries(flight OpenCL SDL2)
+target_link_libraries(replay OpenCL SDL2)
 
 
 

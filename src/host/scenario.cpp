@@ -7,78 +7,101 @@
 
 #include <view.hh>
 
+Point::Point(Moebius p, real fl) :
+    position(p), focal_length(fl)
+{}
 
-void Scenario::set_start_point(const Point &p) {
-    assert(!start && !stop);
-    start = std::make_shared<PointNode>(p);
-    stop = start;
-    index.push_back(std::make_pair(start, 0.0));
+Point Point::interpolate(
+    const Point &a, const Point &b,
+    double p
+) {
+    return Point(
+        mo_chain(
+            a.position,
+            mo_pow(mo_chain(mo_inverse(a.position), b.position), p)
+        ),
+        a.focal_length*(1 - p) + b.focal_length*p
+    );
 }
 
-void Scenario::add_transition(const Transition &t, const Point &p) {
-    assert(start && stop);
+Transition::Transition(double d) :
+    duration(d)
+{}
 
-    auto tn = std::make_shared<TransitionNode>(t);
-    auto pn = std::make_shared<PointNode>(p);
-
-    stop->next = tn;
-    tn->prev = stop;
-    tn->next = pn;
-    pn->prev = tn;
-
-    index.push_back(std::make_pair(pn, index.back().second + tn->base.duration));
-    stop = pn;
+DelayTransition::DelayTransition(double d, Point p) :
+    Transition(d), point(p)
+{}
+Point DelayTransition::get_point(double p) const {
+    return point;
 }
 
-
-Scenario::Scenario(const Point &p) {
-    set_start_point(p);
+ConstantSpeedTransition::ConstantSpeedTransition(double d, Point a, Point b) :
+    Transition(d), start(a), stop(b)
+{}
+Point ConstantSpeedTransition::get_point(double p) const {
+    return Point::interpolate(start, stop, p);
 }
 
-Scenario::Point Scenario::get_point(double time) const {
+SquareSpeedTransition::SquareSpeedTransition(double d, Point a, Point b, double at, double bt) :
+    ConstantSpeedTransition(d, a, b), markers{at, bt}
+{}
+Point SquareSpeedTransition::get_point(double p) const {
+    return Point::interpolate(
+        start, stop,
+        (3*(markers[0]*(1-p) + markers[1]*p)*(1-p) + p*p)*p
+    );
+}
+
+void Scenario::add_transition(std::unique_ptr<Transition> t) {
+    index.push_back(std::make_pair(
+        std::move(t),
+        duration() + t->duration
+    ));
+}
+
+Scenario::Scenario() = default;
+
+Point Scenario::get_point(double time) const {
+    assert(index.size() > 0);
+
     static const auto comp = [](
-        const std::pair<std::shared_ptr<PointNode>, double> &a,
+        const std::pair<std::unique_ptr<Transition>, double> &a,
         double b
     ) {
         return a.second < b;
     };
+
     auto i = std::lower_bound(index.begin(), index.end(), time, comp);
-    if (i != index.begin()) {
-        --i;
+    if (i == index.end()) {
+        return index.back().first->get_point(1.0);
     }
-    double tt = time - i->second;
-    std::shared_ptr<PointNode> apn = i->first;
-    if (tt < 0.0 || !apn->next) {
-        return apn->base;
+
+    const auto &t = i->first;
+    double p = 1.0 - (i->second - time)/t->duration;
+    if (p <= 0.0) {
+        p = 0.0;
     }
-    std::shared_ptr<TransitionNode> tn = apn->next;
-    std::shared_ptr<PointNode> bpn = tn->next;
 
-    const Point &a = apn->base;
-    const Point &b = bpn->base;
-    const Transition &t = tn->base;
-    double p = tt/t.duration;
-
-    return Point {
-        .position = mo_chain(
-            a.position,
-            mo_pow(mo_chain(mo_inverse(a.position), b.position), p)
-        ),
-        .focal_length = a.focal_length + (b.focal_length - a.focal_length)*p
-    };
+    return t->get_point(p);
 }
 
 View Scenario::get_view(double t, double dt) const {
     Point p = get_point(t);
     Point dp = get_point(t - dt);
+
     View v;
     init_view(&v);
     v.position = p.position;
-    v.motion = mo_inverse(mo_chain(mo_inverse(dp.position), p.position));
+    v.motion = mo_chain(mo_inverse(p.position), dp.position);
+
     v.focal_length = p.focal_length;
     return v;
 }
 
 double Scenario::duration() const {
-    return index.back().second;
+    if (index.size() > 0) {
+        return index.back().second;
+    } else {
+        return 0.0;
+    }
 }

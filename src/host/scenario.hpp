@@ -8,53 +8,63 @@
 #include <view.hh>
 
 
+class Point {
+    public:
+    Moebius position;
+    real focal_length;
+
+    Point(Moebius p = mo_identity(), real fl = 4.0);
+    static Point interpolate(const Point &a, const Point &b, double p);
+};
+
+class Transition {
+    public:
+    double duration = 1.0; // seconds
+
+    Transition(double d);
+    virtual Point get_point(double p) const = 0;
+};
+
+class DelayTransition : public Transition {
+    public:
+    Point point;
+
+    DelayTransition(double d, Point p);
+    Point get_point(double p) const override;
+};
+
+class ConstantSpeedTransition : public Transition {
+    public:
+    Point start, stop;
+
+    ConstantSpeedTransition(double d, Point a, Point b);
+    Point get_point(double p) const override;
+};
+
+class SquareSpeedTransition : public ConstantSpeedTransition {
+    public:
+    double markers[2];
+
+    SquareSpeedTransition(double d, Point a, Point b, double at, double bt);
+    Point get_point(double p) const override;
+};
+
 class Scenario {
-    public:
-    class Point {
-        public:
-        Moebius position = mo_identity();
-        real focal_length = 4.0;
-    };
-    class Transition {
-        public:
-        real duration = 1.0; // seconds
-    };
-
     private:
-    class PointNode;
-    class TransitionNode;
-
-    class PointNode {
-        public:
-        Point base;
-        std::shared_ptr<TransitionNode> prev, next;
-        PointNode(const Point &p) : base(p) {}
-    };
-    class TransitionNode {
-        public:
-        Transition base;
-        std::shared_ptr<PointNode> prev, next;
-        TransitionNode(const Transition &t) : base(t) {}
-    };
-
-    private:
-    std::shared_ptr<PointNode> start, stop;
-    std::vector<std::pair<std::shared_ptr<PointNode>, double>> index;
-
-    void set_start_point(const Point &p);
+    std::vector<std::pair<std::unique_ptr<Transition>, double>> index;
 
     public:
-    void add_transition(const Transition &t, const Point &p);
+    void add_transition(std::unique_ptr<Transition> t);
     template <typename ... Args>
-    void add_transition(const Transition &t, const Point &p, const Args &...args) {
-        add_transition(t, p);
+    void add_transition(std::unique_ptr<Transition> t, Args ...args) {
+        add_transition(t);
         add_transition(args...);
     }
 
     public:
-    Scenario(const Point &p);
+    Scenario();
     template <typename ... Args>
-    Scenario(const Point &p, const Args &...args) : Scenario(p) {
+    Scenario(Args ...args) : Scenario() {
         add_transition(args...);
     }
 

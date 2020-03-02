@@ -1,3 +1,3 @@
-#!/bin/sh
+#!/usr/bin/bash
 
 rm -r ./build

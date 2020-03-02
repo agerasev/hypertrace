@@ -149,7 +149,7 @@ int main(int argc, const char *argv[]) {
         View v = scenario.get_view(time, frame_time);
         v.field_of_view = 0.8;
         sample_counter += renderer.render_for(v, frame_time, true);
-        //sample_counter += renderer.render_n(v, 250, true);
+        //sample_counter += renderer.render_n(v, 200, true);
         time += frame_time;
 
         auto store = [&](uint8_t *data) {

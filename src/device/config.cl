@@ -3,6 +3,8 @@
 #define OPENCL
 #define OPENCL_INTEROP
 
+#define PATH_DEPTH 3
+
 #define LENS_BLUR
 #define MOTION_BLUR
 

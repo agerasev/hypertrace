@@ -55,7 +55,7 @@ __kernel void render(
 	float3 light = (float3)(1.0f);
 
 	int prev = -1;
-	for (int k = 0; k < 3; ++k) {
+	for (int k = 0; k < PATH_DEPTH; ++k) {
 		int mi = -1;
 		float ml = -1.0f;
 		ObjectHit mcache;

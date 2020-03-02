@@ -72,28 +72,25 @@ include_directories(
     "src/common"
 )
 
-add_library(host OBJECT ${HOST_SRC})
-target_compile_definitions(host PUBLIC
+add_library(${PROJECT_NAME} OBJECT ${HOST_SRC})
+target_compile_definitions(${PROJECT_NAME} PUBLIC
     "-DCL_TARGET_OPENCL_VERSION=120"
     "-DOPENCL_INTEROP"
 )
-target_link_libraries(host OpenCL SDL2 SDL2_image)
+target_link_libraries(${PROJECT_NAME} OpenCL SDL2 SDL2_image)
 
 
-# Main target
+# Examples
 
-add_executable(${PROJECT_NAME} "src/host/examples/main.cpp")
-target_link_libraries(${PROJECT_NAME} host)
-
-
-# Replay target
-
-add_executable(replay "src/host/examples/replay.cpp")
-target_link_libraries(replay host)
+file(GLOB EXAMPLES "src/host/examples/*.cpp")
+foreach(EXAMPLE_PATH ${EXAMPLES})
+    get_filename_component(EXAMPLE_NAME ${EXAMPLE_PATH} NAME_WE)
+    add_executable(${EXAMPLE_NAME} ${EXAMPLE_PATH})
+    target_link_libraries(${EXAMPLE_NAME} ${PROJECT_NAME})
+endforeach()
 
 
-
-# Test target
+# Tests
 
 add_executable(test ${COMMON_SRC} "src/host/tests/unit_test.cpp")
 target_compile_definitions(test PRIVATE

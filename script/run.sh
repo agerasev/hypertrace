@@ -1,5 +1,5 @@
-#!/bin/sh
+#!/usr/bin/bash
 
-./script/build.sh hypertrace && \
-
-./build/hypertrace $@
+mkdir -p ./output
+./script/build.sh $1 && \
+./build/$1 ${@:2}

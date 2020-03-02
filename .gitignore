@@ -1,6 +1,8 @@
 /build
 /output
 .coverage.info
+*.png
+*.mp4
 
 /.vscode
 *.code-workspace

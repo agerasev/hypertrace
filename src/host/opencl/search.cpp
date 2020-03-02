@@ -2,7 +2,7 @@
 #include <sstream>
 #include <cassert>
 
-#include "crawler.hpp"
+#include "search.hpp"
 
 
 std::vector<cl_platform_id> cl::get_platforms() {

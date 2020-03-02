@@ -1,4 +1,6 @@
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <vector>
 #include <string>
 #include <cassert>
@@ -14,9 +16,10 @@
 #include <view.hh>
 #include <object.hh>
 
-#include <opencl/crawler.hpp>
+#include <opencl/search.hpp>
 #include <sdl/viewer.hpp>
 #include <sdl/controller.hpp>
+#include <sdl/image.hpp>
 #include <renderer.hpp>
 #include <scenario.hpp>
 
@@ -42,7 +45,7 @@ int main(int argc, const char *argv[]) {
     std::cout << "Using platform " << platform_no << ", device " << device_no << std::endl;
     cl_device_id device = cl::search_device(platform_no, device_no);
 
-    int width = 800, height = 600;
+    int width = 1920, height = 1080;
     Renderer renderer(device, width, height);
 
     std::vector<Object> objects = {
@@ -51,7 +54,7 @@ int main(int argc, const char *argv[]) {
             .map = mo_identity(),
             .horosphere = Horosphere{
                 .tiling = HOROSPHERE_TILING_HEXAGONAL,
-                .material = Material {float3(1.0, 0.5, 0.25), 0.1},
+                .material = Material {float3(1.0, 0.5, 0.25), 0.05},
                 .size = 0.25, .border = 0.02,
             },
         },
@@ -60,7 +63,7 @@ int main(int argc, const char *argv[]) {
             .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
             .horosphere = Horosphere{
                 .tiling = HOROSPHERE_TILING_SQUARE,
-                .material = Material {float3(0.25, 0.5, 1.0), 0.1},
+                .material = Material {float3(0.25, 0.5, 1.0), 0.05},
                 .size = 0.25, .border = 0.02,
             },
         },
@@ -69,7 +72,7 @@ int main(int argc, const char *argv[]) {
             .map = mo_identity(),
             .plane = HyPlane{
                 .tiling = HYPLANE_TILING_NONE,
-                .material = Material {float3(0.5, 1.0, 0.25), 0.1},
+                .material = Material {float3(0.5, 1.0, 0.25), 0.05},
                 .border = 0.02,
             },
         },
@@ -78,7 +81,7 @@ int main(int argc, const char *argv[]) {
             .map = mo_new(C1, 2*CI, C0, C1),
             .plane = HyPlane{
                 .tiling = HYPLANE_TILING_PENTAGONAL,
-                .material = Material {float3(1.0, 1.0, 0.25), 0.1},
+                .material = Material {float3(1.0, 1.0, 0.25), 0.05},
                 .border = 0.02,
             },
         },
@@ -88,76 +91,54 @@ int main(int argc, const char *argv[]) {
     Viewer viewer(width, height);
     Controller controller;
 
-    double tdelay = 4.0;
     std::vector<Point> points {
         Point(mo_new(
-            c_new(0.114543, 0.285363),
-            c_new(2.9287, -0.678274),
-            c_new(-0.0461927, -0.0460196),
-            c_new(0.697521, -2.64087)
+            c_new(0.0704422, 0.388156),
+            c_new(3.25709, -0.644618),
+            c_new(0.0280217, 0.0111143),
+            c_new(0.542426, -2.73144)
         )),
         Point(mo_new(
-            c_new(0.0298572, 0.116725),
-            c_new(2.99292, -1.557),
-            c_new(-0.178148, -0.0703524),
-            c_new(1.27215, -2.73547)
+            c_new(0.0286821, 0.683827),
+            c_new(2.8249, -1.7697),
+            c_new(-0.0203855, 0.451223),
+            c_new(2.02, -2.46116)
         )),
         Point(mo_new(
-            c_new(-0.209295, 0.379613),
-            c_new(3.46353, -3.29636),
-            c_new(-0.231689, 0.2415),
-            c_new(2.12595, -3.78954)
+            c_new(0.605603, -0.0125093),
+            c_new(1.13499, -2.28722),
+            c_new(0.296042, -0.0701192),
+            c_new(1.96622, -1.20888)
         )),
         Point(mo_new(
-            c_new(0.63954, 0.498772),
-            c_new(2.68254, -3.25001),
-            c_new(0.413499, 0.355539),
-            c_new(2.87836, -2.85482)
+            c_new(0.155695, -0.546314),
+            c_new(-1.72239, -0.323492),
+            c_new(-0.0113209, -0.0551297),
+            c_new(0.316326, 1.74335)
         )),
         Point(mo_new(
-            c_new(0.495165, -0.000707206),
-            c_new(1.05431, -2.55384),
-            c_new(0.229223, -0.103703),
-            c_new(1.97474, -1.40022)
-        )),
-        Point(mo_new(
-            c_new(0.277396, -0.0671577),
-            c_new(-0.79975, -2.37376),
-            c_new(0.0404912, -0.170447),
-            c_new(1.88414, 0.601065)
-        )),
-        Point(mo_new(
-            c_new(0.418802, -0.237497),
-            c_new(-1.87922, -1.26276),
-            c_new(-0.0360326, -0.245777),
-            c_new(0.848506, 1.69266)
-        )),
-        Point(mo_new(
-            c_new(0.862866, -0.339343),
-            c_new(-1.01238, -0.366878),
-            c_new(0.207137, -0.72253),
-            c_new(0.26842, 0.865222)
-        )),
-        Point(mo_new(
-            c_new(-0.134283, -0.25151),
-            c_new(-3.06023, 0.93036),
-            c_new(0.0554463, 0.0817881),
-            c_new(-0.631135, 2.66185)
+            c_new(0.0748133, -0.111905),
+            c_new(-5.96229, 0.107037),
+            c_new(0.0470794, -0.0507573),
+            c_new(1.09217, 5.74615)
         ))
     };
     
     Scenario scenario;
-    for (size_t i = 0; i < points.size() - 1; ++i) {
-        scenario.add_transition(std::make_unique<SquareSpeedTransition>(
-            tdelay,
-            points[i],
-            points[i+1],
-            0.0, 1.0
-        ));
+    std::vector<SquareSpeedTransition> transitions {
+        SquareSpeedTransition(8.0, points[0], points[1], 0.0, 1.0),
+        SquareSpeedTransition(8.0, points[1], points[2], 0.0, 1.0),
+        SquareSpeedTransition(8.0, points[2], points[3], 0.0, 1.0),
+        SquareSpeedTransition(8.0, points[3], points[4], 0.0, 1.0)
+    };
+    
+    for (const auto &t : transitions) {
+        scenario.add_transition(std::make_unique<SquareSpeedTransition>(t));
     }
 
     //controller.view.lens_radius = 1e-1;
 
+    int counter = 0;
     double time = 0.0;
     double frame_time = 0.04;
     duration time_counter;
@@ -165,15 +146,25 @@ int main(int argc, const char *argv[]) {
     for(;;) {
         auto start = std::chrono::system_clock::now();
 
-        sample_counter += renderer.render_for(scenario.get_view(time, frame_time), frame_time, true);
+        View v = scenario.get_view(time, frame_time);
+        v.field_of_view = 0.8;
+        sample_counter += renderer.render_for(v, frame_time, true);
+        //sample_counter += renderer.render_n(v, 250, true);
         time += frame_time;
 
-        viewer.display([&](uint8_t *data) {
+        auto store = [&](uint8_t *data) {
             renderer.load_image(data);
-        });
+        };
+        viewer.display(store);
+
+        //std::stringstream ss;
+        //ss << std::setfill('0') << std::setw(5) << "output/" << counter << ".png";
+        //sdl::save_image(ss.str(), width, height, store);
+
         if (!controller.handle() || time > scenario.duration()) {
             break;
         }
+        counter += 1;
 
         time_counter += std::chrono::system_clock::now() - start;
         if (time_counter.count() > 1.0) {

@@ -69,6 +69,14 @@ void Renderer::render(const View &view, bool fresh) {
     monte_carlo_counter += 1;
 }
 
+int Renderer::render_n(const View &view, int n, bool fresh) {
+    for (int i = 0; i < n; ++i) {
+        render(view, fresh);
+        fresh = false;
+    };
+    return n;
+}
+
 int Renderer::render_for(const View &view, double sec, bool fresh) {
     const duration render_time(sec);
     

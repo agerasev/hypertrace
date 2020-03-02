@@ -36,5 +36,6 @@ class Renderer {
     void load_image(uint8_t *data);
 
     void render(const View &view, bool fresh);
+    int render_n(const View &view, int count, bool fresh);
     int render_for(const View &view, double sec, bool fresh);
 };

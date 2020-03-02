@@ -14,7 +14,7 @@
 #include <view.hh>
 #include <object.hh>
 
-#include <opencl/crawler.hpp>
+#include <opencl/search.hpp>
 #include <sdl/viewer.hpp>
 #include <sdl/controller.hpp>
 #include <renderer.hpp>

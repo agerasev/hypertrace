@@ -33,6 +33,15 @@ Moebius mo_chain(Moebius k, Moebius l);
 void mo_eigen(Moebius m, Moebius *jordan, Moebius *vectors);
 Moebius mo_pow(Moebius m, real p);
 
+// These arithmetic operations may return denormalized result
+// even without `MOEBIUS_DENORMALIZED` flag
+Moebius mo_add(Moebius a, Moebius b);
+Moebius mo_sub(Moebius a, Moebius b);
+Moebius mo_mul(Moebius a, real b);
+Moebius mo_div(Moebius a, real b);
+
+real mo_fabs(Moebius m);
+real mo_diff(Moebius a, Moebius b);
 
 #ifdef OPENCL_INTEROP
 MoebiusPk pack_moebius(Moebius m);

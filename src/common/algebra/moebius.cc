@@ -85,11 +85,7 @@ void mo_eigen(Moebius m, Moebius *l, Moebius *v) {
             }
         } else {
             *l = mo_new(ad, C1, C0, ad);
-            if (c_fabs(m.c) > EPS) {
-                *v = mo_new(l->a - m.d, m.c, m.c, m.d - l->d);
-            } else {
-                *v = mo_new(m.b, m.a - l->d, l->a - m.a, m.b);
-            }
+            *v = mo_new(C1, C0, C0, C1);
         }
 #ifndef MOEBIUS_DENORMALIZED
         *v = mo_normalize(*v);
@@ -98,23 +94,78 @@ void mo_eigen(Moebius m, Moebius *l, Moebius *v) {
 }
 
 Moebius mo_pow(Moebius m, real p) {
-    Moebius j, v;
-    mo_eigen(m, &j, &v);
-    Moebius k;
-    if (c_fabs(j.b) < EPS) {
-        k = mo_new(c_powr(j.a, p), C0, C0, c_powr(j.d, p));
+    Moebius x = mo_sub(m, mo_identity());
+    real y = mo_fabs(x);
+    // FIXME: Why 1e4?
+    if (y*y > 1e4*EPS) {
+        Moebius j, v;
+        mo_eigen(m, &j, &v);
+        Moebius k;
+        if (c_fabs(j.b) < EPS) {
+            k = mo_new(c_powr(j.a, p), C0, C0, c_powr(j.d, p));
+        } else {
+            // Assume j.a == j.d and j.b == 1
+            k = mo_new(
+                c_powr(j.a, p),
+                p*c_powr(j.a, p - 1),
+                C0,
+                c_powr(j.d, p)
+            );
+        }
+        return mo_chain(mo_chain(v, k), mo_inverse(v));
     } else {
-        // Assume j.a == j.d and j.b == 1
-        k = mo_new(
-            c_powr(j.a, p),
-            p*c_powr(j.a, p - 1),
-            C0,
-            c_powr(j.d, p)
-        );
+        return mo_normalize(mo_add(mo_identity(), mo_mul(x, p)));
     }
-    return mo_chain(mo_chain(v, k), mo_inverse(v));
 }
 
+Moebius mo_add(Moebius a, Moebius b) {
+    return mo_new(
+        a.a + b.a,
+        a.b + b.b,
+        a.c + b.c,
+        a.d + b.d
+    );
+}
+
+Moebius mo_sub(Moebius a, Moebius b) {
+    return mo_new(
+        a.a - b.a,
+        a.b - b.b,
+        a.c - b.c,
+        a.d - b.d
+    );
+}
+
+Moebius mo_mul(Moebius a, real b) {
+    return mo_new(
+        a.a*b,
+        a.b*b,
+        a.c*b,
+        a.d*b
+    );
+}
+
+Moebius mo_div(Moebius a, real b) {
+    return mo_new(
+        a.a/b,
+        a.b/b,
+        a.c/b,
+        a.d/b
+    );
+}
+
+real mo_fabs(Moebius m) {
+    real d = R0;
+    d += c_fabs(m.a);
+    d += c_fabs(m.b);
+    d += c_fabs(m.c);
+    d += c_fabs(m.d);
+    return d;
+}
+
+real mo_diff(Moebius a, Moebius b) {
+    return mo_fabs(mo_sub(a, b));
+}
 
 #ifdef OPENCL_INTEROP
 
@@ -148,6 +199,29 @@ std::ostream &operator<<(std::ostream &s, const Moebius &m) {
 
 #ifdef UNIT_TEST
 #include <catch.hpp>
+
+class MoebiusApprox {
+    public:
+    Moebius m;
+    MoebiusApprox(Moebius c) : m(c) {}
+    friend bool operator==(Moebius a, MoebiusApprox b) {
+        return (
+            a.a == ApproxV(b.m.a) &&
+            a.b == ApproxV(b.m.b) &&
+            a.c == ApproxV(b.m.c) &&
+            a.d == ApproxV(b.m.d)
+        );
+    }
+    friend bool operator==(MoebiusApprox a, Moebius b){
+        return b == a;
+    }
+    friend std::ostream &operator<<(std::ostream &s, MoebiusApprox a) {
+        return s << a.m;
+    }
+};
+MoebiusApprox ApproxMo(Moebius m) {
+    return MoebiusApprox(m);
+}
 
 Moebius random_moebius(TestRng &rng) {
     Moebius m = mo_new(
@@ -201,10 +275,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
             REQUIRE(c_mul(m.c, v.b) + c_mul(m.d, v.d) == ApproxV(c_mul(l.d, v.d)));
 
             Moebius o = mo_chain(mo_chain(v, l), mo_inverse(v));
-            REQUIRE(o.a == ApproxV(m.a));
-            REQUIRE(o.b == ApproxV(m.b));
-            REQUIRE(o.c == ApproxV(m.c));
-            REQUIRE(o.d == ApproxV(m.d));
+            REQUIRE(o == ApproxMo(m));
         }
     }
 
@@ -214,10 +285,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
         mo_eigen(m, &l, &v);
 
         Moebius o = mo_chain(mo_chain(v, l), mo_inverse(v));
-        REQUIRE(o.a == ApproxV(m.a));
-        REQUIRE(o.b == ApproxV(m.b));
-        REQUIRE(o.c == ApproxV(m.c));
-        REQUIRE(o.d == ApproxV(m.d));
+        REQUIRE(o == ApproxMo(m));
     }
 
     SECTION("Power") {
@@ -232,10 +300,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
                 o = mo_chain(o, p);
             }
 
-            REQUIRE(o.a == ApproxV(m.a));
-            REQUIRE(o.b == ApproxV(m.b));
-            REQUIRE(o.c == ApproxV(m.c));
-            REQUIRE(o.d == ApproxV(m.d));
+            REQUIRE(o == ApproxMo(m));
         }
     }
 
@@ -256,10 +321,28 @@ TEST_CASE("Moebius transformation", "[moebius]") {
                 o = mo_chain(o, l);
             }
 
-            REQUIRE(o.a == ApproxV(n.a));
-            REQUIRE(o.b == ApproxV(n.b));
-            REQUIRE(o.c == ApproxV(n.c));
-            REQUIRE(o.d == ApproxV(n.d));
+            REQUIRE(o == ApproxMo(n));
+        }
+    }
+
+    SECTION("Power of almost identity transformation") {
+        Moebius m = mo_new(
+            c_new(1, 8.2331e-07),
+            c_new(4.75378e-06, -7.47005e-07),
+            c_new(9.3315e-08, -2.74772e-08),
+            c_new(1, 9.82438e-07)
+        );
+
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            int n = int(floor(8*rng.uniform())) + 2;
+
+            Moebius p = mo_pow(m, 1.0/n);
+            Moebius o = mo_identity();
+            for(int i = 0; i < n; ++i) {
+                o = mo_chain(o, p);
+            }
+
+            REQUIRE(o == ApproxMo(m));
         }
     }
 };

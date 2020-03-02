@@ -48,16 +48,10 @@ set(COMMON_SRC
     "src/common/view.hh"
     "src/common/view.cc"
 )
-include_directories(
-    "src/host"
-    "src/common"
-)
-
-
-# Main target
-
-add_executable(${PROJECT_NAME}
+set(HOST_SRC
     ${COMMON_SRC}
+    "src/host/vectype.hpp"
+    "src/host/vectype.cpp"
     "src/host/opencl/crawler.hpp"
     "src/host/opencl/crawler.cpp"
     "src/host/opencl/include.hpp"
@@ -72,6 +66,18 @@ add_executable(${PROJECT_NAME}
     "src/host/sdl/viewer.cpp"
     "src/host/renderer.hpp"
     "src/host/renderer.cpp"
+    "src/host/scenario.hpp"
+    "src/host/scenario.cpp"
+)
+include_directories(
+    "src/host"
+    "src/common"
+)
+
+# Main target
+
+add_executable(${PROJECT_NAME}
+    ${HOST_SRC}
     "src/host/main.cpp"
 )
 target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -79,6 +85,20 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     "-DOPENCL_INTEROP"
 )
 target_link_libraries(${PROJECT_NAME} OpenCL SDL2)
+
+
+# Flight target
+
+add_executable(replay
+    ${HOST_SRC}
+    "src/host/replay.cpp"
+)
+target_compile_definitions(replay PRIVATE
+    "-DCL_TARGET_OPENCL_VERSION=120"
+    "-DOPENCL_INTEROP"
+)
+target_link_libraries(replay OpenCL SDL2)
+
 
 
 # Test target

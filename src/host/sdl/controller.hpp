@@ -21,7 +21,7 @@ class Controller {
 
     double move_speed = 1.0; // 1/s
     double rot_speed = 2.0; // rad/s
-    double mouse_sens = 1.0; // rad/window_height
+    double mouse_sens = 2e-3; // rad/pix
     double wheel_sens = 0.1;
 
     int height;
@@ -29,8 +29,8 @@ class Controller {
     public:
     View view;
 
-    Controller(int h);
-    Controller(int h, const View &v);
+    Controller();
+    Controller(const View &v);
 
     bool handle();
     bool step(double dt);

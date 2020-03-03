@@ -48,3 +48,8 @@ double4 unpack_double4(float2_pk v) {
 #endif // OPENCL_INTEROP
 
 #endif // OPENCL
+
+int mod(int a, int b) {
+    int r = a % b;
+    return r >= 0 ? r : r + b;
+}

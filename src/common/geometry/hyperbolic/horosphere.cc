@@ -43,42 +43,48 @@ bool horosphere_bounce(
     HyRay *ray,
     float3 *light, float3 *emission
 ) {
-    float3 color = make_float3(1.0f);
+    int material_no = 0;
 
-	const real br = horosphere->border/horosphere->size;
-    if (horosphere->tiling == HOROSPHERE_TILING_SQUARE) {
+	const real br = horosphere->tiling.border.width/horosphere->tiling.cell_size;
+    if (horosphere->tiling.type == HOROSPHERE_TILING_SQUARE) {
         complex k, f;
         complex g = cache->hit_pos.xy;
-        f = fract(g/horosphere->size, &k);
-        int hs = (int)k.x + (int)k.y;
+        f = fract(g/horosphere->tiling.cell_size, &k);
 
 		if (f.x < br || f.x > 1 - br || f.y < br || f.y > 1 - br) {
-			color = make_float3(0.0f);
+            material_no = -1;
 		} else {
-			color = make_float3(hs & 1, (hs>>1) & 1, (hs>>2) & 1);
+            int hx = mod((int)k.x, 2);
+            int hy = mod((int)k.y, 2);
+            material_no = 3*hy - 2*hx*hy + hx;
 		}
-    } else if (horosphere->tiling == HOROSPHERE_TILING_HEXAGONAL) {
+    } else if (horosphere->tiling.type == HOROSPHERE_TILING_HEXAGONAL) {
         real2 g = cache->hit_pos.xy;
         real2 bx = make_real2(2/sqrt(3.0f), (real)0);
         real2 by = make_real2(-1/sqrt(3.0f), (real)1);
-        real2 h = make_real2(dot(bx, g), dot(by, g))/horosphere->size;
+        real2 h = make_real2(dot(bx, g), dot(by, g))/horosphere->tiling.cell_size;
         int hx = (int)floor((floor(h.x) - floor(h.y))/3);
         int hy = (int)floor((floor(h.x + h.y) - hx)/2);
-        int hs = hx - hy;
 
         h -= hx*make_real2(2.0f, -1.0f) + hy*make_real2(1.0f, 1.0f);
         if (fabs(h.x - 1) > 1 - br || fabs(h.y) > 1 - br || fabs(h.x + h.y - 1) > 1 - br) {
-            color = make_float3(0.0f);
+            material_no = -1;
         } else {
-            color = make_float3(hs & 1, (hs>>1) & 1, (hs>>2) & 1);
+            material_no = 2*hx + hy;
         }
+    } else {
+        material_no = 0;
     }
 
     quaternion normal = -QJ;
     real3 bounce_dir;
 
-    Material material = horosphere->material;
-    material.diffuse_color *= color;
+    Material material;
+    if (material_no < 0) {
+        material = horosphere->tiling.border.material;
+    } else {
+        material = horosphere->materials[mod(material_no, horosphere->material_count)];
+    }
 
     if (!material_bounce(
         &material,
@@ -97,23 +103,34 @@ bool horosphere_bounce(
 
 #ifdef OPENCL_INTEROP
 void pack_horosphere(HorospherePk *dst, const Horosphere *src) {
-    dst->tiling = (uint)src->tiling;
+    for (int i = 0; i < HOROSPHERE_MATERIAL_COUNT_MAX; ++i) {
+        MaterialPk tmp;
+        pack_material(&tmp, &src->materials[i]);
+        dst->materials[i] = tmp;
+    }
+    dst->material_count = src->material_count;
 
+    dst->tiling_type = (uint_pk)src->tiling.type;
+    dst->tiling_cell_size = (real_pk)src->tiling.cell_size;
+
+    dst->tiling_border_width = (real_pk)src->tiling.border.width;
     MaterialPk tmp_mat;
-    pack_material(&tmp_mat, &src->material);
-    dst->material = tmp_mat;
-
-    dst->border = (real_pk)src->border;
-    dst->size = (real_pk)src->size;
+    pack_material(&tmp_mat, &src->tiling.border.material);
+    dst->tiling_border_material = tmp_mat;
 }
 
 void unpack_horosphere(Horosphere *dst, const HorospherePk *src) {
-    dst->tiling = (HorosphereTiling)src->tiling;
+    for (int i = 0; i < HOROSPHERE_MATERIAL_COUNT_MAX; ++i) {
+        MaterialPk tmp = src->materials[i];
+        unpack_material(&dst->materials[i], &tmp);
+    }
+    dst->material_count = (int)src->material_count;
 
-    MaterialPk tmp_mat = src->material;
-    unpack_material(&dst->material, &tmp_mat);
-
-    dst->border = (real)src->border;
-    dst->size = (real)src->size;
+    dst->tiling.type = (HorosphereTilingType)src->tiling_type;
+    dst->tiling.cell_size = (real)src->tiling_cell_size;
+    
+    dst->tiling.border.width = (real)src->tiling_border_width;
+    MaterialPk tmp_mat = src->tiling_border_material;
+    unpack_material(&dst->tiling.border.material, &tmp_mat);
 }
 #endif // OPENCL_INTEROP

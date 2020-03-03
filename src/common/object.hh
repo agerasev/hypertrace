@@ -37,7 +37,8 @@ typedef union {
 } ObjectHit;
 
 #ifdef OPENCL_INTEROP
-
+// FIXME: Use explicit alignment instead of `packed` attribute
+// because it suppresses referencing of field of such structure.
 typedef struct __attribute__ ((packed)) {
     uint_pk type;
     MoebiusPk map;

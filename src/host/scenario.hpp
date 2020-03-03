@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include <view.hh>
+#include <object.hh>
 
 
 class Point {
@@ -50,6 +51,13 @@ class SquareSpeedTransition : public ConstantSpeedTransition {
 };
 
 class Scenario {
+    public:
+    virtual double duration() const = 0;
+    virtual View get_view(double t, double dt) const = 0;
+    virtual const std::vector<Object> &get_objects(double t) const = 0;
+};
+
+class PathScenario : public Scenario {
     private:
     std::vector<std::pair<std::unique_ptr<Transition>, double>> index;
 
@@ -62,13 +70,15 @@ class Scenario {
     }
 
     public:
-    Scenario();
+    PathScenario();
     template <typename ... Args>
-    Scenario(Args ...args) : Scenario() {
+    PathScenario(Args ...args) : PathScenario() {
         add_transition(args...);
     }
 
     Point get_point(double time) const;
-    View get_view(double t, double dt) const;
-    double duration() const;
+    double path_duration() const;
+
+    double duration() const override;
+    View get_view(double t, double dt) const override;
 };

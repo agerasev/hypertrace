@@ -52,16 +52,41 @@ Point SquareSpeedTransition::get_point(double p) const {
     );
 }
 
-void Scenario::add_transition(std::unique_ptr<Transition> t) {
+void PathScenario::add_transition(std::unique_ptr<Transition> t) {
     index.push_back(std::make_pair(
         std::move(t),
-        duration() + t->duration
+        path_duration() + t->duration
     ));
 }
 
-Scenario::Scenario() = default;
+PathScenario::PathScenario() = default;
 
-Point Scenario::get_point(double time) const {
+View PathScenario::get_view(double t, double dt) const {
+    Point p = get_point(t);
+    Point dp = get_point(t - dt);
+
+    View v;
+    init_view(&v);
+    v.position = p.position;
+    v.motion = mo_chain(mo_inverse(p.position), dp.position);
+
+    v.focal_length = p.focal_length;
+    return v;
+}
+
+double PathScenario::path_duration() const {
+    if (index.size() > 0) {
+        return index.back().second;
+    } else {
+        return 0.0;
+    }
+}
+
+double PathScenario::duration() const {
+    return path_duration();
+}
+
+Point PathScenario::get_point(double time) const {
     assert(index.size() > 0);
 
     static const auto comp = [](
@@ -83,25 +108,4 @@ Point Scenario::get_point(double time) const {
     }
 
     return t->get_point(p);
-}
-
-View Scenario::get_view(double t, double dt) const {
-    Point p = get_point(t);
-    Point dp = get_point(t - dt);
-
-    View v;
-    init_view(&v);
-    v.position = p.position;
-    v.motion = mo_chain(mo_inverse(p.position), dp.position);
-
-    v.focal_length = p.focal_length;
-    return v;
-}
-
-double Scenario::duration() const {
-    if (index.size() > 0) {
-        return index.back().second;
-    } else {
-        return 0.0;
-    }
 }

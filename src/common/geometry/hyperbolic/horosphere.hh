@@ -10,12 +10,25 @@ typedef enum {
     HOROSPHERE_TILING_NONE = 0,
     HOROSPHERE_TILING_SQUARE,
     HOROSPHERE_TILING_HEXAGONAL,
+} HorosphereTilingType;
+
+#define HOROSPHERE_MATERIAL_COUNT_MAX 4
+
+typedef struct {
+    real width;
+    Material material;
+} HorosphereTilingBorder;
+
+typedef struct {
+    HorosphereTilingType type;
+    real cell_size;
+    HorosphereTilingBorder border;
 } HorosphereTiling;
 
 typedef struct {
+    Material materials[HOROSPHERE_MATERIAL_COUNT_MAX];
+    int material_count;
     HorosphereTiling tiling;
-    Material material;
-    real size, border;
 } Horosphere;
 
 typedef struct {
@@ -25,9 +38,12 @@ typedef struct {
 
 #ifdef OPENCL_INTEROP
 typedef struct __attribute__((packed)) {
-    uint_pk tiling;
-    MaterialPk material;
-    real_pk size, border;
+    MaterialPk materials[HOROSPHERE_MATERIAL_COUNT_MAX];
+    int_pk material_count;
+    uint_pk tiling_type;
+    real_pk tiling_cell_size;
+    real_pk tiling_border_width;
+    MaterialPk tiling_border_material;
 } HorospherePk;
 #endif // OPENCL_INTEROP
 

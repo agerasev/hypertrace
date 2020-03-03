@@ -21,7 +21,7 @@
 #include <sdl/image.hpp>
 #include <renderer.hpp>
 #include <scenario.hpp>
-
+#include <color.hpp>
 
 class MyScenario : public PathScenario {
     private:
@@ -35,22 +35,22 @@ class MyScenario : public PathScenario {
                 .map = mo_identity(),
                 .horosphere = Horosphere {
                     .materials = {
-                        Material {float3(1.0, 1.0, 0.0), 0.0},
-                        Material {float3(1.0, 0.0, 0.0), 0.0},
-                        Material {float3(0.0, 1.0, 0.0), 0.0},
-                        Material {float3(0.0, 0.0, 1.0), 0.0},
+                        Material {make_color(0x6ec3c1), 0.0, 0.0, float3(0)},
+                        Material {make_color(0x335120), 0.0, 0.0, float3(0)},
+                        Material {make_color(0x9dcc5f), 0.0, 0.0, float3(0)},
+                        Material {make_color(0x0d5f8a), 0.0, 0.0, float3(0)},
                     },
                     .material_count = 4,
                     .tiling = HorosphereTiling {
                         .type = HOROSPHERE_TILING_SQUARE,
-                        .cell_size = 0.25,
+                        .cell_size = 0.2,
                         .border = HorosphereTilingBorder {
-                            .width = 0.02,
-                            .material = Material {float3(0.0), 0.0},
+                            .width = 0.05,
+                            .material = Material {float3(0.0), 0.0, 0, float3(0)},
                         },
                     },
                 },
-            },
+            }
         };
     }
     virtual const std::vector<Object> &get_objects(double t) const {

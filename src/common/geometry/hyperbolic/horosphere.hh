@@ -2,9 +2,12 @@
 
 #include <algebra/quaternion.hh>
 
-#include <material.hh>
+#include <path.hh>
 #include "ray.hh"
+#include <material.hh>
 
+
+#define HOROSPHERE_MATERIAL_COUNT_MAX 4
 
 typedef enum {
     HOROSPHERE_TILING_NONE = 0,
@@ -12,7 +15,6 @@ typedef enum {
     HOROSPHERE_TILING_HEXAGONAL,
 } HorosphereTilingType;
 
-#define HOROSPHERE_MATERIAL_COUNT_MAX 4
 
 typedef struct {
     real width;
@@ -50,14 +52,13 @@ typedef struct __attribute__((packed)) {
 
 bool horosphere_hit(
     const Horosphere *plane, HorosphereHit *cache,
-    HyRay ray, quaternion *hit_pos
+    PathInfo *path, HyRay ray, quaternion *hit_pos
 );
 
-bool horosphere_bounce(
+void horosphere_bounce(
     const Horosphere *plane, const HorosphereHit *cache,
-    Rng *rng,
-    HyRay *ray,
-    float3 *light, float3 *emission
+    quaternion *hit_dir, quaternion *normal,
+    Material *material
 );
 
 #ifdef OPENCL_INTEROP

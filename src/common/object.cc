@@ -3,7 +3,7 @@
 
 real object_hit(
     const Object *object, ObjectHit *cache,
-    Rng *rng,
+    Rng *rng, PathInfo *path,
     HyRay ray
 ) {
     HyRay r = hyray_map(mo_inverse(object->map), ray);
@@ -13,16 +13,17 @@ real object_hit(
     if (object->type == OBJECT_PLANE) {
         h = hyplane_hit(
             &object->plane, &cache->plane,
-            r, &hp
+            path, r, &hp
         );
     } else if (object->type == OBJECT_HOROSPHERE) {
         h = horosphere_hit(
             &object->horosphere, &cache->horosphere,
-            r, &hp
+            path, r, &hp
         );
     }
 
     if (h) {
+        cache->hit_pos = hp;
         return hy_distance(hp, r.start);
     } else {
         return (real)(-1);
@@ -31,30 +32,41 @@ real object_hit(
 
 bool object_bounce(
     const Object *object, const ObjectHit *cache,
-    Rng *rng,
+    Rng *rng, PathInfo *path,
     HyRay *ray,
     float3 *light, float3 *emission
 ) {
-    bool b = false;
-
+    Material material;
+    quaternion hit_dir, normal;
+    
     if (object->type == OBJECT_PLANE) {
-        b = hyplane_bounce(
+        hyplane_bounce(
             &object->plane, &cache->plane,
-            rng,
-            ray,
-            light, emission
+            &hit_dir, &normal,
+            &material
         );
     } else if (object->type == OBJECT_HOROSPHERE) {
-        b = horosphere_bounce(
+        horosphere_bounce(
             &object->horosphere, &cache->horosphere,
-            rng,
-            ray,
-            light, emission
+            &hit_dir, &normal,
+            &material
         );
     }
 
+    real3 bounce_dir;
+        material_bounce(
+            &material,
+            rng, path,
+            hit_dir.xyz, normal.xyz, &bounce_dir,
+            light, emission
+        );
+
+    ray->start = cache->hit_pos;
+    ray->direction = q_new(bounce_dir, (real)0);
+
     *ray = hyray_map(object->map, *ray);
-    return b;
+
+    return true;
 }
 
 #ifdef OPENCL_INTEROP

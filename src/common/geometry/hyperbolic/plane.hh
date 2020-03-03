@@ -6,15 +6,28 @@
 #include "ray.hh"
 
 
+#define HYPLANE_MATERIAL_COUNT_MAX 4
+
 typedef enum {
     HYPLANE_TILING_NONE = 0,
     HYPLANE_TILING_PENTAGONAL,
-} HyPlaneTiling;
+} HyPlaneTilingType;
 
 typedef struct {
-    HyPlaneTiling tiling;
+    real width;
     Material material;
-    real border;
+} HyPlaneTilingBorder;
+
+typedef struct {
+    HyPlaneTilingType type;
+    HyPlaneTilingBorder border;
+} HyPlaneTiling;
+
+
+typedef struct {
+    Material materials[HYPLANE_MATERIAL_COUNT_MAX];
+    int material_count;
+    HyPlaneTiling tiling;
 } HyPlane;
 
 typedef struct {
@@ -24,23 +37,24 @@ typedef struct {
 
 #ifdef OPENCL_INTEROP
 typedef struct __attribute__((packed)) {
-    uint_pk tiling;
-    MaterialPk material;
-    real_pk border;
+    MaterialPk materials[HYPLANE_MATERIAL_COUNT_MAX];
+    int_pk material_count;
+    uint_pk tiling_type;
+    real_pk tiling_border_width;
+    MaterialPk tiling_border_material;
 } HyPlanePk;
 #endif // OPENCL_INTEROP
 
 
 bool hyplane_hit(
     const HyPlane *plane, HyPlaneHit *cache,
-    HyRay ray, quaternion *hit_pos
+    PathInfo *path, HyRay ray, quaternion *hit_pos
 );
 
-bool hyplane_bounce(
+void hyplane_bounce(
     const HyPlane *plane, const HyPlaneHit *cache,
-    Rng *rng,
-    HyRay *ray,
-    float3 *light, float3 *emission
+    quaternion *hit_dir, quaternion *normal,
+    Material *material
 );
 
 #ifdef OPENCL_INTEROP

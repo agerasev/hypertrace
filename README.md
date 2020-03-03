@@ -26,3 +26,5 @@ Lobachevsky (hyperbolic) space ray tracer powered by OpenCL.
 
 - [x] Gamma correction
 - [ ] Noise reduction (maybe using DL)
+
+- [ ] Same RNG seed for work group to reduce divergence

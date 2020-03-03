@@ -2,6 +2,7 @@
 
 #include <types.hh>
 #include <random.hh>
+#include <path.hh>
 
 #include <algebra/moebius.hh>
 #include <geometry/hyperbolic.hh>
@@ -31,9 +32,12 @@ typedef struct {
     };
 } Object;
 
-typedef union {
-    HyPlaneHit plane;
-    HorosphereHit horosphere;
+typedef struct {
+    quaternion hit_pos;
+    union {
+        HyPlaneHit plane;
+        HorosphereHit horosphere;
+    };
 } ObjectHit;
 
 #ifdef OPENCL_INTEROP
@@ -53,13 +57,13 @@ typedef struct __attribute__ ((packed)) {
 
 real object_hit(
     const Object *object, ObjectHit *cache,
-    Rng *rng,
+    Rng *rng, PathInfo *path,
     HyRay ray
 );
 
 bool object_bounce(
     const Object *object, const ObjectHit *cache,
-    Rng *rng,
+    Rng *rng, PathInfo *path,
     HyRay *ray,
     float3 *light, float3 *emission
 );

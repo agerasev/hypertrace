@@ -18,6 +18,7 @@
 #include <sdl/viewer.hpp>
 #include <sdl/controller.hpp>
 #include <renderer.hpp>
+#include <color.hpp>
 
 
 using duration = std::chrono::duration<double>;
@@ -44,41 +45,86 @@ int main(int argc, const char *argv[]) {
     int width = 800, height = 600;
     Renderer renderer(device, width, height);
 
+    color3 border_color = make_color(color3(0.9));
     std::vector<Object> objects = {
         Object{
             .type = OBJECT_HOROSPHERE,
             .map = mo_identity(),
             .horosphere = Horosphere {
-                .tiling = HOROSPHERE_TILING_HEXAGONAL,
-                .material = Material {float3(1.0, 0.5, 0.25), 0.1},
-                .size = 0.25, .border = 0.02
+                .materials = {
+                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
+                    Material {make_color(0x35adae), 0.1, 0.0, float3(0)},
+                },
+                .material_count = 3,
+                .tiling = HorosphereTiling {
+                    .type = HOROSPHERE_TILING_HEXAGONAL,
+                    .cell_size = 0.25,
+                    .border = HorosphereTilingBorder {
+                        .width = 0.05,
+                        .material = Material {border_color, 0.0, 0, float3(0)},
+                    },
+                },
             },
         },
         Object{
             .type = OBJECT_HOROSPHERE,
             .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
             .horosphere = Horosphere {
-                .tiling = HOROSPHERE_TILING_SQUARE,
-                .material = Material {float3(0.25, 0.5, 1.0), 0.1},
-                .size = 0.25, .border = 0.02
+                .materials = {
+                    Material {make_color(0xfe7401), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfed601), 0.1, 0.0, float3(0)},
+                },
+                .material_count = 4,
+                .tiling = HorosphereTiling {
+                    .type = HOROSPHERE_TILING_SQUARE,
+                    .cell_size = 0.25,
+                    .border = HorosphereTilingBorder {
+                        .width = 0.05,
+                        .material = Material {border_color, 0.0, 0, float3(0)},
+                    },
+                },
             },
         },
         Object{
             .type = OBJECT_PLANE,
             .map = mo_identity(),
             .plane = HyPlane {
-                .tiling = HYPLANE_TILING_NONE,
-                .material = Material {float3(0.5, 1.0, 0.25), 0.1},
-                .border = 0.02
+                .materials = {
+                    Material {make_color(0xfe7401), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfed601), 0.1, 0.0, float3(0)},
+                },
+                .material_count = 4,
+                .tiling = HyPlaneTiling {
+                    .type = HYPLANE_TILING_PENTAGONAL,
+                    .border = HyPlaneTilingBorder {
+                        .width = 0.02,
+                        .material = Material {border_color, 0.0, 0, float3(0)},
+                    },
+                },
             },
         },
         Object{
             .type = OBJECT_PLANE,
             .map = mo_new(C1, 2*CI, C0, C1),
             .plane = HyPlane {
-                .tiling = HYPLANE_TILING_PENTAGONAL,
-                .material = Material {float3(1.0, 1.0, 0.25), 0.1},
-                .border = 0.02
+                .materials = {
+                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
+                    Material {make_color(0x35adae), 0.1, 0.0, float3(0)},
+                },
+                .material_count = 3,
+                .tiling = HyPlaneTiling {
+                    .type = HYPLANE_TILING_PENTAGONAL,
+                    .border = HyPlaneTilingBorder {
+                        .width = 0.02,
+                        .material = Material {border_color, 0.0, 0, float3(0)},
+                    },
+                },
             },
         },
     };

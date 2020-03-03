@@ -10,6 +10,7 @@
 
 #include <object.hh>
 #include <view.hh>
+#include <path.hh>
 
 #include <lens_blur.cl>
 
@@ -54,40 +55,59 @@ __kernel void render(
 
 	float3 light = (float3)(1.0f);
 
+	PathInfo gpath = {
+		.repeat = false,
+		.face = false,
+		.diffuse = false		
+	};
 	int prev = -1;
-	for (int k = 0; k < PATH_DEPTH; ++k) {
+	int diffuse = 0;
+	for (int k = 0; k < PATH_MAX_DEPTH; ++k) {
 		int mi = -1;
 		float ml = -1.0f;
 		ObjectHit mcache;
+		PathInfo mpath;
 		for (int i = 0; i < object_count; ++i) {
-			if (prev == i) {
-				continue;
-			}
 			ObjectPk obj_pk = objects[i];
 			Object obj;
 			unpack_object(&obj, &obj_pk);
 			
 			ObjectHit cache;
-			real l = object_hit(&obj, &cache, &rng, ray);
+			PathInfo path = gpath;
+			path.repeat = (prev == i);
+			real l = object_hit(&obj, &cache, &rng, &path, ray);
 			if (l > (real)0 && (l < ml || mi < 0)) {
 				mi = i;
 				ml = l;
 				mcache = cache;
+				mpath = path;
 			}
 		}
 
-		prev = mi;
 		if (mi >= 0) {
 			HyRay new_ray;
 			ObjectPk obj_pk = objects[mi];
 			Object obj;
 			unpack_object(&obj, &obj_pk);
-			if (!object_bounce(&obj, &mcache, &rng, &ray, &light, &color)) {
+			if (!object_bounce(
+				&obj, &mcache,
+				&rng, &mpath,
+				&ray,
+				&light, &color
+			)) {
 				break;
 			}
 		} else {
 			color += (float3)(1.0f)*light;
 			break;
+		}
+		prev = mi;
+		gpath = mpath;
+		if (gpath.diffuse) {
+			if (diffuse >= PATH_MAX_DIFFUSE_DEPTH) {
+				break;
+			}
+			diffuse += 1;
 		}
 	}
 

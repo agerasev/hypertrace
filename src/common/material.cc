@@ -3,17 +3,19 @@
 #include <algebra/rotation.hh>
 
 
-bool material_bounce(
+void material_bounce(
     Material *material,
-    Rng *rng,
+    Rng *rng, PathInfo *path,
     real3 hit_dir, real3 normal, real3 *bounce_dir,
     float3 *light, float3 *emission
 ) {
-    if (rand_uniform(rng) < material->gloss) {
+    *emission += *light*material->glow;
+    if (rand_uniform(rng) < material->transparency) {
+        *bounce_dir = hit_dir;
+        path->face = !path->face;
+    } else if (rand_uniform(rng) < material->gloss) {
         specular_bounce(
-            make_float3(0.0f),
-            hit_dir, normal, bounce_dir,
-            light
+            hit_dir, normal, bounce_dir
         );
     } else {
         lambert_bounce(
@@ -22,14 +24,12 @@ bool material_bounce(
             hit_dir, normal, bounce_dir,
             light
         );
+        path->diffuse = true;
     }
-    return true;
 }
 
 void specular_bounce(
-    float3 color,
-    real3 hit_dir, real3 normal, real3 *bounce_dir,
-    float3 *light
+    real3 hit_dir, real3 normal, real3 *bounce_dir
 ) {
     *bounce_dir = hit_dir - (2*dot(hit_dir, normal))*normal;
 }
@@ -54,9 +54,13 @@ void lambert_bounce(
 void pack_material(MaterialPk *dst, const Material *src) {
     dst->diffuse_color = pack_float3(src->diffuse_color);
     dst->gloss = src->gloss;
+    dst->transparency = src->transparency;
+    dst->glow = pack_float3(src->glow);
 }
 void unpack_material(Material *dst, const MaterialPk *src) {
     dst->diffuse_color = unpack_float3(src->diffuse_color);
     dst->gloss = src->gloss;
+    dst->transparency = src->transparency;
+    dst->glow = unpack_float3(src->glow);
 }
 #endif // OPENCL_INTEROP

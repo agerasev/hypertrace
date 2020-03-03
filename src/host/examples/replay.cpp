@@ -22,10 +22,17 @@
 #include <sdl/image.hpp>
 #include <renderer.hpp>
 #include <scenario.hpp>
+#include <color.hpp>
 
 
 using duration = std::chrono::duration<double>;
 
+class MyScenario : public PathScenario {
+    public:
+    const std::vector<Object> &get_objects(double t) const override {
+        return std::vector<Object>();
+    }
+};
 
 int main(int argc, const char *argv[]) {
     int platform_no = 0;
@@ -48,41 +55,86 @@ int main(int argc, const char *argv[]) {
     int width = 1920, height = 1080;
     Renderer renderer(device, width, height);
 
+    color3 border_color = make_color(color3(0.9));
     std::vector<Object> objects = {
         Object{
             .type = OBJECT_HOROSPHERE,
             .map = mo_identity(),
-            .horosphere = Horosphere{
-                .tiling = HOROSPHERE_TILING_HEXAGONAL,
-                .material = Material {float3(1.0, 0.5, 0.25), 0.05},
-                .size = 0.25, .border = 0.02,
+            .horosphere = Horosphere {
+                .materials = {
+                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
+                    Material {make_color(0x35adae), 0.1, 0.0, float3(0)},
+                },
+                .material_count = 3,
+                .tiling = HorosphereTiling {
+                    .type = HOROSPHERE_TILING_HEXAGONAL,
+                    .cell_size = 0.25,
+                    .border = HorosphereTilingBorder {
+                        .width = 0.05,
+                        .material = Material {border_color, 0.0, 0, float3(0)},
+                    },
+                },
             },
         },
         Object{
             .type = OBJECT_HOROSPHERE,
             .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
-            .horosphere = Horosphere{
-                .tiling = HOROSPHERE_TILING_SQUARE,
-                .material = Material {float3(0.25, 0.5, 1.0), 0.05},
-                .size = 0.25, .border = 0.02,
+            .horosphere = Horosphere {
+                .materials = {
+                    Material {make_color(0xfe7401), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfed601), 0.1, 0.0, float3(0)},
+                },
+                .material_count = 4,
+                .tiling = HorosphereTiling {
+                    .type = HOROSPHERE_TILING_SQUARE,
+                    .cell_size = 0.25,
+                    .border = HorosphereTilingBorder {
+                        .width = 0.05,
+                        .material = Material {border_color, 0.0, 0, float3(0)},
+                    },
+                },
             },
         },
         Object{
             .type = OBJECT_PLANE,
             .map = mo_identity(),
-            .plane = HyPlane{
-                .tiling = HYPLANE_TILING_NONE,
-                .material = Material {float3(0.5, 1.0, 0.25), 0.05},
-                .border = 0.02,
+            .plane = HyPlane {
+                .materials = {
+                    Material {make_color(0xfe7401), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfed601), 0.1, 0.0, float3(0)},
+                },
+                .material_count = 4,
+                .tiling = HyPlaneTiling {
+                    .type = HYPLANE_TILING_PENTAGONAL,
+                    .border = HyPlaneTilingBorder {
+                        .width = 0.02,
+                        .material = Material {border_color, 0.0, 0, float3(0)},
+                    },
+                },
             },
         },
         Object{
             .type = OBJECT_PLANE,
             .map = mo_new(C1, 2*CI, C0, C1),
-            .plane = HyPlane{
-                .tiling = HYPLANE_TILING_PENTAGONAL,
-                .material = Material {float3(1.0, 1.0, 0.25), 0.05},
-                .border = 0.02,
+            .plane = HyPlane {
+                .materials = {
+                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
+                    Material {make_color(0x35adae), 0.1, 0.0, float3(0)},
+                },
+                .material_count = 3,
+                .tiling = HyPlaneTiling {
+                    .type = HYPLANE_TILING_PENTAGONAL,
+                    .border = HyPlaneTilingBorder {
+                        .width = 0.02,
+                        .material = Material {border_color, 0.0, 0, float3(0)},
+                    },
+                },
             },
         },
     };
@@ -124,7 +176,7 @@ int main(int argc, const char *argv[]) {
         ))
     };
     
-    Scenario scenario;
+    MyScenario scenario;
     std::vector<SquareSpeedTransition> transitions {
         SquareSpeedTransition(8.0, points[0], points[1], 0.0, 1.0),
         SquareSpeedTransition(8.0, points[1], points[2], 0.0, 1.0),

@@ -53,6 +53,9 @@ DEF_VEC_PACK_234(float)
 
 #include <vectype.hpp>
 
+#define __global
+#define __local
+#define __constant const
 
 typedef unsigned char  uchar;
 typedef unsigned short ushort;

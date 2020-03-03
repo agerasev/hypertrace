@@ -17,6 +17,9 @@ Moebius hy_zrotate(real phi);
 Moebius hy_xrotate(real theta);
 Moebius hy_yrotate(real theta);
 
+// Move to position at the horosphere.
+Moebius hy_horosphere(complex pos);
+
 // Turns direction `dir` to *j*.
 Moebius hy_look_to(quaternion dir);
 

@@ -10,8 +10,6 @@ real hy_distance(quaternion a, quaternion b) {
     return log(x + sqrt(x*x - 1));
 }
 
-// Returns the direction of the line at point `dst_pos`
-// when we know that the line at the point `src_pos` has direction of `src_dir`.
 quaternion hy_dir_at(quaternion src_pos, quaternion src_dir, quaternion dst_pos) {
     quaternion p = src_pos, d = src_dir, h = dst_pos;
     return q_new(
@@ -55,7 +53,10 @@ Moebius hy_yrotate(real theta) {
     return mo_new(c*C1, s*CI, s*CI, c*C1);
 }
 
-// Turns direction `dir` to *j*.
+Moebius hy_horosphere(complex pos) {
+    return mo_new(C1, pos, C0, C1);
+}
+
 Moebius hy_look_to(quaternion dir) {
 	// We look at the top (along the z axis).
 	real phi = -atan2(dir.y, dir.x);
@@ -63,7 +64,6 @@ Moebius hy_look_to(quaternion dir) {
 	return mo_chain(hy_xrotate(theta), hy_zrotate(phi));
 }
 
-// Rotatates point `pos` around the origin to make it lay on the z axis.
 Moebius hy_look_at(quaternion pos) {
     // The origin is at *j* (z = 1).
 	real phi = -atan2(pos.y, pos.x);
@@ -71,8 +71,6 @@ Moebius hy_look_at(quaternion pos) {
 	return mo_chain(hy_xrotate(theta), hy_zrotate(phi));
 }
 
-// Translates point `pos` to the origin preserving orientation
-// relative to the line that connects `pos` to the origin.
 Moebius hy_move_at(quaternion pos) {
     Moebius a = hy_look_at(pos);
     Moebius b = hy_zshift(-hy_distance(QJ, pos));

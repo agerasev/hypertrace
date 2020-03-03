@@ -47,29 +47,33 @@ void hyplane_bounce(
     quaternion *hit_dir, quaternion *normal,
     Material *material
 ) {
-    int material_no = 0;
-    bool border = false;
-
-    if (plane->tiling.type == HYPLANE_TILING_PENTAGONAL) {
+    if (
+        plane->tiling.type == HYPLANE_TILING_PENTAGONAL ||
+        plane->tiling.type == HYPLANE_TILING_PENTASTAR
+    ) {
         quaternion p = cache->hit_pos;
 
-        uint n = 0, b = 1;
+        bool w = false;
+        //uint n = 0, b = 1;
         real Q = sqrt(cos(PI/4 + PI/5)/cos(PI/4 - PI/5));
         real T = sqrt(cos(PI/4 + PI/5)*cos(PI/4 - PI/5));
         real S = (cos(PI/4) - sin(PI/5))/T;
         real L = T/cos(PI/4);
+        real K = L*(2*cos(PI/5) - 1/cos(PI/5));
         Q = log((1 + Q)/(1 - Q));
         S = log((1 + S)/(1 - S));
 
         if (p.x < (real)0) {
             p.x = -p.x;
-            n |= 1;
+            //n |= 1;
+            w = !w;
         }
         if (p.y < (real)0) {
             p.y = -p.y;
-            n |= 2;
+            //n |= 2;
+            w = !w;
         }
-        b *= 4;
+        //b *= 4;
 
         p = mo_apply(mo_chain(
             hy_xshift(-Q),
@@ -85,7 +89,7 @@ void hyplane_bounce(
             }
             a[2] = a[2] || e;
             int s = (int)a[0] + (int)a[1] + (int)a[2];
-            uint bb = b*(6 - 2*e);
+            //uint bb = b*(6 - 2*e);
             if (s == 3) {
                 break;
             } else if (s == 2) {
@@ -98,8 +102,9 @@ void hyplane_bounce(
                         hy_zrotate(-o)
                     )
                 ), p);
-                n += b*(2*i + 1);
+                //n += b*(2*i + 1);
                 e = true;
+                w = !w;
             } else {
                 int i = a[0];
                 real o = PI*(2*i - 1)/5;
@@ -107,39 +112,39 @@ void hyplane_bounce(
                     hy_xshift(-2*Q),
                     hy_zrotate(-o)
                 ), p);
-                n += b*(2*(i + 1));
+                //n += b*(2*(i + 1));
                 e = false;
             }
-            b = bb;
+            //b = bb;
         }
+        
         const real br = plane->tiling.border.width;
-        int bh = 0;
+        bool bh = 0;
         for (int i = 0; i < 5; ++i) {
             real o = 2*PI*i/5;
             real2 d = make_real2(cos(o), sin(o));
-            bh += (dot(d, p.xy) > (L - br*p.z));
+            bh = bh || (dot(d, p.xy) > (L - br*p.z));
+            if (plane->tiling.type == HYPLANE_TILING_PENTASTAR) {
+                real ps = K + dot(d, p.xy);
+                w = w^(ps < 0);
+                bh = bh || (fabs(ps) < br*p.z);
+            }
         }
         if (bh == 0) {
-            n = (n>>16)^n;
-            n = (n>>8)^n;
-            n = (n>>4)^n;
-            n = (n>>2)^n;
-            material_no = n;
+            if (w || plane->material_count < 2) {
+                *material = plane->materials[0];
+            } else {
+                *material = plane->materials[1];
+            }
         } else {
-            border = true;
+            *material = plane->tiling.border.material;
         }
     } else {
-        material_no = 0;
+        *material = plane->materials[0];
     }
 
     *hit_dir = cache->hit_dir;
     *normal = cache->hit_pos;
-
-    if (!border) {
-        *material = plane->materials[mod(material_no, plane->material_count)];
-    } else {
-        *material = plane->tiling.border.material;
-    }
 }
 
 

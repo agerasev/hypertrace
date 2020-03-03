@@ -49,12 +49,12 @@ void horosphere_bounce(
     int material_no = 0;
     bool border = false;
 
+	real br = horosphere->tiling.border.width/horosphere->tiling.cell_size;
     if (horosphere->tiling.type == HOROSPHERE_TILING_SQUARE) {
         complex k, f;
         complex g = cache->hit_pos.xy;
         f = fract(g/horosphere->tiling.cell_size, &k);
 
-	    real br = horosphere->tiling.border.width;
 		if (f.x < br || f.x > 1 - br || f.y < br || f.y > 1 - br) {
             border = true;
 		} else {
@@ -71,7 +71,6 @@ void horosphere_bounce(
         int hx = (int)floor((floor(h.x) - floor(h.y))/3);
         int hy = (int)floor((floor(h.x + h.y) - hx)/2);
 
-        real br = horosphere->tiling.border.width/(sqrt(3.0f)/2);
         h -= hx*make_real2(2.0f, -1.0f) + hy*make_real2(1.0f, 1.0f);
         if (fabs(h.x - 1) > 1 - br || fabs(h.y) > 1 - br || fabs(h.x + h.y - 1) > 1 - br) {
             border = true;

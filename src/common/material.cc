@@ -10,8 +10,10 @@ void material_bounce(
     float3 *light, float3 *emission
 ) {
     *emission += *light*material->glow;
-    if (rand_uniform(rng) < material->transparency) {
+    float tr = material->transparency;
+    if (rand_uniform(rng) < tr) {
         *bounce_dir = hit_dir;
+        *light *= material->diffuse_color*(1.0f - tr) + tr;
         path->face = !path->face;
     } else if (rand_uniform(rng) < material->gloss) {
         specular_bounce(

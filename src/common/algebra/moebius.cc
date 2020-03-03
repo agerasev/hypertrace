@@ -78,14 +78,31 @@ void mo_eigen(Moebius m, Moebius *l, Moebius *v) {
         );
         if (c_fabs(D) > EPS) {
             *l = mo_new(ad + D, C0, C0, ad - D);
-            if (c_fabs(m.c) > EPS) {
-                *v = mo_new(l->a - m.d, l->d - m.d, m.c, m.c);
-            } else {
+            if (c_fabs(m.b) > EPS) {
                 *v = mo_new(m.b, m.b, l->a - m.a, l->d - m.a);
+            } else {
+                *v = mo_new(l->a - m.d, l->d - m.d, m.c, m.c);
             }
         } else {
             *l = mo_new(ad, C1, C0, ad);
-            *v = mo_new(C1, C0, C0, C1);
+            // FIXME: Wrond algorithm
+            if (c_fabs(m.b) > EPS) {
+                complex g = 4*c_mul(m.b, m.b) + c_mul(m.a - m.d, m.a - m.d);
+                *v = mo_new(
+                    m.b,
+                    c_div(2*c_mul(m.b, m.a - m.d), g),
+                    (m.d - m.a)/2,
+                    c_div(4*c_mul(m.b, m.b), g)
+                );
+            } else {
+                complex g = 4*c_mul(m.c, m.c) + c_mul(m.d - m.a, m.d - m.a);
+                *v = mo_new(
+                    (m.a - m.d)/2,
+                    c_div(4*c_mul(m.c, m.c), g),
+                    m.c,
+                    c_div(2*c_mul(m.c, m.d - m.a), g)
+                );
+            }
         }
 #ifndef MOEBIUS_DENORMALIZED
         *v = mo_normalize(*v);
@@ -104,10 +121,10 @@ Moebius mo_pow(Moebius m, real p) {
         if (c_fabs(j.b) < EPS) {
             k = mo_new(c_powr(j.a, p), C0, C0, c_powr(j.d, p));
         } else {
-            // Assume j.a == j.d and j.b == 1
+            // Assume j.a == j.d
             k = mo_new(
                 c_powr(j.a, p),
-                p*c_powr(j.a, p - 1),
+                p*c_mul(c_powr(j.a, p - 1), j.b),
                 C0,
                 c_powr(j.d, p)
             );
@@ -280,12 +297,21 @@ TEST_CASE("Moebius transformation", "[moebius]") {
     }
 
     SECTION("Non-diagonalizable matrix") {
-        Moebius m = mo_new(C1, C1, C0, C1);
-        Moebius l, v;
-        mo_eigen(m, &l, &v);
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            Moebius m = mo_new(C1, C0, C0, C1);
+            if (rng.uniform() > 0.5) {
+                m.b = rand_c_normal(rng);
+            } else {
+                m.c = rand_c_normal(rng);
+            }
+            Moebius l, v;
+            mo_eigen(m, &l, &v);
+            std::cout << l << std::endl <<
+                v << std::endl;
 
-        Moebius o = mo_chain(mo_chain(v, l), mo_inverse(v));
-        REQUIRE(o == ApproxMo(m));
+            Moebius o = mo_chain(mo_chain(v, l), mo_inverse(v));
+            REQUIRE(o == ApproxMo(m));
+        }
     }
 
     SECTION("Power") {
@@ -305,9 +331,13 @@ TEST_CASE("Moebius transformation", "[moebius]") {
     }
 
     SECTION("Non-diagonalizable power") {
-        Moebius m = mo_new(C1, C1, C0, C1);
-
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            Moebius m = mo_new(C1, C0, C0, C1);
+            if (rng.uniform() > 0.5) {
+                m.b = rand_c_normal(rng);
+            } else {
+                m.c = rand_c_normal(rng);
+            }
             int p = (int)floor(8*rng.uniform()) + 2;
             int q = (int)floor(8*rng.uniform()) + 2;
 

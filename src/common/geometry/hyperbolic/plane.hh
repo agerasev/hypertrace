@@ -6,11 +6,12 @@
 #include "ray.hh"
 
 
-#define HYPLANE_MATERIAL_COUNT_MAX 4
+#define HYPLANE_MATERIAL_COUNT_MAX 2
 
 typedef enum {
     HYPLANE_TILING_NONE = 0,
     HYPLANE_TILING_PENTAGONAL,
+    HYPLANE_TILING_PENTASTAR,
 } HyPlaneTilingType;
 
 typedef struct {

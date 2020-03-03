@@ -52,7 +52,7 @@ int main(int argc, const char *argv[]) {
     std::cout << "Using platform " << platform_no << ", device " << device_no << std::endl;
     cl_device_id device = cl::search_device(platform_no, device_no);
 
-    int width = 1920, height = 1080;
+    int width = 1280, height = 720;
     Renderer renderer(device, width, height);
 
     color3 border_color = make_color(color3(0.9));
@@ -62,17 +62,17 @@ int main(int argc, const char *argv[]) {
             .map = mo_identity(),
             .horosphere = Horosphere {
                 .materials = {
-                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
-                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
-                    Material {make_color(0x35adae), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfe0000), 0.1, 0.1, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.1, float3(0)},
+                    Material {make_color(0x35adae), 0.1, 0.1, float3(0)},
                 },
                 .material_count = 3,
                 .tiling = HorosphereTiling {
                     .type = HOROSPHERE_TILING_HEXAGONAL,
-                    .cell_size = 0.25,
+                    .cell_size = 0.5,
                     .border = HorosphereTilingBorder {
-                        .width = 0.05,
-                        .material = Material {border_color, 0.0, 0, float3(0)},
+                        .width = 0.02,
+                        .material = Material {border_color, 0.0, 0, float3(1.0)},
                     },
                 },
             },
@@ -82,18 +82,18 @@ int main(int argc, const char *argv[]) {
             .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
             .horosphere = Horosphere {
                 .materials = {
-                    Material {make_color(0xfe7401), 0.1, 0.0, float3(0)},
-                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
-                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
-                    Material {make_color(0xfed601), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfe7401), 0.1, 0.1, float3(0)},
+                    Material {make_color(0xfe0000), 0.1, 0.1, float3(0)},
+                    Material {make_color(0xffaa01), 0.1, 0.1, float3(0)},
+                    Material {make_color(0xfed601), 0.1, 0.1, float3(0)},
                 },
                 .material_count = 4,
                 .tiling = HorosphereTiling {
                     .type = HOROSPHERE_TILING_SQUARE,
-                    .cell_size = 0.25,
+                    .cell_size = 0.5,
                     .border = HorosphereTilingBorder {
-                        .width = 0.05,
-                        .material = Material {border_color, 0.0, 0, float3(0)},
+                        .width = 0.02,
+                        .material = Material {border_color, 0.0, 0, float3(1.0)},
                     },
                 },
             },
@@ -104,16 +104,14 @@ int main(int argc, const char *argv[]) {
             .plane = HyPlane {
                 .materials = {
                     Material {make_color(0xfe7401), 0.1, 0.0, float3(0)},
-                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
-                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
-                    Material {make_color(0xfed601), 0.1, 0.0, float3(0)},
+                    Material {make_color(0x35adae), 0.1, 0.0, float3(0)},
                 },
-                .material_count = 4,
+                .material_count = 2,
                 .tiling = HyPlaneTiling {
-                    .type = HYPLANE_TILING_PENTAGONAL,
+                    .type = HYPLANE_TILING_PENTASTAR,
                     .border = HyPlaneTilingBorder {
-                        .width = 0.02,
-                        .material = Material {border_color, 0.0, 0, float3(0)},
+                        .width = 0.01,
+                        .material = Material {border_color, 0.0, 0, float3(1.0)},
                     },
                 },
             },
@@ -124,15 +122,14 @@ int main(int argc, const char *argv[]) {
             .plane = HyPlane {
                 .materials = {
                     Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
-                    Material {make_color(0xffaa01), 0.1, 0.0, float3(0)},
-                    Material {make_color(0x35adae), 0.1, 0.0, float3(0)},
+                    Material {make_color(0xfed601), 0.1, 0.0, float3(0)},
                 },
-                .material_count = 3,
+                .material_count = 2,
                 .tiling = HyPlaneTiling {
                     .type = HYPLANE_TILING_PENTAGONAL,
                     .border = HyPlaneTilingBorder {
                         .width = 0.02,
-                        .material = Material {border_color, 0.0, 0, float3(0)},
+                        .material = Material {border_color, 0.0, 0, float3(1.0)},
                     },
                 },
             },
@@ -201,7 +198,7 @@ int main(int argc, const char *argv[]) {
         View v = scenario.get_view(time, frame_time);
         v.field_of_view = 0.8;
         sample_counter += renderer.render_for(v, frame_time, true);
-        //sample_counter += renderer.render_n(v, 200, true);
+        //sample_counter += renderer.render_n(v, 100, true);
         time += frame_time;
 
         auto store = [&](uint8_t *data) {
@@ -209,9 +206,9 @@ int main(int argc, const char *argv[]) {
         };
         viewer.display(store);
 
-        //std::stringstream ss;
-        //ss << std::setfill('0') << std::setw(5) << "output/" << counter << ".png";
-        //sdl::save_image(ss.str(), width, height, store);
+        std::stringstream ss;
+        ss << std::setfill('0') << std::setw(5) << "output/" << counter << ".png";
+        sdl::save_image(ss.str(), width, height, store);
 
         if (!controller.handle() || time > scenario.duration()) {
             break;

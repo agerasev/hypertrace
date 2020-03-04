@@ -26,6 +26,12 @@
 class MyScenario : public PathScenario {
     private:
     std::vector<Object> objects;
+    std::vector<double> ts; // timestamps
+
+    template <typename Tr>
+    void add_any(const Tr t) {
+        add_transition(std::make_unique<Tr>(t));
+    }
 
     public:
     MyScenario() {
@@ -35,40 +41,53 @@ class MyScenario : public PathScenario {
                 .map = mo_identity(),
                 .horosphere = Horosphere {
                     .materials = {
-                        Material {make_color(0x6ec3c1), 0.0, 0.5, float3(0)},
-                        Material {make_color(0x335120), 0.0, 0.5, float3(0)},
-                        Material {make_color(0x9dcc5f), 0.0, 0.5, float3(0)},
-                        Material {make_color(0x0d5f8a), 0.0, 0.5, float3(0)},
+                        Material {make_color(0x6ec3c1), 0.0, 0.0, float3(0)},
+                        Material {make_color(0x335120), 0.0, 0.0, float3(0)},
+                        Material {make_color(0x9dcc5f), 0.0, 0.0, float3(0)},
+                        Material {make_color(0x0d5f8a), 0.0, 0.0, float3(0)},
                     },
                     .material_count = 4,
                     .tiling = HorosphereTiling {
                         .type = HOROSPHERE_TILING_SQUARE,
-                        .cell_size = 0.4,
+                        .cell_size = 0.5,
                         .border = HorosphereTilingBorder {
-                            .width = 0.02,
+                            .width = 0.03,
                             .material = Material {float3(0.0), 0.0, 0, float3(0)},
                         },
                     },
                 },
             }
         };
+        
+        ts = {
+            0.0, // Start move
+            5.0, // Start becoming transparent
+            7.5, // Become transparent
+            10.0, // Entered horosphere
+            15.0, // Moved inside
+        };
 
         std::vector<View> points {
-            view_position(mo_chain(hy_zrotate(0), hy_zshift(-1.0))),
-            view_position(mo_chain(hy_zrotate(PI), hy_zshift(-1.0))),
+            view_position(mo_chain(hy_horosphere(c_new(4, 4)), hy_zshift(-1.0))),
+            view_position(mo_chain(hy_horosphere(c_new(0.25, 0.25)), hy_zshift(-1.0))),
+            view_position(mo_chain(hy_horosphere(c_new(0.25, 0.25)), hy_zshift(0.1))),
+            view_position(mo_chain(hy_horosphere(c_new(-4, -4)), hy_zshift(0.1))),
         };
-        std::vector<SquareSpeedTransition> transitions {
-            SquareSpeedTransition(5.0, points[0], points[1], 0.0, 1.0),
-        };
-        for (const auto &t : transitions) {
-            add_transition(std::make_unique<SquareSpeedTransition>(t));
-        }
+
+        add_any(SquareSpeedTransition(ts[1] - ts[0], points[0], points[1], 0.0, 1.0));
+        add_any(DelayTransition(ts[2] - ts[1], points[1]));
+        add_any(SquareSpeedTransition(ts[3] - ts[2], points[1], points[2], 0.0, 1.0));
+        add_any(SquareSpeedTransition(ts[4] - ts[3], points[2], points[3], 0.0, 1.0));
     }
     virtual std::vector<Object> get_objects(double t) const {
         std::vector<Object> objs(objects);
-        objs[0].map = hy_xshift(0.5*sin(2*t));
-        objs[0].horosphere.tiling.cell_size = 0.1 + 0.3*(cos(3*t) + 1);
-        objs[0].horosphere.tiling.border.width = 0.05*objs[0].horosphere.tiling.cell_size;
+
+        real tr = (t - ts[1])/(ts[2] - ts[1]);
+        tr = min(max(tr, 0.0), 1.0);
+        for (int i = 0; i < objs[0].horosphere.material_count; ++i) {
+            objs[0].horosphere.materials[i].transparency = tr;
+        }
+        
         return objs;
     }
 };

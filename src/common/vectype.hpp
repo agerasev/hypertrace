@@ -246,7 +246,6 @@ vectype<T, N> normalize(vectype<T, N> a) {
 inline double fract(double x, double *intpart) {
     return modf(x, intpart);
 }
-
 template <typename T, int N>
 vectype<T, N> fract(vectype<T, N> x, vectype<T, N> *intpart) {
     vectype<T, N> r;
@@ -260,7 +259,6 @@ template <typename T, int N>
 vectype<T, N> floor(vectype<T, N> v) {
     return v.map([](T x){ return floor(x); });
 }
-
 template <typename T, int N>
 vectype<T, N> ceil(vectype<T, N> v) {
     return v.map([](T x){ return ceil(x); });
@@ -281,7 +279,7 @@ T min(vectype<T, N> x, vectype<T, N> y) {
 }
 template <typename T>
 T max(T x, T y) {
-    return std::min(x, y);
+    return std::max(x, y);
 }
 template <typename T, int N>
 T max(vectype<T, N> x, vectype<T, N> y) {

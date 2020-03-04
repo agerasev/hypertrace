@@ -149,6 +149,9 @@ void cl::Buffer::load(cl_command_queue queue, void *data) {
 }
 void cl::Buffer::load(cl_command_queue queue, void *data, size_t size) {
     assert(size <= _size);
+    if (size <= 0) {
+        return;
+    }
     assert(clEnqueueReadBuffer(
         queue, buffer, CL_TRUE,
         0, size, data,
@@ -169,6 +172,9 @@ void cl::Buffer::store(cl_command_queue queue, const void *data, size_t size) {
         ) == CL_SUCCESS);
         
         init(context, size);
+    }
+    if (size <= 0) {
+        return;
     }
     assert(clEnqueueWriteBuffer(
         queue, buffer, CL_TRUE,

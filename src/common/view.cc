@@ -18,10 +18,7 @@ View view_position(Moebius m) {
 
 View view_interpolate(View a, View b, real t) {
     View o;
-    o.position = mo_chain(
-        a.position,
-        mo_pow(mo_chain(mo_inverse(a.position), b.position), t)
-    );
+    o.position = mo_interpolate(a.position, b.position, t);
     o.field_of_view = a.field_of_view*(1 - t) + b.field_of_view*t;
     o.lens_radius = a.lens_radius*(1 - t) + b.lens_radius*t;
     o.focal_length = a.focal_length*(1 - t) + b.focal_length*t;

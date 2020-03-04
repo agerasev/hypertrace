@@ -14,6 +14,28 @@
 
 #include <lens_blur.cl>
 
+void get_object(Object *obj, int i, __global ObjectPk *objects) {
+	ObjectPk obj_pk = objects[i];
+	unpack_object(obj, &obj_pk);
+}
+
+void get_object_interpolate(
+	Object *obj, int i, real t,
+	__global ObjectPk *objects,
+	__global ObjectPk *objects_prev,
+	__global uchar *objects_mask
+) {
+	ObjectPk obj_pk = objects[i];
+	if (objects_mask[i] != 0) {
+		ObjectPk obj_prev_pk = objects_prev[i];
+		Object obj_orig, obj_prev;
+		unpack_object(&obj_orig, &obj_pk);
+		unpack_object(&obj_prev, &obj_prev_pk);
+		object_interpolate(obj, &obj_prev, &obj_orig, t);
+	} else {
+		unpack_object(obj, &obj_pk);
+	}
+}
 
 __kernel void render(
 	__global float *screen,
@@ -21,8 +43,13 @@ __kernel void render(
 	int width, int height,
 	int sample_no,
 	__global uint *seeds,
-	ViewPk view_pk, ViewPk view_prev_pk,
+
+	ViewPk view_pk,
+	ViewPk view_prev_pk,
+
 	__global ObjectPk *objects,
+	__global ObjectPk *objects_prev,
+	__global uchar *objects_mask,
 	const int object_count
 ) {
 	int idx = get_global_id(0);
@@ -31,12 +58,9 @@ __kernel void render(
 
 	View view = view_unpack(view_pk);
 
-	real time = (real)1;
+	real time = rand_uniform(&rng);
 #ifdef MOTION_BLUR
-	{
-		time = rand_uniform(&rng);
-		view = view_interpolate(view_unpack(view_prev_pk), view, time);
-	}
+	view = view_interpolate(view_unpack(view_prev_pk), view, time);
 #endif // MOTION_BLUR
 
 	quaternion v = q_new(
@@ -69,9 +93,15 @@ __kernel void render(
 		ObjectHit mcache;
 		PathInfo mpath;
 		for (int i = 0; i < object_count; ++i) {
-			ObjectPk obj_pk = objects[i];
 			Object obj;
-			unpack_object(&obj, &obj_pk);
+#ifdef OBJECT_MOTION_BLUR
+			get_object_interpolate(
+				&obj, i, time,
+				objects, objects_prev, objects_mask
+			);
+#else  // OBJECT_MOTION_BLUROBJECT_MOTION_BLUR
+			get_object(&obj, i, objects);
+#endif // OBJECT_MOTION_BLUROBJECT_MOTION_BLUR
 			
 			ObjectHit cache;
 			PathInfo path = gpath;
@@ -87,9 +117,15 @@ __kernel void render(
 
 		if (mi >= 0) {
 			HyRay new_ray;
-			ObjectPk obj_pk = objects[mi];
 			Object obj;
-			unpack_object(&obj, &obj_pk);
+#ifdef OBJECT_MOTION_BLUR
+			get_object_interpolate(
+				&obj, mi, time,
+				objects, objects_prev, objects_mask
+			);
+#else  // OBJECT_MOTION_BLUR
+			get_object(&obj, mi, objects);
+#endif // OBJECT_MOTION_BLUR
 			if (!object_bounce(
 				&obj, &mcache,
 				&rng, &mpath,

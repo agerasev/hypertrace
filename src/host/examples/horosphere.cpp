@@ -25,7 +25,7 @@
 
 class MyScenario : public PathScenario {
     private:
-    mutable std::vector<Object> objects;
+    std::vector<Object> objects;
 
     public:
     MyScenario() {
@@ -53,19 +53,22 @@ class MyScenario : public PathScenario {
             }
         };
 
-        std::vector<Point> points {
-            Point(mo_chain(hy_horosphere(c_new(2, 2)), hy_zshift(-1.0))),
-            Point(mo_chain(hy_horosphere(c_new(0, 0)), hy_zshift(-1.0))),
+        std::vector<View> points {
+            view_position(mo_chain(hy_horosphere(c_new(0, 0)), hy_zshift(-1.0))),
+            view_position(mo_chain(hy_horosphere(c_new(0, 0)), hy_zshift(-1.0))),
         };
         std::vector<SquareSpeedTransition> transitions {
-            SquareSpeedTransition(4.0, points[0], points[1], 0.0, 1.0),
+            SquareSpeedTransition(10.0, points[0], points[1], 0.0, 1.0),
         };
         for (const auto &t : transitions) {
             add_transition(std::make_unique<SquareSpeedTransition>(t));
         }
     }
-    virtual const std::vector<Object> &get_objects(double t) const {
-        return objects;
+    virtual std::vector<Object> get_objects(double t) const {
+        std::vector<Object> objs(objects);
+        objs[0].map = hy_xshift(0.5*sin(4*t));
+        objs[0].horosphere.tiling.cell_size = 0.1 + 0.3*(cos(8*t) + 1);
+        return objs;
     }
 };
 
@@ -92,7 +95,6 @@ int main(int argc, const char *argv[]) {
     int width = 800, height = 600;
     Renderer renderer(device, width, height);
     MyScenario scenario;
-    renderer.store_objects(scenario.get_objects(0.0));
     
     Viewer viewer(width, height);
     Controller controller;
@@ -107,10 +109,17 @@ int main(int argc, const char *argv[]) {
     for(;;) {
         auto start = std::chrono::system_clock::now();
 
-        View v = scenario.get_view(time, frame_time);
-        v.field_of_view = 0.8;
-        sample_counter += renderer.render_for(v, frame_time, true);
-        //sample_counter += renderer.render_n(v, 200, true);
+        renderer.set_view(
+            scenario.get_view(time),
+            scenario.get_view(time - frame_time)
+        );
+        renderer.store_objects(
+            scenario.get_objects(time),
+            scenario.get_objects(time - frame_time),
+            std::vector<bool>{true}
+        );
+        sample_counter += renderer.render_for(frame_time, true);
+        //sample_counter += renderer.render_n(200, true);
         time += frame_time;
 
         auto store = [&](uint8_t *data) {

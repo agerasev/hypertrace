@@ -24,8 +24,15 @@ class Renderer {
 
     cl::Buffer seeds;
     
-    cl::Buffer object_buffer;
+    cl::Buffer objects;
+    cl::Buffer objects_prev;
+    cl::Buffer objects_mask;
     int object_count = 0;
+
+    static void store_objs_to_buf(
+        cl::Queue &queue, cl::Buffer &buf,
+        const std::vector<Object> &objs
+    );
 
     int monte_carlo_counter = 0;
 
@@ -34,7 +41,13 @@ class Renderer {
     public:
     Renderer(cl_device_id device, int width=800, int height=600);
 
-    void store_objects(const std::vector<Object> &objects);
+    void store_objects(const std::vector<Object> &objs);
+    void store_objects(
+        const std::vector<Object> &objs,
+        const std::vector<Object> &objs_prev,
+        const std::vector<bool> &objs_mask
+    );
+    
     void load_image(uint8_t *data);
 
     void set_view(const View &v);

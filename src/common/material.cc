@@ -4,7 +4,7 @@
 
 
 void material_bounce(
-    Material *material,
+    const Material *material,
     Rng *rng, PathInfo *path,
     real3 hit_dir, real3 normal, real3 *bounce_dir,
     float3 *light, float3 *emission
@@ -50,6 +50,17 @@ void lambert_bounce(
     *bounce_dir = rot3_apply(rot, rand);
     
     *light *= color;
+}
+
+void material_interpolate(
+    Material *o,
+    const Material *a, const Material *b,
+    real t
+) {
+    INTERPOLATE_FIELD(*o, *a, *b, diffuse_color, t);
+    INTERPOLATE_FIELD(*o, *a, *b, gloss, t);
+    INTERPOLATE_FIELD(*o, *a, *b, transparency, t);
+    INTERPOLATE_FIELD(*o, *a, *b, glow, t);
 }
 
 #ifdef OPENCL_INTEROP

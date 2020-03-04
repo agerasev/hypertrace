@@ -58,6 +58,12 @@ void hyplane_bounce(
     Material *material
 );
 
+void hyplane_interpolate(
+    HyPlane *o,
+    const HyPlane *a, const HyPlane *b,
+    real t
+);
+
 #ifdef OPENCL_INTEROP
 void pack_hyplane(HyPlanePk *dst, const HyPlane *src);
 void unpack_hyplane(HyPlane *dst, const HyPlanePk *src);

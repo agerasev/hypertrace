@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <chrono>
 #include <random>
+#include <algorithm>
 
 
 using duration = std::chrono::duration<double>;
@@ -35,15 +36,47 @@ Renderer::Renderer(cl_device_id device, int width, int height) :
     set_view(view_init());
 }
 
-void Renderer::store_objects(const std::vector<Object> &objects) {
-    std::vector<ObjectPk> package(objects.size());
+void Renderer::store_objs_to_buf(
+    cl::Queue &queue, cl::Buffer &buf,
+    const std::vector<Object> &objs
+) {
+    std::vector<ObjectPk> pack(objs.size());
 
-    for (size_t i = 0; i < objects.size(); ++i) {
-        pack_object(&package[i], &objects[i]);
+    for (size_t i = 0; i < objs.size(); ++i) {
+        pack_object(&pack[i], &objs[i]);
     }
-    object_buffer.store(queue, package.data(), sizeof(ObjectPk)*objects.size());
-    
-    object_count = objects.size();
+    buf.store(queue, pack.data(), sizeof(ObjectPk)*objs.size());
+}
+
+void Renderer::store_objects(const std::vector<Object> &objs) {
+    store_objects(
+        objs,
+        std::vector<Object>(),
+        std::vector<bool>(objs.size(), false)
+    );
+}
+
+void Renderer::store_objects(
+    const std::vector<Object> &objs,
+    const std::vector<Object> &objs_prev,
+    const std::vector<bool> &objs_mask
+) {
+    store_objs_to_buf(queue, objects, objs);
+
+    if (objs_prev.size() > 0) {
+        assert(objs.size() == objs_prev.size());
+        store_objs_to_buf(queue, objects_prev, objs_prev);
+    }
+
+    assert(objs.size() == objs_mask.size());
+    std::vector<uchar_pk> mask_pk(objs_mask.size());
+    std::transform(
+        objs_mask.begin(), objs_mask.end(),
+        mask_pk.begin(), [](bool x) { return (uchar_pk)x; }
+    );
+    objects_mask.store(queue, mask_pk.data(), mask_pk.size());
+
+    object_count = objs.size();
 }
 
 void Renderer::load_image(uint8_t *data) {
@@ -69,8 +102,11 @@ void Renderer::render(bool fresh) {
         width, height,
         monte_carlo_counter,
         seeds,
+
         view, view_prev,
-        object_buffer, object_count
+
+        objects, objects_prev,
+        objects_mask, object_count
     );
 
     monte_carlo_counter += 1;

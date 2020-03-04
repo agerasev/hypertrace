@@ -32,6 +32,7 @@ Moebius mo_chain(Moebius k, Moebius l);
 
 void mo_eigen(Moebius m, Moebius *jordan, Moebius *vectors);
 Moebius mo_pow(Moebius m, real p);
+Moebius mo_interpolate(Moebius a, Moebius b, real t);
 
 // These arithmetic operations may return denormalized result
 // even without `MOEBIUS_DENORMALIZED` flag

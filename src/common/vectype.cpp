@@ -1,10 +1,6 @@
 #include "vectype.hpp"
 
 
-double fract(double x, double *intpart) {
-    return modf(x, intpart);
-}
-
 #ifdef UNIT_TEST
 #include <catch.hpp>
 

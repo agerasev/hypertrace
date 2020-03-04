@@ -40,6 +40,7 @@ typedef struct {
     };
 } ObjectHit;
 
+
 #ifdef OPENCL_INTEROP
 // FIXME: Use explicit alignment instead of `packed` attribute
 // because it suppresses referencing of field of such structure.
@@ -51,7 +52,6 @@ typedef struct __attribute__ ((packed)) {
         HorospherePk horosphere;
     };
 } ObjectPk;
-
 #endif // OPENCL_INTEROP
 
 
@@ -66,6 +66,12 @@ bool object_bounce(
     Rng *rng, PathInfo *path,
     HyRay *ray,
     float3 *light, float3 *emission
+);
+
+void object_interpolate(
+    Object *o,
+    const Object *a, const Object *b,
+    real t
 );
 
 #ifdef OPENCL_INTEROP

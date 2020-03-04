@@ -13,7 +13,7 @@ typedef struct Material {
 } Material;
 
 void material_bounce(
-    Material *material,
+    const Material *material,
     Rng *rng, PathInfo *path,
     real3 hit_dir, real3 normal, real3 *bounce_dir,
     float3 *light, float3 *emission
@@ -28,6 +28,12 @@ void lambert_bounce(
     Rng *rng,
     real3 hit_dir, real3 normal, real3 *bounce_dir,
     float3 *light
+);
+
+void material_interpolate(
+    Material *o,
+    const Material *a, const Material *b,
+    real t
 );
 
 #ifdef OPENCL_INTEROP

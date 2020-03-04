@@ -135,6 +135,10 @@ Moebius mo_pow(Moebius m, real p) {
     }
 }
 
+Moebius mo_interpolate(Moebius a, Moebius b, real t) {
+    return mo_chain(a, mo_pow(mo_chain(mo_inverse(a), b), t));
+}
+
 Moebius mo_add(Moebius a, Moebius b) {
     return mo_new(
         a.a + b.a,
@@ -306,8 +310,6 @@ TEST_CASE("Moebius transformation", "[moebius]") {
             }
             Moebius l, v;
             mo_eigen(m, &l, &v);
-            std::cout << l << std::endl <<
-                v << std::endl;
 
             Moebius o = mo_chain(mo_chain(v, l), mo_inverse(v));
             REQUIRE(o == ApproxMo(m));

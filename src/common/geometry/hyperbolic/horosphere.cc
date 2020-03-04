@@ -91,6 +91,42 @@ void horosphere_bounce(
     }
 }
 
+void horosphere_interpolate(
+    Horosphere *o,
+    const Horosphere *a, const Horosphere *b,
+    real t
+) {
+    const Horosphere *c = t < 0.5f ? a : b;
+
+    if (a->material_count == b->material_count) {
+        o->material_count = a->material_count;
+        for (int i = 0; i < a->material_count; ++i) {
+            material_interpolate(
+                &o->materials[i],
+                &a->materials[i], &b->materials[i],
+                t
+            );
+        }
+    } else {
+        o->material_count = c->material_count;
+        for (int i = 0; i < c->material_count; ++i) {
+            o->materials[i] = c->materials[i];
+        }
+    }
+
+    if (a->tiling.type == b->tiling.type) {
+        o->tiling.type = a->tiling.type;
+        INTERPOLATE_FIELD(*o, *a, *b, tiling.cell_size, t);
+        INTERPOLATE_FIELD(*o, *a, *b, tiling.border.width, t);
+        material_interpolate(
+            &o->tiling.border.material,
+            &a->tiling.border.material, &b->tiling.border.material,
+            t
+        );
+    } else {
+        o->tiling = c->tiling;
+    }
+}
 
 #ifdef OPENCL_INTEROP
 void pack_horosphere(HorospherePk *dst, const Horosphere *src) {

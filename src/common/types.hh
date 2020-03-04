@@ -198,7 +198,12 @@ inline double4 unpack_double4(double4_pk v) { return unpack_float4(v).cast<doubl
 
 #endif // OPENCL
 
+#define INTERPOLATE_FIELD(o, a, b, field, t) \
+    ((o).field = (a).field*(1 - (t)) + (b).field*(t))
+
 inline int mod(int a, int b) {
     int r = a % b;
     return r >= 0 ? r : r + b;
 }
+
+

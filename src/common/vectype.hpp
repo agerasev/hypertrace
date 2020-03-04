@@ -3,6 +3,7 @@
 #include <type_traits>
 #include <cmath> 
 #include <iostream>
+#include <algorithm>
 
 
 // Structure definition
@@ -242,7 +243,9 @@ vectype<T, N> normalize(vectype<T, N> a) {
     return a/length(a);
 }
 
-double fract(double x, double *intpart);
+inline double fract(double x, double *intpart) {
+    return modf(x, intpart);
+}
 
 template <typename T, int N>
 vectype<T, N> fract(vectype<T, N> x, vectype<T, N> *intpart) {
@@ -266,6 +269,23 @@ vectype<T, N> ceil(vectype<T, N> v) {
 template <typename T, int N>
 vectype<T, N> fabs(vectype<T, N> v) {
     return v.map([](T x){ return fabs(x); });
+}
+
+template <typename T>
+T min(T x, T y) {
+    return std::min(x, y);
+}
+template <typename T, int N>
+T min(vectype<T, N> x, vectype<T, N> y) {
+    return vmap([](T a, T b) { return min(a, b); }, x, y);
+}
+template <typename T>
+T max(T x, T y) {
+    return std::min(x, y);
+}
+template <typename T, int N>
+T max(vectype<T, N> x, vectype<T, N> y) {
+    return vmap([](T a, T b) { return max(a, b); }, x, y);
 }
 
 

@@ -69,6 +69,38 @@ bool object_bounce(
     return true;
 }
 
+void object_interpolate(
+    Object *o,
+    const Object *a, const Object *b,
+    real t
+) {
+    const Object *c = t < 0.5f ? a : b;
+    o->type = c->type;
+    o->map = mo_interpolate(a->map, b->map, t);
+
+    if (a->type == b->type) {
+        if (a->type == OBJECT_PLANE) {
+            hyplane_interpolate(
+                &o->plane,
+                &a->plane, &b->plane,
+                t
+            );
+        } else if (a->type == OBJECT_HOROSPHERE) {
+            horosphere_interpolate(
+                &o->horosphere,
+                &a->horosphere, &b->horosphere,
+                t
+            );
+        }
+    } else {
+        if (c->type == OBJECT_PLANE) {
+            o->plane = c->plane;
+        } else if (c->type == OBJECT_HOROSPHERE) {
+            o->horosphere = c->horosphere;
+        }
+    }
+}
+
 #ifdef OPENCL_INTEROP
 
 void pack_object(ObjectPk *dst, const Object *src) {

@@ -51,14 +51,20 @@ typedef struct __attribute__((packed)) {
 
 
 bool horosphere_hit(
-    const Horosphere *plane, HorosphereHit *cache,
+    const Horosphere *horosphere, HorosphereHit *cache,
     PathInfo *path, HyRay ray, quaternion *hit_pos
 );
 
 void horosphere_bounce(
-    const Horosphere *plane, const HorosphereHit *cache,
+    const Horosphere *horosphere, const HorosphereHit *cache,
     quaternion *hit_dir, quaternion *normal,
     Material *material
+);
+
+void horosphere_interpolate(
+    Horosphere *o,
+    const Horosphere *a, const Horosphere *b,
+    real t
 );
 
 #ifdef OPENCL_INTEROP

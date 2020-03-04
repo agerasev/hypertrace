@@ -21,7 +21,7 @@ __kernel void render(
 	int width, int height,
 	int sample_no,
 	__global uint *seeds,
-	ViewPk view_pk,
+	ViewPk view_pk, ViewPk view_prev_pk,
 	__global ObjectPk *objects,
 	const int object_count
 ) {
@@ -29,8 +29,15 @@ __kernel void render(
 	Rng rng;
 	rand_init(&rng, seeds[idx]);
 
-	View view;
-	unpack_view(&view, &view_pk);
+	View view = view_unpack(view_pk);
+
+	real time = (real)1;
+#ifdef MOTION_BLUR
+	{
+		time = rand_uniform(&rng);
+		view = view_interpolate(view_unpack(view_prev_pk), view, time);
+	}
+#endif // MOTION_BLUR
 
 	quaternion v = q_new(
 		((real)(idx % width) - 0.5f*width + rand_uniform(&rng))/height,
@@ -40,18 +47,12 @@ __kernel void render(
 
 	float3 color = (float3)(0.0f);
 
-	Moebius u = view.position;
-
-#ifdef MOTION_BLUR
-	Moebius w = view.motion;
-	u = mo_chain(u, mo_pow(w, rand_uniform(&rng)));
-#endif // MOTION_BLUR
-
 	HyRay ray = hyray_init();
+	ray.direction = v;
 #ifdef LENS_BLUR
 	ray = draw_from_lens(&rng, v, view.focal_length, view.lens_radius);
 #endif // LENS_BLUR
-	ray = hyray_map(u, ray);
+	ray = hyray_map(view.position, ray);
 
 	float3 light = (float3)(1.0f);
 

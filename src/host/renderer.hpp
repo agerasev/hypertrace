@@ -29,13 +29,18 @@ class Renderer {
 
     int monte_carlo_counter = 0;
 
+    ViewPk view, view_prev;
+
     public:
     Renderer(cl_device_id device, int width=800, int height=600);
 
     void store_objects(const std::vector<Object> &objects);
     void load_image(uint8_t *data);
 
-    void render(const View &view, bool fresh);
-    int render_n(const View &view, int count, bool fresh);
-    int render_for(const View &view, double sec, bool fresh);
+    void set_view(const View &v);
+    void set_view(const View &v, const View &vp);
+
+    void render(bool fresh);
+    int render_n(int count, bool fresh);
+    int render_for(double sec, bool fresh);
 };

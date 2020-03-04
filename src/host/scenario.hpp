@@ -9,52 +9,43 @@
 #include <object.hh>
 
 
-class Point {
-    public:
-    Moebius position;
-    real focal_length;
-
-    Point(Moebius p = mo_identity(), real fl = 4.0);
-    static Point interpolate(const Point &a, const Point &b, double p);
-};
-
 class Transition {
     public:
     double duration = 1.0; // seconds
 
     Transition(double d);
-    virtual Point get_point(double p) const = 0;
+    virtual View get_view(double p) const = 0;
 };
 
 class DelayTransition : public Transition {
     public:
-    Point point;
+    View view;
 
-    DelayTransition(double d, Point p);
-    Point get_point(double p) const override;
+    DelayTransition(double d, View p);
+    View get_view(double p) const override;
 };
 
 class ConstantSpeedTransition : public Transition {
     public:
-    Point start, stop;
+    View start, stop;
 
-    ConstantSpeedTransition(double d, Point a, Point b);
-    Point get_point(double p) const override;
+    ConstantSpeedTransition(double d, View a, View b);
+    View get_view(double p) const override;
 };
 
 class SquareSpeedTransition : public ConstantSpeedTransition {
     public:
     double markers[2];
 
-    SquareSpeedTransition(double d, Point a, Point b, double at, double bt);
-    Point get_point(double p) const override;
+    SquareSpeedTransition(double d, View a, View b, double at, double bt);
+    View get_view(double p) const override;
 };
 
 class Scenario {
     public:
     virtual double duration() const = 0;
-    virtual View get_view(double t, double dt) const = 0;
-    virtual const std::vector<Object> &get_objects(double t) const = 0;
+    virtual View get_view(double time) const = 0;
+    virtual std::vector<Object> get_objects(double time) const = 0;
 };
 
 class PathScenario : public Scenario {
@@ -76,9 +67,8 @@ class PathScenario : public Scenario {
         add_transition(args...);
     }
 
-    Point get_point(double time) const;
     double path_duration() const;
 
     double duration() const override;
-    View get_view(double t, double dt) const override;
+    View get_view(double time) const override;
 };

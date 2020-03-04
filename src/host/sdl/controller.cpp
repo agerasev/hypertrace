@@ -24,11 +24,13 @@ Controller::Controller() {
     for (auto& p : ROT_KEYS) {
         keys[p.first] = false;
     }
-    init_view(&view);
+    view = view_init();
+    view_prev = view_init();
 }
 
 Controller::Controller(const View &v) : Controller() {
     view = v;
+    view_prev = v;
 }
 
 
@@ -71,13 +73,11 @@ bool Controller::handle() {
         }
         if (e.type == SDL_MOUSEWHEEL) {
             if (e.wheel.y) {
-                real f = exp(wheel_sens*e.wheel.y);
                 if (ctrl) {
-                    view.focal_length *= f;
+                    dof += e.wheel.y;
                 } else {
-                    view.field_of_view *= f;
+                    fov += e.wheel.y;
                 }
-                update = true;
             }
         }
     }
@@ -88,8 +88,8 @@ bool Controller::handle() {
 bool Controller::step(double dt) {
     bool still = true;
 
+    view_prev = view;
     Moebius pos = view.position;
-    Moebius prev_pos = pos;
 
     for (auto& p : MOVE_KEYS) {
         if (keys[p.first]) {
@@ -111,17 +111,15 @@ bool Controller::step(double dt) {
         mouse_y = 0;
         still = false;
     }
-    
-    view.position = pos;
-    if (!still) {
-        view.motion = mo_inverse(mo_chain(mo_inverse(prev_pos), pos));
-    } else {
-        view.motion = mo_identity();
-    }
 
-    if (update) {
+    view.position = pos;
+
+    if (fov || dof) {
+        view.focal_length *= exp(wheel_sens*fov);
+        view.field_of_view *= exp(wheel_sens*dof);
+        fov = 0;
+        dof = 0;
         still = false;
-        update = false;
     }
 
     return !still;

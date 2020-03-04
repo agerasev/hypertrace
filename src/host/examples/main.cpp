@@ -146,7 +146,8 @@ int main(int argc, const char *argv[]) {
         duration elapsed;
         auto start = std::chrono::system_clock::now();
 
-        sample_counter += renderer.render_for(controller.view, 0.04, refresh > 0);
+        renderer.set_view(controller.view, controller.view_prev);
+        sample_counter += renderer.render_for(0.04, refresh > 0);
 
         viewer.display([&](uint8_t *data) {
             renderer.load_image(data);

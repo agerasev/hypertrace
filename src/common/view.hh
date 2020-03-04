@@ -6,7 +6,6 @@
 
 typedef struct {
     Moebius position;
-    Moebius motion;
     real field_of_view;
     real lens_radius;
     real focal_length;
@@ -16,7 +15,6 @@ typedef struct {
 
 typedef struct __attribute__((packed)) {
     MoebiusPk position;
-    MoebiusPk motion;
     real_pk field_of_view;
     real_pk lens_radius;
     real_pk focal_length;
@@ -25,11 +23,13 @@ typedef struct __attribute__((packed)) {
 #endif // OPENCL_INTEROP
 
 
-void init_view(View *view);
+View view_init();
+View view_position(Moebius m);
+View view_interpolate(View a, View b, real t);
 
 #ifdef OPENCL_INTEROP
 
-void pack_view(ViewPk *dst, const View *src);
-void unpack_view(View *dst, const ViewPk *src);
+ViewPk view_pack(View v);
+View view_unpack(ViewPk v);
 
 #endif // OPENCL_INTEROP

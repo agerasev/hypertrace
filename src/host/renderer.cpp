@@ -31,6 +31,8 @@ Renderer::Renderer(cl_device_id device, int width, int height) :
         seed = rng();
     }
     seeds.store(queue, host_seeds.data());
+
+    set_view(view_init());
 }
 
 void Renderer::store_objects(const std::vector<Object> &objects) {
@@ -48,13 +50,18 @@ void Renderer::load_image(uint8_t *data) {
     image.load(queue, data);
 }
 
-void Renderer::render(const View &view, bool fresh) {
+void Renderer::set_view(const View &v) {
+    set_view(v, v);
+}
+void Renderer::set_view(const View &v, const View &vp) {
+    view = view_pack(v);
+    view_prev = view_pack(vp);
+}
+
+void Renderer::render(bool fresh) {
     if (fresh) {
         monte_carlo_counter = 0;
     }
-
-    ViewPk view_pk;
-    pack_view(&view_pk, &view);
 
     kernel(
         queue, width*height,
@@ -62,28 +69,28 @@ void Renderer::render(const View &view, bool fresh) {
         width, height,
         monte_carlo_counter,
         seeds,
-        view_pk,
+        view, view_prev,
         object_buffer, object_count
     );
 
     monte_carlo_counter += 1;
 }
 
-int Renderer::render_n(const View &view, int n, bool fresh) {
+int Renderer::render_n(int n, bool fresh) {
     for (int i = 0; i < n; ++i) {
-        render(view, fresh);
+        render(fresh);
         fresh = false;
     };
     return n;
 }
 
-int Renderer::render_for(const View &view, double sec, bool fresh) {
+int Renderer::render_for(double sec, bool fresh) {
     const duration render_time(sec);
     
     int sample_counter = 0;
     auto start = std::chrono::system_clock::now();
     do {
-        render(view, fresh);
+        render(fresh);
         fresh = false;
         sample_counter += 1;
     } while(std::chrono::system_clock::now() - start < render_time);

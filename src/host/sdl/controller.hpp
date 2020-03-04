@@ -15,8 +15,9 @@ class Controller {
     static const std::unordered_map<sdl::Key, std::function<Moebius(double)>> ROT_KEYS;
 
     std::unordered_map<sdl::Key, bool> keys;
-    int mouse_x = 0.0, mouse_y = 0.0;
-    bool grab = false, update = false;
+    int mouse_x = 0, mouse_y = 0;
+    int fov = 0, dof = 0;
+    bool grab = false;
     bool ctrl = false, shift = false;
 
     double move_speed = 1.0; // 1/s
@@ -27,7 +28,7 @@ class Controller {
     int height;
 
     public:
-    View view;
+    View view, view_prev;
 
     Controller();
     Controller(const View &v);

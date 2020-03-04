@@ -29,7 +29,7 @@ using duration = std::chrono::duration<double>;
 
 class MyScenario : public PathScenario {
     public:
-    const std::vector<Object> &get_objects(double t) const override {
+    std::vector<Object> get_objects(double t) const override {
         return std::vector<Object>();
     }
 };
@@ -140,37 +140,37 @@ int main(int argc, const char *argv[]) {
     Viewer viewer(width, height);
     Controller controller;
 
-    std::vector<Point> points {
-        Point(mo_new(
+    std::vector<View> points {
+        view_position(mo_new(
             c_new(0.0704422, 0.388156),
             c_new(3.25709, -0.644618),
             c_new(0.0280217, 0.0111143),
             c_new(0.542426, -2.73144)
         )),
-        Point(mo_new(
+        view_position(mo_new(
             c_new(0.0286821, 0.683827),
             c_new(2.8249, -1.7697),
             c_new(-0.0203855, 0.451223),
             c_new(2.02, -2.46116)
         )),
-        Point(mo_new(
+        view_position(mo_new(
             c_new(0.605603, -0.0125093),
             c_new(1.13499, -2.28722),
             c_new(0.296042, -0.0701192),
             c_new(1.96622, -1.20888)
         )),
-        Point(mo_new(
+        view_position(mo_new(
             c_new(0.155695, -0.546314),
             c_new(-1.72239, -0.323492),
             c_new(-0.0113209, -0.0551297),
             c_new(0.316326, 1.74335)
         )),
-        Point(mo_new(
+        view_position(mo_new(
             c_new(0.0748133, -0.111905),
             c_new(-5.96229, 0.107037),
             c_new(0.0470794, -0.0507573),
             c_new(1.09217, 5.74615)
-        ))
+        )),
     };
     
     MyScenario scenario;
@@ -195,10 +195,13 @@ int main(int argc, const char *argv[]) {
     for(;;) {
         auto start = std::chrono::system_clock::now();
 
-        View v = scenario.get_view(time, frame_time);
-        v.field_of_view = 0.8;
-        sample_counter += renderer.render_for(v, frame_time, true);
-        //sample_counter += renderer.render_n(v, 100, true);
+        //v.field_of_view = 0.8;
+        renderer.set_view(
+            scenario.get_view(time),
+            scenario.get_view(time - frame_time)
+        );
+        sample_counter += renderer.render_for(frame_time, true);
+        //sample_counter += renderer.render_n(100, true);
         time += frame_time;
 
         auto store = [&](uint8_t *data) {
@@ -206,9 +209,9 @@ int main(int argc, const char *argv[]) {
         };
         viewer.display(store);
 
-        std::stringstream ss;
-        ss << std::setfill('0') << std::setw(5) << "output/" << counter << ".png";
-        sdl::save_image(ss.str(), width, height, store);
+        //std::stringstream ss;
+        //ss << std::setfill('0') << std::setw(5) << "output/" << counter << ".png";
+        //sdl::save_image(ss.str(), width, height, store);
 
         if (!controller.handle() || time > scenario.duration()) {
             break;

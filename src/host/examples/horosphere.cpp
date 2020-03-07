@@ -15,8 +15,6 @@
 #include <view.hh>
 #include <object.hh>
 
-#define SDL_MAIN_HANDLED
-
 #include <opencl/search.hpp>
 #include <sdl/viewer.hpp>
 #include <sdl/controller.hpp>

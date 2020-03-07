@@ -70,10 +70,6 @@ set(HOST_SRC
 include_directories(
     "src/host"
     "src/common"
-    "/mingw64/include"
-)
-link_directories(
-    "/mingw64/lib"
 )
 
 add_library(${PROJECT_NAME} OBJECT ${HOST_SRC})
@@ -81,8 +77,17 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
     "-DCL_TARGET_OPENCL_VERSION=120"
     "-DOPENCL_INTEROP"
 )
-target_link_libraries(${PROJECT_NAME} SDL2main SDL2 SDL2_image OpenCL)
 
+target_link_libraries(${PROJECT_NAME} OpenCL SDL2 SDL2_image)
+
+if(MSYS)
+    include_directories("/mingw64/include")
+    link_directories("/mingw64/lib")
+    target_compile_definitions(${PROJECT_NAME} PUBLIC
+        "-DSDL_MAIN_HANDLED"
+    )
+    target_link_libraries(${PROJECT_NAME} SDL2main)
+endif()
 
 # Examples
 

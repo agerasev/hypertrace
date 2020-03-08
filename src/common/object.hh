@@ -3,55 +3,67 @@
 #include <types.hh>
 #include <random.hh>
 #include <path.hh>
+#include <material.hh>
 
 #include <algebra/moebius.hh>
 #include <geometry/hyperbolic.hh>
 
 #include <geometry/hyperbolic/ray.hh>
-#include <geometry/hyperbolic/plane.hh>
-#include <geometry/hyperbolic/horosphere.hh>
 
 
-typedef enum {
-    OBJECT_NONE = 0,
-    OBJECT_PLANE,
-    OBJECT_HOROSPHERE
-} ObjectType;
+typedef uchar    ObjectType;
 
-// FIXME:
-// Bug in union copying on Nvidia GPUs.
-// So don't copy `Object` using `=` or passing by value or returning it.
-// A special function that checks `type` and copies appropriate union member
-// should be implemented instead.
+#define OBJECT_NONE       0
+#define OBJECT_HYPLANE    1
+#define OBJECT_HOROSPHERE 2
+
+typedef uchar    TilingType;
+
+typedef struct {
+    TilingType type;
+    real cell_size;
+    real border_width;
+    Material border_material;
+} Tiling;
+
+#define MATERIAL_COUNT_MAX 4
+
 typedef struct {
     ObjectType type;
     Moebius map;
-    union {
-        HyPlane plane;
-        Horosphere horosphere;
-    };
+    Material materials[MATERIAL_COUNT_MAX];
+    int material_count;
+    Tiling tiling;
 } Object;
 
 typedef struct {
-    quaternion hit_pos;
-    union {
-        HyPlaneHit plane;
-        HorosphereHit horosphere;
-    };
+    quaternion pos;
+    quaternion dir;
 } ObjectHit;
 
 
 #ifdef OPENCL_INTEROP
+
+typedef uchar_pk ObjectTypePk;
+typedef uchar_pk TilingTypePk;
+
+typedef struct _PACKED_STRUCT_ATTRIBUTE_ {
+    TilingTypePk type;
+    real_pk cell_size;
+    real_pk border_width;
+    MaterialPk border_material _PACKED_FIELD_ATTRIBUTE_;
+} TilingPk;
+
 // FIXME: Use explicit alignment instead of `packed` attribute
 // because it suppresses referencing of field of such structure.
-typedef struct __attribute__ ((packed)) {
+typedef struct _PACKED_STRUCT_ATTRIBUTE_ {
     uint_pk type;
     MoebiusPk map;
-    union __attribute__ ((packed)) {
-        HyPlanePk plane;
-        HorospherePk horosphere;
-    };
+    MaterialPk materials[MATERIAL_COUNT_MAX] _PACKED_FIELD_ATTRIBUTE_;
+    int_pk material_count;
+    TilingPk tiling _PACKED_FIELD_ATTRIBUTE_;
 } ObjectPk;
+
 #endif // OPENCL_INTEROP
 
 
@@ -73,8 +85,19 @@ void object_interpolate(
     const Object *a, const Object *b,
     real t
 );
+void tiling_interpolate(
+    Tiling *o,
+    const Tiling *a, const Tiling *b,
+    real t
+);
 
 #ifdef OPENCL_INTEROP
 void pack_object(ObjectPk *dst, const Object *src);
 void unpack_object(Object *dst, const ObjectPk *src);
+void pack_tiling(TilingPk *dst, const Tiling *src);
+void unpack_tiling(Tiling *dst, const TilingPk *src);
+#define object_pack pack_object
+#define object_unpack unpack_object
+#define tiling_pack pack_tiling
+#define tiling_unpack unpack_tiling
 #endif // OPENCL_INTEROP

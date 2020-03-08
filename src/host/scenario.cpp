@@ -19,17 +19,17 @@ View DelayTransition::get_view(double p) const {
     return view;
 }
 
-ConstantSpeedTransition::ConstantSpeedTransition(double d, View a, View b) :
+LinearTransition::LinearTransition(double d, View a, View b) :
     Transition(d), start(a), stop(b)
 {}
-View ConstantSpeedTransition::get_view(double p) const {
+View LinearTransition::get_view(double p) const {
     return view_interpolate(start, stop, p);
 }
 
-SquareSpeedTransition::SquareSpeedTransition(double d, View a, View b, double at, double bt) :
-    ConstantSpeedTransition(d, a, b), markers{at, bt}
+SquareTransition::SquareTransition(double d, View a, View b, double at, double bt) :
+    LinearTransition(d, a, b), markers{at, bt}
 {}
-View SquareSpeedTransition::get_view(double p) const {
+View SquareTransition::get_view(double p) const {
     return view_interpolate(
         start, stop,
         (3*(markers[0]*(1-p) + markers[1]*p)*(1-p) + p*p)*p

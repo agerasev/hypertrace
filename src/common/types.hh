@@ -198,6 +198,14 @@ inline double4 unpack_double4(double4_pk v) { return unpack_float4(v).cast<doubl
 
 #endif // OPENCL
 
+#ifdef OPENCL_INTEROP
+
+#define _PACKED_ALIGNMENT_ 4
+#define _PACKED_STRUCT_ATTRIBUTE_ __attribute__((packed, aligned(_PACKED_ALIGNMENT_)))
+#define _PACKED_FIELD_ATTRIBUTE_ __attribute__((packed, aligned(_PACKED_ALIGNMENT_)))
+
+#endif // OPENCL_INTEROP
+
 #define INTERPOLATE_FIELD(o, a, b, field, t) \
     ((o).field = (a).field*(1 - (t)) + (b).field*(t))
 

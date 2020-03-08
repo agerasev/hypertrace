@@ -1,5 +1,8 @@
 #include "object.hh"
 
+#include <geometry/hyperbolic/plane.hh>
+#include <geometry/hyperbolic/horosphere.hh>
+
 
 real object_hit(
     const Object *object, ObjectHit *cache,
@@ -8,23 +11,21 @@ real object_hit(
 ) {
     HyRay r = hyray_map(mo_inverse(object->map), ray);
 
-    quaternion hp;
     bool h = false;
-    if (object->type == OBJECT_PLANE) {
+    if (object->type == OBJECT_HYPLANE) {
         h = hyplane_hit(
-            &object->plane, &cache->plane,
-            path, r, &hp
+            object, cache,
+            path, r
         );
     } else if (object->type == OBJECT_HOROSPHERE) {
         h = horosphere_hit(
-            &object->horosphere, &cache->horosphere,
-            path, r, &hp
+            object, cache,
+            path, r
         );
     }
 
     if (h) {
-        cache->hit_pos = hp;
-        return hy_distance(hp, r.start);
+        return hy_distance(cache->pos, r.start);
     } else {
         return (real)(-1);
     }
@@ -39,15 +40,15 @@ bool object_bounce(
     Material material;
     quaternion hit_dir, normal;
     
-    if (object->type == OBJECT_PLANE) {
+    if (object->type == OBJECT_HYPLANE) {
         hyplane_bounce(
-            &object->plane, &cache->plane,
+            object, cache,
             &hit_dir, &normal,
             &material
         );
     } else if (object->type == OBJECT_HOROSPHERE) {
         horosphere_bounce(
-            &object->horosphere, &cache->horosphere,
+            object, cache,
             &hit_dir, &normal,
             &material
         );
@@ -61,7 +62,7 @@ bool object_bounce(
             light, emission
         );
 
-    ray->start = cache->hit_pos;
+    ray->start = cache->pos;
     ray->direction = q_new(bounce_dir, (real)0);
 
     *ray = hyray_map(object->map, *ray);
@@ -74,31 +75,34 @@ void object_interpolate(
     const Object *a, const Object *b,
     real t
 ) {
-    const Object *c = t < 0.5f ? a : b;
-    o->type = c->type;
+    o->type = b->type;
     o->map = mo_interpolate(a->map, b->map, t);
 
-    if (a->type == b->type) {
-        if (a->type == OBJECT_PLANE) {
-            hyplane_interpolate(
-                &o->plane,
-                &a->plane, &b->plane,
-                t
-            );
-        } else if (a->type == OBJECT_HOROSPHERE) {
-            horosphere_interpolate(
-                &o->horosphere,
-                &a->horosphere, &b->horosphere,
-                t
-            );
-        }
-    } else {
-        if (c->type == OBJECT_PLANE) {
-            o->plane = c->plane;
-        } else if (c->type == OBJECT_HOROSPHERE) {
-            o->horosphere = c->horosphere;
-        }
+    o->material_count = b->material_count;
+    for (int i = 0; i < MATERIAL_COUNT_MAX; ++i) {
+        material_interpolate(
+            &o->materials[i],
+            &a->materials[i], &b->materials[i],
+            t
+        );
     }
+
+    tiling_interpolate(&o->tiling, &a->tiling, &b->tiling, t);
+}
+
+void tiling_interpolate(
+    Tiling *o,
+    const Tiling *a, const Tiling *b,
+    real t
+) {
+    o->type = b->type;
+    INTERPOLATE_FIELD(*o, *a, *b, cell_size, t);
+    INTERPOLATE_FIELD(*o, *a, *b, border_width, t);
+    material_interpolate(
+        &o->border_material,
+        &a->border_material, &b->border_material,
+        t
+    );
 }
 
 #ifdef OPENCL_INTEROP
@@ -107,28 +111,40 @@ void pack_object(ObjectPk *dst, const Object *src) {
     dst->type = src->type;
     dst->map = mo_pack(src->map);
 
-    if (src->type == OBJECT_PLANE) {
-        HyPlanePk tmp;
-        pack_hyplane(&tmp, &src->plane);
-        dst->plane = tmp;
-    } else if (src->type == OBJECT_HOROSPHERE) {
-        HorospherePk tmp;
-        pack_horosphere(&tmp, &src->horosphere);
-        dst->horosphere = tmp;
+    for (int i = 0; i < MATERIAL_COUNT_MAX; ++i) {
+        pack_material(&dst->materials[i], &src->materials[i]);
     }
+    dst->material_count = src->material_count;
+
+    pack_tiling(&dst->tiling, &src->tiling);
 }
 
 void unpack_object(Object *dst, const ObjectPk *src) {
     dst->type = (ObjectType)src->type;
     dst->map = mo_unpack(src->map);
 
-    if ((ObjectType)src->type == OBJECT_PLANE) {
-        HyPlanePk tmp = src->plane;
-        unpack_hyplane(&dst->plane, &tmp);
-    } else if ((ObjectType)src->type == OBJECT_HOROSPHERE) {
-        HorospherePk tmp = src->horosphere;
-        unpack_horosphere(&dst->horosphere, &tmp);
+    for (int i = 0; i < MATERIAL_COUNT_MAX; ++i) {
+        unpack_material(&dst->materials[i], &src->materials[i]);
     }
+    dst->material_count = (int)src->material_count;
+
+    unpack_tiling(&dst->tiling, &src->tiling);
+}
+
+void pack_tiling(TilingPk *dst, const Tiling *src) {
+    dst->type = (TilingTypePk)src->type;
+    dst->cell_size = (real_pk)src->cell_size;
+
+    dst->border_width = (real_pk)src->border_width;
+    pack_material(&dst->border_material, &src->border_material);
+}
+
+void unpack_tiling(Tiling *dst, const TilingPk *src) {
+    dst->type = (TilingType)src->type;
+    dst->cell_size = (real)src->cell_size;
+    
+    dst->border_width = (real)src->border_width;
+    unpack_material(&dst->border_material, &src->border_material);
 }
 
 #endif // OPENCL_INTEROP

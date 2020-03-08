@@ -4,8 +4,8 @@
 
 
 bool hyplane_hit(
-    const HyPlane *plane, HyPlaneHit *cache,
-    PathInfo *path, HyRay ray, quaternion *hit_pos
+    const Object *plane, ObjectHit *cache,
+    PathInfo *path, HyRay ray
 ) {
     // Line cannot intersect plane twice
     if (path->repeat) {
@@ -35,15 +35,14 @@ bool hyplane_hit(
     }
     h.z = sqrt((real)1 - pxy2);
 
-    cache->hit_pos = h;
-    cache->hit_dir = hy_dir_at(p, d, h);
+    cache->pos = h;
+    cache->dir = hy_dir_at(p, d, h);
 
-    *hit_pos = h;
     return true;
 }
 
 void hyplane_bounce(
-    const HyPlane *plane, const HyPlaneHit *cache,
+    const Object *plane, const ObjectHit *cache,
     quaternion *hit_dir, quaternion *normal,
     Material *material
 ) {
@@ -51,7 +50,7 @@ void hyplane_bounce(
         plane->tiling.type == HYPLANE_TILING_PENTAGONAL ||
         plane->tiling.type == HYPLANE_TILING_PENTASTAR
     ) {
-        quaternion p = cache->hit_pos;
+        quaternion p = cache->pos;
 
         bool w = false;
         //uint n = 0, b = 1;
@@ -118,7 +117,7 @@ void hyplane_bounce(
             //b = bb;
         }
         
-        const real br = plane->tiling.border.width;
+        const real br = plane->tiling.border_width;
         bool bh = 0;
         for (int i = 0; i < 5; ++i) {
             real o = 2*PI*i/5;
@@ -137,78 +136,12 @@ void hyplane_bounce(
                 *material = plane->materials[1];
             }
         } else {
-            *material = plane->tiling.border.material;
+            *material = plane->tiling.border_material;
         }
     } else {
         *material = plane->materials[0];
     }
 
-    *hit_dir = cache->hit_dir;
-    *normal = cache->hit_pos;
+    *hit_dir = cache->dir;
+    *normal = cache->pos;
 }
-
-void hyplane_interpolate(
-    HyPlane *o,
-    const HyPlane *a, const HyPlane *b,
-    real t
-) {
-    const HyPlane *c = t < 0.5f ? a : b;
-
-    if (a->material_count == b->material_count) {
-        o->material_count = a->material_count;
-        for (int i = 0; i < a->material_count; ++i) {
-            material_interpolate(
-                &o->materials[i],
-                &a->materials[i], &b->materials[i],
-                t
-            );
-        }
-    } else {
-        o->material_count = c->material_count;
-        for (int i = 0; i < c->material_count; ++i) {
-            o->materials[i] = c->materials[i];
-        }
-    }
-
-    if (a->tiling.type == b->tiling.type) {
-        o->tiling.type = a->tiling.type;
-        INTERPOLATE_FIELD(*o, *a, *b, tiling.border.width, t);
-        material_interpolate(
-            &o->tiling.border.material,
-            &a->tiling.border.material, &b->tiling.border.material,
-            t
-        );
-    } else {
-        o->tiling = c->tiling;
-    }
-}
-
-#ifdef OPENCL_INTEROP
-void pack_hyplane(HyPlanePk *dst, const HyPlane *src) {
-    for (int i = 0; i < HYPLANE_MATERIAL_COUNT_MAX; ++i) {
-        MaterialPk tmp;
-        pack_material(&tmp, &src->materials[i]);
-        dst->materials[i] = tmp;
-    }
-    dst->material_count = src->material_count;
-
-    dst->tiling_type = (uint_pk)src->tiling.type;
-    dst->tiling_border_width = (real_pk)src->tiling.border.width;
-    MaterialPk tmp_mat;
-    pack_material(&tmp_mat, &src->tiling.border.material);
-    dst->tiling_border_material = tmp_mat;
-}
-
-void unpack_hyplane(HyPlane *dst, const HyPlanePk *src) {
-    for (int i = 0; i < HYPLANE_MATERIAL_COUNT_MAX; ++i) {
-        MaterialPk tmp = src->materials[i];
-        unpack_material(&dst->materials[i], &tmp);
-    }
-    dst->material_count = (int)src->material_count;
-
-    dst->tiling.type = (HyPlaneTilingType)src->tiling_type;
-    dst->tiling.border.width = (real)src->tiling_border_width;
-    MaterialPk tmp_mat = src->tiling_border_material;
-    unpack_material(&dst->tiling.border.material, &tmp_mat);
-}
-#endif // OPENCL_INTEROP

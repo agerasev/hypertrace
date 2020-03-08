@@ -25,19 +25,19 @@ class DelayTransition : public Transition {
     View get_view(double p) const override;
 };
 
-class ConstantSpeedTransition : public Transition {
+class LinearTransition : public Transition {
     public:
     View start, stop;
 
-    ConstantSpeedTransition(double d, View a, View b);
+    LinearTransition(double d, View a, View b);
     View get_view(double p) const override;
 };
 
-class SquareSpeedTransition : public ConstantSpeedTransition {
+class SquareTransition : public LinearTransition {
     public:
     double markers[2];
 
-    SquareSpeedTransition(double d, View a, View b, double at, double bt);
+    SquareTransition(double d, View a, View b, double at, double bt);
     View get_view(double p) const override;
 };
 

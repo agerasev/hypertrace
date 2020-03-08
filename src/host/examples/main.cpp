@@ -8,9 +8,6 @@
 
 #include <algebra/quaternion.hh>
 #include <algebra/moebius.hh>
-#include <geometry/hyperbolic.hh>
-#include <geometry/hyperbolic/plane.hh>
-#include <geometry/hyperbolic/horosphere.hh>
 #include <view.hh>
 #include <object.hh>
 
@@ -20,6 +17,7 @@
 #include <renderer.hpp>
 #include <color.hpp>
 
+#include "scene.hpp"
 
 using duration = std::chrono::duration<double>;
 
@@ -45,87 +43,7 @@ int main(int argc, const char *argv[]) {
     int width = 800, height = 600;
     Renderer renderer(device, width, height);
 
-    color3 border_color = make_color(color3(0.9));
-    std::vector<Object> objects = {
-        Object{
-            .type = OBJECT_HOROSPHERE,
-            .map = mo_identity(),
-            .horosphere = Horosphere {
-                .materials = {
-                    Material {make_color(0xfe0000), 0.1, 0.1, float3(0)},
-                    Material {make_color(0xffaa01), 0.1, 0.1, float3(0)},
-                    Material {make_color(0x35adae), 0.1, 0.1, float3(0)},
-                },
-                .material_count = 3,
-                .tiling = HorosphereTiling {
-                    .type = HOROSPHERE_TILING_HEXAGONAL,
-                    .cell_size = 0.5,
-                    .border = HorosphereTilingBorder {
-                        .width = 0.02,
-                        .material = Material {border_color, 0.0, 0, float3(1.0)},
-                    },
-                },
-            },
-        },
-        Object{
-            .type = OBJECT_HOROSPHERE,
-            .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
-            .horosphere = Horosphere {
-                .materials = {
-                    Material {make_color(0xfe7401), 0.1, 0.1, float3(0)},
-                    Material {make_color(0xfe0000), 0.1, 0.1, float3(0)},
-                    Material {make_color(0xffaa01), 0.1, 0.1, float3(0)},
-                    Material {make_color(0xfed601), 0.1, 0.1, float3(0)},
-                },
-                .material_count = 4,
-                .tiling = HorosphereTiling {
-                    .type = HOROSPHERE_TILING_SQUARE,
-                    .cell_size = 0.5,
-                    .border = HorosphereTilingBorder {
-                        .width = 0.02,
-                        .material = Material {border_color, 0.0, 0, float3(1.0)},
-                    },
-                },
-            },
-        },
-        Object{
-            .type = OBJECT_PLANE,
-            .map = mo_identity(),
-            .plane = HyPlane {
-                .materials = {
-                    Material {make_color(0xfe7401), 0.1, 0.0, float3(0)},
-                    Material {make_color(0x35adae), 0.1, 0.0, float3(0)},
-                },
-                .material_count = 2,
-                .tiling = HyPlaneTiling {
-                    .type = HYPLANE_TILING_PENTASTAR,
-                    .border = HyPlaneTilingBorder {
-                        .width = 0.01,
-                        .material = Material {border_color, 0.0, 0, float3(1.0)},
-                    },
-                },
-            },
-        },
-        Object{
-            .type = OBJECT_PLANE,
-            .map = mo_new(C1, 2*CI, C0, C1),
-            .plane = HyPlane {
-                .materials = {
-                    Material {make_color(0xfe0000), 0.1, 0.0, float3(0)},
-                    Material {make_color(0xfed601), 0.1, 0.0, float3(0)},
-                },
-                .material_count = 2,
-                .tiling = HyPlaneTiling {
-                    .type = HYPLANE_TILING_PENTAGONAL,
-                    .border = HyPlaneTilingBorder {
-                        .width = 0.02,
-                        .material = Material {border_color, 0.0, 0, float3(1.0)},
-                    },
-                },
-            },
-        },
-    };
-    renderer.store_objects(objects);
+    renderer.store_objects(create_scene());
 
     Viewer viewer(width, height);
     Controller controller;

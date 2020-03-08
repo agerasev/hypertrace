@@ -4,8 +4,7 @@
 #include <random.hh>
 #include <path.hh>
 
-// FIXME: Don't use unions here because of Nvidia bug.
-typedef struct Material {
+typedef struct {
     float3 diffuse_color;
     float gloss;
     float transparency;
@@ -37,7 +36,8 @@ void material_interpolate(
 );
 
 #ifdef OPENCL_INTEROP
-typedef struct __attribute__ ((packed)) MaterialPk {
+
+typedef struct _PACKED_STRUCT_ATTRIBUTE_ {
     float3_pk diffuse_color;
     float_pk gloss;
     float_pk transparency;
@@ -46,4 +46,8 @@ typedef struct __attribute__ ((packed)) MaterialPk {
 
 void pack_material(MaterialPk *dst, const Material *src);
 void unpack_material(Material *dst, const MaterialPk *src);
+
+#define material_pack pack_material
+#define material_unpack unpack_material
+
 #endif // OPENCL_INTEROP

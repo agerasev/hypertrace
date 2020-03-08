@@ -274,16 +274,38 @@ T min(T x, T y) {
     return std::min(x, y);
 }
 template <typename T, int N>
+T min(vectype<T, N> x, T y) {
+    return vmap([y](T a) { return min(a, y); }, x);
+}
+template <typename T, int N>
 T min(vectype<T, N> x, vectype<T, N> y) {
     return vmap([](T a, T b) { return min(a, b); }, x, y);
 }
+
 template <typename T>
 T max(T x, T y) {
     return std::max(x, y);
 }
 template <typename T, int N>
+T max(vectype<T, N> x, T y) {
+    return vmap([y](T a) { return max(a, y); }, x);
+}
+template <typename T, int N>
 T max(vectype<T, N> x, vectype<T, N> y) {
     return vmap([](T a, T b) { return max(a, b); }, x, y);
+}
+
+template <typename T>
+T clamp(T x, T y, T z) {
+    return std::min(std::max(x, y), z);
+}
+template <typename T, int N>
+T max(vectype<T, N> x, T y, T z) {
+    return min(max(x, y), z);
+}
+template <typename T, int N>
+T max(vectype<T, N> x, vectype<T, N> y, vectype<T, N> z) {
+    return min(max(x, y), z);
 }
 
 

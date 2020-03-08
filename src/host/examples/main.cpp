@@ -42,7 +42,6 @@ int main(int argc, const char *argv[]) {
 
     int width = 800, height = 600;
     Renderer renderer(device, width, height);
-
     renderer.store_objects(create_scene());
 
     Viewer viewer(width, height);

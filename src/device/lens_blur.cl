@@ -20,6 +20,8 @@ HyRay draw_from_lens(
 		hy_zshift(focal_length)
 	), QJ);
 
+	// FIXME: Why usage of `lens_radius` cause
+	// assertion failure on Intel HD Graphics?
 	real q = rand_uniform(rng)*(cosh(lens_radius) - 1) + 1;
 	real r = log(q + sqrt(q*q - 1));
 	real phi = 2*PI*rand_uniform(rng);

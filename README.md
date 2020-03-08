@@ -4,9 +4,34 @@ Lobachevsky (hyperbolic) space ray tracer powered by OpenCL.
 
 ## Requirements
 
-+ OpenCL
++ OpenCL 1.2
 + SDL2
 + SDL2_Image
+
+## Setup
+
+### Linux
+
++ Install GCC, Make and CMake.
++ Install `*-opencl-dev` and `*-opencl-icd` for your device.
+
+### Windows
+
++ Install [MSYS2](https://www.msys2.org/).
+
++ With MSYS2 install required packages:
+
+```bash
+pacman -S \
+    gcc \
+    make \
+    cmake \
+    git \
+    mingw64/mingw-w64-x86_64-opencl-headers \
+    mingw64/mingw-w64-x86_64-opencl-icd-git \
+    mingw-w64-x86_64-SDL2 \
+    mingw-w64-x86_64-SDL2_image
+```
 
 ## How to use
 

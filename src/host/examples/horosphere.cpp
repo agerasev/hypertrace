@@ -81,7 +81,7 @@ class MyScenario : public PathScenario {
     virtual std::vector<Object> get_objects(double t) const {
         std::vector<Object> objs(objects);
 
-        real tr = 0.1 + 0.9*clamp((t - ts[1])/(ts[2] - ts[1]), 0.0, 1.0);
+        real tr = 0.5*(1.0 - clamp((ts[2] - t)/(ts[2] - ts[1]), 0.0, 1.0));
         for (int i = 0; i < objs[0].material_count; ++i) {
             objs[0].materials[i].transparency = tr;
         }

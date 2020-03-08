@@ -30,7 +30,7 @@ std::vector<Object> create_scene() {
         },
         Object{
             .type = OBJECT_HOROSPHERE,
-            .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
+            .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(PI)),
             .materials = {
                 Material {make_color(0xfe7401), 0.1, 0.1, float3(0)},
                 Material {make_color(0xfe0000), 0.1, 0.1, float3(0)},

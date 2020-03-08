@@ -81,10 +81,16 @@ In some examples you may fly around the scene using your keyboard and mouse.
 
 ### Surface tiling
 
-- [x] Square horosphere tiling
-- [x] Hexagonal horosphere tiling
-- [x] Pentagonal hyperbolic plane tiling
-- [ ] Heptagonal hyperbolic plane tiling
+#### Euclidean plane and horosphere
+
+- [x] Square tiling
+- [x] Hexagonal tiling
+
+#### Hyperbolic plane
+
+- [x] Pentagonal tiling
+- [ ] Heptagonal tiling
+- [ ] Apeirogonal tiling
 
 ### Effects
 

@@ -13,7 +13,7 @@ struct A __atribute__((packed, aligned(N))) {
 
 struct B __atribute__((packed, aligned(N))) {
     ...
-    struct B b __atribute__((aligned(N)));
+    struct A a __atribute__((aligned(N)));
     ...
 };
 ```

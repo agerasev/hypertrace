@@ -3,6 +3,7 @@
 .coverage.info
 *.png
 *.mp4
+*.stackdump
 
 /.vscode
 *.code-workspace

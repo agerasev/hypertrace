@@ -69,7 +69,7 @@ int main(int argc, const char *argv[]) {
         },
         Object{
             .type = OBJECT_HOROSPHERE,
-            .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(M_PI)),
+            .map = mo_chain(mo_new(C1, sqrt(2)*C1, C0, C1), hy_yrotate(PI)),
             .horosphere = Horosphere {
                 .materials = {
                     Material {make_color(0xfe7401), 0.1, 0.1, float3(0)},

@@ -10,6 +10,20 @@
 
 // FIXME: Add `set_view()` method and use it instead of `fresh` argument
 class Renderer {
+    public:
+    struct Config {
+        struct Blur {
+            bool lens = false;
+            bool motion = false;
+            bool object_motion = false;
+        };
+
+        int path_max_depth = 6;
+        int path_max_diffuse_depth = 2;
+        Blur blur;
+        double gamma = 2.2;
+    };
+
     private:
     int width, height;
 
@@ -38,8 +52,14 @@ class Renderer {
 
     ViewPk view, view_prev;
 
+    static std::string gen_config_src(const Config &config);
+
     public:
-    Renderer(cl_device_id device, int width=800, int height=600);
+    Renderer(
+        cl_device_id device,
+        int width, int height,
+        const Config &config 
+    );
 
     void store_objects(const std::vector<Object> &objs);
     void store_objects(

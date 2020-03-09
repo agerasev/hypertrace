@@ -1,4 +1,7 @@
-#include <config.cl>
+#define OPENCL
+#define OPENCL_INTEROP
+
+#include <gen/config.cl>
 
 #include <types.hh>
 #include <random.hh>

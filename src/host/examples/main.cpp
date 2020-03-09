@@ -41,7 +41,10 @@ int main(int argc, const char *argv[]) {
     cl_device_id device = cl::search_device(platform_no, device_no);
 
     int width = 800, height = 600;
-    Renderer renderer(device, width, height);
+    Renderer renderer(device, width, height, Renderer::Config {
+        .path_max_depth = 3,
+        .blur = { .lens = true, .motion = true }
+    });
     renderer.store_objects(create_scene());
 
     Viewer viewer(width, height);

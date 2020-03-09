@@ -1,8 +1,6 @@
 #include <memory>
 #include <iostream>
 #include <sstream>
-#include <vector>
-#include <list>
 #include <cassert>
 
 #include "opencl.hpp"
@@ -35,16 +33,13 @@ cl::Program::Program(
     cl_context context,
     cl_device_id device,
     const char *path,
-    const std::vector<const char *> &bases,
+    const std::list<std::string> &dirs,
+    const std::map<std::string, std::string> &fmem,
     bool include_warnings
 ) {
     this->device = device;
 
-    std::list<std::string> dirs;
-    for (const char *base : bases) {
-        dirs.push_back(std::string(base));
-    }
-    includer = std::make_unique<c_includer>(path, dirs);
+    includer = std::make_unique<c_includer>(path, dirs, fmem);
     
     bool include_status = includer->include();
     if (!include_status || include_warnings) {
@@ -53,6 +48,7 @@ cl::Program::Program(
     assert(include_status);
 
     std::string src = includer->data();
+    //std::fstream("gen_kernel.cl", std::ios::out) << src << std::endl;
     
     const char *src_data = src.c_str();
     const size_t src_len = src.size();
@@ -64,20 +60,6 @@ cl::Program::Program(
     std::cout << log() << std::endl;
     assert(status == CL_SUCCESS);
 }
-cl::Program::Program(
-    cl_context context,
-    cl_device_id device,
-    const char *path,
-    const char *base,
-    bool include_warnings
-) :
-    Program(
-        context,
-        device,
-        path,
-        std::vector<const char *>({base}),
-        include_warnings
-    ) {}
 cl::Program::~Program() {
     assert(clReleaseProgram(program) == CL_SUCCESS);
 }

@@ -1,7 +1,10 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <vector>
+#include <list>
+#include <map>
 #include <cassert>
 
 #include <CL/cl.h>
@@ -49,14 +52,8 @@ namespace cl {
             cl_context context,
             cl_device_id device,
             const char *path,
-            const std::vector<const char *> &bases,
-            bool include_warnings=false
-        );
-        Program(
-            cl_context context,
-            cl_device_id device,
-            const char *path,
-            const char *base=".",
+            const std::list<std::string> &dirs={"."},
+            const std::map<std::string, std::string> &fmem={},
             bool include_warnings=false
         );
         ~Program();

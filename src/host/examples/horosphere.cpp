@@ -116,7 +116,10 @@ int main(int argc, const char *argv[]) {
 
     int width = 800, height = 600;
     //int width = 1920, height = 1080;
-    Renderer renderer(device, width, height);
+    Renderer renderer(device, width, height, Renderer::Config {
+        .path_max_depth = 3,
+        .blur = { .lens = true, .motion = true, .object_motion = true }
+    });
     MyScenario scenario;
     
     Viewer viewer(width, height);

@@ -1,9 +1,11 @@
 #include <fstream>
+#include <sstream>
 #include <regex>
 #include <cassert>
 
 #include "include.hpp"
 
+#include <iostream>
 
 c_includer::_branch::_branch(int p) : pos(p) {
     
@@ -35,37 +37,70 @@ std::string c_includer::_branch::dir() const {
     return fullname.substr(0, dpos);
 }
 
-bool c_includer::_read(const std::string name, _branch *branch, int depth) {
-    assert(depth < 16);
-    
-    std::ifstream file;
-    
-    // try open file in each dir
-    std::string fullname;
-    if (branch->parent != nullptr) {
-        fullname = branch->parent->dir() + "/" + name;
-        file.open(fullname);
+std::unique_ptr<std::istream> c_includer::_open(
+    const std::string &fullname
+) const {
+    auto i = _fmem.find(fullname);
+
+    if (i != _fmem.end()) {
+        return std::make_unique<std::stringstream>(i->second);
+    } else {
+        return std::make_unique<std::ifstream>(fullname);
     }
-    if(branch->parent == nullptr || !file) {
+}
+std::pair<std::unique_ptr<std::istream>, std::string> c_includer::_find(
+    const std::string &name,
+    const std::string &dir
+) const {
+    std::unique_ptr<std::istream> file;
+    std::string fullname;
+
+    // try open file in each dir
+    // relative include
+    if (dir.size() > 0) {
+        fullname = dir + "/" + name;
+        file = _open(fullname);
+    }
+    // include from dirs specified
+    if(dir.size() == 0 || !*file) {
         for(const std::string &dir : _dirs) {
             fullname = dir + "/" + name;
-            file.open(fullname);
-            if(file) {
+            file = _open(fullname);
+            if(*file) {
                 break;
             }
         }
-        if(!file) {
-            if (branch->parent != nullptr) {
-                _log += "\n" + (
-                    branch->parent->fullname + ":" +
-                    std::to_string(branch->parent->lsize + 1) + ": " +
-                    "cannot open file '" + name + "'"
-                );
-            } else {
-                _log += "\n" + ("cannot open file '" + name + "'");
-            }
-            return false;
+    }
+    // global include
+    if (!*file) {
+        fullname = name;
+        file = _open(fullname);
+    }
+
+    return std::make_pair(std::move(file), std::move(fullname));
+}
+
+bool c_includer::_read(const std::string name, _branch *branch, int depth) {
+    assert(depth < 16);
+    
+    auto p = _find(
+        name,
+        branch->parent != nullptr ? branch->parent->dir() : ""
+    );
+    std::unique_ptr<std::istream> file = std::move(p.first);
+    std::string fullname = std::move(p.second);
+    
+    if(!*file) {
+        if (branch->parent != nullptr) {
+            _log += "\n" + (
+                branch->parent->fullname + ":" +
+                std::to_string(branch->parent->lsize + 1) + ": " +
+                "cannot open file '" + name + "'"
+            );
+        } else {
+            _log += "\n" + ("cannot open file '" + name + "'");
         }
+        return false;
     }
 
     for(const std::string &n : _ignore) {
@@ -81,7 +116,7 @@ bool c_includer::_read(const std::string name, _branch *branch, int depth) {
     std::string line;
     std::smatch match;
     std::regex include("^[ \t]*#include[ ]*[\"<]([^ ]*)[\">]"), pragma("^[  \t]*#pragma[ ]*([^ \t\n]*)");
-    while(std::getline(file, line)) {
+    while(std::getline(*file, line)) {
         if(std::regex_search(line, match, include)) {
             _branch *b = branch->add(branch->pos + branch->size);
             if (_read(std::string(match[1]), b, depth + 1)){
@@ -124,8 +159,12 @@ bool c_includer::_locate(int gp, const _branch *br, std::string &fn, int &lp) co
     return true;
 }
 
-c_includer::c_includer(const std::string &name, const std::list<std::string> &dirs):
-    _name(name), _dirs(dirs), _trunk(0)
+c_includer::c_includer(
+    const std::string &name,
+    const std::list<std::string> &dirs,
+    const std::map<std::string, std::string> &fmem
+):
+    _name(name), _dirs(dirs), _fmem(fmem), _trunk(0)
 {}
 
 bool c_includer::include() {

@@ -8,59 +8,48 @@
 
 #include <iostream>
 
-template <typename T, int M, int N>
-struct mat {};
+#include <mat.hpp>
 
-#define PART_TYPE_SPEC(T,M,N) \
-template <> struct mat<T,M,N> { typedef mat_(T,M,N) t; }; \
-
-#define PART_SPEC(T,N,M) \
-typename mat<T,N,M>::t transpose(typename mat<T,M,N>::t m) { \
-    return matfn_(T,M,N,transpose)(m); \
-} \
-\
-bool operator==(mat_(T,M,N) a, mat_(T,M,N) b) {\
-    bool eq = true;\
-    for (int j = M; j < M; ++j) {\
-        for (int i = 0; i < N; ++i) {\
-            eq = eq && (a.s[j*N + i] == b.s[j*N + i]);\
-        }\
-    }\
-    return eq;\
-}\
-\
-std::ostream &operator<<(std::ostream &o, mat_(T,M,N) a) {\
-    o << std::endl;\
-    for (int j = M; j < M; ++j) {\
-        o << "| ";\
-        for (int i = 0; i < N; ++i) {\
-            o << a.s[j*N + i];\
-            if (i != N) {\
-                o << ",\t";\
-            }\
-        }\
-        o << "\t|" << std::endl;\
-    }\
-    return o;\
-}\
-
-PART_TYPE_SPEC(int,2,3)
-PART_TYPE_SPEC(int,3,2)
-
-PART_SPEC(int,2,3)
-PART_SPEC(int,3,2)
-
-
+template <typename T, int M, int N, typename F>
+mat<T,M,N> rand_mat_map(TestRng &rng, F f) {
+    mat<T,N,M> r;
+    for (int i = 0; i < M*N; ++i) {
+        r[i] = f(rng);
+    }
+    return r;
+}
 
 TEST_CASE("Matrix", "[matrix]") {
     TestRng rng(0xbeef);
 
     SECTION("Transpose") {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            int2x3 a = {.s = {1, 2, 3, 4, 5, 6}};
-            int3x2 b = {.s = {1, 4, 2, 5, 3, 6}};
-            REQUIRE(transpose(a) == b);
-        }
+        mat<int,2,3> a {1, 2, 3, 4, 5, 6};
+        mat<int,3,2> b {1, 4, 2, 5, 3, 6};
+        REQUIRE(transpose(a) == b);
+    }
+
+    SECTION("Add") {
+        mat<int,2,3> a {1, 2, 3, 4, 5, 6}, b {10,20,30,40,50,60};
+        mat<int,2,3> c {11,22,33,44,55,66};
+        REQUIRE((a + b) == c);
+    }
+
+    SECTION("Dot") {
+        mat<int,2,3> a {
+            1, 2, 3,
+            4, 5, 6
+        };
+        mat<int,3,4> b {
+            1, 2, 3, 4,
+            5, 6, 7, 8,
+            9,10,11,12
+        };
+        mat<int,2,4> c {
+            38, 44, 50, 56,
+            83, 98, 113, 128
+        };
+
+        REQUIRE(dot(a, b) == c);
     }
 };
 #endif // UNIT_TEST

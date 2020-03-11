@@ -20,6 +20,8 @@ set(CMAKE_CXX_FLAGS "\
 set(COMMON_SRC
     "src/common/vec.hpp"
     "src/common/vec.cpp"
+    "src/common/mat.hpp"
+    "src/common/mat.cpp"
     "src/common/types.hh"
     "src/common/types.cc"
     "src/common/algebra/real.hh"

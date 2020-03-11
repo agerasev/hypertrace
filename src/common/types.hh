@@ -51,7 +51,7 @@ DEF_VEC_PACK_234(float)
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <vectype.hpp>
+#include <vec.hpp>
 
 #define __global
 #define __local
@@ -61,34 +61,34 @@ typedef unsigned char  uchar;
 typedef unsigned short ushort;
 typedef unsigned int   uint;
 
-typedef vectype<char, 2> char2;
-typedef vectype<char, 3> char3;
-typedef vectype<char, 4> char4;
-typedef vectype<uchar, 2> uchar2;
-typedef vectype<uchar, 3> uchar3;
-typedef vectype<uchar, 4> uchar4;
+typedef vec<char, 2> char2;
+typedef vec<char, 3> char3;
+typedef vec<char, 4> char4;
+typedef vec<uchar, 2> uchar2;
+typedef vec<uchar, 3> uchar3;
+typedef vec<uchar, 4> uchar4;
 
-typedef vectype<short, 2> short2;
-typedef vectype<short, 3> short3;
-typedef vectype<short, 4> short4;
-typedef vectype<ushort, 2> ushort2;
-typedef vectype<ushort, 3> ushort3;
-typedef vectype<ushort, 4> ushort4;
+typedef vec<short, 2> short2;
+typedef vec<short, 3> short3;
+typedef vec<short, 4> short4;
+typedef vec<ushort, 2> ushort2;
+typedef vec<ushort, 3> ushort3;
+typedef vec<ushort, 4> ushort4;
 
-typedef vectype<int, 2> int2;
-typedef vectype<int, 3> int3;
-typedef vectype<int, 4> int4;
-typedef vectype<uint, 2> uint2;
-typedef vectype<uint, 3> uint3;
-typedef vectype<uint, 4> uint4;
+typedef vec<int, 2> int2;
+typedef vec<int, 3> int3;
+typedef vec<int, 4> int4;
+typedef vec<uint, 2> uint2;
+typedef vec<uint, 3> uint3;
+typedef vec<uint, 4> uint4;
 
-typedef vectype<float, 2> float2;
-typedef vectype<float, 3> float3;
-typedef vectype<float, 4> float4;
+typedef vec<float, 2> float2;
+typedef vec<float, 3> float3;
+typedef vec<float, 4> float4;
 
-typedef vectype<double, 2> double2;
-typedef vectype<double, 3> double3;
-typedef vectype<double, 4> double4;
+typedef vec<double, 2> double2;
+typedef vec<double, 3> double3;
+typedef vec<double, 4> double4;
 
 
 #define make_int2 int2

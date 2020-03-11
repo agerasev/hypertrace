@@ -1,10 +1,10 @@
 #pragma once
 
 #include <cstdint>
-#include <vectype.hpp>
+#include <vec.hpp>
 
 
-typedef vectype<float, 3> color3;
+typedef vec<float, 3> color3;
 
 color3 make_color(color3 c, float g=2.2f) {
     return c.map([g](float x) { return pow(x, g); });

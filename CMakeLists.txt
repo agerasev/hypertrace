@@ -18,8 +18,10 @@ set(CMAKE_CXX_FLAGS "\
 ")
 
 set(COMMON_SRC
-    "src/common/vectype.hpp"
-    "src/common/vectype.cpp"
+    "src/host/vec.hpp"
+    "src/host/vec.cpp"
+    "src/host/mat.hpp"
+    "src/host/mat.cpp"
     "src/common/types.hh"
     "src/common/types.cc"
     "src/common/algebra/real.hh"
@@ -27,6 +29,8 @@ set(COMMON_SRC
     "src/common/algebra/complex.cc"
     "src/common/algebra/quaternion.hh"
     "src/common/algebra/quaternion.cc"
+    "src/common/algebra/matrix.hh"
+    "src/common/algebra/matrix.cc"
     "src/common/algebra/moebius.hh"
     "src/common/algebra/moebius.cc"
     "src/common/algebra/rotation.hh"

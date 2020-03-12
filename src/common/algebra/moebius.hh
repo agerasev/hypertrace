@@ -2,62 +2,49 @@
 
 #include "complex.hh"
 #include "quaternion.hh"
+#include "matrix.hh"
 
-// Without this flag all Moebius transformations are assumed
-// to be normalized (i.e. to have determinant equal to 1).
-//#define MOEBIUS_DENORMALIZED
-
-typedef struct Moebius {
-    complex a, b, c, d;
-} Moebius;
+typedef complex2x2 Moebius;
 
 #ifdef OPENCL_INTEROP
-typedef struct __attribute__ ((packed)) MoebiusPk {
-    complex_pk a, b, c, d;
-} MoebiusPk;
+typedef complex2x2_pk MoebiusPk;
 #endif // OPENCL_INTEROP
 
 
-Moebius mo_new(complex a, complex b, complex c, complex d);
-Moebius mo_identity();
+#define mo_new complex2x2_new
+#define mo_identity complex2x2_one
 
 quaternion mo_apply(Moebius m, quaternion p);
 quaternion mo_deriv(Moebius m, quaternion p, quaternion v);
 
-complex mo_det(Moebius m);
-Moebius mo_normalize(Moebius m);
-Moebius mo_inverse(Moebius m);
+#define mo_det complex2x2_det
+#define mo_normalize complex2x2_normalize
+#define mo_inverse complex2x2_inverse_normalized
 
-Moebius mo_chain(Moebius k, Moebius l);
+#define mo_chain complex2x2x2_dot
 
-void mo_eigen(Moebius m, Moebius *jordan, Moebius *vectors);
-Moebius mo_pow(Moebius m, real p);
+#define mo_eigen complex2x2_eigen_normalized
+#define mo_pow complex2x2_pow
 Moebius mo_interpolate(Moebius a, Moebius b, real t);
 
-// These arithmetic operations may return denormalized result
-// even without `MOEBIUS_DENORMALIZED` flag
-Moebius mo_add(Moebius a, Moebius b);
-Moebius mo_sub(Moebius a, Moebius b);
-Moebius mo_mul(Moebius a, real b);
-Moebius mo_div(Moebius a, real b);
+#define mo_add complex2x2_add
+#define mo_sub complex2x2_sub
+#define mo_mul complex2x2_mul
+#define mo_div complex2x2_div
 
-real mo_fabs(Moebius m);
+#define mo_fabs complex2x2_fabs
 real mo_diff(Moebius a, Moebius b);
 
 #ifdef OPENCL_INTEROP
-MoebiusPk pack_moebius(Moebius m);
-Moebius unpack_moebius(MoebiusPk p);
+#define pack_moebius pack_complex2x2
+#define unpack_moebius unpack_complex2x2
 #define mo_pack pack_moebius
 #define mo_unpack unpack_moebius
 #endif // OPENCL_INTEROP
 
 
-#ifndef OPENCL
-#include <iostream>
-std::ostream &operator<<(std::ostream &s, const Moebius &m);
-#endif // OPENCL
-
-
 #ifdef UNIT_TEST
+#include <mat.hpp>
+typedef MatApprox<complex,2,2,VecApprox<real,2>> ApproxMo;
 Moebius random_moebius(TestRng &rng);
 #endif // UNIT_TEST

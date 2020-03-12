@@ -21,9 +21,11 @@ typedef float_pk  real_pk;
 typedef float2_pk real2_pk;
 typedef float3_pk real3_pk;
 typedef float4_pk real4_pk;
+#define pack_real pack_float
 #define pack_real2 pack_float2
 #define pack_real3 pack_float3
 #define pack_real4 pack_float4
+#define unpack_real unpack_float
 #define unpack_real2 unpack_float2
 #define unpack_real3 unpack_float3
 #define unpack_real4 unpack_float4
@@ -53,9 +55,11 @@ typedef float_pk  real_pk;
 typedef float2_pk real2_pk;
 typedef float3_pk real3_pk;
 typedef float4_pk real4_pk;
+#define pack_real pack_double
 #define pack_real2 pack_double2
 #define pack_real3 pack_double3
 #define pack_real4 pack_double4
+#define unpack_real unpack_double
 #define unpack_real2 unpack_double2
 #define unpack_real3 unpack_double3
 #define unpack_real4 unpack_double4

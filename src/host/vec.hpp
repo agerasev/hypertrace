@@ -329,6 +329,12 @@ class VecApprox {
     friend bool operator==(VecApprox a, vtype b){
         return b == a;
     }
+    friend bool operator!=(vtype a, VecApprox b){
+        return !(a == b);
+    }
+    friend bool operator!=(VecApprox a, vtype b){
+        return a != b;
+    }
     friend std::ostream &operator<<(std::ostream &s, VecApprox a) {
         return s << a.v;
     }

@@ -5,244 +5,35 @@
 #endif // OPENCL
 
 
-Moebius mo_new(complex a, complex b, complex c, complex d) {
-    return (Moebius){ .a = a, .b = b, .c = c, .d = d };
-}
-Moebius mo_identity() {
-    return mo_new(C1, C0, C0, C1);
-}
-
 quaternion mo_apply(Moebius m, quaternion p) {
     return q_div(
-        cq_mul(m.a, p) + q_new(m.b, C0),
-        cq_mul(m.c, p) + q_new(m.d, C0)
+        cq_mul(m.s[0], p) + q_new(m.s[1], C0),
+        cq_mul(m.s[2], p) + q_new(m.s[3], C0)
     );
 }
 
 quaternion mo_deriv(Moebius m, quaternion p, quaternion v) {
-    quaternion u = cq_mul(m.a, p) + q_new(m.b, C0);
-    quaternion d = cq_mul(m.c, p) + q_new(m.d, C0);
+    quaternion u = cq_mul(m.s[0], p) + q_new(m.s[1], C0);
+    quaternion d = cq_mul(m.s[2], p) + q_new(m.s[3], C0);
     real d2 = q_abs2(d);
-    quaternion s1 = q_div(cq_mul(m.a, v), d);
-    quaternion s21 = q_conj(cq_mul(m.c, v));
-    quaternion s22 = ((real)2*dot(d, cq_mul(m.c, v))/d2)*q_conj(d);
+    quaternion s1 = q_div(cq_mul(m.s[0], v), d);
+    quaternion s21 = q_conj(cq_mul(m.s[2], v));
+    quaternion s22 = ((real)2*dot(d, cq_mul(m.s[2], v))/d2)*q_conj(d);
     quaternion s2 = q_mul(u, (s21 - s22)/d2);
     return s1 + s2;
-}
-
-complex mo_det(Moebius m) {
-    return c_mul(m.a, m.d) - c_mul(m.b, m.c);
-}
-Moebius mo_normalize(Moebius m) {
-    complex d = c_sqrt(mo_det(m));
-    m.a = c_div(m.a, d);
-    m.b = c_div(m.b, d);
-    m.c = c_div(m.c, d);
-    m.d = c_div(m.d, d);
-    return m;
-}
-
-Moebius mo_inverse(Moebius m) {
-#ifdef MOEBIUS_DENORMALIZED
-    complex det = mo_det(m);
-    return mo_new(
-        c_div(m.d, det), c_div(-m.b, det),
-        c_div(-m.c, det), c_div(m.a, det)
-    );
-#else  // MOEBIUS_DENORMALIZED
-    return mo_new(m.d, -m.b, -m.c, m.a);
-#endif // MOEBIUS_DENORMALIZED
-}
-
-Moebius mo_chain(Moebius k, Moebius l) {
-    return mo_new(
-        c_mul(k.a, l.a) + c_mul(k.b, l.c),
-        c_mul(k.a, l.b) + c_mul(k.b, l.d),
-        c_mul(k.c, l.a) + c_mul(k.d, l.c),
-        c_mul(k.c, l.b) + c_mul(k.d, l.d)
-    );
-}
-
-void mo_eigen(Moebius m, Moebius *l, Moebius *v) {
-    if (c_fabs(m.b) < EPS && c_fabs(m.c) < EPS) {
-        *l = mo_new(m.a, C0, C0, m.d);
-        *v = mo_new(C1, C0, C0, C1);
-    } else {
-        complex ad = (m.a + m.d)/2;
-        complex D = c_sqrt(c_mul(ad, ad) -
-#ifdef MOEBIUS_DENORMALIZED
-            mo_det(m)
-#else // MOEBIUS_DENORMALIZED
-            C1
-#endif // MOEBIUS_DENORMALIZED
-        );
-        if (c_fabs(D) > EPS) {
-            *l = mo_new(ad + D, C0, C0, ad - D);
-            if (c_fabs(m.b) > EPS) {
-                *v = mo_new(m.b, m.b, l->a - m.a, l->d - m.a);
-            } else {
-                *v = mo_new(l->a - m.d, l->d - m.d, m.c, m.c);
-            }
-        } else {
-            *l = mo_new(ad, C1, C0, ad);
-            // FIXME: Wrond algorithm
-            if (c_fabs(m.b) > EPS) {
-                complex g = 4*c_mul(m.b, m.b) + c_mul(m.a - m.d, m.a - m.d);
-                *v = mo_new(
-                    m.b,
-                    c_div(2*c_mul(m.b, m.a - m.d), g),
-                    (m.d - m.a)/2,
-                    c_div(4*c_mul(m.b, m.b), g)
-                );
-            } else {
-                complex g = 4*c_mul(m.c, m.c) + c_mul(m.d - m.a, m.d - m.a);
-                *v = mo_new(
-                    (m.a - m.d)/2,
-                    c_div(4*c_mul(m.c, m.c), g),
-                    m.c,
-                    c_div(2*c_mul(m.c, m.d - m.a), g)
-                );
-            }
-        }
-#ifndef MOEBIUS_DENORMALIZED
-        *v = mo_normalize(*v);
-#endif // MOEBIUS_DENORMALIZED
-    }
-}
-
-Moebius mo_pow(Moebius m, real p) {
-    Moebius x = mo_sub(m, mo_identity());
-    real y = mo_fabs(x);
-    // FIXME: Why 1e4?
-    if (y*y > 1e4*EPS) {
-        Moebius j, v;
-        mo_eigen(m, &j, &v);
-        Moebius k;
-        if (c_fabs(j.b) < EPS) {
-            k = mo_new(c_powr(j.a, p), C0, C0, c_powr(j.d, p));
-        } else {
-            // Assume j.a == j.d
-            k = mo_new(
-                c_powr(j.a, p),
-                p*c_mul(c_powr(j.a, p - 1), j.b),
-                C0,
-                c_powr(j.d, p)
-            );
-        }
-        return mo_chain(mo_chain(v, k), mo_inverse(v));
-    } else {
-        return mo_normalize(mo_add(mo_identity(), mo_mul(x, p)));
-    }
 }
 
 Moebius mo_interpolate(Moebius a, Moebius b, real t) {
     return mo_chain(a, mo_pow(mo_chain(mo_inverse(a), b), t));
 }
 
-Moebius mo_add(Moebius a, Moebius b) {
-    return mo_new(
-        a.a + b.a,
-        a.b + b.b,
-        a.c + b.c,
-        a.d + b.d
-    );
-}
-
-Moebius mo_sub(Moebius a, Moebius b) {
-    return mo_new(
-        a.a - b.a,
-        a.b - b.b,
-        a.c - b.c,
-        a.d - b.d
-    );
-}
-
-Moebius mo_mul(Moebius a, real b) {
-    return mo_new(
-        a.a*b,
-        a.b*b,
-        a.c*b,
-        a.d*b
-    );
-}
-
-Moebius mo_div(Moebius a, real b) {
-    return mo_new(
-        a.a/b,
-        a.b/b,
-        a.c/b,
-        a.d/b
-    );
-}
-
-real mo_fabs(Moebius m) {
-    real d = R0;
-    d += c_fabs(m.a);
-    d += c_fabs(m.b);
-    d += c_fabs(m.c);
-    d += c_fabs(m.d);
-    return d;
-}
-
 real mo_diff(Moebius a, Moebius b) {
     return mo_fabs(mo_sub(a, b));
 }
 
-#ifdef OPENCL_INTEROP
-
-MoebiusPk pack_moebius(Moebius m) {
-    return (MoebiusPk){
-        .a = c_pack(m.a),
-        .b = c_pack(m.b),
-        .c = c_pack(m.c),
-        .d = c_pack(m.d)
-    };
-}
-
-Moebius unpack_moebius(MoebiusPk p) {
-    return (Moebius){
-        .a = c_unpack(p.a),
-        .b = c_unpack(p.b),
-        .c = c_unpack(p.c),
-        .d = c_unpack(p.d)
-    };
-}
-
-#endif // OPENCL_INTEROP
-
-
-#ifdef __cplusplus
-std::ostream &operator<<(std::ostream &s, const Moebius &m) {
-    return s << "[" << m.a << ", " << m.b << ", " << m.c << ", " << m.d << "]";
-}
-#endif // __cplusplus
-
 
 #ifdef UNIT_TEST
 #include <catch.hpp>
-
-class MoebiusApprox {
-    public:
-    Moebius m;
-    MoebiusApprox(Moebius c) : m(c) {}
-    friend bool operator==(Moebius a, MoebiusApprox b) {
-        return (
-            a.a == ApproxV(b.m.a) &&
-            a.b == ApproxV(b.m.b) &&
-            a.c == ApproxV(b.m.c) &&
-            a.d == ApproxV(b.m.d)
-        );
-    }
-    friend bool operator==(MoebiusApprox a, Moebius b){
-        return b == a;
-    }
-    friend std::ostream &operator<<(std::ostream &s, MoebiusApprox a) {
-        return s << a.m;
-    }
-};
-MoebiusApprox ApproxMo(Moebius m) {
-    return MoebiusApprox(m);
-}
 
 Moebius random_moebius(TestRng &rng) {
     Moebius m = mo_new(
@@ -290,10 +81,10 @@ TEST_CASE("Moebius transformation", "[moebius]") {
             Moebius l, v;
             mo_eigen(m, &l, &v);
 
-            REQUIRE(c_mul(m.a, v.a) + c_mul(m.b, v.c) == ApproxV(c_mul(l.a, v.a)));
-            REQUIRE(c_mul(m.c, v.a) + c_mul(m.d, v.c) == ApproxV(c_mul(l.a, v.c)));
-            REQUIRE(c_mul(m.a, v.b) + c_mul(m.b, v.d) == ApproxV(c_mul(l.d, v.b)));
-            REQUIRE(c_mul(m.c, v.b) + c_mul(m.d, v.d) == ApproxV(c_mul(l.d, v.d)));
+            REQUIRE(c_mul(m.s[0], v.s[0]) + c_mul(m.s[1], v.s[2]) == ApproxV(c_mul(l.s[0], v.s[0])));
+            REQUIRE(c_mul(m.s[2], v.s[0]) + c_mul(m.s[3], v.s[2]) == ApproxV(c_mul(l.s[0], v.s[2])));
+            REQUIRE(c_mul(m.s[0], v.s[1]) + c_mul(m.s[1], v.s[3]) == ApproxV(c_mul(l.s[3], v.s[1])));
+            REQUIRE(c_mul(m.s[2], v.s[1]) + c_mul(m.s[3], v.s[3]) == ApproxV(c_mul(l.s[3], v.s[3])));
 
             Moebius o = mo_chain(mo_chain(v, l), mo_inverse(v));
             REQUIRE(o == ApproxMo(m));
@@ -304,9 +95,9 @@ TEST_CASE("Moebius transformation", "[moebius]") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             Moebius m = mo_new(C1, C0, C0, C1);
             if (rng.uniform() > 0.5) {
-                m.b = rand_c_normal(rng);
+                m.s[1] = rand_c_normal(rng);
             } else {
-                m.c = rand_c_normal(rng);
+                m.s[2] = rand_c_normal(rng);
             }
             Moebius l, v;
             mo_eigen(m, &l, &v);
@@ -336,9 +127,9 @@ TEST_CASE("Moebius transformation", "[moebius]") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             Moebius m = mo_new(C1, C0, C0, C1);
             if (rng.uniform() > 0.5) {
-                m.b = rand_c_normal(rng);
+                m.s[1] = rand_c_normal(rng);
             } else {
-                m.c = rand_c_normal(rng);
+                m.s[2] = rand_c_normal(rng);
             }
             int p = (int)floor(8*rng.uniform()) + 2;
             int q = (int)floor(8*rng.uniform()) + 2;

@@ -5,6 +5,7 @@
 
 #include <algebra/complex.cc>
 #include <algebra/quaternion.cc>
+#include <algebra/matrix.cc>
 #include <algebra/moebius.cc>
 #include <algebra/rotation.cc>
 

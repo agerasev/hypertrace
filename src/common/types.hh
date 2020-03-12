@@ -30,6 +30,9 @@ typedef uint   uint_pk;
 typedef int    int_pk;
 typedef float  float_pk;
 
+#define pack_float(x) ((float_pk)(x))
+#define unpack_float(x) ((float)(x))
+
 #define DEF_VEC_PACK(type, n, size) \
 typedef struct { type s[size]; } type##n##_pk; \
 type##n##_pk pack_##type##n(type##n v) { type##n##_pk p; vstore##n(v, 0, p.s); return p; } \
@@ -147,6 +150,11 @@ typedef cl_float4 float4_pk;
 typedef float2_pk double2_pk;
 typedef float3_pk double3_pk;
 typedef float4_pk double4_pk;
+
+#define pack_float(x) ((float_pk)(x))
+#define unpack_float(x) ((float)(x))
+#define pack_double(x) ((double_pk)(x))
+#define unpack_double(x) ((double)(x))
 
 template <typename T, typename P, int N>
 P pack_vectype(T t) {

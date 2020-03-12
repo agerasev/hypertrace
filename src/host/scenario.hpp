@@ -14,6 +14,7 @@ class Transition {
     double duration = 1.0; // seconds
 
     Transition(double d);
+    virtual ~Transition() = default;
     virtual View get_view(double p) const = 0;
 };
 
@@ -56,7 +57,7 @@ class PathScenario : public Scenario {
     void add_transition(std::unique_ptr<Transition> t);
     template <typename ... Args>
     void add_transition(std::unique_ptr<Transition> t, Args ...args) {
-        add_transition(t);
+        add_transition(std::move(t));
         add_transition(args...);
     }
 

@@ -1,0 +1,18 @@
+cmake_minimum_required(VERSION 3.0)
+
+set(COMMON_SRC
+    "../common/types.cc"
+    "../common/algebra/complex.cc"
+    "../common/algebra/quaternion.cc"
+    "../common/algebra/matrix.cc"
+    "../common/algebra/moebius.cc"
+    "../common/algebra/rotation.cc"
+    "../common/geometry/hyperbolic.cc"
+    "../common/geometry/hyperbolic/ray.cc"
+    "../common/geometry/hyperbolic/plane.cc"
+    "../common/geometry/hyperbolic/horosphere.cc"
+    "../common/random.cc"
+    "../common/material.cc"
+    "../common/object.cc"
+    "../common/view.cc"
+PARENT_SCOPE)

@@ -53,6 +53,7 @@ class Renderer {
     ViewPk view, view_prev;
 
     static std::string gen_config_src(const Config &config);
+    static void write_config_src(const Config &config);
 
     public:
     Renderer(

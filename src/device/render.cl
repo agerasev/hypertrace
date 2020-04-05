@@ -1,7 +1,5 @@
-#define OPENCL
-#define OPENCL_INTEROP
-
-#include <gen/config.cl>
+#define PATH_MAX_DEPTH 6
+#define PATH_MAX_DIFFUSE_DEPTH 2
 
 #include <types.hh>
 #include <random.hh>
@@ -14,8 +12,6 @@
 #include <object.hh>
 #include <view.hh>
 #include <path.hh>
-
-#include <lens_blur.cl>
 
 void get_object(Object *obj, int i, __global ObjectPk *objects) {
 	ObjectPk obj_pk = objects[i];
@@ -164,6 +160,3 @@ __kernel void render(
 	uchar4 pix = (uchar4)(convert_uchar3(255*out_color), 0xff);
 	vstore4(pix, idx, image);
 }
-
-
-#include <source.cl>

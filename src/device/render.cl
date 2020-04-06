@@ -10,6 +10,9 @@
 #include <view.hh>
 #include <path.hh>
 
+#include "config.cl"
+
+
 void get_object(Object *obj, int i, __global ObjectPk *objects) {
 	ObjectPk obj_pk = objects[i];
 	unpack_object(obj, &obj_pk);

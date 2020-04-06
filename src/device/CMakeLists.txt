@@ -29,7 +29,7 @@ include_directories(
     "../common"
 )
 
-#add_library(${PROJECT_NAME} STATIC ${COMMON_SRC} ${DEVICE_SRC})
-#target_compile_definitions(${PROJECT_NAME} PUBLIC "-DOPENCL" "-DOPENCL_INTEROP")
-#set_source_files_properties(${COMMON_SRC} ${DEVICE_SRC} PROPERTIES LANGUAGE C)
-#set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)
+add_library(${PROJECT_NAME} STATIC ${COMMON_SRC} ${DEVICE_SRC})
+target_compile_definitions(${PROJECT_NAME} PUBLIC "-DOPENCL" "-DOPENCL_INTEROP")
+set_source_files_properties(${COMMON_SRC} ${DEVICE_SRC} PROPERTIES LANGUAGE C)
+set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)

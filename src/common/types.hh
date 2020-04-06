@@ -33,19 +33,19 @@ typedef float  float_pk;
 #define pack_float(x) ((float_pk)(x))
 #define unpack_float(x) ((float)(x))
 
-#define DEF_VEC_PACK(type, n, size) \
+#define DECL_VEC_PACK(type, n, size) \
 typedef struct { type s[size]; } type##n##_pk; \
-type##n##_pk pack_##type##n(type##n v) { type##n##_pk p; vstore##n(v, 0, p.s); return p; } \
-type##n unpack_##type##n(type##n##_pk p) { return vload##n(0, p.s); }
+type##n##_pk pack_##type##n(type##n v); \
+type##n unpack_##type##n(type##n##_pk p);
 
-#define DEF_VEC_PACK_234(type) \
-    DEF_VEC_PACK(type, 2, 2) \
-    DEF_VEC_PACK(type, 3, 4) \
-    DEF_VEC_PACK(type, 4, 4)
+#define DECL_VEC_PACK_234(type) \
+    DECL_VEC_PACK(type, 2, 2) \
+    DECL_VEC_PACK(type, 3, 4) \
+    DECL_VEC_PACK(type, 4, 4)
 
-DEF_VEC_PACK_234(int)
-DEF_VEC_PACK_234(uint)
-DEF_VEC_PACK_234(float)
+DECL_VEC_PACK_234(int)
+DECL_VEC_PACK_234(uint)
+DECL_VEC_PACK_234(float)
 
 #endif // OPENCL_INTEROP
 

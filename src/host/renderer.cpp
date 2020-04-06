@@ -12,35 +12,6 @@
 
 using duration = std::chrono::duration<double>;
 
-std::string Renderer::gen_config_src(const Renderer::Config &config) {
-    std::stringstream ss;
-    
-    ss << 
-        "#pragma once\n" <<
-
-        "#define PATH_MAX_DEPTH " << config.path_max_depth << std::endl <<
-        "#define PATH_MAX_DIFFUSE_DEPTH " <<
-            config.path_max_diffuse_depth << std::endl;
-
-    if (config.blur.lens) {
-        ss << "#define LENS_BLUR" << std::endl;
-    }
-    if (config.blur.motion) {
-        ss << "#define MOTION_BLUR" << std::endl;
-    }
-    if (config.blur.object_motion) {
-        ss << "#define OBJECT_MOTION_BLUR" << std::endl;
-    }
-
-    if (fabs(config.gamma - 1.0) > EPS) {
-        ss << 
-            "#define GAMMA_CORRECTION" << std::endl <<
-            "#define GAMMA_VALUE " << config.gamma << "f" << std::endl;
-    }
-
-    return ss.str();
-}
-
 Renderer::Renderer(
     cl_device_id device,
     int width, int height,
@@ -55,8 +26,7 @@ Renderer::Renderer(
     program(
         context, device,
         "source.cl",
-        {"src/device", "src/common"},
-        {std::make_pair("gen/config.cl", gen_config_src(config))}
+        {"src/device", "src/common"}
     ),
     kernel(program, "render"),
 

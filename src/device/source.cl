@@ -21,6 +21,5 @@
 #include <object.cc>
 #include <view.cc>
 
-#include "gen/config.cl"
 #include "lens_blur.cl"
 #include "render.cl"

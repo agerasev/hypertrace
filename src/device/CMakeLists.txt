@@ -15,13 +15,13 @@ set(CMAKE_C_LINK_EXECUTABLE "false")
 
 set(CMAKE_C_COMPILER "clang")
 set(CMAKE_C_FLAGS "\
--x cl --std=cl1.2 \
 -S -emit-llvm --target=spir64-unknown-unknown \
 -Xclang -finclude-default-header \
 -O3 -g -Wall\
 ")
 
 set(DEVICE_SRC
+    "builtin.cl"
     "render.cl"
 )
 include_directories(
@@ -30,6 +30,6 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME} STATIC ${COMMON_SRC} ${DEVICE_SRC})
-target_compile_definitions(${PROJECT_NAME} PUBLIC "-DOPENCL" "-DOPENCL_INTEROP")
+target_compile_definitions(${PROJECT_NAME} PUBLIC "-DDEVICE")
 set_source_files_properties(${COMMON_SRC} ${DEVICE_SRC} PROPERTIES LANGUAGE C)
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)

@@ -5,8 +5,8 @@
 
 #include <opencl/opencl.hpp>
 
-#include <view.hh>
-#include <object.hh>
+//#include <view.hh>
+//#include <object.hh>
 
 // FIXME: Add `set_view()` method and use it instead of `fresh` argument
 class Renderer {

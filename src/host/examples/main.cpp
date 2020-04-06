@@ -6,16 +6,16 @@
 #include <cmath>
 #include <chrono>
 
-#include <algebra/quaternion.hh>
-#include <algebra/moebius.hh>
-#include <view.hh>
-#include <object.hh>
+//#include <algebra/quaternion.hh>
+//#include <algebra/moebius.hh>
+//#include <view.hh>
+//#include <object.hh>
 
 #include <opencl/search.hpp>
 #include <sdl/viewer.hpp>
 #include <sdl/controller.hpp>
 #include <renderer.hpp>
-#include <color.hpp>
+//#include <color.hpp>
 
 //#include "scene.hpp"
 

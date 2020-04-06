@@ -5,7 +5,6 @@ set(COMMON_FLAGS "\
     -g \
     -Wall \
     -Wextra \
-    -Wno-unused-parameter \
 ")
 set(CMAKE_C_FLAGS "\
     ${CMAKE_C_FLAGS} \

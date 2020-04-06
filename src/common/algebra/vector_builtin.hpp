@@ -6,13 +6,61 @@
 #define DEFINE_VECTOR_BUILTIN(T, N, L, A) \
 template <> \
 class __attribute__((aligned(A))) vector<T, N> { \
-    public: \
-    T s[L]; \
+private: \
+    T s[N]; \
+    template <int P, typename ...Args> \
+    void unwind(T x, Args ...args) { \
+        static_assert(P < N, "Too many elements in the constructor"); \
+        s[P] = x; \
+        unwind<P + 1>(args...); \
+    } \
+    template <int P, int M, typename ...Args> \
+    void unwind(vector<T, M> x, Args ...args) { \
+        static_assert(P + M <= N, "Too many elements in the constructor"); \
+        for (int i = 0; i < M; ++i) { \
+            s[P + i] = x[i]; \
+        } \
+        unwind<P + M>(args...); \
+    } \
+    template <int P> \
+    void unwind() { \
+        static_assert(P == N, "Too few elements in the constructor"); \
+    } \
+public: \
+    vector() = default; \
+    vector(T x) { \
+        for (int i = 0; i < N; ++i) { \
+            s[i] = x; \
+        } \
+    } \
+    template <typename ...Args> \
+    vector(Args ...args) { \
+        unwind<0>(args...); \
+    } \
     T &operator[](int i) { \
         return s[i]; \
     } \
     const T &operator[](int i) const { \
         return s[i]; \
+    } \
+    T *data() { \
+        return s; \
+    } \
+    const T *data() const { \
+        return s; \
+    } \
+    template <int P> \
+    T &elem() { \
+        static_assert(P >= 0 && P < N, "Index is out of bounds"); \
+        return s[P]; \
+    } \
+    template <int P> \
+    const T &elem() const { \
+        static_assert(P >= 0 && P < N, "Index is out of bounds"); \
+        return s[P]; \
+    } \
+    static int size() { \
+        return N; \
     } \
     static vector load(const T *data) { \
         vector v; \
@@ -128,16 +176,16 @@ class __attribute__((aligned(A))) vector<T, N> { \
 #define DEFINE_VECTOR_BUILTIN_GEOMETRY(T, N, L, A) \
 template <> \
 T dot(vector<T, N> a, vector<T, N> b) { \
-    return ocl_dot_##T##N(a.s, b.s); \
+    return ocl_dot_##T##N(a.data(), b.data()); \
 } \
 template <> \
 T length(vector<T, N> a) { \
-    return ocl_length_##T##N(a.s); \
+    return ocl_length_##T##N(a.data()); \
 } \
 template <> \
 vector<T, N> normalize(vector<T, N> a) { \
     vector<T, N> o; \
-    ocl_normalize_##T##N(o.s, a.s); \
+    ocl_normalize_##T##N(o.data(), a.data()); \
     return o; \
 } \
 
@@ -146,7 +194,7 @@ vector<T, N> normalize(vector<T, N> a) { \
 template <> \
 vector<T, N> cross<T>(vector<T, N> a, vector<T, N> b) { \
     vector<T, N> o; \
-    ocl_cross_##T##N(o.s, a.s, b.s); \
+    ocl_cross_##T##N(o.data(), a.data(), b.data()); \
     return o; \
 } \
 

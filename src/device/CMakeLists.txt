@@ -7,6 +7,7 @@ set(CMAKE_STATIC_LIBRARY_SUFFIX ".ll")
 
 set(CMAKE_C_CREATE_STATIC_LIBRARY
     "llvm-link -S <LINK_FLAGS> <OBJECTS> -o <TARGET>"
+    "opt -S -O3 <TARGET> -o <TARGET>"
     "llvm-opencl <TARGET>"
 )
 set(CMAKE_C_CREATE_SHARED_LIBRARY "false")

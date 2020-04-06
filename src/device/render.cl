@@ -98,9 +98,9 @@ __kernel void render(
 				&obj, i, time,
 				objects, objects_prev, objects_mask
 			);
-#else  // OBJECT_MOTION_BLUROBJECT_MOTION_BLUR
+#else  // OBJECT_MOTION_BLUR
 			get_object(&obj, i, objects);
-#endif // OBJECT_MOTION_BLUROBJECT_MOTION_BLUR
+#endif // OBJECT_MOTION_BLUR
 			
 			ObjectHit cache;
 			PathInfo path = gpath;
@@ -153,9 +153,11 @@ __kernel void render(
 	vstore3(avg_color, idx, screen);
 
 	float3 out_color = clamp(avg_color, 0.0f, 1.0f);
+	/*
 #ifdef GAMMA_CORRECTION
 	out_color = pow(out_color, 1/GAMMA_VALUE);
 #endif // GAMMA_CORRECTION
+	*/
 
 	uchar4 pix = (uchar4)(convert_uchar3(255*out_color), 0xff);
 	vstore4(pix, idx, image);

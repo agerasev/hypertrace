@@ -48,19 +48,19 @@ typedef uchar_pk ObjectTypePk;
 typedef uchar_pk TilingTypePk;
 
 typedef struct _PACKED_STRUCT_ATTRIBUTE_ {
-    TilingTypePk type;
-    real_pk cell_size;
-    real_pk border_width;
+    TilingTypePk type _PACKED_FIELD_ATTRIBUTE_;
+    real_pk cell_size _PACKED_FIELD_ATTRIBUTE_;
+    real_pk border_width _PACKED_FIELD_ATTRIBUTE_;
     MaterialPk border_material _PACKED_FIELD_ATTRIBUTE_;
 } TilingPk;
 
 // FIXME: Use explicit alignment instead of `packed` attribute
 // because it suppresses referencing of field of such structure.
 typedef struct _PACKED_STRUCT_ATTRIBUTE_ {
-    uint_pk type;
-    MoebiusPk map;
+    uint_pk type _PACKED_FIELD_ATTRIBUTE_;
+    MoebiusPk map _PACKED_FIELD_ATTRIBUTE_;
     MaterialPk materials[MATERIAL_COUNT_MAX] _PACKED_FIELD_ATTRIBUTE_;
-    int_pk material_count;
+    int_pk material_count _PACKED_FIELD_ATTRIBUTE_;
     TilingPk tiling _PACKED_FIELD_ATTRIBUTE_;
 } ObjectPk;
 

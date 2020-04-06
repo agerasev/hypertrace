@@ -9,6 +9,7 @@
 #include <random>
 #include <algorithm>
 
+#define OCLGEN
 
 using duration = std::chrono::duration<double>;
 
@@ -25,8 +26,13 @@ Renderer::Renderer(
 
     program(
         context, device,
+#ifndef OCLGEN
         "source.cl",
         {"src/device", "src/common"}
+#else // OCLGEN
+        "device.gen.cl",
+        {"build/device"}
+#endif // OCLGEN
     ),
     kernel(program, "render"),
 

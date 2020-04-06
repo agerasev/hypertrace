@@ -208,7 +208,7 @@ inline double4 unpack_double4(double4_pk v) { return unpack_float4(v).cast<doubl
 
 #ifdef OPENCL_INTEROP
 
-#define _PACKED_ALIGNMENT_ 4
+#define _PACKED_ALIGNMENT_ 8
 #define _PACKED_STRUCT_ATTRIBUTE_ __attribute__((packed, aligned(_PACKED_ALIGNMENT_)))
 #define _PACKED_FIELD_ATTRIBUTE_ __attribute__((packed, aligned(_PACKED_ALIGNMENT_)))
 

@@ -206,8 +206,8 @@ MAT_SQUARE4_H(T); \
 #define TF_PK_(F,T) F##_##T
 
 #define MAT_PK_H(T,M,N) \
-typedef struct __attribute__((packed)) MAT_PK_(T,M,N) { \
-    T##_pk s[M*N] __attribute__((packed)); \
+typedef struct __attribute__((packed, aligned(8))) MAT_PK_(T,M,N) { \
+    T##_pk s[M*N] __attribute__((aligned(8))); \
 } MAT_PK_(T,M,N); \
 MAT_PK_(T,M,N) MATF_PK_(pack,T,M,N)(MAT_(T,M,N) m); \
 MAT_(T,M,N) MATF_PK_(unpack,T,M,N)(MAT_PK_(T,M,N) m); \

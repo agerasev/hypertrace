@@ -16,9 +16,9 @@ set(CMAKE_C_LINK_EXECUTABLE "false")
 set(CMAKE_C_COMPILER "clang")
 set(CMAKE_C_FLAGS "\
 -x cl --std=cl1.2 \
--S -emit-llvm --target=spir-unknown-unknown \
+-S -emit-llvm --target=spir64-unknown-unknown \
 -Xclang -finclude-default-header \
--O3 \
+-O3 -g -Wall\
 ")
 
 set(DEVICE_SRC

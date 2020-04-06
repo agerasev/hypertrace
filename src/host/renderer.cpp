@@ -1,6 +1,7 @@
 #include "renderer.hpp"
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <vector>
 #include <cassert>
@@ -9,9 +10,17 @@
 #include <random>
 #include <algorithm>
 
-#define OCLGEN
 
 using duration = std::chrono::duration<double>;
+
+std::string Renderer::load_file(const char *path) {
+    std::ifstream file(path);
+    assert(file.good());
+    return std::string(
+        std::istreambuf_iterator<char>(file),
+        std::istreambuf_iterator<char>()
+    );
+}
 
 Renderer::Renderer(
     cl_device_id device,
@@ -26,31 +35,25 @@ Renderer::Renderer(
 
     program(
         context, device,
-#ifndef OCLGEN
-        "source.cl",
-        {"src/device", "src/common"}
-#else // OCLGEN
-        "device.gen.cl",
-        {"build/device"}
-#endif // OCLGEN
+        load_file("build/device/device.gen.cl")
     ),
     kernel(program, "render"),
 
     image(context, width*height*4),
-    screen(context, width*height*3*sizeof(cl_float)),
+    screen(context, width*height*3*sizeof(cl_float))
 
-    seeds(context, width*height*sizeof(cl_uint))
+    //seeds(context, width*height*sizeof(cl_uint))
 {
     std::mt19937 rng(0xdeadbeef);
     std::vector<uint32_t> host_seeds(width*height);
     for (uint32_t &seed : host_seeds) {
         seed = rng();
     }
-    seeds.store(queue, host_seeds.data());
+    //seeds.store(queue, host_seeds.data());
 
-    set_view(view_init());
+    //set_view(view_init());
 }
-
+/*
 void Renderer::store_objs_to_buf(
     cl::Queue &queue, cl::Buffer &buf,
     const std::vector<Object> &objs
@@ -93,11 +96,11 @@ void Renderer::store_objects(
 
     object_count = objs.size();
 }
-
+*/
 void Renderer::load_image(uint8_t *data) {
     image.load(queue, data);
 }
-
+/*
 void Renderer::set_view(const View &v) {
     set_view(v, v);
 }
@@ -105,7 +108,7 @@ void Renderer::set_view(const View &v, const View &vp) {
     view = view_pack(v);
     view_prev = view_pack(vp);
 }
-
+*/
 void Renderer::render(bool fresh) {
     if (fresh) {
         monte_carlo_counter = 0;
@@ -115,13 +118,13 @@ void Renderer::render(bool fresh) {
         queue, width*height,
         screen, image,
         width, height,
-        monte_carlo_counter,
-        seeds,
+        monte_carlo_counter
+        //seeds,
 
-        view, view_prev,
+        //view, view_prev,
 
-        objects, objects_prev,
-        objects_mask, object_count
+        //objects, objects_prev,
+        //objects_mask, object_count
     );
 
     monte_carlo_counter += 1;

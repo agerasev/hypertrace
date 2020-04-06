@@ -5,14 +5,14 @@
 
 #include "base.hpp"
 
-#include <view.hh>
-#include <algebra/moebius.hh>
+//#include <view.hh>
+//#include <algebra/moebius.hh>
 
 
 class Controller {
     private:
-    static const std::unordered_map<sdl::Key, std::function<Moebius(double)>> MOVE_KEYS;
-    static const std::unordered_map<sdl::Key, std::function<Moebius(double)>> ROT_KEYS;
+    //static const std::unordered_map<sdl::Key, std::function<Moebius(double)>> MOVE_KEYS;
+    //static const std::unordered_map<sdl::Key, std::function<Moebius(double)>> ROT_KEYS;
 
     std::unordered_map<sdl::Key, bool> keys;
     int mouse_x = 0, mouse_y = 0;
@@ -28,10 +28,10 @@ class Controller {
     int height;
 
     public:
-    View view, view_prev;
+    //View view, view_prev;
 
     Controller();
-    Controller(const View &v);
+    //Controller(const View &v);
 
     bool handle();
     bool step(double dt);

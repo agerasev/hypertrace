@@ -32,26 +32,12 @@ cl::Queue::operator cl_command_queue() const {
 cl::Program::Program(
     cl_context context,
     cl_device_id device,
-    const char *path,
-    const std::list<std::string> &dirs,
-    const std::map<std::string, std::string> &fmem,
-    bool include_warnings
+    const std::string &source
 ) {
     this->device = device;
-
-    includer = std::make_unique<c_includer>(path, dirs, fmem);
     
-    bool include_status = includer->include();
-    if (!include_status || include_warnings) {
-        std::cout << includer->log() << std::endl;
-    }
-    assert(include_status);
-
-    std::string src = includer->data();
-    //std::fstream("gen_kernel.cl", std::ios::out) << src << std::endl;
-    
-    const char *src_data = src.c_str();
-    const size_t src_len = src.size();
+    const char *src_data = source.c_str();
+    const size_t src_len = source.size();
 
     program = clCreateProgramWithSource(context, 1, &src_data, &src_len, nullptr);
     assert(program != nullptr);
@@ -83,7 +69,7 @@ std::string cl::Program::log() {
     ) == CL_SUCCESS);
     assert(buffer[buffer.size() - 1] == '\0');
 
-    return includer->convert(std::string(buffer.data()));
+    return std::string(buffer.data());
 }
 
 void cl::Buffer::init(cl_context context, size_t size) {

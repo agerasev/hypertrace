@@ -18,14 +18,12 @@ set(CMAKE_CXX_FLAGS "\
 ")
 
 set(HOST_SRC
-    "vec.hpp"
-    "vec.cpp"
-    "mat.hpp"
-    "mat.cpp"
+    #"vec.hpp"
+    #"vec.cpp"
+    #"mat.hpp"
+    #"mat.cpp"
     "opencl/search.hpp"
     "opencl/search.cpp"
-    "opencl/include.hpp"
-    "opencl/include.cpp"
     "opencl/opencl.hpp"
     "opencl/opencl.cpp"
     "sdl/base.hpp"
@@ -36,8 +34,8 @@ set(HOST_SRC
     "sdl/viewer.cpp"
     "renderer.hpp"
     "renderer.cpp"
-    "scenario.hpp"
-    "scenario.cpp"
+    #"scenario.hpp"
+    #"scenario.cpp"
 )
 
 include_directories(
@@ -47,20 +45,23 @@ include_directories(
 
 add_library(${PROJECT_NAME} OBJECT ${COMMON_SRC} ${HOST_SRC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC
+    "-DHOST"
     "-DCL_TARGET_OPENCL_VERSION=120"
-    "-DOPENCL_INTEROP"
 )
 
 target_link_libraries(${PROJECT_NAME} OpenCL SDL2 SDL2_image)
 
 # Examples
 
-file(GLOB EXAMPLES "examples/*.cpp")
-foreach(EXAMPLE_PATH ${EXAMPLES})
-    get_filename_component(EXAMPLE_NAME ${EXAMPLE_PATH} NAME_WE)
-    add_executable(${EXAMPLE_NAME} ${EXAMPLE_PATH})
-    target_link_libraries(${EXAMPLE_NAME} ${PROJECT_NAME})
-endforeach()
+add_executable(main "examples/main.cpp")
+target_link_libraries(main ${PROJECT_NAME})
+
+#file(GLOB EXAMPLES "examples/*.cpp")
+#foreach(EXAMPLE_PATH ${EXAMPLES})
+#    get_filename_component(EXAMPLE_NAME ${EXAMPLE_PATH} NAME_WE)
+#    add_executable(${EXAMPLE_NAME} ${EXAMPLE_PATH})
+#    target_link_libraries(${EXAMPLE_NAME} ${PROJECT_NAME})
+#endforeach()
 
 
 # Tests

@@ -3,35 +3,35 @@
 #include <geometry/hyperbolic.hh>
 
 
-const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::MOVE_KEYS = {
-    std::make_pair(SDLK_w, [](double l) { return hy_zshift(l); }),
-    std::make_pair(SDLK_a, [](double l) { return hy_xshift(-l); }),
-    std::make_pair(SDLK_s, [](double l) { return hy_zshift(-l); }),
-    std::make_pair(SDLK_d, [](double l) { return hy_xshift(l); }),
-    std::make_pair(SDLK_SPACE, [](double l) { return hy_yshift(-l); }),
-    std::make_pair(SDLK_c, [](double l) { return hy_yshift(l); })
-};
-const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::ROT_KEYS = {
-    std::make_pair(SDLK_q, [](double a) { return hy_zrotate(-a); }),
-    std::make_pair(SDLK_e, [](double a) { return hy_zrotate(a); })
-};
+//const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::MOVE_KEYS = {
+//    std::make_pair(SDLK_w, [](double l) { return hy_zshift(l); }),
+//    std::make_pair(SDLK_a, [](double l) { return hy_xshift(-l); }),
+//    std::make_pair(SDLK_s, [](double l) { return hy_zshift(-l); }),
+//    std::make_pair(SDLK_d, [](double l) { return hy_xshift(l); }),
+//    std::make_pair(SDLK_SPACE, [](double l) { return hy_yshift(-l); }),
+//    std::make_pair(SDLK_c, [](double l) { return hy_yshift(l); })
+//};
+//const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::ROT_KEYS = {
+//    std::make_pair(SDLK_q, [](double a) { return hy_zrotate(-a); }),
+//    std::make_pair(SDLK_e, [](double a) { return hy_zrotate(a); })
+//};
 
 
 Controller::Controller() {
-    for (auto& p : MOVE_KEYS) {
-        keys[p.first] = false;
-    }
-    for (auto& p : ROT_KEYS) {
-        keys[p.first] = false;
-    }
-    view = view_init();
-    view_prev = view_init();
+    //for (auto& p : MOVE_KEYS) {
+    //    keys[p.first] = false;
+    //}
+    //for (auto& p : ROT_KEYS) {
+    //    keys[p.first] = false;
+    //}
+    //view = view_init();
+    //view_prev = view_init();
 }
 
-Controller::Controller(const View &v) : Controller() {
-    view = v;
-    view_prev = v;
-}
+//Controller::Controller(const View &v) : Controller() {
+//    view = v;
+//    view_prev = v;
+//}
 
 
 bool Controller::handle() {
@@ -87,7 +87,7 @@ bool Controller::handle() {
 
 bool Controller::step(double dt) {
     bool still = true;
-
+    /*
     view_prev = view;
     Moebius pos = view.position;
 
@@ -121,7 +121,7 @@ bool Controller::step(double dt) {
         dof = 0;
         still = false;
     }
-
+    */
     return !still;
 }
 

@@ -9,8 +9,6 @@
 
 #include <CL/cl.h>
 
-#include "include.hpp"
-
 
 namespace cl {
     class Context {
@@ -45,16 +43,12 @@ namespace cl {
     private:
         cl_program program;
         cl_device_id device;
-        std::unique_ptr<c_includer> includer;
 
     public:
         Program(
             cl_context context,
             cl_device_id device,
-            const char *path,
-            const std::list<std::string> &dirs={"."},
-            const std::map<std::string, std::string> &fmem={},
-            bool include_warnings=false
+            const std::string &source
         );
         ~Program();
 

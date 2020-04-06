@@ -17,7 +17,7 @@
 #include <renderer.hpp>
 #include <color.hpp>
 
-#include "scene.hpp"
+//#include "scene.hpp"
 
 using duration = std::chrono::duration<double>;
 
@@ -43,20 +43,20 @@ int main(int argc, const char *argv[]) {
     int width = 800, height = 600;
     Renderer renderer(device, width, height, Renderer::Config {
         .path_max_depth = 3,
-        .blur = { .lens = true, .motion = true }
+    //    .blur = { .lens = true, .motion = true }
     });
-    renderer.store_objects(create_scene());
+    //renderer.store_objects(create_scene());
 
     Viewer viewer(width, height);
     Controller controller;
     controller.grab_mouse(true);
 
-    controller.view.position = mo_new(
-        c_new(0.114543, 0.285363),
-        c_new(2.9287, -0.678274),
-        c_new(-0.0461927, -0.0460196),
-        c_new(0.697521, -2.64087)
-    );
+    //controller.view.position = mo_new(
+    //    c_new(0.114543, 0.285363),
+    //    c_new(2.9287, -0.678274),
+    //    c_new(-0.0461927, -0.0460196),
+    //    c_new(0.697521, -2.64087)
+    //);
     //controller.view.lens_radius = 1e-1;
 
     duration time_counter;
@@ -66,7 +66,7 @@ int main(int argc, const char *argv[]) {
         duration elapsed;
         auto start = std::chrono::system_clock::now();
 
-        renderer.set_view(controller.view, controller.view_prev);
+        //renderer.set_view(controller.view, controller.view_prev);
         sample_counter += renderer.render_for(0.04, refresh > 0);
 
         viewer.display([&](uint8_t *data) {
@@ -85,8 +85,8 @@ int main(int argc, const char *argv[]) {
         
         time_counter += elapsed;
         if (time_counter.count() > 1.0) {
-            std::cout << "Current position: " <<
-                controller.view.position << std::endl;
+            //std::cout << "Current position: " <<
+            //    controller.view.position << std::endl;
 
             std::cout << "Samples per second: " <<
                 sample_counter/time_counter.count() << std::endl;

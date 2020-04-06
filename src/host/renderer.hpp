@@ -36,43 +36,42 @@ class Renderer {
     cl::Buffer image;
     cl::Buffer screen;
 
-    cl::Buffer seeds;
+    //cl::Buffer seeds;
     
-    cl::Buffer objects;
-    cl::Buffer objects_prev;
-    cl::Buffer objects_mask;
-    int object_count = 0;
+    //cl::Buffer objects;
+    //cl::Buffer objects_prev;
+    //cl::Buffer objects_mask;
+    //int object_count = 0;
 
-    static void store_objs_to_buf(
-        cl::Queue &queue, cl::Buffer &buf,
-        const std::vector<Object> &objs
-    );
+    //static void store_objs_to_buf(
+    //    cl::Queue &queue, cl::Buffer &buf,
+    //    const std::vector<Object> &objs
+    //);
 
     int monte_carlo_counter = 0;
 
-    ViewPk view, view_prev;
+    //ViewPk view, view_prev;
 
-    static std::string gen_config_src(const Config &config);
-    static void write_config_src(const Config &config);
-
+    static std::string load_file(const char *path);
+    
     public:
     Renderer(
         cl_device_id device,
         int width, int height,
-        const Config &config 
+        const Config &config
     );
 
-    void store_objects(const std::vector<Object> &objs);
-    void store_objects(
-        const std::vector<Object> &objs,
-        const std::vector<Object> &objs_prev,
-        const std::vector<bool> &objs_mask
-    );
+    //void store_objects(const std::vector<Object> &objs);
+    //void store_objects(
+    //    const std::vector<Object> &objs,
+    //    const std::vector<Object> &objs_prev,
+    //    const std::vector<bool> &objs_mask
+    //);
     
     void load_image(uint8_t *data);
 
-    void set_view(const View &v);
-    void set_view(const View &v, const View &vp);
+    //void set_view(const View &v);
+    //void set_view(const View &v, const View &vp);
 
     void render(bool fresh);
     int render_n(int count, bool fresh);

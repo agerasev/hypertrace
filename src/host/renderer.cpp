@@ -54,7 +54,7 @@ Renderer::Renderer(
 
     program(
         context, device,
-        "render.cl",
+        "source.cl",
         {"src/device", "src/common"},
         {std::make_pair("gen/config.cl", gen_config_src(config))}
     ),

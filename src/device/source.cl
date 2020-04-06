@@ -1,5 +1,7 @@
 #pragma once
 
+#define OPENCL
+#define OPENCL_INTEROP
 
 #include <types.cc>
 
@@ -18,3 +20,7 @@
 #include <material.cc>
 #include <object.cc>
 #include <view.cc>
+
+#include "gen/config.cl"
+#include "lens_blur.cl"
+#include "render.cl"

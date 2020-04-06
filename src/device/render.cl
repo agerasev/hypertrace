@@ -1,6 +1,3 @@
-#define PATH_MAX_DEPTH 6
-#define PATH_MAX_DIFFUSE_DEPTH 2
-
 #include <types.hh>
 #include <random.hh>
 

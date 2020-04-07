@@ -7,14 +7,6 @@
 #include <cmath>
 #endif // HOST
 
-template <typename T, int N>
-class vector;
-
-template <typename T, int N, typename F>
-vector<T, N> map(F f, vector<T, N> a);
-template <typename T, int N, typename F>
-vector<T, N> map2(F f, vector<T, N> a, vector<T, N> b);
-
 
 template <typename T, int N>
 class vector {
@@ -27,6 +19,7 @@ private:
         s[P] = x;
         unwind<P + 1>(args...);
     }
+    /*
     template <int P, int M, typename ...Args>
     void unwind(vector<T, M> x, Args ...args) {
         static_assert(P + M <= N, "Too many elements in the constructor");
@@ -35,6 +28,7 @@ private:
         }
         unwind<P + M>(args...);
     }
+    */
     template <int P>
     void unwind() {
         static_assert(P == N, "Too few elements in the constructor");
@@ -51,43 +45,50 @@ public:
         unwind<0>(args...);
     }
 
-    T &operator[](int i) {
-        return s[i];
-    }
-    const T &operator[](int i) const {
-        return s[i];
-    }
     T *data() {
         return s;
     }
     const T *data() const {
         return s;
     }
-    template <int P>
-    T &elem() {
-        static_assert(P >= 0 && P < N, "Index is out of bounds");
-        return s[P];
+    T &operator[](int i) {
+        return s[i];
     }
-    template <int P>
-    const T &elem() const {
-        static_assert(P >= 0 && P < N, "Index is out of bounds");
-        return s[P];
+    const T &operator[](int i) const {
+        return s[i];
     }
-    static int size() {
+    static constexpr int size() {
         return N;
     }
 
-    static vector load(const T *data) {
+    static vector load(const T *data, int stride=1) {
         vector v;
         for (int i = 0; i < N; ++i) {
-            v[i] = data[i];
+            v[i] = data[i*stride];
         }
         return v;
     }
-    void store(T *data) const {
+    void store(T *data, int stride=1) const {
         for (int i = 0; i < N; ++i) {
-            data[i] = (*this)[i];
+            data[i*stride] = (*this)[i];
         }
+    }
+
+    template <typename F>
+    friend vector map(F f, vector a) {
+        vector r;
+        for (int i = 0; i < N; ++i) {
+            r[i] = f(a[i]);
+        }
+        return r;
+    }
+    template <typename F>
+    friend vector map2(F f, vector a, vector b) {
+        vector r;
+        for (int i = 0; i < N; ++i) {
+            r[i] = f(a[i], b[i]);
+        }
+        return r;
     }
 
     friend vector operator+(vector a) {
@@ -135,59 +136,38 @@ public:
         return map([a](T y) { return a / y; }, b);
     }
 
-    vector &operator+=(vector v) {
-        return *this = *this + v;
+    vector &operator+=(vector a) {
+        return *this = *this + a;
     }
-    vector &operator+=(T s) {
-        return *this = *this + s;
+    vector &operator+=(T a) {
+        return *this = *this + a;
     }
-    vector &operator-=(vector v) {
-        return *this = *this - v;
+    vector &operator-=(vector a) {
+        return *this = *this - a;
     }
-    vector &operator-=(T s) {
-        return *this = *this - s;
+    vector &operator-=(T a) {
+        return *this = *this - a;
     }
-    vector &operator*=(vector v) {
-        return *this = *this * v;
+    vector &operator*=(vector a) {
+        return *this = *this * a;
     }
-    vector &operator*=(T s) {
-        return *this = *this * s;
+    vector &operator*=(T a) {
+        return *this = *this * a;
     }
-    vector &operator/=(vector v) {
-        return *this = *this / v;
+    vector &operator/=(vector a) {
+        return *this = *this / a;
     }
-    vector &operator/=(T s) {
-        return *this = *this / s;
+    vector &operator/=(T a) {
+        return *this = *this / a;
     }
-
-#ifdef HOST
-    friend std::ostream &operator<<(std::ostream &s, vector<T, N> v) {
-        s << "(";
-        for (int i = 0; i < N - 1; ++i) {
-            s << v[i] << ", ";
-        }
-        s << v[N - 1] << ")";
-        return s;
-    }
-#endif // HOST
 };
 
-template <typename T, int N, typename F>
-vector<T, N> map(F f, vector<T, N> a) {
-    vector<T, N> r;
-    for (int i = 0; i < N; ++i) {
-        r[i] = f(a[i]);
-    }
-    return r;
-}
-template <typename T, int N, typename F>
-vector<T, N> map2(F f, vector<T, N> a, vector<T, N> b) {
-    vector<T, N> r;
-    for (int i = 0; i < N; ++i) {
-        r[i] = f(a[i], b[i]);
-    }
-    return r;
-}
+template <typename T, int N>
+class Zero<vector<T, N>> {
+    static vector<T, N> zero() {
+        return vector<T, N>(::zero<T>());
+    } 
+};
 
 template <typename T, int N>
 T dot(vector<T, N> a, vector<T, N> b) {
@@ -208,7 +188,12 @@ vector<T, 3> cross(vector<T, 3> a, vector<T, 3> b) {
 }
 template <typename T>
 vector<T, 4> cross(vector<T, 4> a, vector<T, 4> b) {
-    return vector<T, 4>(cross(a.xyz, b.xyz), (T)0);
+    return vector<T, 4>(
+        a[1]*b[2] - a[2]*b[1],
+        a[2]*b[0] - a[0]*b[2],
+        a[0]*b[1] - a[1]*b[0],
+        zero<T>()
+    );
 }
 
 template <typename T, int N>
@@ -226,6 +211,17 @@ vector<T, N> normalize(vector<T, N> a) {
 #include "vector_builtin.hpp"
 #endif // DEVICE
 
+#ifdef HOST
+template <typename T, int N>
+std::ostream &operator<<(std::ostream &s, vector<T, N> v) {
+    s << "(";
+    for (int i = 0; i < N - 1; ++i) {
+        s << v[i] << ", ";
+    }
+    s << v[N - 1] << ")";
+    return s;
+}
+#endif // HOST
 
 #ifdef UNIT_TEST
 #include <catch.hpp>

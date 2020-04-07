@@ -14,10 +14,12 @@ TEST_CASE("Vector types", "[vector]") {
         for (int i = 0; i < b.size(); ++i) {
             REQUIRE(b[i] == i);
         }
+        /*
         auto c = vector<int, 5>(vector<int, 3>(0, vector<int, 2>(1, 2)), 3, 4);
         for (int i = 0; i < c.size(); ++i) {
             REQUIRE(c[i] == i);
         }
+        */
     }
 };
 

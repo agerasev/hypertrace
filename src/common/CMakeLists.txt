@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 
 set(COMMON_SRC
+    "../common/types.cpp"
     "../common/algebra/vector.cpp"
-    #"../common/types.cc"
     #"../common/algebra/complex.cc"
     #"../common/algebra/quaternion.cc"
     #"../common/algebra/matrix.cc"

@@ -4,36 +4,6 @@
 #include <math.h>
 #endif // OPENCL
 
-// Mapping functions
-
-#define MAT_MAP_C(T,M,N,F,Op) \
-MAT_MAP_H(T,M,N,F) { \
-    MAT_(T,M,N) r; \
-    for (int i = 0; i < M*N; ++i) { \
-        r.s[i] = Op(m.s[i]); \
-    } \
-    return r; \
-} \
-
-#define MAT_MAP2_C(T,M,N,F,Op) \
-MAT_MAP2_H(T,M,N,F) { \
-    MAT_(T,M,N) r; \
-    for (int i = 0; i < M*N; ++i) { \
-        r.s[i] = Op(a.s[i], b.s[i]); \
-    } \
-    return r; \
-} \
-
-#define MAT_MAPC_C(T,M,N,F,Op) \
-MAT_MAPC_H(T,M,N,F) { \
-    MAT_(T,M,N) r; \
-    for (int i = 0; i < M*N; ++i) { \
-        r.s[i] = Op(a.s[i], b); \
-    } \
-    return r; \
-} \
-
-
 // Common functions
 
 #define MAT_COMMON_C(T,M,N) \

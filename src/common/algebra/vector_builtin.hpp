@@ -3,39 +3,19 @@
 #include <builtin.h>
 
 
-#define DEFINE_VECTOR_BUILTIN(T, N, L, A) \
+#define DEFINE_VECTOR_BUILTIN(T, N, LEN, ALIGN) \
 template <> \
-class __attribute__((aligned(A))) vector<T, N> { \
+class __attribute__((aligned(ALIGN))) vector<T, N> { \
 private: \
-    T s[N]; \
-    template <int P, typename ...Args> \
-    void unwind(T x, Args ...args) { \
-        static_assert(P < N, "Too many elements in the constructor"); \
-        s[P] = x; \
-        unwind<P + 1>(args...); \
-    } \
-    template <int P, int M, typename ...Args> \
-    void unwind(vector<T, M> x, Args ...args) { \
-        static_assert(P + M <= N, "Too many elements in the constructor"); \
-        for (int i = 0; i < M; ++i) { \
-            s[P + i] = x[i]; \
-        } \
-        unwind<P + M>(args...); \
-    } \
-    template <int P> \
-    void unwind() { \
-        static_assert(P == N, "Too few elements in the constructor"); \
-    } \
+    T s[LEN]; \
 public: \
     vector() = default; \
     vector(T x) { \
-        for (int i = 0; i < N; ++i) { \
-            s[i] = x; \
-        } \
+        ocl_ctor_##T##N##_##T(s, x); \
     } \
     template <typename ...Args> \
-    vector(Args ...args) { \
-        unwind<0>(args...); \
+    vector(T x, Args ...args) { \
+        ocl_ctor_##T##N##_##T##_##N(s, args...); \
     } \
     T &operator[](int i) { \
         return s[i]; \
@@ -49,17 +29,7 @@ public: \
     const T *data() const { \
         return s; \
     } \
-    template <int P> \
-    T &elem() { \
-        static_assert(P >= 0 && P < N, "Index is out of bounds"); \
-        return s[P]; \
-    } \
-    template <int P> \
-    const T &elem() const { \
-        static_assert(P >= 0 && P < N, "Index is out of bounds"); \
-        return s[P]; \
-    } \
-    static int size() { \
+    static constexpr int size() { \
         return N; \
     } \
     static vector load(const T *data) { \
@@ -69,6 +39,18 @@ public: \
     } \
     void store(T *data) const { \
         ocl_store_##T##N(s, data); \
+    } \
+    static vector load(const T *data, int stride) { \
+        vector v; \
+        for (int i = 0; i < N; ++i) { \
+            v[i] = data[i*stride]; \
+        } \
+        return v; \
+    } \
+    void store(T *data, int stride) const { \
+        for (int i = 0; i < N; ++i) { \
+            data[i*stride] = (*this)[i]; \
+        } \
     } \
     friend vector operator+(vector a) { \
         return a; \
@@ -197,7 +179,6 @@ vector<T, N> cross<T>(vector<T, N> a, vector<T, N> b) { \
     ocl_cross_##T##N(o.data(), a.data(), b.data()); \
     return o; \
 } \
-
 
 DEFINE_VECTOR_BUILTIN(uchar, 2, 2, 2)
 DEFINE_VECTOR_BUILTIN(uchar, 3, 4, 4)

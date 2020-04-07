@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.hpp>
+#include "traits.hpp"
 
 #ifdef HOST
 #include <iostream>
@@ -57,8 +57,31 @@ public:
     const T &operator[](int i) const {
         return s[i];
     }
+
     static constexpr int size() {
         return N;
+    }
+    template <int P>
+    T &elem() {
+        static_assert(P >= 0 && P < N, "Index is out of bounds");
+        return s[P];
+    }
+    template <int P>
+    const T &elem() const {
+        static_assert(P >= 0 && P < N, "Index is out of bounds");
+        return s[P];
+    }
+    template <int P, int S>
+    vector<T, S> &slice() {
+        static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds");
+        static_assert(P == 0 || (P % S) == 0, "Slicing breaks alignment");
+        return *reinterpret_cast<vector<T, S>*>(s + P);
+    }
+    template <int P, int S>
+    const vector<T, S> &slice() {
+        static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds");
+        static_assert(P == 0 || (P % S) == 0, "Slicing breaks alignment");
+        return *reinterpret_cast<const vector<T, S>*>(s + P);
     }
 
     static vector load(const T *data, int stride=1) {
@@ -167,6 +190,15 @@ class Zero<vector<T, N>> {
     static vector<T, N> zero() {
         return vector<T, N>(::zero<T>());
     } 
+};
+
+template <typename T, int N_>
+class Dim<vector<T, N_>> {
+    static const int N = N_;
+};
+template <typename T, int N>
+class BaseType<vector<T, N>> {
+    typedef T type;
 };
 
 template <typename T, int N>

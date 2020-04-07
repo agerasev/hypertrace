@@ -1,11 +1,7 @@
 #pragma once
 
-typedef unsigned long ulong;
-typedef unsigned int uint;
-typedef unsigned short ushort;
-typedef unsigned char uchar;
+#include <types.h>
 
-#ifdef __cplusplus
 
 template <typename T>
 class Zero {
@@ -17,6 +13,10 @@ class One {
 public:
     static T one();
 };
+template <typename T>
+class Dim {};
+template <typename T>
+class BaseType {};
 
 template <typename T>
 T zero() {
@@ -25,6 +25,10 @@ T zero() {
 template <typename T>
 T one() {
     return One<T>::one();
+}
+template <typename T>
+constexpr int dim() {
+    return Dim<T>::N;
 }
 
 #define DEFINE_PRIMITIVE_TRAITS(T) \
@@ -42,6 +46,16 @@ public: \
         return T(1); \
     } \
 }; \
+template <> \
+class Dim<T> { \
+public: \
+    static const int N = 1; \
+}; \
+template <> \
+class BaseType<T> { \
+public: \
+    typedef T type; \
+}; \
 
 DEFINE_PRIMITIVE_TRAITS(uchar);
 DEFINE_PRIMITIVE_TRAITS(char);
@@ -56,5 +70,3 @@ DEFINE_PRIMITIVE_TRAITS(float);
 #ifdef DEVICE_DOUBLE
 DEFINE_PRIMITIVE_TRAITS(double);
 #endif // DEVICE_DOUBLE
-
-#endif // __cplusplus

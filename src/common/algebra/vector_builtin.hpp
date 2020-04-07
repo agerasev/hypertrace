@@ -1,5 +1,6 @@
 #pragma once
 
+#include <types.h>
 #include <builtin.h>
 
 
@@ -32,6 +33,28 @@ public: \
     static constexpr int size() { \
         return N; \
     } \
+    template <int P> \
+    T &elem() { \
+        static_assert(P >= 0 && P < N, "Index is out of bounds"); \
+        return s[P]; \
+    } \
+    template <int P> \
+    const T &elem() const { \
+        static_assert(P >= 0 && P < N, "Index is out of bounds"); \
+        return s[P]; \
+    } \
+    template <int P, int S> \
+    vector<T, S> &slice() { \
+        static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds"); \
+        static_assert(P == 0 || (P % S) == 0, "Slicing breaks alignment"); \
+        return *reinterpret_cast<vector<T, S>*>(s + P); \
+    } \
+    template <int P, int S> \
+    const vector<T, S> &slice() { \
+        static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds"); \
+        static_assert(P == 0 || (P % S) == 0, "Slicing breaks alignment"); \
+        return *reinterpret_cast<const vector<T, S>*>(s + P); \
+    } \
     static vector load(const T *data) { \
         vector v; \
         ocl_load_##T##N(v.s, data); \
@@ -52,103 +75,103 @@ public: \
             data[i*stride] = (*this)[i]; \
         } \
     } \
-    friend vector operator+(vector a) { \
+    inline friend vector operator+(vector a) { \
         return a; \
     } \
-    friend vector operator-(vector a) { \
+    inline friend vector operator-(vector a) { \
         vector o; \
         ocl_neg_##T##N(o.s, a.s); \
         return o; \
     } \
-    friend vector operator+(vector a, vector b) { \
+    inline friend vector operator+(vector a, vector b) { \
         vector o; \
         ocl_add_##T##N##_##T##N(o.s, a.s, b.s); \
         return o; \
     } \
-    friend vector operator+(vector a, T b) { \
+    inline friend vector operator+(vector a, T b) { \
         vector o; \
         ocl_add_##T##N##_##T(o.s, a.s, b); \
         return o; \
     } \
-    friend vector operator+(T a, vector b) { \
+    inline friend vector operator+(T a, vector b) { \
         vector o; \
         ocl_add_##T##_##T##N(o.s, a, b.s); \
         return o; \
     } \
-    friend vector operator-(vector a, vector b) { \
+    inline friend vector operator-(vector a, vector b) { \
         vector o; \
         ocl_sub_##T##N##_##T##N(o.s, a.s, b.s); \
         return o; \
     } \
-    friend vector operator-(vector a, T b) { \
+    inline friend vector operator-(vector a, T b) { \
         vector o; \
         ocl_sub_##T##N##_##T(o.s, a.s, b); \
         return o; \
     } \
-    friend vector operator-(T a, vector b) { \
+    inline friend vector operator-(T a, vector b) { \
         vector o; \
         ocl_sub_##T##_##T##N(o.s, a, b.s); \
         return o; \
     } \
-    friend vector operator*(vector a, vector b) { \
+    inline friend vector operator*(vector a, vector b) { \
         vector o; \
         ocl_mul_##T##N##_##T##N(o.s, a.s, b.s); \
         return o; \
     } \
-    friend vector operator*(vector a, T b) { \
+    inline friend vector operator*(vector a, T b) { \
         vector o; \
         ocl_mul_##T##N##_##T(o.s, a.s, b); \
         return o; \
     } \
-    friend vector operator*(T a, vector b) { \
+    inline friend vector operator*(T a, vector b) { \
         vector o; \
         ocl_mul_##T##_##T##N(o.s, a, b.s); \
         return o; \
     } \
-    friend vector operator/(vector a, vector b) { \
+    inline friend vector operator/(vector a, vector b) { \
         vector o; \
         ocl_div_##T##N##_##T##N(o.s, a.s, b.s); \
         return o; \
     } \
-    friend vector operator/(vector a, T b) { \
+    inline friend vector operator/(vector a, T b) { \
         vector o; \
         ocl_div_##T##N##_##T(o.s, a.s, b); \
         return o; \
     } \
-    friend vector operator/(T a, vector b) { \
+    inline friend vector operator/(T a, vector b) { \
         vector o; \
         ocl_div_##T##_##T##N(o.s, a, b.s); \
         return o; \
     } \
-    vector &operator+=(vector a) { \
+    inline vector &operator+=(vector a) { \
         ocl_addassign_##T##N##_##T##N(s, a.s); \
         return *this; \
     } \
-    vector &operator+=(T a) { \
+    inline vector &operator+=(T a) { \
         ocl_addassign_##T##N##_##T(s, a); \
         return *this; \
     } \
-    vector &operator-=(vector a) { \
+    inline vector &operator-=(vector a) { \
         ocl_subassign_##T##N##_##T##N(s, a.s); \
         return *this; \
     } \
-    vector &operator-=(T a) { \
+    inline vector &operator-=(T a) { \
         ocl_subassign_##T##N##_##T(s, a); \
         return *this; \
     } \
-    vector &operator*=(vector a) { \
+    inline vector &operator*=(vector a) { \
         ocl_mulassign_##T##N##_##T##N(s, a.s); \
         return *this; \
     } \
-    vector &operator*=(T a) { \
+    inline vector &operator*=(T a) { \
         ocl_mulassign_##T##N##_##T(s, a); \
         return *this; \
     } \
-    vector &operator/=(vector a) { \
+    inline vector &operator/=(vector a) { \
         ocl_divassign_##T##N##_##T##N(s, a.s); \
         return *this; \
     } \
-    vector &operator/=(T a) { \
+    inline vector &operator/=(T a) { \
         ocl_divassign_##T##N##_##T(s, a); \
         return *this; \
     } \
@@ -157,15 +180,15 @@ public: \
 
 #define DEFINE_VECTOR_BUILTIN_GEOMETRY(T, N, L, A) \
 template <> \
-T dot(vector<T, N> a, vector<T, N> b) { \
+inline T dot(vector<T, N> a, vector<T, N> b) { \
     return ocl_dot_##T##N(a.data(), b.data()); \
 } \
 template <> \
-T length(vector<T, N> a) { \
+inline T length(vector<T, N> a) { \
     return ocl_length_##T##N(a.data()); \
 } \
 template <> \
-vector<T, N> normalize(vector<T, N> a) { \
+inline vector<T, N> normalize(vector<T, N> a) { \
     vector<T, N> o; \
     ocl_normalize_##T##N(o.data(), a.data()); \
     return o; \
@@ -174,7 +197,7 @@ vector<T, N> normalize(vector<T, N> a) { \
 
 #define DEFINE_VECTOR_BUILTIN_GEOMETRY_CROSS(T, N) \
 template <> \
-vector<T, N> cross<T>(vector<T, N> a, vector<T, N> b) { \
+inline vector<T, N> cross<T>(vector<T, N> a, vector<T, N> b) { \
     vector<T, N> o; \
     ocl_cross_##T##N(o.data(), a.data(), b.data()); \
     return o; \

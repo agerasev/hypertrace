@@ -1,5 +1,6 @@
-#include "matrix.hh"
+#include "matrix.hpp"
 
+/*
 #ifndef OPENCL
 #include <math.h>
 #endif // OPENCL
@@ -401,19 +402,8 @@ complex2x2 complex2x2_pow_normalized(complex2x2 m, real p) {
     //r = complex2x2_normalize(r);
     return r;
 }
-
+*/
 
 #ifdef UNIT_TEST
-
-#define int_zero() 0
-#define int_one() 1
-#define int_neg(x) (-(x))
-#define int_add(x, y) ((x) + (y))
-#define int_sub(x, y) ((x) - (y))
-#define int_mul(x, y) ((x)*(y))
-#define int_div(x, y) ((x)/(y))
-#define int_sqrt(x) ((int)(sqrt(x)))
-
-MAT4_C(int)
 
 #endif // UNIT_TEST

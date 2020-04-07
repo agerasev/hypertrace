@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.hpp>
+#include <types.h>
 
 #define DECLARE_BUILTIN_VECTOR(T, N) \
 void ocl_ctor_##T##N##_##T(T *v, T x); \

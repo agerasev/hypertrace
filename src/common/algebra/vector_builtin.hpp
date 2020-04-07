@@ -50,7 +50,7 @@ public: \
         return *reinterpret_cast<vector<T, S>*>(s + P); \
     } \
     template <int P, int S> \
-    const vector<T, S> &slice() { \
+    const vector<T, S> &slice() const { \
         static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds"); \
         static_assert(P == 0 || (P % S) == 0, "Slicing breaks alignment"); \
         return *reinterpret_cast<const vector<T, S>*>(s + P); \

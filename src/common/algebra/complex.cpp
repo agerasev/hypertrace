@@ -1,10 +1,6 @@
-#ifndef OPENCL
-#include <math.h>
-#endif // OPENCL
+#include "complex.hpp"
 
-#include "complex.hh"
-
-
+/*
 complex c_conj(complex a) {
     return c_new(a.x, -a.y);
 }
@@ -47,7 +43,6 @@ complex c_sqrt(complex a) {
     return c_new(r*cos(phi), r*sin(phi));
 }
 
-
 #ifdef UNIT_TEST
 #include <catch.hpp>
 
@@ -85,3 +80,4 @@ TEST_CASE("Complex numbers", "[complex]") {
     }
 };
 #endif // UNIT_TEST
+*/

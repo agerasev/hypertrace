@@ -9,26 +9,38 @@ public:
     static T zero();
 };
 template <typename T>
+T zero() {
+    return Zero<T>::zero();
+}
+
+template <typename T>
 class One {
 public:
     static T one();
 };
 template <typename T>
+T one() {
+    return One<T>::one();
+}
+
+template <typename T>
 class Dim {};
+template <typename T>
+constexpr int dim() {
+    return Dim<T>::N;
+}
+
 template <typename T>
 class BaseType {};
 
 template <typename T>
-T zero() {
-    return Zero<T>::zero();
-}
+class Conj {
+public:
+    static T conj(T x);
+};
 template <typename T>
-T one() {
-    return One<T>::one();
-}
-template <typename T>
-constexpr int dim() {
-    return Dim<T>::N;
+static T conj(T x) {
+    return Conj<T>::conj(x);
 }
 
 #define DEFINE_PRIMITIVE_TRAITS(T) \
@@ -55,6 +67,13 @@ template <> \
 class BaseType<T> { \
 public: \
     typedef T type; \
+}; \
+template <> \
+class Conj<T> { \
+public: \
+    static T conj(T x) { \
+        return x; \
+    } \
 }; \
 
 DEFINE_PRIMITIVE_TRAITS(uchar);

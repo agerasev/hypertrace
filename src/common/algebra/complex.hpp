@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef HOST
+#include <cmath>
+#endif
+
 #include "vector.hpp"
 
 template <typename C>
@@ -12,24 +16,34 @@ private:
 
 public:
     complex() = default;
-    complex(C r, C i) {
+    complex(vector<T, N> x) : v(x) {}
+    complex(C r, C i=zero<C>()) {
         re() = r;
         im() = i;
     }
     template <typename ...Args>
     complex(Args ...args) : v(args...) {}
 
+    template <typename S>
+    friend S &re(complex<S> &z);
+    template <typename S>
+    friend const S &re(const complex<S> &z);
+    template <typename S>
+    friend S &im(complex<S> &z);
+    template <typename S>
+    friend const S &im(const complex<S> &z);
+
     C &re() {
-        return *reinterpret_cast<C*>(&v.slice<0, CN>());
+        return re(*this);
     }
     const C &re() const {
-        return *reinterpret_cast<const C*>(&v.slice<0, CN>());
+        return re(*this);
     }
     C &im() {
-        return *reinterpret_cast<C*>(&v.slice<CN, CN>());
+        return im(*this);
     }
     const C &im() const {
-        return *reinterpret_cast<const C*>(&v.slice<CN, CN>());
+        return im(*this);
     }
 
     vector<T, N> &vec() {
@@ -38,7 +52,126 @@ public:
     const vector<T, N> &vec() const {
         return v;
     }
+
+    friend T abs(complex x) {
+        return length(x.v);
+    }
+    friend T abs2(complex x) {
+        return dot(x.v, x.v);
+    }
+    friend complex inverse(complex x) {
+        return conj(x)/abs2(x);
+    }
+
+    friend complex operator~(complex a) {
+        return conj(a);
+    }
+    friend complex operator!(complex a) {
+        return inverse(a);
+    }
+
+    friend complex operator+(complex a) {
+        return a;
+    }
+    friend complex operator-(complex a) {
+        return complex(-a.v);
+    }
+
+    // TODO: Add optimized versions of operators for particular cases.
+
+    friend complex operator+(complex a, complex b) {
+        return complex(a.v + b.v);
+    }
+    friend complex operator-(complex a, complex b) {
+        return complex(a.v - b.v);
+    }
+
+    friend complex operator*(complex a, complex b) {
+        // Cayley-Dickson construction
+        return complex(
+            a.re()*b.re() - ~b.im()*a.im(),
+            b.im()*a.re() + a.im()*~b.re()
+        );
+    }
+    friend complex operator*(complex a, T b) {
+        return complex(a.v*b);
+    }
+    friend complex operator*(T a, complex b) {
+        return complex(a*b.v);
+    }
+    friend complex operator/(complex a, complex b) {
+        return a*!b;
+    }
+    friend complex operator/(complex a, T b) {
+        return complex(a.v/b);
+    }
+
+    complex &operator+=(complex a) {
+        return *this = *this + a;
+    }
+    complex &operator+=(T a) {
+        return *this = *this + a;
+    }
+    complex &operator-=(complex a) {
+        return *this = *this - a;
+    }
+    complex &operator-=(T a) {
+        return *this = *this - a;
+    }
+    complex &operator*=(complex a) {
+        return *this = *this * a;
+    }
+    complex &operator*=(T a) {
+        return *this = *this * a;
+    }
+    complex &operator/=(complex a) {
+        return *this = *this / a;
+    }
+    complex &operator/=(T a) {
+        return *this = *this / a;
+    }
 };
+
+template <typename T>
+T &re(complex<T> &z) {
+    return z.v[0];
+}
+template <typename T>
+const T &re(const complex<T> &z) {
+    return z.v[0];
+}
+template <typename T>
+T &im(complex<T> &z) {
+    return z.v[1];
+}
+template <typename T>
+const T &im(const complex<T> &z) {
+    return z.v[1];
+}
+template <typename T>
+complex<T> &re(complex<complex<T>> &z) {
+    return *reinterpret_cast<complex<T>*>(
+        &z.v.template slice<0, complex<T>::N>()
+    );
+}
+template <typename T>
+const complex<T> &re(const complex<complex<T>> &z) {
+    return *reinterpret_cast<const complex<T>*>(
+        &z.v.template slice<0, complex<T>::N>()
+    );
+}
+template <typename T>
+complex<T> &im(complex<complex<T>> &z) {
+    return *reinterpret_cast<complex<T>*>(
+        &z.v.template slice<complex<T>::N, complex<T>::N>()
+    );
+}
+template <typename T>
+const complex<T> &im(const complex<complex<T>> &z) {
+    return *reinterpret_cast<const complex<T>*>(
+        &z.v.template slice<complex<T>::N, complex<T>::N>()
+    );
+}
 
 template <typename C>
 class Dim<complex<C>> {
@@ -46,41 +179,34 @@ class Dim<complex<C>> {
 };
 template <typename C>
 class BaseType<complex<C>> {
-    typedef BaseType<C>::type type;
+    typedef typename BaseType<C>::type type;
+};
+template <typename C>
+class Conj<complex<C>> {
+    static complex<C> conj(complex<C> z) {
+        return complex<C>(conj(z.re()), -z.im());
+    }
 };
 
+template <typename T>
+complex<T> exp(complex<T> p) {
+    return exp(p.re())*complex<T>(cos(p.im()), sin(p.im()));
+}
+// TODO: Add (complex, complex) power.
+template <typename T>
+complex<T> pow(complex<T> a, T p) {
+    T r = pow(abs2(a), p/2);
+    T phi = p*atan2(a.im(), a.re());
+    return complex<T>(r*cos(phi), r*sin(phi));
+}
+template <typename T>
+complex<T> sqrt(complex<T> a) {
+    T r = sqrt(abs(a));
+    T phi = T(0.5)*atan2(a.im(), a.re());
+    return complex<T>(r*cos(phi), r*sin(phi));
+}
+
 /*
-typedef real2 complex;
-#define make_complex make_real2
-#define c_new make_complex
-
-#ifdef OPENCL_INTEROP
-typedef real2_pk complex_pk;
-#define pack_complex pack_real2
-#define unpack_complex unpack_real2
-#define c_pack pack_complex
-#define c_unpack unpack_complex
-#endif // OPENCL_INTEROP
-
-#define C0 c_new(R0, R0)
-#define C1 c_new(R1, R0)
-#define CI c_new(R0, R1)
-
-
-complex c_conj(complex a);
-real c_abs2(complex a);
-real c_abs(complex a);
-real c_fabs(complex a);
-
-complex c_mul(complex a, complex b);
-complex c_inverse(complex a);
-complex c_div(complex a, complex b);
-
-complex c_exp(complex p);
-complex c_powr(complex a, real p);
-complex c_sqrt(complex a);
-
-
 #ifdef UNIT_TEST
 #include <catch.hpp>
 

@@ -67,5 +67,6 @@ target_link_libraries(main ${PROJECT_NAME})
 
 add_executable(test ${COMMON_SRC} "tests/unit_test.cpp")
 target_compile_definitions(test PRIVATE
+    "-DHOST"
     "-DUNIT_TEST"
 )

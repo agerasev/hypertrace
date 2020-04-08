@@ -1,11 +1,12 @@
 #pragma once
 
-#include "traits.hpp"
-
 #ifdef HOST
 #include <iostream>
 #include <cmath>
-#endif // HOST
+#endif
+
+#include "traits.hpp"
+#include "real.hpp"
 
 
 template <typename T, int N>
@@ -35,13 +36,13 @@ private:
     }
 public:
     vector() = default;
-    vector(T x) {
+    explicit vector(T x) {
         for (int i = 0; i < N; ++i) {
             s[i] = x;
         }
     }
     template <typename ...Args>
-    vector(Args ...args) {
+    explicit vector(Args ...args) {
         unwind<0>(args...);
     }
 
@@ -57,7 +58,6 @@ public:
     const T &operator[](int i) const {
         return s[i];
     }
-
     static constexpr int size() {
         return N;
     }
@@ -106,7 +106,7 @@ public:
         return r;
     }
     template <typename F>
-    friend vector map2(F f, vector a, vector b) {
+    friend vector map(F f, vector a, vector b) {
         vector r;
         for (int i = 0; i < N; ++i) {
             r[i] = f(a[i], b[i]);
@@ -122,7 +122,7 @@ public:
     }
 
     friend vector operator+(vector a, vector b) {
-        return map2([](T x, T y) { return x + y; }, a, b);
+        return map([](T x, T y) { return x + y; }, a, b);
     }
     friend vector operator+(vector a, T b) {
         return map([b](T x) { return x + b; }, a);
@@ -131,7 +131,7 @@ public:
         return map([a](T y) { return a + y; }, b);
     }
     friend vector operator-(vector a, vector b) {
-        return map2([](T x, T y) { return x - y; }, a, b);
+        return map([](T x, T y) { return x - y; }, a, b);
     }
     friend vector operator-(vector a, T b) {
         return map([b](T x) { return x - b; }, a);
@@ -141,7 +141,7 @@ public:
     }
 
     friend vector operator*(vector a, vector b) {
-        return map2([](T x, T y) { return x * y; }, a, b);
+        return map([](T x, T y) { return x * y; }, a, b);
     }
     friend vector operator*(vector a, T b) {
         return map([b](T x) { return x * b; }, a);
@@ -150,7 +150,7 @@ public:
         return map([a](T y) { return a * y; }, b);
     }
     friend vector operator/(vector a, vector b) {
-        return map2([](T x, T y) { return x / y; }, a, b);
+        return map([](T x, T y) { return x / y; }, a, b);
     }
     friend vector operator/(vector a, T b) {
         return map([b](T x) { return x / b; }, a);
@@ -193,11 +193,11 @@ class Zero<vector<T, N>> {
 };
 
 template <typename T, int N_>
-class Dim<vector<T, N_>> {
+struct Dim<vector<T, N_>> {
     static const int N = N_;
 };
 template <typename T, int N>
-class BaseType<vector<T, N>> {
+struct BaseType<vector<T, N>> {
     typedef T type;
 };
 
@@ -241,7 +241,15 @@ vector<T, N> normalize(vector<T, N> a) {
 
 #ifdef DEVICE
 #include "vector_builtin.hpp"
-#endif // DEVICE
+#endif
+
+
+typedef vector<real, 2> real2;
+typedef vector<real, 3> real3;
+typedef vector<real, 4> real4;
+typedef vector<real, 8> real8;
+typedef vector<real, 16> real16;
+
 
 #ifdef HOST
 template <typename T, int N>
@@ -253,40 +261,60 @@ std::ostream &operator<<(std::ostream &s, vector<T, N> v) {
     s << v[N - 1] << ")";
     return s;
 }
-#endif // HOST
+#endif
+
 
 #ifdef UNIT_TEST
 #include <catch.hpp>
+#include "test.hpp"
+
+class VecTestRng : public TestRng {
+public:
+    inline VecTestRng(uint32_t seed) : TestRng(seed) {}
+    template <int N>
+    vector<real, N> vector_normal() {
+        map([this](real _) { return normal(); }, zero<vector<real, N>>());
+    }
+    template <int N>
+    vector<real, N> vector_uniform() {
+        map([this](real _) { return uniform(); }, zero<vector<real, N>>());
+    }
+};
 
 template <typename T, int N>
 class VecApprox {
-    public:
-    typedef vector<T, N> vtype;
-    vtype v;
-    VecApprox(vtype c) : v(c) {}
-    friend bool operator==(vtype a, VecApprox b) {
+public:
+    vector<T, N> v;
+    VecApprox(vector<T, N> c) : v(c) {}
+    bool operator==(vector<T, N> a) {
         for (int i = 0; i < N; ++i) {
-            if (a[i] != Approx(b.v[i])) {
+            if (a[i] != approx(v[i])) {
                 return false;
             }
         }
         return true;
     }
-    friend bool operator==(VecApprox a, vtype b){
-        return b == a;
-    }
-    friend bool operator!=(vtype a, VecApprox b){
-        return !(a == b);
-    }
-    friend bool operator!=(VecApprox a, vtype b){
-        return a != b;
-    }
     friend std::ostream &operator<<(std::ostream &s, VecApprox a) {
         return s << a.v;
     }
 };
+
 template <typename T, int N>
-VecApprox<T, N> ApproxV(vector<T, N> v) {
+bool operator==(vector<T, N> a, VecApprox<T, N> b) {
+    return b == a;
+}
+template <typename T, int N>
+bool operator!=(VecApprox<T, N> a, vector<T, N> b) {
+    return !(a == b);
+}
+template <typename T, int N>
+bool operator!=(vector<T, N> a, VecApprox<T, N> b) {
+    return b != a;
+}
+
+template <typename T, int N>
+VecApprox<T, N> approx(vector<T, N> v) {
     return VecApprox<T, N>(v);
 }
-#endif // UNIT_TEST
+
+#endif

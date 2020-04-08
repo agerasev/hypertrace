@@ -4,8 +4,7 @@
 
 
 template <typename T>
-class Zero {
-public:
+struct Zero {
     static T zero();
 };
 template <typename T>
@@ -14,8 +13,7 @@ T zero() {
 }
 
 template <typename T>
-class One {
-public:
+struct One {
     static T one();
 };
 template <typename T>
@@ -24,18 +22,17 @@ T one() {
 }
 
 template <typename T>
-class Dim {};
+struct Dim {};
 template <typename T>
 constexpr int dim() {
     return Dim<T>::N;
 }
 
 template <typename T>
-class BaseType {};
+struct BaseType {};
 
 template <typename T>
-class Conj {
-public:
+struct Conj {
     static T conj(T x);
 };
 template <typename T>
@@ -45,32 +42,27 @@ static T conj(T x) {
 
 #define DEFINE_PRIMITIVE_TRAITS(T) \
 template <> \
-class Zero<T> { \
-public: \
+struct Zero<T> { \
     static T zero() { \
         return T(0); \
     } \
 }; \
 template <> \
-class One<T> { \
-public: \
+struct One<T> { \
     static T one() { \
         return T(1); \
     } \
 }; \
 template <> \
-class Dim<T> { \
-public: \
+struct Dim<T> { \
     static const int N = 1; \
 }; \
 template <> \
-class BaseType<T> { \
-public: \
+struct BaseType<T> { \
     typedef T type; \
 }; \
 template <> \
-class Conj<T> { \
-public: \
+struct Conj<T> { \
     static T conj(T x) { \
         return x; \
     } \
@@ -86,6 +78,6 @@ DEFINE_PRIMITIVE_TRAITS(ulong);
 DEFINE_PRIMITIVE_TRAITS(long);
 
 DEFINE_PRIMITIVE_TRAITS(float);
-#ifdef DEVICE_DOUBLE
+#if defined(HOST) || defined(DEVICE_DOUBLE)
 DEFINE_PRIMITIVE_TRAITS(double);
-#endif // DEVICE_DOUBLE
+#endif

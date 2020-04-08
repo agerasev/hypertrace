@@ -12,44 +12,78 @@ template <typename C>
 class complex;
 
 template <typename T>
-T &re(complex<T> &z);
+struct is_complex {
+    static constexpr bool value = false;
+};
 template <typename T>
-const T &re(const complex<T> &z);
-template <typename T>
-T &im(complex<T> &z);
-template <typename T>
-const T &im(const complex<T> &z);
-
+struct is_complex<complex<T>> {
+    static constexpr bool value = true;
+};
 
 template <typename C>
 class complex {
 private:
-    typedef typename BaseType<C>::type T;
+    typedef typename base_type<C>::type T;
     static const int CN = Dim<C>::N;
     static const int N = 2*CN;
     vector<T, N> v;
 
 public:
     complex() = default;
+    // Remove duplicate constructor if T == U
+    template<typename U = T>
+    explicit complex(
+        typename enable_if<is_complex<C>::value, U>::type r
+    ) : v(zero<T>()) {
+        v[0] = r;
+    }
     explicit complex(C r, C i=zero<C>()) {
         re() = r;
         im() = i;
     }
     explicit complex(vector<T, N> x) : v(x) {}
-    template <typename ...Args>
+    template <typename ...Args, typename enable_if<(sizeof...(Args) > 2)>::type* = nullptr>
     explicit complex(Args ...args) : v(args...) {}
 
-    C &re() {
-        return ::re(*this);
+    template <typename U = C>
+    typename enable_if<!is_complex<U>::value, U>::type &re() {
+        return v[0];
     }
-    const C &re() const {
-        return ::re(*this);
+    template <typename U = C>
+    const typename enable_if<!is_complex<U>::value, U>::type &re() const {
+        return v[0];
     }
-    C &im() {
-        return ::im(*this);
+    template <typename U = C>
+    typename enable_if<!is_complex<U>::value, U>::type &im() {
+        return v[1];
     }
-    const C &im() const {
-        return ::im(*this);
+    template <typename U = C>
+    const typename enable_if<!is_complex<U>::value, U>::type &im() const {
+        return v[1];
+    }
+    template <typename U = C>
+    typename enable_if<is_complex<U>::value, U>::type &re() {
+        return *reinterpret_cast<U*>(
+            &v.template slice<0, U::size()>()
+        );
+    }
+    template <typename U = C>
+    const typename enable_if<is_complex<U>::value, U>::type &re() const {
+        return *reinterpret_cast<const U*>(
+            &v.template slice<0, U::size()>()
+        );
+    }
+    template <typename U = C>
+    typename enable_if<is_complex<U>::value, U>::type &im() {
+        return *reinterpret_cast<U*>(
+            &v.template slice<U::size(), U::size()>()
+        );
+    }
+    template <typename U = C>
+    const typename enable_if<is_complex<U>::value, U>::type &im() const {
+        return *reinterpret_cast<const U*>(
+            &v.template slice<U::size(), U::size()>()
+        );
     }
 
     T *data() {
@@ -91,6 +125,7 @@ public:
         return inverse(a);
     }
 
+    // Addition
     friend complex operator+(complex a) {
         return a;
     }
@@ -98,15 +133,64 @@ public:
         return complex(-a.v);
     }
 
-    // TODO: Add optimized versions of operators for particular cases.
-
     friend complex operator+(complex a, complex b) {
         return complex(a.v + b.v);
     }
+    friend complex operator+(complex a, C b) {
+        a.re() += b;
+        return a;
+    }
+    friend complex operator+(C a, complex b) {
+        b.re() = a + b.re();
+        return b;
+    }
+    template <typename U = T>
+    friend complex operator+(
+        complex a,
+        typename enable_if<is_complex<C>::value, U>::type b
+    ) {
+        a[0] += b;
+        return a;
+    }
+    template <typename U = T>
+    friend complex operator+(
+        typename enable_if<is_complex<C>::value, U>::type a,
+        complex b
+    ) {
+        b[0] = a + b[0];
+        return b;
+    }
+
+    // Subtraction
     friend complex operator-(complex a, complex b) {
         return complex(a.v - b.v);
     }
+    friend complex operator-(complex a, C b) {
+        a.re() -= b;
+        return a;
+    }
+    friend complex operator-(C a, complex b) {
+        b.re() = a - b.re();
+        return b;
+    }
+    template <typename U = T>
+    friend complex operator-(
+        complex a,
+        typename enable_if<is_complex<C>::value, U>::type b
+    ) {
+        a[0] -= b;
+        return a;
+    }
+    template <typename U = T>
+    friend complex operator-(
+        typename enable_if<is_complex<C>::value, U>::type a,
+        complex b
+    ) {
+        b[0] = a - b[0];
+        return b;
+    }
 
+    // Multiplication
     friend complex operator*(complex a, complex b) {
         // Cayley-Dickson construction
         return complex(
@@ -114,17 +198,50 @@ public:
             b.im()*a.re() + a.im()*conj(b.re())
         );
     }
+    template <typename U = C>
+    friend complex operator*(
+        complex a,
+        typename enable_if<is_complex<C>::value, U>::type b
+    ) {
+        return complex(a.re()*b, a.im()*conj(b));
+    }
+    template <typename U = C>
+    friend complex operator*(
+        typename enable_if<is_complex<C>::value, U>::type a,
+        complex b
+    ) {
+        return complex(a*b.re(), b.im()*a);
+    }
     friend complex operator*(complex a, T b) {
         return complex(a.v*b);
     }
     friend complex operator*(T a, complex b) {
         return complex(a*b.v);
     }
+
+    // Division
     friend complex operator/(complex a, complex b) {
+        return a*inverse(b);
+    }
+    template <typename U = C>
+    friend complex operator/(
+        complex a,
+        typename enable_if<is_complex<C>::value, U>::type b
+    ) {
+        return a*inverse(b);
+    }
+    template <typename U = C>
+    friend complex operator/(
+        typename enable_if<is_complex<C>::value, U>::type a,
+        complex b
+    ) {
         return a*inverse(b);
     }
     friend complex operator/(complex a, T b) {
         return complex(a.v/b);
+    }
+    friend complex operator/(T a, complex b) {
+        return complex(conj(b).v*(a/abs2(b)));
     }
 
     complex &operator+=(complex a) {
@@ -153,54 +270,28 @@ public:
     }
 };
 
-template <typename T>
-T &re(complex<T> &z) {
-    return z[0];
-}
-template <typename T>
-const T &re(const complex<T> &z) {
-    return z[0];
-}
-template <typename T>
-T &im(complex<T> &z) {
-    return z[1];
-}
-template <typename T>
-const T &im(const complex<T> &z) {
-    return z[1];
-}
-template <typename T>
-complex<T> &re(complex<complex<T>> &z) {
-    return *reinterpret_cast<complex<T>*>(
-        &z.vec().template slice<0, complex<T>::N>()
-    );
-}
-template <typename T>
-const complex<T> &re(const complex<complex<T>> &z) {
-    return *reinterpret_cast<const complex<T>*>(
-        &z.vec().template slice<0, complex<T>::N>()
-    );
-}
-template <typename T>
-complex<T> &im(complex<complex<T>> &z) {
-    return *reinterpret_cast<complex<T>*>(
-        &z.vec().template slice<complex<T>::N, complex<T>::N>()
-    );
-}
-template <typename T>
-const complex<T> &im(const complex<complex<T>> &z) {
-    return *reinterpret_cast<const complex<T>*>(
-        &z.vec().template slice<complex<T>::N, complex<T>::N>()
-    );
-}
+
+template <typename C>
+struct Zero<complex<C>> {
+    static complex<C> zero() {
+        return complex<C>(0);
+    }
+};
+
+template <typename C>
+struct One<complex<C>> {
+    static complex<C> one() {
+        return complex<C>(1);
+    }
+};
 
 template <typename C>
 struct Dim<complex<C>> {
     static const int N = 2*Dim<C>::N;
 };
 template <typename C>
-struct BaseType<complex<C>> {
-    typedef typename BaseType<C>::type type;
+struct base_type<complex<C>> {
+    typedef typename base_type<C>::type type;
 };
 template <typename C>
 struct Conj<complex<C>> {
@@ -209,19 +300,24 @@ struct Conj<complex<C>> {
     }
 };
 
+template <typename C>
+typename base_type<C>::type dot(complex<C> a, complex<C> b) {
+    return dot(a.vec(), b.vec());
+}
+
 template <typename T>
-complex<T> exp(complex<T> p) {
+typename enable_if<!is_complex<T>::value, complex<T>>::type exp(complex<T> p) {
     return exp(p.re())*complex<T>(cos(p.im()), sin(p.im()));
 }
 // TODO: Add (complex, complex) power.
 template <typename T>
-complex<T> pow(complex<T> a, T p) {
+typename enable_if<!is_complex<T>::value, complex<T>>::type pow(complex<T> a, T p) {
     T r = pow(abs2(a), p/2);
     T phi = p*atan2(a.im(), a.re());
     return complex<T>(r*cos(phi), r*sin(phi));
 }
 template <typename T>
-complex<T> sqrt(complex<T> a) {
+typename enable_if<!is_complex<T>::value, complex<T>>::type sqrt(complex<T> a) {
     T r = sqrt(abs(a));
     T phi = T(0.5)*atan2(a.im(), a.re());
     return complex<T>(r*cos(phi), r*sin(phi));
@@ -244,6 +340,25 @@ using sedenion = complex<complex<complex<complex<T>>>>;
 typedef complex<real> comp;
 typedef quaternion<real> quat;
 
+inline comp operator ""_i(unsigned long long x) {
+    return comp(real(0), real(x));
+}
+inline comp operator ""_i(long double x) {
+    return comp(real(0), real(x));
+}
+inline quat operator ""_j(unsigned long long x) {
+    return quat(real(0), real(0), real(x), real(0));
+}
+inline quat operator ""_j(long double x) {
+    return quat(real(0), real(0), real(x), real(0));
+}
+inline quat operator ""_k(unsigned long long x) {
+    return quat(real(0), real(0), real(0), real(x));
+}
+inline quat operator ""_k(long double x) {
+    return quat(real(0), real(0), real(0), real(x));
+}
+
 
 #ifdef UNIT_TEST
 #include <catch.hpp>
@@ -253,89 +368,93 @@ typedef quaternion<real> quat;
 class CompTestRng : public VecTestRng {
 public:
     inline CompTestRng(uint32_t seed) : VecTestRng(seed) {}
-    comp complex_normal();
-    comp complex_unit();
-    comp complex_nonzero();
+    comp comp_normal();
+    comp comp_unit();
+    comp comp_nonzero();
+};
+
+class QuatTestRng : public CompTestRng {
+public:
+    inline QuatTestRng(uint32_t seed) : CompTestRng(seed) {}
+    quat quat_normal();
+    quat quat_unit();
+    quat quat_nonzero();
 };
 
 template <typename C>
 class CompApprox {
-public:
+private:
     complex<C> v;
+
+public:
     CompApprox(complex<C> c) : v(c) {}
+
     bool operator==(complex<C> a) {
-        for (int i = 0; i < v.vec().size(); ++i) {
+        for (int i = 0; i < v.size(); ++i) {
             if (a[i] != approx(v[i])) {
                 return false;
             }
         }
         return true;
     }
-    bool operator==(typename BaseType<C>::type a) {
+    bool operator==(complex<complex<C>> a) {
+        return (*this) == a.re() && approx(zero<complex<C>>()) == a.im();
+    }
+    template <typename U = C>
+    bool operator==(typename enable_if<is_complex<C>::value, U>::type a) {
+        return approx(v.re()) == a && approx(v.im()) == zero<C>();
+    }
+    bool operator==(typename base_type<C>::type a) {
         if (Approx(v[0]) != a) {
             return false;
         }
-        for (int i = 1; i < v.vec().size(); ++i) {
+        for (int i = 1; i < v.size(); ++i) {
             if (Approx(v[i]) != 0) {
                 return false;
             }
         }
         return true;
     }
+
     friend std::ostream &operator<<(std::ostream &s, CompApprox a) {
         return s << a.v;
     }
 };
 
 template <typename C>
-bool operator==(complex<C> a, CompApprox<C> b) {
-    return b == a;
-}
-template <typename C>
-bool operator!=(CompApprox<C> a, complex<C> b) {
-    return !(a == b);
-}
-template <typename C>
-bool operator!=(complex<C> a, CompApprox<C> b) {
-    return b != a;
-}
-template <typename C>
-bool operator==(typename BaseType<C>::type a, CompApprox<C> b) {
-    return b == a;
-}
-template <typename C>
-bool operator!=(CompApprox<C> a, typename BaseType<C>::type b) {
-    return !(a == b);
-}
-template <typename C>
-bool operator!=(typename BaseType<C>::type a, CompApprox<C> b) {
-    return b != a;
-}
-
-template <typename C>
 bool operator==(Approx a, complex<C> b) {
-    if (b[0] != a) {
+    if (a != b[0]) {
         return false;
     }
-    for (int i = 1; i < b.vec().size(); ++i) {
-        if (b[i] != Approx(0)) {
+    for (int i = 1; i < b.size(); ++i) {
+        if (Approx(0) != b[i]) {
             return false;
         }
     }
     return true;
 }
-template <typename C>
-bool operator==(complex<C> a, Approx b) {
-    return b == a;
-}
-template <typename C>
-bool operator!=(Approx a, complex<C> b) {
-    return !(a == b);
-}
-template <typename C>
-bool operator!=(complex<C> a, Approx b) {
-    return b != a;
-}
+
+TEST_DEFINE_CMP_OPS(
+    template <typename C>,
+    CompApprox<C>, complex<complex<C>>
+)
+TEST_DEFINE_CMP_OPS(
+    template <typename C>,
+    CompApprox<C>, complex<C>
+)
+TEST_DEFINE_CMP_OPS(
+    template <typename C>,
+    CompApprox<C>,
+    typename enable_if<is_complex<C>::value COMMA C>::type
+)
+TEST_DEFINE_CMP_OPS(
+    template <typename C>,
+    CompApprox<C>, typename base_type<C>::type
+)
+TEST_DEFINE_CMP_OPS(
+    template <typename C>,
+    Approx, complex<C>
+)
 
 template <typename C>
 CompApprox<C> approx(complex<C> c) {

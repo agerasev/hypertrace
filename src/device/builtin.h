@@ -29,22 +29,22 @@ void ocl_divassign_##T##N##_##T##N(T *o, const T *a); \
 void ocl_divassign_##T##N##_##T(T *o, T a); \
 
 #define DECLARE_BUILTIN_VECTOR_CTOR_2(T) \
-void ocl_ctor_##T##2##_##T##_2(T *v, T x, T y); \
+void ocl_ctor_##T##2_##T##_2(T *v, T x, T y); \
 
 #define DECLARE_BUILTIN_VECTOR_CTOR_3(T) \
-void ocl_ctor_##T##3##_##T##_3(T *v, T x, T y, T z); \
+void ocl_ctor_##T##3_##T##_3(T *v, T x, T y, T z); \
 
 #define DECLARE_BUILTIN_VECTOR_CTOR_4(T) \
-void ocl_ctor_##T##4##_##T##_4(T *v, T x, T y, T z, T w); \
+void ocl_ctor_##T##4_##T##_4(T *v, T x, T y, T z, T w); \
 
 #define DECLARE_BUILTIN_VECTOR_CTOR_8(T) \
-void ocl_ctor_##T##8##_##T##_8( \
+void ocl_ctor_##T##8_##T##_8( \
     T *v, \
     T s0, T s1, T s2, T s3, T s4, T s5, T s6, T s7 \
 ); \
 
 #define DECLARE_BUILTIN_VECTOR_CTOR_16(T) \
-void ocl_ctor_##T##16##_##T##_16( \
+void ocl_ctor_##T##16_##T##_16( \
     T *v, \
     T s0, T s1, T s2, T s3, T s4, T s5, T s6, T s7, \
     T s8, T s9, T sA, T sB, T sC, T sD, T sE, T sF \

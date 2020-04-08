@@ -3,6 +3,13 @@
 #include <types.h>
 
 
+template<bool B, typename T = void>
+struct enable_if {};
+template<typename T>
+struct enable_if<true, T> {
+    typedef T type;
+};
+
 template <typename T>
 struct Zero {
     static T zero();
@@ -29,7 +36,7 @@ constexpr int dim() {
 }
 
 template <typename T>
-struct BaseType {};
+struct base_type {};
 
 template <typename T>
 struct Conj {
@@ -58,7 +65,7 @@ struct Dim<T> { \
     static const int N = 1; \
 }; \
 template <> \
-struct BaseType<T> { \
+struct base_type<T> { \
     typedef T type; \
 }; \
 template <> \

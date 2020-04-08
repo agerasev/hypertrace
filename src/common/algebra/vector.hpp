@@ -10,18 +10,34 @@
 
 
 template <typename T, int N>
+class vector;
+
+template <typename T, int N, typename F, typename ...Args>
+vector<T, N> map(F f, Args ...args);
+
+template <typename T, int N>
 class vector {
 private:
     T s[N];
 
-    template <int P, typename ...Args>
+public:
+    template <int P=0, int M, typename ...Args>
+    static void check_all_dims(vector<T, M>, Args ...args) {
+        static_assert(N == M, "Wrong vector size");
+        check_all_dims<P + 1>(args...);
+    }
+    template <int P=0>
+    static void check_all_dims() {}
+
+private:
+    template <int P=0, typename ...Args>
     void unwind(T x, Args ...args) {
         static_assert(P < N, "Too many elements in the constructor");
         s[P] = x;
         unwind<P + 1>(args...);
     }
     /*
-    template <int P, int M, typename ...Args>
+    template <int P=0, int M, typename ...Args>
     void unwind(vector<T, M> x, Args ...args) {
         static_assert(P + M <= N, "Too many elements in the constructor");
         for (int i = 0; i < M; ++i) {
@@ -30,7 +46,7 @@ private:
         unwind<P + M>(args...);
     }
     */
-    template <int P>
+    template <int P=0>
     void unwind() {
         static_assert(P == N, "Too few elements in the constructor");
     }
@@ -41,9 +57,9 @@ public:
             s[i] = x;
         }
     }
-    template <typename ...Args>
+    template <typename ...Args, typename enable_if<(sizeof...(Args) > 1)>::type* = nullptr>
     explicit vector(Args ...args) {
-        unwind<0>(args...);
+        unwind(args...);
     }
 
     T *data() {
@@ -97,21 +113,9 @@ public:
         }
     }
 
-    template <typename F>
-    friend vector map(F f, vector a) {
-        vector r;
-        for (int i = 0; i < N; ++i) {
-            r[i] = f(a[i]);
-        }
-        return r;
-    }
-    template <typename F>
-    friend vector map(F f, vector a, vector b) {
-        vector r;
-        for (int i = 0; i < N; ++i) {
-            r[i] = f(a[i], b[i]);
-        }
-        return r;
+    template <typename F, typename ...Args>
+    static vector map(F f, Args ...args) {
+        return ::map<T, N>(f, args...);
     }
 
     friend vector operator+(vector a) {
@@ -185,8 +189,18 @@ public:
     }
 };
 
+template <typename T, int N, typename F, typename ...Args>
+vector<T, N> map(F f, Args ...args) {
+    vector<T, N>::template check_all_dims(args...);
+    vector<T, N> r;
+    for (int i = 0; i < N; ++i) {
+        r[i] = f((args[i])...);
+    }
+    return r;
+}
+
 template <typename T, int N>
-class Zero<vector<T, N>> {
+struct Zero<vector<T, N>> {
     static vector<T, N> zero() {
         return vector<T, N>(::zero<T>());
     } 
@@ -197,7 +211,7 @@ struct Dim<vector<T, N_>> {
     static const int N = N_;
 };
 template <typename T, int N>
-struct BaseType<vector<T, N>> {
+struct base_type<vector<T, N>> {
     typedef T type;
 };
 
@@ -272,20 +286,24 @@ class VecTestRng : public TestRng {
 public:
     inline VecTestRng(uint32_t seed) : TestRng(seed) {}
     template <int N>
-    vector<real, N> vector_normal() {
-        map([this](real _) { return normal(); }, zero<vector<real, N>>());
+    vector<real, N> vec_normal() {
+        return map<real, N>([this]() { return normal(); });
     }
     template <int N>
-    vector<real, N> vector_uniform() {
-        map([this](real _) { return uniform(); }, zero<vector<real, N>>());
+    vector<real, N> vec_uniform() {
+        return map<real, N>([this]() { return uniform(); });
     }
 };
 
 template <typename T, int N>
 class VecApprox {
-public:
+private:
+    typedef vector<T, N> vec_t;
     vector<T, N> v;
+
+public:
     VecApprox(vector<T, N> c) : v(c) {}
+
     bool operator==(vector<T, N> a) {
         for (int i = 0; i < N; ++i) {
             if (a[i] != approx(v[i])) {
@@ -294,23 +312,16 @@ public:
         }
         return true;
     }
+
     friend std::ostream &operator<<(std::ostream &s, VecApprox a) {
         return s << a.v;
     }
 };
 
-template <typename T, int N>
-bool operator==(vector<T, N> a, VecApprox<T, N> b) {
-    return b == a;
-}
-template <typename T, int N>
-bool operator!=(VecApprox<T, N> a, vector<T, N> b) {
-    return !(a == b);
-}
-template <typename T, int N>
-bool operator!=(vector<T, N> a, VecApprox<T, N> b) {
-    return b != a;
-}
+TEST_DEFINE_CMP_OPS(
+    template <typename T COMMA int N>,
+    VecApprox<T COMMA N>, vector<T COMMA N>
+)
 
 template <typename T, int N>
 VecApprox<T, N> approx(vector<T, N> v) {

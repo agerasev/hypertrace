@@ -18,3 +18,10 @@ typedef double real;
 #define EPS 1e-8
 
 #endif
+
+inline real operator ""_r(unsigned long long x) {
+    return real(x);
+}
+inline real operator ""_r(long double x) {
+    return real(x);
+}

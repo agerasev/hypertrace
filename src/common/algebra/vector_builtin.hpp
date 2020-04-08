@@ -10,12 +10,12 @@ class __attribute__((aligned(ALIGN))) vector<T, N> { \
 private: \
     T s[LEN]; \
 public: \
-    vector() = default; \
-    vector(T x) { \
+    inline vector() = default; \
+    inline explicit vector(T x) { \
         ocl_ctor_##T##N##_##T(s, x); \
     } \
     template <typename ...Args> \
-    vector(T x, Args ...args) { \
+    inline explicit vector(Args ...args) { \
         ocl_ctor_##T##N##_##T##_##N(s, args...); \
     } \
     T &operator[](int i) { \
@@ -74,6 +74,10 @@ public: \
         for (int i = 0; i < N; ++i) { \
             data[i*stride] = (*this)[i]; \
         } \
+    } \
+    template <typename F, typename ...Args> \
+    static vector map(F f, Args ...args) { \
+        return ::map<T, N>(f, args...); \
     } \
     inline friend vector operator+(vector a) { \
         return a; \

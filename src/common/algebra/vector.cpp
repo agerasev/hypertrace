@@ -21,6 +21,9 @@ TEST_CASE("Vector types", "[vector]") {
         }
         */
     }
+    SECTION("Compare") {
+        REQUIRE(real4(1, 2, 3, 4) == approx(real4(1, 2, 3, 4)));
+    }
 };
 
 #endif // UNIT_TEST

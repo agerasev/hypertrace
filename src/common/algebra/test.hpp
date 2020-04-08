@@ -29,3 +29,20 @@ template <typename T>
 Approx approx(T x) {
     return Approx(x);
 }
+
+#define COMMA ,
+
+#define TEST_DEFINE_CMP_OPS(Template, Self, V) \
+Template \
+bool operator==(V a, Self b) { \
+    return b == a; \
+} \
+Template \
+bool operator!=(Self a, V b) { \
+    return !(a == b); \
+} \
+Template \
+bool operator!=(V a, Self b) { \
+    return b != a; \
+} \
+

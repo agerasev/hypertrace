@@ -9,6 +9,13 @@ template <> \
 class __attribute__((aligned(ALIGN))) vector<T, N> { \
 private: \
     T s[LEN]; \
+    template <int P=0, int M, typename ...Args> \
+    static void check_all_dims(vector<T, M>, Args ...args) { \
+        static_assert(N == M, "Wrong vector size"); \
+        check_all_dims<P + 1>(args...); \
+    } \
+    template <int P=0> \
+    static void check_all_dims() {} \
 public: \
     inline vector() = default; \
     inline explicit vector(T x) { \
@@ -79,7 +86,12 @@ public: \
     } \
     template <typename F, typename ...Args> \
     static vector map(F f, Args ...args) { \
-        return ::map<T, N>(f, args...); \
+        check_all_dims(args...); \
+        vector r; \
+        for (int i = 0; i < N; ++i) { \
+            r[i] = f((args[i])...); \
+        } \
+        return r; \
     } \
     inline friend vector operator+(vector a) { \
         return a; \

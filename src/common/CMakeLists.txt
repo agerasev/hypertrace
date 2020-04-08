@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.0)
 set(COMMON_SRC
     "../common/algebra/traits.cpp"
     "../common/algebra/vector.cpp"
-    "../common/algebra/matrix.cpp"
     "../common/algebra/complex.cpp"
+    "../common/algebra/matrix.cpp"
     #"../common/algebra/quaternion.cc"
     #"../common/algebra/matrix.cc"
     #"../common/algebra/moebius.cc"

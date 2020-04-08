@@ -416,15 +416,23 @@ TEST_CASE("Matrix types", "[matrix]") {
     SECTION("Determinant") {
         REQUIRE(det(real2x2(1, 2, 3, 4)) == approx(-2));
     }
-    /*
     SECTION("Inversion") {
-        real4x4 m = rng.mat_invertible<4>();
         for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-            REQUIRE(dot(m, !m) == approx(one<real4x4>));
-            REQUIRE(dot(!m, m) == approx(one<real4x4>));
+            real4x4 m = rng.mat_invertible<4>();
+            REQUIRE(dot(m, !m) == approx(one<real4x4>()));
+            REQUIRE(dot(!m, m) == approx(one<real4x4>()));
         }
     }
-    */
+    SECTION("Outer product") {
+        real3 a(0, 1, 2);
+        real4 b(0, 1, 2, 3);
+        real3x4 c(
+            0, 0, 0, 0,
+            0, 1, 2, 3,
+            0, 2, 4, 6
+        );
+        REQUIRE(outer(a, b) == approx(c));
+    }
 };
 
 #endif // UNIT_TEST

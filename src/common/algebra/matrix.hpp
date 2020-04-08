@@ -6,17 +6,10 @@
 
 
 template <typename T, int M, int N>
-class matrix;
-
-template <typename T, int M, int N, typename F, typename ...Args>
-matrix<T, M, N> map(F f, Args ...args);
-
-template <typename T, int M, int N>
 class matrix {
 private:
     T s[M*N];
 
-public:
     template <int P=0, int Q, int R, typename ...Args>
     static void check_all_dims(matrix<T, Q, R>, Args ...args) {
         static_assert(M == Q && N == R, "Wrong matrix size");
@@ -25,7 +18,6 @@ public:
     template <int P=0>
     static void check_all_dims() {}
 
-private:
     template <int P, int Q, typename ...Args>
     void unwind(T x, Args ...args) {
         static_assert(Q < N, "Argument is out of row bounds (unreachable)");
@@ -59,11 +51,6 @@ public:
         unwind<0, 0>(args...);
     }
 
-    template <typename F, typename ...Args>
-    static matrix map(F f, Args ...args) {
-        return ::map<T, N>(f, args...);
-    }
-
     T *data() {
         return s;
     }
@@ -81,6 +68,12 @@ public:
     }
     const T &operator()(int i, int j) const {
         return s[i*N + j];
+    }
+    vector<T, N> row(int y) const {
+        return vector<T, N>::load(s + y*N);
+    }
+    vector<T, M> col(int x) const {
+        return vector<T, M>::load(s + x, N);
     }
     static constexpr int size() {
         return M*N;
@@ -108,6 +101,16 @@ public:
                 data[i*pitch + j*stride] = (*this)(i, j);
             }
         }
+    }
+
+    template <typename F, typename ...Args>
+    static matrix<T, M, N> map(F f, Args ...args) {
+        check_all_dims(args...);
+        matrix r;
+        for (int i = 0; i < N*M; ++i) {
+            r[i] = f((args[i])...);
+        }
+        return r;
     }
 
     friend matrix operator+(matrix a) {
@@ -181,12 +184,46 @@ public:
     }
 };
 
-template <typename T, int M, int N, typename F, typename ...Args>
-matrix<T, M, N> map(F f, Args ...args) {
-    matrix<T, M, N>::template check_all_dims(args...);
+// Remove matrix with at least one shape of 1
+// Vectors and scalars are used instead
+template <typename T, int M>
+class matrix<T, M, 1> {};
+template <typename T, int N>
+class matrix<T, 1, N> {};
+
+template <typename T, int L, int M, int N>
+matrix<T, L, N> dot(matrix<T, L, M> a, matrix<T, M, N> b) {
+    matrix<T, L, N> r;
+    for (int i = 0; i < L; i++) {
+        for (int j = 0; j < N; ++j) {
+            r(i, j) = dot(a.row(i), b.col(j));
+        }
+    }
+    return r;
+}
+template <typename T, int M, int N>
+vector<T, M> dot(matrix<T, M, N> a, vector<T, N> b) {
+    vector<T, M> r;
+    for (int i = 0; i < M; i++) {
+        r[i] = dot(a.row(i), b);
+    }
+    return r;
+}
+template <typename T, int M, int N>
+vector<T, N> dot(vector<T, M> a, matrix<T, M, N> b) {
+    vector<T, M> r;
+    for (int j = 0; j < N; j++) {
+        r[j] = dot(a, b.col(j));
+    }
+    return r;
+}
+template <typename T, int M, int N>
+matrix<T, M, N> outer(vector<T, M> a, vector<T, N> b) {
     matrix<T, M, N> r;
-    for (int i = 0; i < N*M; ++i) {
-        r[i] = f((args[i])...);
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            r(i, j) = a[i]*b[j];
+        }
     }
     return r;
 }
@@ -224,7 +261,7 @@ matrix<T, M - 1, N - 1> submatrix(matrix<T, M, N> m, int y, int x) {
     static_assert(N >= 3 && M >= 3, "One of the matrix shape is less than 3");
     matrix<T, M - 1, N - 1> r;
     for (int i = 0; i < M - 1; ++i) {
-        for (int j = 0; j < N - 1; ++i) {
+        for (int j = 0; j < N - 1; ++j) {
             r(i, j) = m(i + (i >= y), j + (j >= x));
         }
     }
@@ -280,7 +317,13 @@ matrix<T, N, N> operator!(matrix<T, N, N> m) {
 }
 
 typedef matrix<real, 2, 2> real2x2;
+typedef matrix<real, 2, 3> real2x3;
+typedef matrix<real, 2, 4> real2x4;
+typedef matrix<real, 3, 2> real3x2;
 typedef matrix<real, 3, 3> real3x3;
+typedef matrix<real, 3, 4> real3x4;
+typedef matrix<real, 4, 2> real4x2;
+typedef matrix<real, 4, 3> real4x3;
 typedef matrix<real, 4, 4> real4x4;
 
 #ifdef HOST
@@ -308,11 +351,11 @@ public:
     inline MatTestRng(uint32_t seed) : VecTestRng(seed) {}
     template <int M, int N>
     matrix<real, M, N> mat_normal() {
-        return map<real, M, N>([this]() { return normal(); });
+        return matrix<real, M, N>::map([this]() { return normal(); });
     }
     template <int M, int N>
     matrix<real, M, N> mat_uniform() {
-        return map<real, M, N>([this]() { return uniform(); });
+        return matrix<real, M, N>::map([this]() { return uniform(); });
     }
     template <int N>
     matrix<real, N, N> mat_invertible() {

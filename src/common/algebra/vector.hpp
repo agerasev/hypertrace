@@ -10,17 +10,10 @@
 
 
 template <typename T, int N>
-class vector;
-
-template <typename T, int N, typename F, typename ...Args>
-vector<T, N> map(F f, Args ...args);
-
-template <typename T, int N>
 class vector {
 private:
     T s[N];
 
-public:
     template <int P=0, int M, typename ...Args>
     static void check_all_dims(vector<T, M>, Args ...args) {
         static_assert(N == M, "Wrong vector size");
@@ -29,7 +22,6 @@ public:
     template <int P=0>
     static void check_all_dims() {}
 
-private:
     template <int P=0, typename ...Args>
     void unwind(T x, Args ...args) {
         static_assert(P < N, "Too many elements in the constructor");
@@ -115,7 +107,12 @@ public:
 
     template <typename F, typename ...Args>
     static vector map(F f, Args ...args) {
-        return ::map<T, N>(f, args...);
+        check_all_dims(args...);
+        vector r;
+        for (int i = 0; i < N; ++i) {
+            r[i] = f((args[i])...);
+        }
+        return r;
     }
 
     friend vector operator+(vector a) {
@@ -189,15 +186,10 @@ public:
     }
 };
 
-template <typename T, int N, typename F, typename ...Args>
-vector<T, N> map(F f, Args ...args) {
-    vector<T, N>::template check_all_dims(args...);
-    vector<T, N> r;
-    for (int i = 0; i < N; ++i) {
-        r[i] = f((args[i])...);
-    }
-    return r;
-}
+// Remove vector of size 1, scalar is used instead
+template <typename T>
+class vector<T, 1> {};
+
 
 template <typename T, int N>
 struct Zero<vector<T, N>> {
@@ -287,11 +279,11 @@ public:
     inline VecTestRng(uint32_t seed) : TestRng(seed) {}
     template <int N>
     vector<real, N> vec_normal() {
-        return map<real, N>([this]() { return normal(); });
+        return vector<real, N>::map([this]() { return normal(); });
     }
     template <int N>
     vector<real, N> vec_uniform() {
-        return map<real, N>([this]() { return uniform(); });
+        return vector<real, N>::map([this]() { return uniform(); });
     }
 };
 

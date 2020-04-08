@@ -33,4 +33,6 @@ include_directories(
 add_library(${PROJECT_NAME} STATIC ${COMMON_SRC} ${DEVICE_SRC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC "-DDEVICE")
 set_source_files_properties(${COMMON_SRC} ${DEVICE_SRC} PROPERTIES LANGUAGE C)
+set_source_files_properties(${COMMON_SRC} PROPERTIES COMPILE_FLAGS "-std=c++14")
+set_source_files_properties(${DEVICE_SRC} PROPERTIES COMPILE_FLAGS "-x cl -std=cl1.2")
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)

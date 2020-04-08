@@ -57,7 +57,7 @@ public:
             s[i] = x;
         }
     }
-    template <typename ...Args, typename enable_if<(sizeof...(Args) > 1)>::type* = nullptr>
+    template <typename ...Args, enable_if<(sizeof...(Args) > 1)>* = nullptr>
     explicit vector(Args ...args) {
         unwind(args...);
     }
@@ -90,13 +90,13 @@ public:
     template <int P, int S>
     vector<T, S> &slice() {
         static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds");
-        static_assert(P == 0 || (P % S) == 0, "Slicing breaks alignment");
+        static_assert((N % S) == 0 && (P % S) == 0, "Slicing breaks alignment");
         return *reinterpret_cast<vector<T, S>*>(s + P);
     }
     template <int P, int S>
     const vector<T, S> &slice() const {
         static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds");
-        static_assert(P == 0 || (P % S) == 0, "Slicing breaks alignment");
+        static_assert((N % S) == 0 && (P % S) == 0, "Slicing breaks alignment");
         return *reinterpret_cast<const vector<T, S>*>(s + P);
     }
 
@@ -211,7 +211,7 @@ struct Dim<vector<T, N_>> {
     static const int N = N_;
 };
 template <typename T, int N>
-struct base_type<vector<T, N>> {
+struct BaseType<vector<T, N>> {
     typedef T type;
 };
 
@@ -298,7 +298,6 @@ public:
 template <typename T, int N>
 class VecApprox {
 private:
-    typedef vector<T, N> vec_t;
     vector<T, N> v;
 
 public:

@@ -14,7 +14,7 @@ public: \
     inline explicit vector(T x) { \
         ocl_ctor_##T##N##_##T(s, x); \
     } \
-    template <typename ...Args> \
+    template <typename ...Args, enable_if<(sizeof...(Args) > 1)>* = nullptr> \
     inline explicit vector(Args ...args) { \
         ocl_ctor_##T##N##_##T##_##N(s, args...); \
     } \
@@ -45,14 +45,16 @@ public: \
     } \
     template <int P, int S> \
     vector<T, S> &slice() { \
-        static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds"); \
-        static_assert(P == 0 || (P % S) == 0, "Slicing breaks alignment"); \
+        static const int SA = S + (S == 3); \
+        static_assert(P >= 0 && S > 0 && P + SA <= N, "Indices is out of bounds"); \
+        static_assert((LEN % SA) == 0 && (P % SA) == 0, "Slicing breaks alignment"); \
         return *reinterpret_cast<vector<T, S>*>(s + P); \
     } \
     template <int P, int S> \
     const vector<T, S> &slice() const { \
-        static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds"); \
-        static_assert(P == 0 || (P % S) == 0, "Slicing breaks alignment"); \
+        static const int SA = S + (S == 3); \
+        static_assert(P >= 0 && S > 0 && P + SA <= N, "Indices is out of bounds"); \
+        static_assert((LEN % SA) == 0 && (P % SA) == 0, "Slicing breaks alignment"); \
         return *reinterpret_cast<const vector<T, S>*>(s + P); \
     } \
     static vector load(const T *data) { \

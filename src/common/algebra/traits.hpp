@@ -4,11 +4,25 @@
 
 
 template<bool B, typename T = void>
-struct enable_if {};
+struct EnableIf {};
 template<typename T>
-struct enable_if<true, T> {
+struct EnableIf<true, T> {
     typedef T type;
 };
+template <bool B, typename T = void>
+using enable_if = typename EnableIf<B, T>::type;
+
+template <typename T, typename S>
+struct pair {
+    T first;
+    S second;
+    pair() = default;
+    pair(T f, S s) : first(f), second(s) {}
+};
+template <typename T, typename S>
+constexpr pair<T, S> make_pair(T f, S s) {
+    return pair<T, S>(f, s);
+}
 
 template <typename T>
 struct Zero {
@@ -36,7 +50,9 @@ constexpr int dim() {
 }
 
 template <typename T>
-struct base_type {};
+struct BaseType {};
+template <typename T>
+using base_type = typename BaseType<T>::type;
 
 template <typename T>
 struct Conj {
@@ -65,7 +81,7 @@ struct Dim<T> { \
     static const int N = 1; \
 }; \
 template <> \
-struct base_type<T> { \
+struct BaseType<T> { \
     typedef T type; \
 }; \
 template <> \

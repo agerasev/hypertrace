@@ -9,30 +9,6 @@
 
 #define MAT_COMMON_C(T,M,N) \
 \
-MAT_(T,M,N) MATF_(T,M,N,zero)() { \
-    MAT_(T,M,N) r; \
-    for (int i = 0; i < M*N; ++i) { \
-        r.s[i] = TF_(T,zero)(); \
-    } \
-    return r; \
-} \
-MAT_(T,M,N) MATF_(T,M,N,from_data)( \
-    const T *data, \
-    const int pitch, const int stride \
-) { \
-    MAT_(T,M,N) r; \
-    for (int i = 0; i < M; ++i) { \
-        for (int j = 0; j < N; ++j) { \
-            r.s[i*N + j] = data[i*pitch + j*stride]; \
-        } \
-    } \
-    return r; \
-} \
-\
-MAT_(T,N,M) MATF_(T,M,N,transpose)(MAT_(T,M,N) m) { \
-    return MATF_(T,N,M,from_data)(m.s, 1, N); \
-} \
-\
 MAT_MAP_C(T,M,N,neg,TF_(T,neg)) \
 MAT_MAP2_C(T,M,N,add,TF_(T,add)) \
 MAT_MAP2_C(T,M,N,sub,TF_(T,sub)) \
@@ -405,5 +381,50 @@ complex2x2 complex2x2_pow_normalized(complex2x2 m, real p) {
 */
 
 #ifdef UNIT_TEST
+#include <catch.hpp>
+
+TEST_CASE("Matrix types", "[matrix]") {
+    MatTestRng rng(0xCAFE);
+
+    SECTION("Contruction") {
+        auto a = matrix<int, 3, 4>(-1);
+        for (int i = 0; i < a.size(); ++i) {
+            REQUIRE(a[i] == -1);
+        }
+        auto b = matrix<int, 2, 2>(0, 1, 2, 3);
+        for (int i = 0; i < b.shape<0>(); ++i) {
+            for (int j = 0; j < b.shape<1>(); ++j) {
+                REQUIRE(b(i, j) == b.shape<1>()*i + j);
+            }
+        }
+        auto c = matrix<int, 2, 3>(
+            vector<int, 3>(0, 1, 2),
+            vector<int, 3>(3, 4, 5)
+        );
+        for (int i = 0; i < c.shape<0>(); ++i) {
+            for (int j = 0; j < c.shape<1>(); ++j) {
+                REQUIRE(c(i, j) == c.shape<1>()*i + j);
+            }
+        }
+    }
+    SECTION("Compare") {
+        REQUIRE(real2x2(1, 2, 3, 4) == approx(real2x2(1, 2, 3, 4)));
+    }
+    SECTION("One") {
+        REQUIRE((matrix<int, 2, 2>(1, 0, 0, 1)) == approx(one<matrix<int, 2, 2>>()));
+    }
+    SECTION("Determinant") {
+        REQUIRE(det(real2x2(1, 2, 3, 4)) == approx(-2));
+    }
+    /*
+    SECTION("Inversion") {
+        real4x4 m = rng.mat_invertible<4>();
+        for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+            REQUIRE(dot(m, !m) == approx(one<real4x4>));
+            REQUIRE(dot(!m, m) == approx(one<real4x4>));
+        }
+    }
+    */
+};
 
 #endif // UNIT_TEST

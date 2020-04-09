@@ -123,14 +123,14 @@ public:
         return v;
     }
 
-    friend T abs(complex x) {
+    friend T length(complex x) {
         return length(x.v);
     }
-    friend T abs2(complex x) {
+    friend T length2(complex x) {
         return dot(x.v, x.v);
     }
     friend complex inverse(complex x) {
-        return conj(x)/abs2(x);
+        return conj(x)/length2(x);
     }
 
     friend complex operator~(complex a) {
@@ -232,7 +232,7 @@ public:
         return complex(a.v/b);
     }
     friend complex operator/(T a, complex b) {
-        return complex(conj(b).v*(a/abs2(b)));
+        return complex(conj(b).v*(a/length2(b)));
     }
 
     complex &operator+=(complex a) {
@@ -296,6 +296,26 @@ base_type<C> dot(complex<C> a, complex<C> b) {
     return dot(a.vec(), b.vec());
 }
 
+template <typename C>
+struct Sequence<complex<C>> {
+private:
+    typedef base_type<C> T;
+    typedef complex<C> V;
+public:
+    template <typename F>
+    static V map(F f, V a) {
+        return V(Sequence<C>::map(f, a.re()), Sequence<C>::map(f, a.im()));
+    }
+    template <typename F>
+    static T reduce(F f, T t, V a) {
+        t = Sequence<C>::reduce(f, t, a.re());
+        t = Sequence<C>::reduce(f, t, a.im());
+        return t;
+    }
+};
+
+namespace math {
+
 template <typename T>
 enable_if<!is_complex<T>(), complex<T>> exp(complex<T> p) {
     return exp(p.re())*complex<T>(cos(p.im()), sin(p.im()));
@@ -303,16 +323,18 @@ enable_if<!is_complex<T>(), complex<T>> exp(complex<T> p) {
 // TODO: Add (complex, complex) power.
 template <typename T>
 enable_if<!is_complex<T>(), complex<T>> pow(complex<T> a, T p) {
-    T r = pow(abs2(a), p/2);
+    T r = pow(length2(a), p/2);
     T phi = p*atan2(a.im(), a.re());
     return complex<T>(r*cos(phi), r*sin(phi));
 }
 template <typename T>
 enable_if<!is_complex<T>(), complex<T>> sqrt(complex<T> a) {
-    T r = sqrt(abs(a));
+    T r = sqrt(length(a));
     T phi = T(0.5)*atan2(a.im(), a.re());
     return complex<T>(r*cos(phi), r*sin(phi));
 }
+
+} // namespace math
 
 #ifdef HOST
 template <typename C>

@@ -264,6 +264,66 @@ public:
     }
 };
 
+#define DEFINE_VECTOR_MATH_FUNCTION_A(F) \
+template <typename T, int N> \
+vector<T, N> F(vector<T, N> a) { \
+    return vector<T, N>::map([](T x) { return F(x); }, a); \
+} \
+
+#define DEFINE_VECTOR_MATH_FUNCTION_AB(F) \
+template <typename T, int N> \
+vector<T, N> F(vector<T, N> a, vector<T, N> b) { \
+    return vector<T, N>::map([](T x, T y) { return F(x, y); }, a, b); \
+} \
+
+namespace math {
+
+DEFINE_VECTOR_MATH_FUNCTION_A(abs)
+DEFINE_VECTOR_MATH_FUNCTION_AB(max)
+DEFINE_VECTOR_MATH_FUNCTION_AB(min)
+DEFINE_VECTOR_MATH_FUNCTION_A(acos)
+DEFINE_VECTOR_MATH_FUNCTION_A(acosh)
+DEFINE_VECTOR_MATH_FUNCTION_A(asin)
+DEFINE_VECTOR_MATH_FUNCTION_A(asinh)
+DEFINE_VECTOR_MATH_FUNCTION_A(atan)
+DEFINE_VECTOR_MATH_FUNCTION_AB(atan2)
+DEFINE_VECTOR_MATH_FUNCTION_A(atanh)
+DEFINE_VECTOR_MATH_FUNCTION_A(ceil)
+DEFINE_VECTOR_MATH_FUNCTION_A(cos)
+DEFINE_VECTOR_MATH_FUNCTION_A(cosh)
+DEFINE_VECTOR_MATH_FUNCTION_A(erfc)
+DEFINE_VECTOR_MATH_FUNCTION_A(erf)
+DEFINE_VECTOR_MATH_FUNCTION_A(exp)
+DEFINE_VECTOR_MATH_FUNCTION_A(floor)
+DEFINE_VECTOR_MATH_FUNCTION_AB(mod)
+DEFINE_VECTOR_MATH_FUNCTION_A(log)
+DEFINE_VECTOR_MATH_FUNCTION_AB(pow)
+DEFINE_VECTOR_MATH_FUNCTION_A(round)
+DEFINE_VECTOR_MATH_FUNCTION_A(sqrt)
+DEFINE_VECTOR_MATH_FUNCTION_A(sin)
+DEFINE_VECTOR_MATH_FUNCTION_A(sinh)
+DEFINE_VECTOR_MATH_FUNCTION_A(tan)
+DEFINE_VECTOR_MATH_FUNCTION_A(tanh)
+DEFINE_VECTOR_MATH_FUNCTION_A(tgamma)
+template <typename T, int N>
+vector<T, N> clamp(vector<T, N> a, vector<T, N> b, vector<T, N> c) {
+    return vector<T, N>::map(
+        [](T x, T y, T z) { return clamp(x, y, z); },
+        a, b, c
+    );
+}
+template <typename T, int N>
+pair<vector<T, N>, vector<T, N>> fract(vector<T, N> a) {
+    pair<vector<T, N>, vector<T, N>> p;
+    for (int i = 0; i < N; ++i) {
+        pair<T, T> x = fract(a[i]);
+        p.first[i] = x.first;
+        p.second[i] = x.second;
+    }
+    return p;
+}
+
+} // namespace math
 
 #ifdef DEVICE
 #include "vector_builtin.hpp"

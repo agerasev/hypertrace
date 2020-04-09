@@ -168,6 +168,19 @@ TEST_CASE("Matrix types", "[matrix]") {
         );
         REQUIRE(outer(a, b) == approx(c));
     }
+    SECTION("Norm") {
+        REQUIRE(norm_l1(real2x2(-1, 2, -3, 4)) == approx(10));
+        REQUIRE(norm_l2(real2x2(-1, 1, -1, 1)) == approx(2));
+        REQUIRE(norm_linf(real2x2(1, -2, 3, -4)) == approx(4));
+    }
+    SECTION("Abs") {
+        REQUIRE(math::abs(real2x2(1, -2, 3, -4)) == approx(real2x2(1, 2, 3, 4)));
+    }
+    SECTION("Fract") {
+        auto p = math::fract(real2x2(1.1, -1.8, 3.3, -3.6));
+        REQUIRE(p.first == approx(real2x2(0.1, 0.2, 0.3, 0.4)));
+        REQUIRE(p.second == approx(real2x2(1, -2, 3, -4)));
+    }
 };
 
 #endif // UNIT_TEST

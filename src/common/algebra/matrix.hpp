@@ -320,16 +320,91 @@ template <typename T, int N>
 matrix<T, N, N> operator!(matrix<T, N, N> m) {
     return inverse(m);
 }
-/*
-template <typename T>
-T fabs(complex2x2 m) {
-    real d = R0;
-    for (int i = 0; i < 2*2; ++i) {
-        d += c_fabs(m.s[i]);
+
+
+template <typename S, int M, int N>
+struct Sequence<matrix<S, M, N>> {
+private:
+    typedef base_type<S> T;
+    typedef matrix<S, M, N> V;
+public:
+    template <typename F>
+    static V map(F f, V a) {
+        return V::map([f](S x) {
+            return Sequence<S>::map(f, x);
+        }, a);
     }
-    return d;
+    template <typename F>
+    static T reduce(F f, T t, V a) {
+        for (int i = 0; i < M*N; ++i) {
+            t = Sequence<S>::reduce(f, t, a[i]);
+        }
+        return t;
+    }
+};
+
+#define DEFINE_MATRIX_MATH_FUNCTION_A(F) \
+template <typename T, int M, int N> \
+matrix<T, M, N> F(matrix<T, M, N> a) { \
+    return matrix<T, M, N>::map([](T x) { return F(x); }, a); \
+} \
+
+#define DEFINE_MATRIX_MATH_FUNCTION_AB(F) \
+template <typename T, int M, int N> \
+matrix<T, M, N> F(matrix<T, M, N> a, matrix<T, M, N> b) { \
+    return matrix<T, M, N>::map([](T x, T y) { return F(x, y); }, a, b); \
+} \
+
+namespace math {
+
+DEFINE_MATRIX_MATH_FUNCTION_A(abs)
+DEFINE_MATRIX_MATH_FUNCTION_AB(max)
+DEFINE_MATRIX_MATH_FUNCTION_AB(min)
+DEFINE_MATRIX_MATH_FUNCTION_A(acos)
+DEFINE_MATRIX_MATH_FUNCTION_A(acosh)
+DEFINE_MATRIX_MATH_FUNCTION_A(asin)
+DEFINE_MATRIX_MATH_FUNCTION_A(asinh)
+DEFINE_MATRIX_MATH_FUNCTION_A(atan)
+DEFINE_MATRIX_MATH_FUNCTION_AB(atan2)
+DEFINE_MATRIX_MATH_FUNCTION_A(atanh)
+DEFINE_MATRIX_MATH_FUNCTION_A(ceil)
+DEFINE_MATRIX_MATH_FUNCTION_A(cos)
+DEFINE_MATRIX_MATH_FUNCTION_A(cosh)
+DEFINE_MATRIX_MATH_FUNCTION_A(erfc)
+DEFINE_MATRIX_MATH_FUNCTION_A(erf)
+DEFINE_MATRIX_MATH_FUNCTION_A(exp)
+DEFINE_MATRIX_MATH_FUNCTION_A(floor)
+DEFINE_MATRIX_MATH_FUNCTION_AB(mod)
+DEFINE_MATRIX_MATH_FUNCTION_A(log)
+DEFINE_MATRIX_MATH_FUNCTION_AB(pow)
+DEFINE_MATRIX_MATH_FUNCTION_A(round)
+DEFINE_MATRIX_MATH_FUNCTION_A(sqrt)
+DEFINE_MATRIX_MATH_FUNCTION_A(sin)
+DEFINE_MATRIX_MATH_FUNCTION_A(sinh)
+DEFINE_MATRIX_MATH_FUNCTION_A(tan)
+DEFINE_MATRIX_MATH_FUNCTION_A(tanh)
+DEFINE_MATRIX_MATH_FUNCTION_A(tgamma)
+template <typename T, int M, int N>
+matrix<T, M, N> clamp(matrix<T, M, N> a, matrix<T, M, N> b, matrix<T, M, N> c) {
+    return matrix<T, M, N>::map(
+        [](T x, T y, T z) { return clamp(x, y, z); },
+        a, b, c
+    );
 }
-*/
+template <typename T, int M, int N>
+pair<matrix<T, M, N>, matrix<T, M, N>> fract(matrix<T, M, N> a) {
+    pair<matrix<T, M, N>, matrix<T, M, N>> p;
+    for (int i = 0; i < M*N; ++i) {
+        pair<T, T> x = fract(a[i]);
+        p.first[i] = x.first;
+        p.second[i] = x.second;
+    }
+    return p;
+}
+
+} // namespace math
+
+
 typedef matrix<real, 2, 2> real2x2;
 typedef matrix<real, 2, 3> real2x3;
 typedef matrix<real, 2, 4> real2x4;

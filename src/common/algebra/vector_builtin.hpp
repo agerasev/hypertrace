@@ -206,41 +206,92 @@ struct SequenceRoutines<vector<T, N>> { \
     } \
 }; \
 
-#define DEFINE_VECTOR_BUILTIN_MATH_FUNCTION(T, N, F) \
-inline vector<T, N> abs(vector<T, N> a) { \
+#define DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, F, XF) \
+inline vector<T, N> F(vector<T, N> a) { \
     vector<T, N> o; \
-    xv_abs_##T##N(o.data(), a.data()); \
+    xv_##XF##_##T##N(o.data(), a.data()); \
     return o; \
 } \
+
+#define DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, F, XF) \
+inline vector<T, N> F(vector<T, N> a, vector<T, N> b) { \
+    vector<T, N> o; \
+    xv_##XF##_##T##N(o.data(), a.data(), b.data()); \
+    return o; \
+} \
+
+#define DEFINE_VECTOR_BUILTIN_MATH_COMMON(T, N) \
+inline vector<T, N> clamp(vector<T, N> a, vector<T, N> b, vector<T, N> c) { \
+    vector<T, N> o; \
+    xv_clamp_##T##N(o.data(), a.data(), b.data(), c.data()); \
+    return o; \
+} \
+
+#define DEFINE_VECTOR_BUILTIN_MATH_FLOAT(T, N) \
+DEFINE_VECTOR_BUILTIN_MATH_COMMON(T, N) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, acos, acos) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, acosh, acosh) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, asin, asin) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, asinh, asinh) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, atan, atan) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, atan2, atan2) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, atanh, atanh) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, ceil, ceil) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, cos, cos) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, cosh, cosh) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, erfc, erfc) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, erf, erf) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, exp, exp) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, abs, fabs) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, floor, floor) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, max, fmax) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, min, fmin) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, mod, fmod) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, log, log) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, pow, pow) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, round, round) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, sqrt, sqrt) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, sin, sin) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, sinh, sinh) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, tan, tan) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, tanh, tanh) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, tgamma, tgamma) \
+inline pair<vector<T, N>, vector<T, N>> fract(vector<T, N> a) { \
+    pair<vector<T, N>, vector<T, N>> p; \
+    xv_fract_##T##N(p.first.data(), a.data(), p.second.data()); \
+    return p; \
+} \
+
+#define DEFINE_VECTOR_BUILTIN_MATH_INT(T, N) \
+DEFINE_VECTOR_BUILTIN_MATH_COMMON(T, N) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, abs, abs) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, max, max) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, min, min) \
+
+#define DEFINE_VECTOR_BUILTIN_MATH_UINT(T, N) \
+DEFINE_VECTOR_BUILTIN_MATH_COMMON(T, N) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, abs, abs) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, max, max) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, min, min) \
 
 #define DEFINE_VECTOR_BUILTIN_UINT(T, N, L, A) \
 DEFINE_VECTOR_BUILTIN(T, N, L, A) \
 namespace math { \
-inline vector<T, N> abs(vector<T, N> a) { \
-    return a; \
-} \
+DEFINE_VECTOR_BUILTIN_MATH_UINT(T, N) \
 } \
 DEFINE_VECTOR_BUILTIN_TRAITS(T, N) \
 
 #define DEFINE_VECTOR_BUILTIN_INT(T, N, L, A) \
 DEFINE_VECTOR_BUILTIN(T, N, L, A) \
 namespace math { \
-inline vector<T, N> abs(vector<T, N> a) { \
-    vector<T, N> o; \
-    xv_abs_##T##N(o.data(), a.data()); \
-    return o; \
-} \
+DEFINE_VECTOR_BUILTIN_MATH_INT(T, N) \
 } \
 DEFINE_VECTOR_BUILTIN_TRAITS(T, N) \
 
 #define DEFINE_VECTOR_BUILTIN_FLOAT(T, N, L, A) \
 DEFINE_VECTOR_BUILTIN(T, N, L, A) \
 namespace math { \
-inline vector<T, N> abs(vector<T, N> a) { \
-    vector<T, N> o; \
-    xv_fabs_##T##N(o.data(), a.data()); \
-    return o; \
-} \
+DEFINE_VECTOR_BUILTIN_MATH_FLOAT(T, N) \
 } \
 DEFINE_VECTOR_BUILTIN_TRAITS(T, N) \
 

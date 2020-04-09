@@ -29,6 +29,14 @@ TEST_CASE("Vector types", "[vector]") {
         REQUIRE(norm_l2(real2(3, -4)) == approx(5));
         REQUIRE(norm_linf(real4(1, -2, 3, -4)) == approx(4));
     }
+    SECTION("Abs") {
+        REQUIRE(math::abs(real4(1, -2, 3, -4)) == approx(real4(1, 2, 3, 4)));
+    }
+    SECTION("Fract") {
+        auto p = math::fract(real4(1.1, -1.8, 3.3, -3.6));
+        REQUIRE(p.first == approx(real4(0.1, 0.2, 0.3, 0.4)));
+        REQUIRE(p.second == approx(real4(1, -2, 3, -4)));
+    }
 };
 
 #endif // UNIT_TEST

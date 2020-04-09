@@ -11,6 +11,7 @@
 template <typename C>
 class complex;
 
+// Is complex
 template <typename T>
 struct IsComplex {
     static constexpr bool value = false;
@@ -22,6 +23,18 @@ struct IsComplex<complex<T>> {
 template <typename T>
 constexpr bool is_complex() {
     return IsComplex<T>::value;
+}
+
+// Conjugate
+template <typename T>
+struct Conj {
+    static T conj(T x) {
+        return x;
+    }
+};
+template <typename T>
+static T conj(T x) {
+    return Conj<T>::conj(x);
 }
 
 template <typename C>

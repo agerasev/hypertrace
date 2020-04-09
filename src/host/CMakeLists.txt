@@ -16,11 +16,12 @@ set(CMAKE_CXX_FLAGS "\
     -std=c++14 \
 ")
 
+set(COMMON_SRC
+    "math.cpp"
+    ${COMMON_SRC}
+)
+
 set(HOST_SRC
-    #"vec.hpp"
-    #"vec.cpp"
-    #"mat.hpp"
-    #"mat.cpp"
     "opencl/search.hpp"
     "opencl/search.cpp"
     "opencl/opencl.hpp"

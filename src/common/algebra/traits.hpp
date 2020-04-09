@@ -1,8 +1,10 @@
 #pragma once
 
-#include <types.h>
+#include <types.hpp>
+#include <math.hpp>
 
 
+// Enable if
 template<bool B, typename T = void>
 struct EnableIf {};
 template<typename T>
@@ -12,6 +14,25 @@ struct EnableIf<true, T> {
 template <bool B, typename T = void>
 using enable_if = typename EnableIf<B, T>::type;
 
+// Is int/float
+template <typename T>
+struct IsInt {
+    static const bool value = false;
+};
+template <typename T>
+constexpr bool is_int() {
+    return IsInt<T>::value;
+}
+template <typename T>
+struct IsFloat {
+    static const bool value = false;
+};
+template <typename T>
+constexpr bool is_float() {
+    return IsFloat<T>::value;
+}
+
+// Pair
 template <typename T, typename S>
 struct pair {
     T first;
@@ -24,6 +45,7 @@ constexpr pair<T, S> make_pair(T f, S s) {
     return pair<T, S>(f, s);
 }
 
+// Zero
 template <typename T>
 struct Zero {
     static T zero();
@@ -33,6 +55,7 @@ T zero() {
     return Zero<T>::zero();
 }
 
+// One
 template <typename T>
 struct One {
     static T one();
@@ -42,6 +65,7 @@ T one() {
     return One<T>::one();
 }
 
+// Dim
 template <typename T>
 struct Dim {};
 template <typename T>
@@ -49,19 +73,77 @@ constexpr int dim() {
     return Dim<T>::N;
 }
 
+// Base type
 template <typename T>
 struct BaseType {};
 template <typename T>
 using base_type = typename BaseType<T>::type;
 
-template <typename T>
-struct Conj {
-    static T conj(T x);
+
+// Sequence
+template <typename A>
+struct Sequence {
+    template <typename F>
+    static A map(F f, A a);
+    template <typename F>
+    static base_type<A> reduce(F f, base_type<A> t, A a);
+};
+template <typename A>
+struct SequenceRoutines {
+private:
+    typedef base_type<A> T;
+    typedef Sequence<A> S;
+public:
+    static A abs(A a) {
+        return S::map([](T x) { return math::abs(x); }, a);
+    }
+    static A sqr(A a) {
+        return S::map([](T x) { return x*x; }, a);
+    }
+};
+
+// Norm
+template <typename A>
+struct Norm {
+private:
+    typedef base_type<A> T;
+    typedef Sequence<A> S;
+    typedef SequenceRoutines<A> R;
+public:
+    static T l1(A a) {
+        return S::reduce(
+            [](T t, T x) { return t + x; },
+            zero<T>(), R::abs(a)
+        );
+    }
+    static enable_if<is_float<T>(), T> l2(A a) {
+        return math::sqrt(S::reduce(
+            [](T t, T x) { return t + x; },
+            zero<T>(), R::sqr(a)
+        ));
+    }
+    static T linf(A a) {
+        return S::reduce(
+            [](T t, T x) { return math::max(t, x); },
+            zero<T>(), R::abs(a)
+        );
+    }
 };
 template <typename T>
-static T conj(T x) {
-    return Conj<T>::conj(x);
+static base_type<T> norm_l1(T x) {
+    return Norm<T>::l1(x);
 }
+template <typename T>
+static enable_if<is_float<base_type<T>>(), base_type<T>> norm_l2(T x) {
+    return Norm<T>::l2(x);
+}
+template <typename T>
+static base_type<T> norm_linf(T x) {
+    return Norm<T>::linf(x);
+}
+
+
+// Definitions declaration
 
 #define DEFINE_PRIMITIVE_TRAITS(T) \
 template <> \
@@ -85,22 +167,50 @@ struct BaseType<T> { \
     typedef T type; \
 }; \
 template <> \
-struct Conj<T> { \
-    static T conj(T x) { \
-        return x; \
+struct Sequence<T> { \
+    template <typename F> \
+    static T map(F f, T a) { \
+        return f(a); \
+    } \
+    template <typename F> \
+    static T reduce(F f, T t, T a) { \
+        return f(t, a); \
     } \
 }; \
 
-DEFINE_PRIMITIVE_TRAITS(uchar);
-DEFINE_PRIMITIVE_TRAITS(char);
-DEFINE_PRIMITIVE_TRAITS(ushort);
-DEFINE_PRIMITIVE_TRAITS(short);
-DEFINE_PRIMITIVE_TRAITS(uint);
-DEFINE_PRIMITIVE_TRAITS(int);
-DEFINE_PRIMITIVE_TRAITS(ulong);
-DEFINE_PRIMITIVE_TRAITS(long);
+#define DEFINE_PRIMITIVE_TRAITS_UINT(T) \
+DEFINE_PRIMITIVE_TRAITS(T) \
+template <> \
+struct IsInt<T> { \
+    static const bool value = true; \
+}; \
 
-DEFINE_PRIMITIVE_TRAITS(float);
+#define DEFINE_PRIMITIVE_TRAITS_INT(T) \
+DEFINE_PRIMITIVE_TRAITS(T) \
+template <> \
+struct IsInt<T> { \
+    static const bool value = true; \
+}; \
+
+#define DEFINE_PRIMITIVE_TRAITS_FLOAT(T) \
+DEFINE_PRIMITIVE_TRAITS(T) \
+template <> \
+struct IsFloat<T> { \
+    static const bool value = true; \
+}; \
+
+// Actual definition for types
+
+DEFINE_PRIMITIVE_TRAITS_UINT(uchar)
+DEFINE_PRIMITIVE_TRAITS_UINT(ushort)
+DEFINE_PRIMITIVE_TRAITS_UINT(uint)
+DEFINE_PRIMITIVE_TRAITS_UINT(ulong)
+DEFINE_PRIMITIVE_TRAITS_INT(char)
+DEFINE_PRIMITIVE_TRAITS_INT(short)
+DEFINE_PRIMITIVE_TRAITS_INT(int)
+DEFINE_PRIMITIVE_TRAITS_INT(long)
+
+DEFINE_PRIMITIVE_TRAITS_FLOAT(float)
 #if defined(HOST) || defined(DEVICE_DOUBLE)
-DEFINE_PRIMITIVE_TRAITS(double);
+DEFINE_PRIMITIVE_TRAITS_FLOAT(double)
 #endif

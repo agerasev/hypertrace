@@ -1,5 +1,10 @@
 #pragma once
 
+#ifdef HOST
+#include <iostream>
+#endif
+
+#include "types.hpp"
 #include "traits.hpp"
 #include "vector.hpp"
 #include "complex.hpp"
@@ -315,7 +320,16 @@ template <typename T, int N>
 matrix<T, N, N> operator!(matrix<T, N, N> m) {
     return inverse(m);
 }
-
+/*
+template <typename T>
+T fabs(complex2x2 m) {
+    real d = R0;
+    for (int i = 0; i < 2*2; ++i) {
+        d += c_fabs(m.s[i]);
+    }
+    return d;
+}
+*/
 typedef matrix<real, 2, 2> real2x2;
 typedef matrix<real, 2, 3> real2x3;
 typedef matrix<real, 2, 4> real2x4;

@@ -22,6 +22,7 @@ set(CMAKE_C_FLAGS "\
 ")
 
 set(DEVICE_SRC
+    "math.cl"
     "builtin.cl"
     "render.cl"
 )

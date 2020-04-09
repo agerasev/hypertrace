@@ -1,6 +1,6 @@
 #pragma once
 
-#include <types.h>
+#include <types.hpp>
 
 
 #if defined(DEVICE) && !defined(DEVICE_DOUBLE)

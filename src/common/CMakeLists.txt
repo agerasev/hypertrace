@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
 set(COMMON_SRC
-    "../common/algebra/traits.cpp"
     "../common/algebra/vector.cpp"
     "../common/algebra/complex.cpp"
     "../common/algebra/matrix.cpp"

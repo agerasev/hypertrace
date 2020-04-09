@@ -244,6 +244,33 @@ vector<T, N> normalize(vector<T, N> a) {
     return a/length(a);
 }
 
+namespace math {
+template <typename T, int N>
+T abs(vector<T, N> a) {
+    return vector<T, N>::map([](T x) { return math::abs(x); }, a);
+}
+}
+
+template <typename S, int N>
+struct Sequence<vector<S, N>> {
+private:
+    typedef base_type<S> T;
+    typedef vector<S, N> V;
+public:
+    template <typename F>
+    static V map(F f, V a) {
+        return V::map([f](S x) {
+            return Sequence<S>::map(f, x);
+        }, a);
+    }
+    template <typename F>
+    static T reduce(F f, T t, V a) {
+        for (int i = 0; i < N; ++i) {
+            t = Sequence<S>::reduce(f, t, a[i]);
+        }
+        return t;
+    }
+};
 
 #ifdef DEVICE
 #include "vector_builtin.hpp"

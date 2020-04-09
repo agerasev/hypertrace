@@ -22,8 +22,8 @@ set(CMAKE_C_FLAGS "\
 ")
 
 set(DEVICE_SRC
-    "math.cl"
-    "builtin.cl"
+    "builtins/math.cl"
+    "builtins/vector.cl"
     "render.cl"
 )
 include_directories(

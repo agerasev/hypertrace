@@ -14,13 +14,12 @@ class vector {
 private:
     T s[N];
 
-    template <int P=0, int M, typename ...Args>
-    static void check_all_dims(vector<T, M>, Args ...args) {
-        static_assert(N == M, "Wrong vector size");
-        check_all_dims<P + 1>(args...);
+    template <int P=0, typename ...Args>
+    static constexpr void check_args(vector<T, N>, Args ...args) {
+        check_args<P + 1>(args...);
     }
     template <int P=0>
-    static void check_all_dims() {}
+    static constexpr void check_args() {}
 
     template <int P=0, typename ...Args>
     void unwind(T x, Args ...args) {
@@ -107,7 +106,7 @@ public:
 
     template <typename F, typename ...Args>
     static vector map(F f, Args ...args) {
-        check_all_dims(args...);
+        check_args(args...);
         vector r;
         for (int i = 0; i < N; ++i) {
             r[i] = f((args[i])...);
@@ -244,13 +243,6 @@ vector<T, N> normalize(vector<T, N> a) {
     return a/length(a);
 }
 
-namespace math {
-template <typename T, int N>
-T abs(vector<T, N> a) {
-    return vector<T, N>::map([](T x) { return math::abs(x); }, a);
-}
-}
-
 template <typename S, int N>
 struct Sequence<vector<S, N>> {
 private:
@@ -271,6 +263,7 @@ public:
         return t;
     }
 };
+
 
 #ifdef DEVICE
 #include "vector_builtin.hpp"

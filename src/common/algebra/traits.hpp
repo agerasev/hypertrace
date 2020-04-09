@@ -32,19 +32,6 @@ constexpr bool is_float() {
     return IsFloat<T>::value;
 }
 
-// Pair
-template <typename T, typename S>
-struct pair {
-    T first;
-    S second;
-    pair() = default;
-    pair(T f, S s) : first(f), second(s) {}
-};
-template <typename T, typename S>
-constexpr pair<T, S> make_pair(T f, S s) {
-    return pair<T, S>(f, s);
-}
-
 // Zero
 template <typename T>
 struct Zero {

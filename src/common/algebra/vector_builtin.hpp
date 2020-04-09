@@ -1,7 +1,7 @@
 #pragma once
 
 #include <types.hpp>
-#include <builtin.h>
+#include <builtins/vector.h>
 
 
 #define DEFINE_VECTOR_BUILTIN(T, N, LEN, ALIGN) \
@@ -19,11 +19,11 @@ private: \
 public: \
     inline vector() = default; \
     inline explicit vector(T x) { \
-        ocl_ctor_##T##N##_##T(s, x); \
+        xv_ctor_##T##N##_##T(s, x); \
     } \
     template <typename ...Args, enable_if<(sizeof...(Args) > 1)>* = nullptr> \
     inline explicit vector(Args ...args) { \
-        ocl_ctor_##T##N##_##T##_##N(s, args...); \
+        xv_ctor_##T##N##_##T##_##N(s, args...); \
     } \
     T &operator[](int i) { \
         return s[i]; \
@@ -66,11 +66,11 @@ public: \
     } \
     static vector load(const T *data) { \
         vector v; \
-        ocl_load_##T##N(v.s, data); \
+        xv_load_##T##N(v.s, data); \
         return v; \
     } \
     void store(T *data) const { \
-        ocl_store_##T##N(s, data); \
+        xv_store_##T##N(s, data); \
     } \
     static vector load(const T *data, int stride) { \
         vector v; \
@@ -98,99 +98,99 @@ public: \
     } \
     inline friend vector operator-(vector a) { \
         vector o; \
-        ocl_neg_##T##N(o.s, a.s); \
+        xv_neg_##T##N(o.s, a.s); \
         return o; \
     } \
     inline friend vector operator+(vector a, vector b) { \
         vector o; \
-        ocl_add_##T##N##_##T##N(o.s, a.s, b.s); \
+        xv_add_##T##N##_##T##N(o.s, a.s, b.s); \
         return o; \
     } \
     inline friend vector operator+(vector a, T b) { \
         vector o; \
-        ocl_add_##T##N##_##T(o.s, a.s, b); \
+        xv_add_##T##N##_##T(o.s, a.s, b); \
         return o; \
     } \
     inline friend vector operator+(T a, vector b) { \
         vector o; \
-        ocl_add_##T##_##T##N(o.s, a, b.s); \
+        xv_add_##T##_##T##N(o.s, a, b.s); \
         return o; \
     } \
     inline friend vector operator-(vector a, vector b) { \
         vector o; \
-        ocl_sub_##T##N##_##T##N(o.s, a.s, b.s); \
+        xv_sub_##T##N##_##T##N(o.s, a.s, b.s); \
         return o; \
     } \
     inline friend vector operator-(vector a, T b) { \
         vector o; \
-        ocl_sub_##T##N##_##T(o.s, a.s, b); \
+        xv_sub_##T##N##_##T(o.s, a.s, b); \
         return o; \
     } \
     inline friend vector operator-(T a, vector b) { \
         vector o; \
-        ocl_sub_##T##_##T##N(o.s, a, b.s); \
+        xv_sub_##T##_##T##N(o.s, a, b.s); \
         return o; \
     } \
     inline friend vector operator*(vector a, vector b) { \
         vector o; \
-        ocl_mul_##T##N##_##T##N(o.s, a.s, b.s); \
+        xv_mul_##T##N##_##T##N(o.s, a.s, b.s); \
         return o; \
     } \
     inline friend vector operator*(vector a, T b) { \
         vector o; \
-        ocl_mul_##T##N##_##T(o.s, a.s, b); \
+        xv_mul_##T##N##_##T(o.s, a.s, b); \
         return o; \
     } \
     inline friend vector operator*(T a, vector b) { \
         vector o; \
-        ocl_mul_##T##_##T##N(o.s, a, b.s); \
+        xv_mul_##T##_##T##N(o.s, a, b.s); \
         return o; \
     } \
     inline friend vector operator/(vector a, vector b) { \
         vector o; \
-        ocl_div_##T##N##_##T##N(o.s, a.s, b.s); \
+        xv_div_##T##N##_##T##N(o.s, a.s, b.s); \
         return o; \
     } \
     inline friend vector operator/(vector a, T b) { \
         vector o; \
-        ocl_div_##T##N##_##T(o.s, a.s, b); \
+        xv_div_##T##N##_##T(o.s, a.s, b); \
         return o; \
     } \
     inline friend vector operator/(T a, vector b) { \
         vector o; \
-        ocl_div_##T##_##T##N(o.s, a, b.s); \
+        xv_div_##T##_##T##N(o.s, a, b.s); \
         return o; \
     } \
     inline vector &operator+=(vector a) { \
-        ocl_addassign_##T##N##_##T##N(s, a.s); \
+        xv_addassign_##T##N##_##T##N(s, a.s); \
         return *this; \
     } \
     inline vector &operator+=(T a) { \
-        ocl_addassign_##T##N##_##T(s, a); \
+        xv_addassign_##T##N##_##T(s, a); \
         return *this; \
     } \
     inline vector &operator-=(vector a) { \
-        ocl_subassign_##T##N##_##T##N(s, a.s); \
+        xv_subassign_##T##N##_##T##N(s, a.s); \
         return *this; \
     } \
     inline vector &operator-=(T a) { \
-        ocl_subassign_##T##N##_##T(s, a); \
+        xv_subassign_##T##N##_##T(s, a); \
         return *this; \
     } \
     inline vector &operator*=(vector a) { \
-        ocl_mulassign_##T##N##_##T##N(s, a.s); \
+        xv_mulassign_##T##N##_##T##N(s, a.s); \
         return *this; \
     } \
     inline vector &operator*=(T a) { \
-        ocl_mulassign_##T##N##_##T(s, a); \
+        xv_mulassign_##T##N##_##T(s, a); \
         return *this; \
     } \
     inline vector &operator/=(vector a) { \
-        ocl_divassign_##T##N##_##T##N(s, a.s); \
+        xv_divassign_##T##N##_##T##N(s, a.s); \
         return *this; \
     } \
     inline vector &operator/=(T a) { \
-        ocl_divassign_##T##N##_##T(s, a); \
+        xv_divassign_##T##N##_##T(s, a); \
         return *this; \
     } \
 }; \
@@ -206,6 +206,13 @@ struct SequenceRoutines<vector<T, N>> { \
     } \
 }; \
 
+#define DEFINE_VECTOR_BUILTIN_MATH_FUNCTION(T, N, F) \
+inline vector<T, N> abs(vector<T, N> a) { \
+    vector<T, N> o; \
+    xv_abs_##T##N(o.data(), a.data()); \
+    return o; \
+} \
+
 #define DEFINE_VECTOR_BUILTIN_UINT(T, N, L, A) \
 DEFINE_VECTOR_BUILTIN(T, N, L, A) \
 namespace math { \
@@ -220,7 +227,7 @@ DEFINE_VECTOR_BUILTIN(T, N, L, A) \
 namespace math { \
 inline vector<T, N> abs(vector<T, N> a) { \
     vector<T, N> o; \
-    ocl_abs_##T##N(reinterpret_cast<u##T*>(o.data()), a.data()); \
+    xv_abs_##T##N(o.data(), a.data()); \
     return o; \
 } \
 } \
@@ -231,7 +238,7 @@ DEFINE_VECTOR_BUILTIN(T, N, L, A) \
 namespace math { \
 inline vector<T, N> abs(vector<T, N> a) { \
     vector<T, N> o; \
-    ocl_fabs_##T##N(o.data(), a.data()); \
+    xv_fabs_##T##N(o.data(), a.data()); \
     return o; \
 } \
 } \
@@ -241,16 +248,16 @@ DEFINE_VECTOR_BUILTIN_TRAITS(T, N) \
 #define DEFINE_VECTOR_BUILTIN_GEOMETRY(T, N) \
 template <> \
 inline T dot(vector<T, N> a, vector<T, N> b) { \
-    return ocl_dot_##T##N(a.data(), b.data()); \
+    return xv_dot_##T##N(a.data(), b.data()); \
 } \
 template <> \
 inline T length(vector<T, N> a) { \
-    return ocl_length_##T##N(a.data()); \
+    return xv_length_##T##N(a.data()); \
 } \
 template <> \
 inline vector<T, N> normalize(vector<T, N> a) { \
     vector<T, N> o; \
-    ocl_normalize_##T##N(o.data(), a.data()); \
+    xv_normalize_##T##N(o.data(), a.data()); \
     return o; \
 } \
 
@@ -258,7 +265,7 @@ inline vector<T, N> normalize(vector<T, N> a) { \
 template <> \
 inline vector<T, N> cross<T>(vector<T, N> a, vector<T, N> b) { \
     vector<T, N> o; \
-    ocl_cross_##T##N(o.data(), a.data(), b.data()); \
+    xv_cross_##T##N(o.data(), a.data(), b.data()); \
     return o; \
 } \
 

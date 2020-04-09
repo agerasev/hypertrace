@@ -17,22 +17,16 @@ set(CMAKE_CXX_FLAGS "\
 ")
 
 set(COMMON_SRC
-    "math.cpp"
+    "builtins/math.cpp"
     ${COMMON_SRC}
 )
 
 set(HOST_SRC
-    "opencl/search.hpp"
     "opencl/search.cpp"
-    "opencl/opencl.hpp"
     "opencl/opencl.cpp"
-    "sdl/base.hpp"
     "sdl/base.cpp"
-    "sdl/controller.hpp"
     "sdl/controller.cpp"
-    "sdl/viewer.hpp"
     "sdl/viewer.cpp"
-    "renderer.hpp"
     "renderer.cpp"
     #"scenario.hpp"
     #"scenario.cpp"

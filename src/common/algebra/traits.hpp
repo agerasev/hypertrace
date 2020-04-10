@@ -66,6 +66,12 @@ struct BaseType {};
 template <typename T>
 using base_type = typename BaseType<T>::type;
 
+// Common type (limited usage)
+template <typename T, typename S>
+struct CommonType {};
+template <typename T, typename S>
+using common_type = typename CommonType<T, S>::type;
+
 // Sequence
 template <typename A>
 struct Sequence {

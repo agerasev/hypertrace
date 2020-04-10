@@ -1,15 +1,8 @@
-#include "moebius.hh"
-
-#ifndef OPENCL
-#include <math.h>
-#endif // OPENCL
+#include "moebius.hpp"
 
 
 quaternion mo_apply(Moebius m, quaternion p) {
-    return q_div(
-        cq_mul(m.s[0], p) + q_new(m.s[1], C0),
-        cq_mul(m.s[2], p) + q_new(m.s[3], C0)
-    );
+    
 }
 
 quaternion mo_deriv(Moebius m, quaternion p, quaternion v) {

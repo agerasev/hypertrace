@@ -1,18 +1,49 @@
 #pragma once
 
-#include "complex.hh"
-#include "quaternion.hh"
-#include "matrix.hh"
-
-typedef complex2x2 Moebius;
-
-#ifdef OPENCL_INTEROP
-typedef complex2x2_pk MoebiusPk;
-#endif // OPENCL_INTEROP
+#include "traits.hpp"
+#include "complex.hpp"
+#include "matrix.hpp"
 
 
-#define mo_new complex2x2_new
-#define mo_identity complex2x2_one
+template <typename T>
+class Moebius;
+template <typename T>
+class MoebiusDeriv;
+
+template <typename T>
+struct CommonType {
+    typedef type;
+};
+
+template <typename T>
+class Moebius {
+private:
+    matrix<T, 2, 2> m;
+public:
+    template <typename ...Args>
+    explicit Moebius(Args ...args) : m(args...) {}
+
+    static Moebius identity() {
+        // todo
+    }
+
+    T &a() { return m[0]; }
+    const T &a() const { return m[0]; }
+    T &b() { return m[1]; }
+    const T &b() const { return m[1]; }
+    T &c() { return m[2]; }
+    const T &c() const { return m[2]; }
+    T &d() { return m[3]; }
+    const T &d() const { return m[3]; }
+
+    quaternion<T> apply(quaternion<T> p) {
+        return (a()*p + b())/(c()*p + d());
+    }
+}
+
+// Moebius transformation with quaternion coefficients is not supported yet.
+template <typename T>
+class Moebius<quaternion<T>>;
 
 quaternion mo_apply(Moebius m, quaternion p);
 quaternion mo_deriv(Moebius m, quaternion p, quaternion v);

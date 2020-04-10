@@ -8,21 +8,21 @@
 #include "vector.hpp"
 
 
-template <typename C>
+template <typename T, int D=1>
 class complex;
 
 // Is complex
-template <typename T>
+template <typename X>
 struct IsComplex {
     static constexpr bool value = false;
 };
-template <typename T>
-struct IsComplex<complex<T>> {
+template <typename T, int D>
+struct IsComplex<complex<T, D>> {
     static constexpr bool value = true;
 };
-template <typename T>
+template <typename C>
 constexpr bool is_complex() {
-    return IsComplex<T>::value;
+    return IsComplex<C>::value;
 }
 
 // Conjugate
@@ -33,16 +33,29 @@ struct Conj {
     }
 };
 template <typename T>
-static T conj(T x) {
+T conj(T x) {
     return Conj<T>::conj(x);
 }
 
-template <typename C>
+template <typename T, int D>
+struct ComplexType {
+    typedef complex<T, D> type;
+};
+template <typename T>
+struct ComplexType<T, 0> {
+    typedef T type;
+};
+template <typename T, int D>
+using complex_type = typename ComplexType<T, D>::type;
+
+
+template <typename T, int D>
 class complex {
 private:
-    typedef base_type<C> T;
+    typedef complex_type<T, D - 1> C;
     static const int CN = dim<C>();
-    static const int N = 2*CN;
+    static const int N = 1 << D;
+    
     vector<T, N> v;
 
 public:
@@ -264,56 +277,58 @@ public:
     }
 };
 
+// Complex of degree 0 is real number
+template <typename T>
+class complex<T, 0> {};
 
-template <typename C>
-struct Zero<complex<C>> {
-    static complex<C> zero() {
-        return complex<C>(::zero<base_type<C>>());
+template <typename T, int D>
+struct Zero<complex<T, D>> {
+    static complex<T, D> zero() {
+        return complex<T, D>(::zero<T>());
     }
 };
 
-template <typename C>
-struct One<complex<C>> {
-    static complex<C> one() {
-        return complex<C>(::one<base_type<C>>());
+template <typename T, int D>
+struct One<complex<T, D>> {
+    static complex<T, D> one() {
+        return complex<T, D>(::one<T>());
     }
 };
 
-template <typename C>
-struct Dim<complex<C>> {
-    static const int N = 2*Dim<C>::N;
+template <typename T, int D>
+struct Dim<complex<T, D>> {
+    static const int N = 1 << D;
 };
-template <typename C>
-struct BaseType<complex<C>> {
-    typedef base_type<C> type;
+template <typename T, int D>
+struct BaseType<complex<T, D>> {
+    typedef base_type<T> type;
 };
-template <typename C>
-struct Conj<complex<C>> {
-    static complex<C> conj(complex<C> z) {
-        return complex<C>(::conj(z.re()), -z.im());
+template <typename T, int D>
+struct Conj<complex<T, D>> {
+    static complex<T, D> conj(complex<T, D> z) {
+        return complex<T, D>(::conj(z.re()), -z.im());
     }
 };
 
-template <typename C>
-base_type<C> dot(complex<C> a, complex<C> b) {
+template <typename T, int D>
+T dot(complex<T, D> a, complex<T, D> b) {
     return dot(a.vec(), b.vec());
 }
 
-template <typename C>
-struct Sequence<complex<C>> {
+template <typename X, int D>
+struct Sequence<complex<X, D>> {
 private:
-    typedef base_type<C> T;
-    typedef complex<C> V;
+    typedef base_type<X> T;
+    typedef complex<X, D> C;
+    typedef vector<T, dim<C>()> V;
 public:
     template <typename F>
-    static V map(F f, V a) {
-        return V(Sequence<C>::map(f, a.re()), Sequence<C>::map(f, a.im()));
+    static C map(F f, C a) {
+        return C(Sequence<V>::map(f, a.vec()));
     }
     template <typename F>
-    static T reduce(F f, T t, V a) {
-        t = Sequence<C>::reduce(f, t, a.re());
-        t = Sequence<C>::reduce(f, t, a.im());
-        return t;
+    static T reduce(F f, T t, C a) {
+        return Sequence<V>::reduce(f, t, a.vec());
     }
 };
 
@@ -340,18 +355,18 @@ enable_if<!is_complex<T>(), complex<T>> sqrt(complex<T> a) {
 } // namespace math
 
 #ifdef HOST
-template <typename C>
-std::ostream &operator<<(std::ostream &s, complex<C> c) {
+template <typename T, int D>
+std::ostream &operator<<(std::ostream &s, complex<T, D> c) {
     return s << c.vec();
 }
 #endif
 
 template <typename T>
-using quaternion = complex<complex<T>>;
+using quaternion = complex<T, 2>;
 template <typename T>
-using octonion = complex<complex<complex<T>>>;
+using octonion = complex<T, 3>;
 template <typename T>
-using sedenion = complex<complex<complex<complex<T>>>>;
+using sedenion = complex<T, 4>;
 
 typedef complex<real> comp;
 typedef quaternion<real> quat;
@@ -388,42 +403,41 @@ namespace test {
 
 using namespace math;
 
-template <typename C>
-class Distrib<complex<C>> : public Rng {
+template <typename T, int D>
+class Distrib<complex<T, D>> : public Rng {
 private:
-    typedef base_type<C> T;
-    typedef vector<T, dim<complex<C>>()> V;
+    typedef vector<T, dim<complex<T, D>>()> V;
 
 public:
-    complex<C> normal() {
-        return complex<C>(distrib<V>().normal());
+    complex<T, D> normal() {
+        return complex<T, D>(distrib<V>().normal());
     }
-    complex<C> nonzero() {
+    complex<T, D> nonzero() {
         V a;
         do {
             a = distrib<V>().normal();
         } while(length2(a) < EPS);
-        return complex<C>(a);
+        return complex<T, D>(a);
     }
-    complex<C> unit() {
+    complex<T, D> unit() {
         return normalize(nonzero());
     }
 };
 
-template <typename C>
+template <typename T, int D>
 class CompApprox;
-template <typename C>
-CompApprox<C> approx(complex<C> c);
+template <typename T, int D>
+CompApprox<T, D> approx(complex<T, D> c);
 
-template <typename C>
+template <typename T, int D>
 class CompApprox {
 private:
-    complex<C> v;
+    complex<T, D> v;
 
 public:
-    CompApprox(complex<C> c) : v(c) {}
+    CompApprox(complex<T, D> c) : v(c) {}
 
-    bool operator==(complex<C> a) {
+    bool operator==(complex<T, D> a) {
         for (int i = 0; i < v.size(); ++i) {
             if (a[i] != approx(v[i])) {
                 return false;
@@ -431,19 +445,19 @@ public:
         }
         return true;
     }
-    bool operator==(complex<complex<C>> a) {
-        return (*this) == a.re() && approx(zero<complex<C>>()) == a.im();
+    bool operator==(complex<T, D + 1> a) {
+        return (*this) == a.re() && approx(zero<complex<T, D>>()) == a.im();
     }
-    template <typename U = C>
-    bool operator==(enable_if<is_complex<C>(), U> a) {
-        return approx(v.re()) == a && approx(v.im()) == zero<C>();
+    template <typename U = complex_type<T, D - 1>>
+    bool operator==(enable_if<is_complex<U>(), U> a) {
+        return approx(v.re()) == a && approx(v.im()) == zero<U>();
     }
-    bool operator==(base_type<C> a) {
-        if (Approx(v[0]) != a) {
+    bool operator==(T a) {
+        if (approx(v[0]) != a) {
             return false;
         }
         for (int i = 1; i < v.size(); ++i) {
-            if (Approx(v[i]) != 0) {
+            if (approx(v[i]) != 0) {
                 return false;
             }
         }
@@ -455,8 +469,8 @@ public:
     }
 };
 
-template <typename C>
-bool operator==(Approx a, complex<C> b) {
+template <typename T, int D>
+bool operator==(Approx a, complex<T, D> b) {
     if (a != b[0]) {
         return false;
     }
@@ -469,29 +483,30 @@ bool operator==(Approx a, complex<C> b) {
 }
 
 TEST_DEFINE_CMP_OPS(
-    template <typename C>,
-    CompApprox<C>, complex<complex<C>>
+    template <typename T COMMA int D>,
+    CompApprox<T COMMA D>, complex<T COMMA D + 1>
 )
 TEST_DEFINE_CMP_OPS(
-    template <typename C>,
-    CompApprox<C>, complex<C>
+    template <typename T COMMA int D>,
+    CompApprox<T COMMA D>, complex<T COMMA D>
 )
 TEST_DEFINE_CMP_OPS(
-    template <typename C>,
-    CompApprox<C>, enable_if<is_complex<C>() COMMA C>
+    template <typename T COMMA int D>,
+    CompApprox<T COMMA D>,
+    enable_if<is_complex<complex_type<T COMMA D - 1>>() COMMA complex_type<T COMMA D - 1>>
 )
 TEST_DEFINE_CMP_OPS(
-    template <typename C>,
-    CompApprox<C>, base_type<C>
+    template <typename T COMMA int D>,
+    CompApprox<T COMMA D>, T
 )
 TEST_DEFINE_CMP_OPS(
-    template <typename C>,
-    Approx, complex<C>
+    template <typename T COMMA int D>,
+    Approx, complex<T COMMA D>
 )
 
-template <typename C>
-CompApprox<C> approx(complex<C> c) {
-    return CompApprox<C>(c);
+template <typename T, int D>
+CompApprox<T, D> approx(complex<T, D> c) {
+    return CompApprox<T, D>(c);
 }
 
 } // namespace test

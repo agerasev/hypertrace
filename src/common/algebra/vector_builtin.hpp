@@ -4,94 +4,25 @@
 #include <builtins/vector.h>
 
 
-#define DEFINE_VECTOR_BUILTIN(T, N, LEN, ALIGN) \
+#define DEFINE_VECTOR_BUILTIN(T, N) \
 template <> \
-class __attribute__((aligned(ALIGN))) vector<T, N> { \
+class vector<T, N> : public vector_base<T, N, N + (N == 3), sizeof(T)*(N + (N == 3))> { \
 private: \
-    T s[LEN]; \
-    template <int P=0, int M, typename ...Args> \
-    static void check_all_dims(vector<T, M>, Args ...args) { \
-        static_assert(N == M, "Wrong vector size"); \
-        check_all_dims<P + 1>(args...); \
-    } \
-    template <int P=0> \
-    static void check_all_dims() {} \
+    typedef vector_base<T, N, N + (N == 3), sizeof(T)*(N + (N == 3))> base; \
 public: \
-    inline vector() = default; \
-    inline explicit vector(T x) { \
-        xv_ctor_##T##N##_##T(s, x); \
-    } \
-    template <typename ...Args, enable_if<(sizeof...(Args) > 1)>* = nullptr> \
-    inline explicit vector(Args ...args) { \
-        xv_ctor_##T##N##_##T##_##N(s, args...); \
-    } \
-    T &operator[](int i) { \
-        return s[i]; \
-    } \
-    const T &operator[](int i) const { \
-        return s[i]; \
-    } \
-    T *data() { \
-        return s; \
-    } \
-    const T *data() const { \
-        return s; \
-    } \
-    static constexpr int size() { \
-        return N; \
-    } \
-    template <int P> \
-    T &elem() { \
-        static_assert(P >= 0 && P < N, "Index is out of bounds"); \
-        return s[P]; \
-    } \
-    template <int P> \
-    const T &elem() const { \
-        static_assert(P >= 0 && P < N, "Index is out of bounds"); \
-        return s[P]; \
-    } \
-    template <int P, int S> \
-    vector<T, S> &slice() { \
-        static const int SA = S + (S == 3); \
-        static_assert(P >= 0 && S > 0 && P + SA <= N, "Indices is out of bounds"); \
-        static_assert((LEN % SA) == 0 && (P % SA) == 0, "Slicing breaks alignment"); \
-        return *reinterpret_cast<vector<T, S>*>(s + P); \
-    } \
-    template <int P, int S> \
-    const vector<T, S> &slice() const { \
-        static const int SA = S + (S == 3); \
-        static_assert(P >= 0 && S > 0 && P + SA <= N, "Indices is out of bounds"); \
-        static_assert((LEN % SA) == 0 && (P % SA) == 0, "Slicing breaks alignment"); \
-        return *reinterpret_cast<const vector<T, S>*>(s + P); \
-    } \
-    static vector load(const T *data) { \
+    template <typename ...Args> \
+    inline explicit vector(Args ...args) : base(args...) {} \
+    inline static vector load(const T *data) { \
         vector v; \
         xv_load_##T##N(v.s, data); \
         return v; \
     } \
-    void store(T *data) const { \
+    inline void store(T *data) const { \
         xv_store_##T##N(s, data); \
     } \
-    static vector load(const T *data, int stride) { \
-        vector v; \
-        for (int i = 0; i < N; ++i) { \
-            v[i] = data[i*stride]; \
-        } \
-        return v; \
-    } \
-    void store(T *data, int stride) const { \
-        for (int i = 0; i < N; ++i) { \
-            data[i*stride] = (*this)[i]; \
-        } \
-    } \
     template <typename F, typename ...Args> \
-    static vector map(F f, Args ...args) { \
-        check_all_dims(args...); \
-        vector r; \
-        for (int i = 0; i < N; ++i) { \
-            r[i] = f((args[i])...); \
-        } \
-        return r; \
+    inline static vector<T, N> map(F f, Args ...args) { \
+        return base::map(f, args...); \
     } \
     inline friend vector operator+(vector a) { \
         return a; \
@@ -274,22 +205,22 @@ DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, abs, abs) \
 DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, max, max) \
 DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, min, min) \
 
-#define DEFINE_VECTOR_BUILTIN_UINT(T, N, L, A) \
-DEFINE_VECTOR_BUILTIN(T, N, L, A) \
+#define DEFINE_VECTOR_BUILTIN_UINT(T, N) \
+DEFINE_VECTOR_BUILTIN(T, N) \
 namespace math { \
 DEFINE_VECTOR_BUILTIN_MATH_UINT(T, N) \
 } \
 DEFINE_VECTOR_BUILTIN_TRAITS(T, N) \
 
-#define DEFINE_VECTOR_BUILTIN_INT(T, N, L, A) \
-DEFINE_VECTOR_BUILTIN(T, N, L, A) \
+#define DEFINE_VECTOR_BUILTIN_INT(T, N) \
+DEFINE_VECTOR_BUILTIN(T, N) \
 namespace math { \
 DEFINE_VECTOR_BUILTIN_MATH_INT(T, N) \
 } \
 DEFINE_VECTOR_BUILTIN_TRAITS(T, N) \
 
-#define DEFINE_VECTOR_BUILTIN_FLOAT(T, N, L, A) \
-DEFINE_VECTOR_BUILTIN(T, N, L, A) \
+#define DEFINE_VECTOR_BUILTIN_FLOAT(T, N) \
+DEFINE_VECTOR_BUILTIN(T, N) \
 namespace math { \
 DEFINE_VECTOR_BUILTIN_MATH_FLOAT(T, N) \
 } \
@@ -320,70 +251,43 @@ inline vector<T, N> cross<T>(vector<T, N> a, vector<T, N> b) { \
     return o; \
 } \
 
-DEFINE_VECTOR_BUILTIN_UINT(uchar, 2, 2, 2)
-DEFINE_VECTOR_BUILTIN_UINT(uchar, 3, 4, 4)
-DEFINE_VECTOR_BUILTIN_UINT(uchar, 4, 4, 4)
-DEFINE_VECTOR_BUILTIN_UINT(uchar, 8, 8, 8)
-DEFINE_VECTOR_BUILTIN_UINT(uchar, 16, 16, 16)
-DEFINE_VECTOR_BUILTIN_INT(char, 2, 2, 2)
-DEFINE_VECTOR_BUILTIN_INT(char, 3, 4, 4)
-DEFINE_VECTOR_BUILTIN_INT(char, 4, 4, 4)
-DEFINE_VECTOR_BUILTIN_INT(char, 8, 8, 8)
-DEFINE_VECTOR_BUILTIN_INT(char, 16, 16, 16)
+#define DEFINE_VECTOR_BUILTIN_UINT_ALL(T) \
+DEFINE_VECTOR_BUILTIN_UINT(T, 2) \
+DEFINE_VECTOR_BUILTIN_UINT(T, 3) \
+DEFINE_VECTOR_BUILTIN_UINT(T, 4) \
+DEFINE_VECTOR_BUILTIN_UINT(T, 8) \
+DEFINE_VECTOR_BUILTIN_UINT(T, 16) \
 
-DEFINE_VECTOR_BUILTIN_UINT(ushort, 2, 2, 4)
-DEFINE_VECTOR_BUILTIN_UINT(ushort, 3, 4, 8)
-DEFINE_VECTOR_BUILTIN_UINT(ushort, 4, 4, 8)
-DEFINE_VECTOR_BUILTIN_UINT(ushort, 8, 8, 16)
-DEFINE_VECTOR_BUILTIN_UINT(ushort, 16, 16, 32)
-DEFINE_VECTOR_BUILTIN_INT(short, 2, 2, 4)
-DEFINE_VECTOR_BUILTIN_INT(short, 3, 4, 8)
-DEFINE_VECTOR_BUILTIN_INT(short, 4, 4, 8)
-DEFINE_VECTOR_BUILTIN_INT(short, 8, 8, 16)
-DEFINE_VECTOR_BUILTIN_INT(short, 16, 16, 32)
+#define DEFINE_VECTOR_BUILTIN_INT_ALL(T) \
+DEFINE_VECTOR_BUILTIN_INT(T, 2) \
+DEFINE_VECTOR_BUILTIN_INT(T, 3) \
+DEFINE_VECTOR_BUILTIN_INT(T, 4) \
+DEFINE_VECTOR_BUILTIN_INT(T, 8) \
+DEFINE_VECTOR_BUILTIN_INT(T, 16) \
 
-DEFINE_VECTOR_BUILTIN_UINT(uint, 2, 2, 8)
-DEFINE_VECTOR_BUILTIN_UINT(uint, 3, 4, 16)
-DEFINE_VECTOR_BUILTIN_UINT(uint, 4, 4, 16)
-DEFINE_VECTOR_BUILTIN_UINT(uint, 8, 8, 32)
-DEFINE_VECTOR_BUILTIN_UINT(uint, 16, 16, 64)
-DEFINE_VECTOR_BUILTIN_INT(int, 2, 2, 8)
-DEFINE_VECTOR_BUILTIN_INT(int, 3, 4, 16)
-DEFINE_VECTOR_BUILTIN_INT(int, 4, 4, 16)
-DEFINE_VECTOR_BUILTIN_INT(int, 8, 8, 32)
-DEFINE_VECTOR_BUILTIN_INT(int, 16, 16, 64)
+#define DEFINE_VECTOR_BUILTIN_FLOAT_ALL(T) \
+DEFINE_VECTOR_BUILTIN_FLOAT(T, 2) \
+DEFINE_VECTOR_BUILTIN_FLOAT(T, 3) \
+DEFINE_VECTOR_BUILTIN_FLOAT(T, 4) \
+DEFINE_VECTOR_BUILTIN_FLOAT(T, 8) \
+DEFINE_VECTOR_BUILTIN_FLOAT(T, 16) \
+DEFINE_VECTOR_BUILTIN_GEOMETRY(T, 2) \
+DEFINE_VECTOR_BUILTIN_GEOMETRY(T, 3) \
+DEFINE_VECTOR_BUILTIN_GEOMETRY(T, 4) \
+DEFINE_VECTOR_BUILTIN_GEOMETRY_CROSS(T, 3) \
+DEFINE_VECTOR_BUILTIN_GEOMETRY_CROSS(T, 4) \
 
-DEFINE_VECTOR_BUILTIN_UINT(ulong, 2, 2, 16)
-DEFINE_VECTOR_BUILTIN_UINT(ulong, 3, 4, 32)
-DEFINE_VECTOR_BUILTIN_UINT(ulong, 4, 4, 32)
-DEFINE_VECTOR_BUILTIN_UINT(ulong, 8, 8, 64)
-DEFINE_VECTOR_BUILTIN_UINT(ulong, 16, 16, 128)
-DEFINE_VECTOR_BUILTIN_INT(long, 2, 2, 16)
-DEFINE_VECTOR_BUILTIN_INT(long, 3, 4, 32)
-DEFINE_VECTOR_BUILTIN_INT(long, 4, 4, 32)
-DEFINE_VECTOR_BUILTIN_INT(long, 8, 8, 64)
-DEFINE_VECTOR_BUILTIN_INT(long, 16, 16, 128)
+DEFINE_VECTOR_BUILTIN_UINT_ALL(uchar)
+DEFINE_VECTOR_BUILTIN_UINT_ALL(ushort)
+DEFINE_VECTOR_BUILTIN_UINT_ALL(uint)
+DEFINE_VECTOR_BUILTIN_UINT_ALL(ulong)
 
-DEFINE_VECTOR_BUILTIN_FLOAT(float, 2, 2, 8)
-DEFINE_VECTOR_BUILTIN_FLOAT(float, 3, 4, 16)
-DEFINE_VECTOR_BUILTIN_FLOAT(float, 4, 4, 16)
-DEFINE_VECTOR_BUILTIN_FLOAT(float, 8, 8, 32)
-DEFINE_VECTOR_BUILTIN_FLOAT(float, 16, 16, 64)
-DEFINE_VECTOR_BUILTIN_GEOMETRY(float, 2)
-DEFINE_VECTOR_BUILTIN_GEOMETRY(float, 3)
-DEFINE_VECTOR_BUILTIN_GEOMETRY(float, 4)
-DEFINE_VECTOR_BUILTIN_GEOMETRY_CROSS(float, 3)
-DEFINE_VECTOR_BUILTIN_GEOMETRY_CROSS(float, 4)
+DEFINE_VECTOR_BUILTIN_INT_ALL(char)
+DEFINE_VECTOR_BUILTIN_INT_ALL(short)
+DEFINE_VECTOR_BUILTIN_INT_ALL(int)
+DEFINE_VECTOR_BUILTIN_INT_ALL(long)
 
+DEFINE_VECTOR_BUILTIN_FLOAT_ALL(float)
 #ifdef DEVICE_DOUBLE
-DEFINE_VECTOR_BUILTIN_FLOAT(double, 2, 2, 16)
-DEFINE_VECTOR_BUILTIN_FLOAT(double, 3, 4, 32)
-DEFINE_VECTOR_BUILTIN_FLOAT(double, 4, 4, 32)
-DEFINE_VECTOR_BUILTIN_FLOAT(double, 8, 8, 64)
-DEFINE_VECTOR_BUILTIN_FLOAT(double, 16, 16, 128)
-DEFINE_VECTOR_BUILTIN_GEOMETRY(double, 2)
-DEFINE_VECTOR_BUILTIN_GEOMETRY(double, 3)
-DEFINE_VECTOR_BUILTIN_GEOMETRY(double, 4)
-DEFINE_VECTOR_BUILTIN_GEOMETRY_CROSS(double, 3)
-DEFINE_VECTOR_BUILTIN_GEOMETRY_CROSS(double, 4)
+DEFINE_VECTOR_BUILTIN_FLOAT_ALL(double)
 #endif // DEVICE_DOUBLE

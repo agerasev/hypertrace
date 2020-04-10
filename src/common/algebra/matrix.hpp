@@ -310,6 +310,13 @@ matrix<T, N, N> adj(matrix<T, N, N> m) {
     }
     return r;
 }
+template <typename T>
+matrix<T, 2, 2> adj(matrix<T, 2, 2> m) {
+    return matrix<T, 2, 2>(
+         m[3], -m[1],
+        -m[2],  m[0]
+    );
+}
 
 template <typename T, int N>
 matrix<T, N, N> inverse(matrix<T, N, N> m) {
@@ -404,6 +411,113 @@ pair<matrix<T, M, N>, matrix<T, M, N>> fract(matrix<T, M, N> a) {
 
 } // namespace math
 
+using namespace math;
+
+template <typename T, int N>
+matrix<T, N, N> normalize(matrix<T, N, N> m) {
+    return m/pow(det(m), 1_r/N);
+}
+template <typename T>
+matrix<T, 2, 2> normalize(matrix<T, 2, 2> m) {
+    return m/sqrt(det(m));
+}
+
+template <typename T>
+void eigen(
+    matrix<T, 2, 2> m,
+    matrix<T, 2, 2> &l,
+    matrix<T, 2, 2> &v,
+    bool normalized=false
+) {
+    const T T0 = zero<T>(), T1 = one<T>();
+    const T D = normalized ? T1 : det(m);
+    if (norm_l1(m[1]) < EPS && norm_l1(m[2]) < EPS) {
+        l = matrix<T, 2, 2>(m[0], T0, T0, m[3]);
+        v = matrix<T, 2, 2>(T1, T0, T0, T1);
+    } else {
+        T m0p3 = m[0] + m[3];
+        T ad = m0p3/2;
+        T dis = sqrt(ad*ad - D);
+        if (norm_l1(dis) > EPS) {
+            l = matrix<T, 2, 2>(ad + dis, T0, T0, ad - D);
+            if (norm_l1(m[1]) > EPS) {
+                v = matrix<T, 2, 2>(m[1], m[1], l[0] - m[0], l[3] - m[0]);
+            } else {
+                v = matrix<T, 2, 2>(l[0] - m[3], l[3] - m[3], m[2], m[2]);
+            }
+        } else {
+            T m0m3 = m[0] - m[3];
+            l = matrix<T, 2, 2>(ad, T1, T0, ad);
+            if (norm_l1(m[1]) > EPS) {
+                T g = 4*m[1]*m[1] + m0m3*m0m3;
+                v = matrix<T, 2, 2>(
+                    m[1],
+                    2*m[1]*m0m3/g,
+                    -m0m3/2,
+                    4*m[1]*m[1]/g
+                );
+            } else {
+                T g = 4*m[2]*m[2] + m0m3*m0m3;
+                v = matrix<T, 2, 2>(
+                    m0m3/2,
+                    4*m[2]*m[2]/g,
+                    m[2],
+                    -2*m[2]*m0m3/g
+                );
+            }
+        }
+        v = normalize(v);
+    }
+}
+/*
+complex2x2 _complex2x2_pow_common(
+    complex2x2 m,
+    real p,
+    complex2x2 j,
+    complex2x2 v
+) {
+    complex2x2 x = complex2x2_sub(m, complex2x2_one());
+    real y = complex2x2_fabs(x);
+    // FIXME: Why 1e4?
+    if (y*y > 1e4*EPS) {
+        complex2x2 k;
+        if (c_fabs(j.s[1]) < EPS) {
+            k = complex2x2_new(c_powr(j.s[0], p), C0, C0, c_powr(j.s[3], p));
+        } else {
+            // Assume j.s[0] == j.s[3]
+            k = complex2x2_new(
+                c_powr(j.s[0], p),
+                p*c_mul(c_powr(j.s[0], p - 1), j.s[1]),
+                C0,
+                c_powr(j.s[3], p)
+            );
+        }
+        return complex2x2x2_dot(
+            complex2x2x2_dot(v, k),
+            complex2x2_inverse(v)
+        );
+    } else {
+        return complex2x2_add(
+            complex2x2_one(),
+            complex2x2_mul(x, c_new(p, 0))
+        );
+    }
+}
+
+complex2x2 complex2x2_pow(complex2x2 m, real p) {
+    complex2x2 j, v;
+    complex2x2_eigen(m, &j, &v);
+    return _complex2x2_pow_common(m, p, j, v);
+}
+
+complex2x2 complex2x2_pow_normalized(complex2x2 m, real p) {
+    complex2x2 j, v;
+    complex2x2_eigen_normalized(m, &j, &v);
+    complex2x2 r = _complex2x2_pow_common(m, p, j, v);
+    //r = complex2x2_normalize(r);
+    return r;
+}
+*/
 
 typedef matrix<real, 2, 2> real2x2;
 typedef matrix<real, 2, 3> real2x3;

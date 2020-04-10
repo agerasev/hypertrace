@@ -9,11 +9,18 @@
 #include "real.hpp"
 
 
-template <typename T, int N>
-class vector {
-private:
-    T s[N];
 
+template <typename T, int N, int L, int A>
+class vector_base;
+template <typename T, int N>
+class vector;
+
+template <typename T, int N, int L, int A>
+class __attribute__((aligned(A))) vector_base {
+    static_assert(L >= N, "`L` must be greater or equal than `N`");
+    
+public:
+    static const int LEN = L;
     template <int P=0, typename ...Args>
     static constexpr void check_args(vector<T, N>, Args ...args) {
         check_args<P + 1>(args...);
@@ -21,13 +28,16 @@ private:
     template <int P=0>
     static constexpr void check_args() {}
 
+protected:
+    T s[L];
+
+private:
     template <int P=0, typename ...Args>
     void unwind(T x, Args ...args) {
         static_assert(P < N, "Too many elements in the constructor");
         s[P] = x;
         unwind<P + 1>(args...);
     }
-    /*
     template <int P=0, int M, typename ...Args>
     void unwind(vector<T, M> x, Args ...args) {
         static_assert(P + M <= N, "Too many elements in the constructor");
@@ -36,20 +46,19 @@ private:
         }
         unwind<P + M>(args...);
     }
-    */
     template <int P=0>
     void unwind() {
         static_assert(P == N, "Too few elements in the constructor");
     }
 public:
-    vector() = default;
-    explicit vector(T x) {
+    vector_base() = default;
+    explicit vector_base(T x) {
         for (int i = 0; i < N; ++i) {
             s[i] = x;
         }
     }
     template <typename ...Args, enable_if<(sizeof...(Args) > 1)>* = nullptr>
-    explicit vector(Args ...args) {
+    explicit vector_base(Args ...args) {
         unwind(args...);
     }
 
@@ -80,19 +89,21 @@ public:
     }
     template <int P, int S>
     vector<T, S> &slice() {
-        static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds");
-        static_assert((N % S) == 0 && (P % S) == 0, "Slicing breaks alignment");
+        static const int SA = vector<T, S>::LEN;
+        static_assert(P >= 0 && S > 0 && P + SA <= N, "Indices is out of bounds");
+        static_assert((LEN % SA) == 0 && (P % SA) == 0, "Slicing breaks alignment");
         return *reinterpret_cast<vector<T, S>*>(s + P);
     }
     template <int P, int S>
     const vector<T, S> &slice() const {
-        static_assert(P >= 0 && S > 0 && P + S <= N, "Indices is out of bounds");
-        static_assert((N % S) == 0 && (P % S) == 0, "Slicing breaks alignment");
+        static const int SA = vector<T, S>::LEN;
+        static_assert(P >= 0 && S > 0 && P + SA <= N, "Indices is out of bounds");
+        static_assert((LEN % SA) == 0 && (P % SA) == 0, "Slicing breaks alignment");
         return *reinterpret_cast<const vector<T, S>*>(s + P);
     }
 
-    static vector load(const T *data, int stride=1) {
-        vector v;
+    static vector<T, N> load(const T *data, int stride=1) {
+        vector<T, N> v;
         for (int i = 0; i < N; ++i) {
             v[i] = data[i*stride];
         }
@@ -105,13 +116,28 @@ public:
     }
 
     template <typename F, typename ...Args>
-    static vector map(F f, Args ...args) {
+    static vector<T, N> map(F f, Args ...args) {
         check_args(args...);
-        vector r;
+        vector<T, N> r;
         for (int i = 0; i < N; ++i) {
             r[i] = f((args[i])...);
         }
         return r;
+    }
+};
+
+
+template <typename T, int N>
+class vector : public vector_base<T, N, N, alignof(T)> {
+private:
+    typedef vector_base<T, N, N, alignof(T)> base;
+public:
+    template <typename ...Args>
+    explicit vector(Args ...args) : base(args...) {}
+
+    template <typename F, typename ...Args>
+    inline static vector<T, N> map(F f, Args ...args) {
+        return base::map(f, args...);
     }
 
     friend vector operator+(vector a) {

@@ -66,7 +66,6 @@ struct BaseType {};
 template <typename T>
 using base_type = typename BaseType<T>::type;
 
-
 // Sequence
 template <typename A>
 struct Sequence {

@@ -24,6 +24,18 @@ template <typename C>
 constexpr bool is_complex() {
     return IsComplex<C>::value;
 }
+template <typename T>
+struct Degree {
+    static const int value = 0;
+};
+template <typename T, int D>
+struct Degree<complex<T, D>> {
+    static const int value = D;
+};
+template <typename T>
+constexpr int degree() {
+    return Degree<T>::value;
+}
 
 // Conjugate
 template <typename T>
@@ -58,20 +70,25 @@ private:
     
     vector<T, N> v;
 
+    inline T forward(T x) {
+        return x;
+    }
+    template <int E>
+    vector<T, dim<complex<T, E>>()> forward(complex<T, E> c) {
+        return c.vec();
+    }
 public:
     complex() = default;
-    // Remove duplicate constructor if T == U
-    template<typename U = T>
-    complex(enable_if<is_complex<C>(), U> r) : v(zero<T>()) {
+    complex(T r) : v(zero<T>()) {
         v[0] = r;
     }
-    complex(C r, C i=zero<C>()) {
-        re() = r;
-        im() = i;
+    template <int E>
+    complex(complex<T, E> c) : v(zero<T>()) {
+        v.template slice<0, dim<complex<T, E>>()>() = c.vec();
     }
     explicit complex(vector<T, N> x) : v(x) {}
-    template <typename ...Args, enable_if<(sizeof...(Args) > 2)>* = nullptr>
-    explicit complex(Args ...args) : v(args...) {}
+    template <typename ...Args, enable_if<(sizeof...(Args) > 1)>* = nullptr>
+    explicit complex(Args ...args) : v(forward(args)...) {}
 
     template <typename U = C>
     enable_if<!is_complex<U>(), U> &re() {
@@ -297,11 +314,15 @@ struct One<complex<T, D>> {
 
 template <typename T, int D>
 struct Dim<complex<T, D>> {
-    static const int N = 1 << D;
+    static const int value = 1 << D;
 };
 template <typename T, int D>
 struct BaseType<complex<T, D>> {
     typedef base_type<T> type;
+};
+template <typename T, int D>
+struct ElementType<complex<T, D>> {
+    typedef T type;
 };
 template <typename T, int D>
 struct Conj<complex<T, D>> {
@@ -445,12 +466,10 @@ public:
         }
         return true;
     }
-    bool operator==(complex<T, D + 1> a) {
-        return (*this) == a.re() && approx(zero<complex<T, D>>()) == a.im();
-    }
-    template <typename U = complex_type<T, D - 1>>
-    bool operator==(enable_if<is_complex<U>(), U> a) {
-        return approx(v.re()) == a && approx(v.im()) == zero<U>();
+    template <int E>
+    bool operator==(complex<T, E> a) {
+        static const int G = E > D ? E : D;
+        return CompApprox<T, G>(v) == complex<T, G>(a);
     }
     bool operator==(T a) {
         if (approx(v[0]) != a) {
@@ -484,16 +503,11 @@ bool operator==(Approx a, complex<T, D> b) {
 
 TEST_DEFINE_CMP_OPS(
     template <typename T COMMA int D>,
-    CompApprox<T COMMA D>, complex<T COMMA D + 1>
-)
-TEST_DEFINE_CMP_OPS(
-    template <typename T COMMA int D>,
     CompApprox<T COMMA D>, complex<T COMMA D>
 )
 TEST_DEFINE_CMP_OPS(
-    template <typename T COMMA int D>,
-    CompApprox<T COMMA D>,
-    enable_if<is_complex<complex_type<T COMMA D - 1>>() COMMA complex_type<T COMMA D - 1>>
+    template <typename T COMMA int D COMMA int E>,
+    CompApprox<T COMMA D>, complex<T COMMA E>
 )
 TEST_DEFINE_CMP_OPS(
     template <typename T COMMA int D>,

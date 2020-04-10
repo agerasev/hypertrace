@@ -57,20 +57,20 @@ template <typename T>
 struct Dim {};
 template <typename T>
 constexpr int dim() {
-    return Dim<T>::N;
+    return Dim<T>::value;
 }
 
-// Base type
+// Base type (lowest type for nested structures)
 template <typename T>
 struct BaseType {};
 template <typename T>
 using base_type = typename BaseType<T>::type;
 
-// Common type (limited usage)
-template <typename T, typename S>
-struct CommonType {};
-template <typename T, typename S>
-using common_type = typename CommonType<T, S>::type;
+// Element type (for containers)
+template <typename T>
+struct ElementType {};
+template <typename T>
+using element_type = typename ElementType<T>::type;
 
 // Sequence
 template <typename A>
@@ -134,7 +134,6 @@ static base_type<T> norm_linf(T x) {
     return Norm<T>::linf(x);
 }
 
-
 // Definitions declaration
 
 #define DEFINE_PRIMITIVE_TRAITS(T) \
@@ -152,7 +151,7 @@ struct One<T> { \
 }; \
 template <> \
 struct Dim<T> { \
-    static const int N = 1; \
+    static const int value = 1; \
 }; \
 template <> \
 struct BaseType<T> { \

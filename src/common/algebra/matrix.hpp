@@ -237,6 +237,10 @@ template <typename T, int M, int N>
 struct BaseType<matrix<T, M, N>> {
     typedef base_type<T> type;
 };
+template <typename T, int M, int N>
+struct ElementType<matrix<T, M, N>> {
+    typedef T type;
+};
 
 template <typename T, int M, int N>
 struct Zero<matrix<T, M, N>> {

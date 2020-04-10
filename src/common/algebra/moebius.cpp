@@ -1,6 +1,6 @@
 #include "moebius.hpp"
 
-
+/*
 quaternion mo_apply(Moebius m, quaternion p) {
     
 }
@@ -23,38 +23,26 @@ Moebius mo_interpolate(Moebius a, Moebius b, real t) {
 real mo_diff(Moebius a, Moebius b) {
     return mo_fabs(mo_sub(a, b));
 }
-
+*/
 
 #ifdef UNIT_TEST
 #include <catch.hpp>
+#include "test.hpp"
 
-Moebius random_moebius(TestRng &rng) {
-    Moebius m = mo_new(
-        rand_c_normal(rng),
-        rand_c_normal(rng),
-        rand_c_normal(rng),
-        rand_c_normal(rng)
-    );
-#ifndef MOEBIUS_DENORMALIZED
-    m = mo_normalize(m);
-#endif // MOEBIUS_DENORMALIZED
-    return m;
-}
+using namespace test;
 
 TEST_CASE("Moebius transformation", "[moebius]") {
-    TestRng rng;
+    Rng rng;
 
     SECTION("Chaining") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = random_moebius(rng), b = random_moebius(rng);
-            quaternion c = rand_q_normal(rng);
-            REQUIRE(
-                mo_apply(mo_chain(a, b), c) == 
-                ApproxV(mo_apply(a, mo_apply(b, c)))
-            );
+            Moebius<comp> a(rng.distrib<comp2x2>().normalized());
+            Moebius<comp> b(rng.distrib<comp2x2>().normalized());
+            quat c = rng.distrib<quat>().normal();
+            REQUIRE(chain(a, b).apply(c) == approx(a.apply(b.apply(c))));
         }
     }
-
+    /*
     SECTION("Derivation") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             Moebius a = random_moebius(rng);
@@ -67,5 +55,6 @@ TEST_CASE("Moebius transformation", "[moebius]") {
             );
         }
     }
+    */
 };
 #endif // UNIT_TEST

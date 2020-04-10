@@ -10,41 +10,66 @@ class Moebius;
 template <typename T>
 class MoebiusDeriv;
 
-template <typename T>
-struct CommonType {
-    typedef type;
-};
+inline constexpr int smax(int a, int b) {
+    return a > b ? a : b;
+}
+inline constexpr int smin(int a, int b) {
+    return a < b ? a : b;
+}
 
-template <typename T>
+template <typename C>
 class Moebius {
 private:
-    matrix<T, 2, 2> m;
+    typedef base_type<C> T;
+    static const int D = degree<C>();
+    matrix<C, 2, 2> m;
 public:
+    Moebius() = default;
     template <typename ...Args>
     explicit Moebius(Args ...args) : m(args...) {}
+    explicit Moebius(matrix<C, 2, 2> m) : m(m) {}
 
     static Moebius identity() {
-        // todo
+        return Moebius(one<matrix<C, 2, 2>>());
     }
 
-    T &a() { return m[0]; }
-    const T &a() const { return m[0]; }
-    T &b() { return m[1]; }
-    const T &b() const { return m[1]; }
-    T &c() { return m[2]; }
-    const T &c() const { return m[2]; }
-    T &d() { return m[3]; }
-    const T &d() const { return m[3]; }
+    C &a() { return m[0]; }
+    const C &a() const { return m[0]; }
+    C &b() { return m[1]; }
+    const C &b() const { return m[1]; }
+    C &c() { return m[2]; }
+    const C &c() const { return m[2]; }
+    C &d() { return m[3]; }
+    const C &d() const { return m[3]; }
+
+    matrix<C, 2, 2> &mat() {
+        return m;
+    }
+    const matrix<C, 2, 2> &mat() const {
+        return m;
+    }
 
     quaternion<T> apply(quaternion<T> p) {
         return (a()*p + b())/(c()*p + d());
     }
-}
+    complex<T> apply(complex<T> p) {
+        return (a()*p + b())/(c()*p + d());
+    }
+    C apply(T p) {
+        return (a()*p + b())/(c()*p + d());
+    }
+};
 
 // Moebius transformation with quaternion coefficients is not supported yet.
 template <typename T>
-class Moebius<quaternion<T>>;
+class Moebius<quaternion<T>> {};
 
+template <typename T>
+Moebius<T> chain(Moebius<T> a, Moebius<T> b) {
+    return Moebius<T>(dot(a.mat(), b.mat()));
+}
+
+/*
 quaternion mo_apply(Moebius m, quaternion p);
 quaternion mo_deriv(Moebius m, quaternion p, quaternion v);
 
@@ -72,10 +97,4 @@ real mo_diff(Moebius a, Moebius b);
 #define mo_pack pack_moebius
 #define mo_unpack unpack_moebius
 #endif // OPENCL_INTEROP
-
-
-#ifdef UNIT_TEST
-#include <mat.hpp>
-typedef MatApprox<complex,2,2,VecApprox<real,2>> ApproxMo;
-Moebius random_moebius(TestRng &rng);
-#endif // UNIT_TEST
+*/

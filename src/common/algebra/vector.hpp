@@ -223,13 +223,17 @@ struct Zero<vector<T, N>> {
     } 
 };
 
-template <typename T, int N_>
-struct Dim<vector<T, N_>> {
-    static const int N = N_;
+template <typename T, int N>
+struct Dim<vector<T, N>> {
+    static const int value = N;
 };
 template <typename T, int N>
 struct BaseType<vector<T, N>> {
     typedef base_type<T> type;
+};
+template <typename T, int N>
+struct ElementType<vector<T, N>> {
+    typedef T type;
 };
 
 template <typename T, int N>

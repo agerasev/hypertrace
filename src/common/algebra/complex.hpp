@@ -41,7 +41,7 @@ template <typename C>
 class complex {
 private:
     typedef base_type<C> T;
-    static const int CN = Dim<C>::N;
+    static const int CN = dim<C>();
     static const int N = 2*CN;
     vector<T, N> v;
 
@@ -49,10 +49,10 @@ public:
     complex() = default;
     // Remove duplicate constructor if T == U
     template<typename U = T>
-    explicit complex(enable_if<is_complex<C>(), U> r) : v(zero<T>()) {
+    complex(enable_if<is_complex<C>(), U> r) : v(zero<T>()) {
         v[0] = r;
     }
-    explicit complex(C r, C i=zero<C>()) {
+    complex(C r, C i=zero<C>()) {
         re() = r;
         im() = i;
     }
@@ -127,7 +127,10 @@ public:
         return length(x.v);
     }
     friend T length2(complex x) {
-        return dot(x.v, x.v);
+        return length2(x.v);
+    }
+    friend complex normalize(complex x) {
+        return x/length(x);
     }
     friend complex inverse(complex x) {
         return conj(x)/length2(x);
@@ -353,18 +356,21 @@ using sedenion = complex<complex<complex<complex<T>>>>;
 typedef complex<real> comp;
 typedef quaternion<real> quat;
 
+
 inline comp operator ""_i(unsigned long long x) {
     return comp(real(0), real(x));
 }
 inline comp operator ""_i(long double x) {
     return comp(real(0), real(x));
 }
+
 inline quat operator ""_j(unsigned long long x) {
     return quat(real(0), real(0), real(x), real(0));
 }
 inline quat operator ""_j(long double x) {
     return quat(real(0), real(0), real(x), real(0));
 }
+
 inline quat operator ""_k(unsigned long long x) {
     return quat(real(0), real(0), real(0), real(x));
 }
@@ -378,21 +384,36 @@ inline quat operator ""_k(long double x) {
 
 #include "test.hpp"
 
-class CompTestRng : public VecTestRng {
+namespace test {
+
+using namespace math;
+
+template <typename C>
+class Distrib<complex<C>> : public Rng {
+private:
+    typedef base_type<C> T;
+    typedef vector<T, dim<complex<C>>()> V;
+
 public:
-    inline CompTestRng(uint32_t seed) : VecTestRng(seed) {}
-    comp comp_normal();
-    comp comp_unit();
-    comp comp_nonzero();
+    complex<C> normal() {
+        return complex<C>(distrib<V>().normal());
+    }
+    complex<C> nonzero() {
+        V a;
+        do {
+            a = distrib<V>().normal();
+        } while(length2(a) < EPS);
+        return complex<C>(a);
+    }
+    complex<C> unit() {
+        return normalize(nonzero());
+    }
 };
 
-class QuatTestRng : public CompTestRng {
-public:
-    inline QuatTestRng(uint32_t seed) : CompTestRng(seed) {}
-    quat quat_normal();
-    quat quat_unit();
-    quat quat_nonzero();
-};
+template <typename C>
+class CompApprox;
+template <typename C>
+CompApprox<C> approx(complex<C> c);
 
 template <typename C>
 class CompApprox {
@@ -472,6 +493,8 @@ template <typename C>
 CompApprox<C> approx(complex<C> c) {
     return CompApprox<C>(c);
 }
+
+} // namespace test
 
 #endif
 

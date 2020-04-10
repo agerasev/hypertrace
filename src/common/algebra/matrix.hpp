@@ -235,7 +235,7 @@ matrix<T, M, N> outer(vector<T, M> a, vector<T, N> b) {
 
 template <typename T, int M, int N>
 struct BaseType<matrix<T, M, N>> {
-    typedef T type;
+    typedef base_type<T> type;
 };
 
 template <typename T, int M, int N>
@@ -425,109 +425,102 @@ matrix<T, 2, 2> normalize(matrix<T, 2, 2> m) {
 template <typename T>
 void eigen(
     matrix<T, 2, 2> m,
-    matrix<T, 2, 2> &l,
-    matrix<T, 2, 2> &v,
+    matrix<T, 2, 2> *l,
+    matrix<T, 2, 2> *v,
     bool normalized=false
 ) {
     const T T0 = zero<T>(), T1 = one<T>();
     const T D = normalized ? T1 : det(m);
     if (norm_l1(m[1]) < EPS && norm_l1(m[2]) < EPS) {
-        l = matrix<T, 2, 2>(m[0], T0, T0, m[3]);
-        v = matrix<T, 2, 2>(T1, T0, T0, T1);
+        *l = matrix<T, 2, 2>(m[0], T0, T0, m[3]);
+        *v = matrix<T, 2, 2>(T1, T0, T0, T1);
     } else {
         T m0p3 = m[0] + m[3];
         T ad = m0p3/2;
         T dis = sqrt(ad*ad - D);
         if (norm_l1(dis) > EPS) {
-            l = matrix<T, 2, 2>(ad + dis, T0, T0, ad - D);
+            *l = matrix<T, 2, 2>(ad + dis, T0, T0, ad - dis);
             if (norm_l1(m[1]) > EPS) {
-                v = matrix<T, 2, 2>(m[1], m[1], l[0] - m[0], l[3] - m[0]);
+                *v = matrix<T, 2, 2>(
+                    m[1], m[1],
+                    (*l)[0] - m[0], (*l)[3] - m[0]
+                );
             } else {
-                v = matrix<T, 2, 2>(l[0] - m[3], l[3] - m[3], m[2], m[2]);
+                *v = matrix<T, 2, 2>(
+                    (*l)[0] - m[3], (*l)[3] - m[3],
+                    m[2], m[2]
+                );
             }
         } else {
             T m0m3 = m[0] - m[3];
-            l = matrix<T, 2, 2>(ad, T1, T0, ad);
+            *l = matrix<T, 2, 2>(ad, T1, T0, ad);
             if (norm_l1(m[1]) > EPS) {
                 T g = 4*m[1]*m[1] + m0m3*m0m3;
-                v = matrix<T, 2, 2>(
-                    m[1],
-                    2*m[1]*m0m3/g,
-                    -m0m3/2,
-                    4*m[1]*m[1]/g
+                *v = matrix<T, 2, 2>(
+                    m[1], 2*m[1]*m0m3/g,
+                    -m0m3/2, 4*m[1]*m[1]/g
                 );
             } else {
                 T g = 4*m[2]*m[2] + m0m3*m0m3;
-                v = matrix<T, 2, 2>(
-                    m0m3/2,
-                    4*m[2]*m[2]/g,
-                    m[2],
-                    -2*m[2]*m0m3/g
+                *v = matrix<T, 2, 2>(
+                    m0m3/2, 4*m[2]*m[2]/g,
+                    m[2], -2*m[2]*m0m3/g
                 );
             }
         }
-        v = normalize(v);
+        if (normalized) {
+            *v = normalize(*v);
+        }
     }
 }
-/*
-complex2x2 _complex2x2_pow_common(
-    complex2x2 m,
-    real p,
-    complex2x2 j,
-    complex2x2 v
-) {
-    complex2x2 x = complex2x2_sub(m, complex2x2_one());
-    real y = complex2x2_fabs(x);
+
+template <typename T>
+matrix<T, 2, 2> pow(matrix<T, 2, 2> m, base_type<T> p, bool normalized=false) {
+    matrix<T, 2, 2> r;
+    matrix<T, 2, 2> x = m - one<matrix<T, 2, 2>>();
+    base_type<T> y = norm_l1(x);
     // FIXME: Why 1e4?
     if (y*y > 1e4*EPS) {
-        complex2x2 k;
-        if (c_fabs(j.s[1]) < EPS) {
-            k = complex2x2_new(c_powr(j.s[0], p), C0, C0, c_powr(j.s[3], p));
+        const T T0 = zero<T>();
+        matrix<T, 2, 2> k, j, v;
+        eigen(m, &j, &v, normalized);
+
+        if (norm_l1(j[1]) < EPS) {
+            k = matrix<T, 2, 2>(
+                pow(j[0], p), T0,
+                T0, pow(j[3], p)
+            );
         } else {
-            // Assume j.s[0] == j.s[3]
-            k = complex2x2_new(
-                c_powr(j.s[0], p),
-                p*c_mul(c_powr(j.s[0], p - 1), j.s[1]),
-                C0,
-                c_powr(j.s[3], p)
+            // Assume j[0] == j[3]
+            T l = pow(j[0], p);
+            k = matrix<T, 2, 2>(
+                l, p*(l/j[0])*j[1],
+                T0, l
             );
         }
-        return complex2x2x2_dot(
-            complex2x2x2_dot(v, k),
-            complex2x2_inverse(v)
-        );
+        r = dot(dot(v, k), !v);
     } else {
-        return complex2x2_add(
-            complex2x2_one(),
-            complex2x2_mul(x, c_new(p, 0))
-        );
+        r = one<matrix<T, 2, 2>>() + p*x;
+        if (normalized) {
+            r = normalize(r);
+        }
     }
-}
-
-complex2x2 complex2x2_pow(complex2x2 m, real p) {
-    complex2x2 j, v;
-    complex2x2_eigen(m, &j, &v);
-    return _complex2x2_pow_common(m, p, j, v);
-}
-
-complex2x2 complex2x2_pow_normalized(complex2x2 m, real p) {
-    complex2x2 j, v;
-    complex2x2_eigen_normalized(m, &j, &v);
-    complex2x2 r = _complex2x2_pow_common(m, p, j, v);
-    //r = complex2x2_normalize(r);
     return r;
 }
-*/
 
-typedef matrix<real, 2, 2> real2x2;
-typedef matrix<real, 2, 3> real2x3;
-typedef matrix<real, 2, 4> real2x4;
-typedef matrix<real, 3, 2> real3x2;
-typedef matrix<real, 3, 3> real3x3;
-typedef matrix<real, 3, 4> real3x4;
-typedef matrix<real, 4, 2> real4x2;
-typedef matrix<real, 4, 3> real4x3;
-typedef matrix<real, 4, 4> real4x4;
+#define DEFINE_MATRIX_TYPENAMES(T) \
+typedef matrix<T, 2, 2> T##2x2; \
+typedef matrix<T, 2, 3> T##2x3; \
+typedef matrix<T, 2, 4> T##2x4; \
+typedef matrix<T, 3, 2> T##3x2; \
+typedef matrix<T, 3, 3> T##3x3; \
+typedef matrix<T, 3, 4> T##3x4; \
+typedef matrix<T, 4, 2> T##4x2; \
+typedef matrix<T, 4, 3> T##4x3; \
+typedef matrix<T, 4, 4> T##4x4; \
+
+DEFINE_MATRIX_TYPENAMES(real)
+DEFINE_MATRIX_TYPENAMES(comp)
 
 #ifdef HOST
 template <typename T, int M, int N>
@@ -549,24 +542,30 @@ std::ostream &operator<<(std::ostream &s, matrix<T, M, N> v) {
 #include <catch.hpp>
 #include "test.hpp"
 
-class MatTestRng : public VecTestRng {
+namespace test {
+
+template <typename T, int M, int N>
+class Distrib<matrix<T, M, N>> : public Rng {
 public:
-    inline MatTestRng(uint32_t seed) : VecTestRng(seed) {}
-    template <int M, int N>
-    matrix<real, M, N> mat_normal() {
-        return matrix<real, M, N>::map([this]() { return normal(); });
+    matrix<T, M, N> normal() {
+        return matrix<T, M, N>::map([this]() {
+            return distrib<T>().normal();
+        });
     }
-    template <int M, int N>
-    matrix<real, M, N> mat_uniform() {
-        return matrix<real, M, N>::map([this]() { return uniform(); });
+    matrix<T, M, N> uniform() {
+        return matrix<T, M, N>::map([this]() {
+            return distrib<T>().uniform();
+        });
     }
-    template <int N>
-    matrix<real, N, N> mat_invertible() {
-        matrix<real, N, N> r;
+    enable_if<M == N, matrix<T, M, N>> invertible() {
+        matrix<T, M, N> r;
         do {
-            r = mat_normal<N, N>();
-        } while(det(r) > EPS);
+            r = normal();
+        } while(norm_l1(det(r)) < EPS);
         return r;
+    }
+    enable_if<M == N, matrix<T, M, N>> normalized() {
+        return normalize(invertible());
     }
 };
 
@@ -603,5 +602,7 @@ template <typename T, int M, int N>
 MatApprox<T, M, N> approx(matrix<T, M, N> v) {
     return MatApprox<T, M, N>(v);
 }
+
+} // namespace test
 
 #endif

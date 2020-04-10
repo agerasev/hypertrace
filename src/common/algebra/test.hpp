@@ -7,27 +7,47 @@
 
 #define TEST_ATTEMPTS 16
 
-class TestRng {
+namespace test {
+
+template <typename T>
+class Distrib;
+
+class Rng {
+    friend class Distrib<real>;
 private:
-    std::minstd_rand rng;
+    std::minstd_rand gen;
     std::uniform_real_distribution<> unif;
     std::normal_distribution<> norm;
 
 public:
-    TestRng(uint32_t seed) : rng(seed) {}
-    TestRng() : TestRng(0xdeadbeef) {}
+    Rng(uint32_t seed) : gen(seed) {}
+    Rng() : Rng(0xDEADBEEF) {}
 
+    template <typename T>
+    Distrib<T> &distrib() {
+        return *reinterpret_cast<Distrib<T>*>(this);
+    }
+};
+template <typename T>
+Distrib<T> &random(Rng &rng) {
+    return rng.distrib<T>();
+}
+
+template <>
+class Distrib<real> : Rng {
+public:
     real uniform() {
-        return unif(rng);
+        return unif(gen);
     }
     real normal() {
-        return norm(rng);
+        return norm(gen);
     }
 };
 
-template <typename T>
-Approx approx(T x) {
+inline Approx approx(real x) {
     return Approx(x);
+}
+
 }
 
 #define COMMA ,

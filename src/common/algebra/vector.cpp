@@ -4,6 +4,8 @@
 #ifdef UNIT_TEST
 #include <catch.hpp>
 
+using namespace test;
+
 TEST_CASE("Vector types", "[vector]") {
     SECTION("Contruction") {
         auto a = vector<int, 3>(-1);

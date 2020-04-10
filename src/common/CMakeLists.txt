@@ -4,8 +4,6 @@ set(COMMON_SRC
     "../common/algebra/vector.cpp"
     "../common/algebra/complex.cpp"
     "../common/algebra/matrix.cpp"
-    #"../common/algebra/quaternion.cc"
-    #"../common/algebra/matrix.cc"
     #"../common/algebra/moebius.cc"
     #"../common/algebra/rotation.cc"
     #"../common/geometry/hyperbolic.cc"

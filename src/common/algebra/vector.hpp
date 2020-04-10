@@ -229,7 +229,7 @@ struct Dim<vector<T, N_>> {
 };
 template <typename T, int N>
 struct BaseType<vector<T, N>> {
-    typedef T type;
+    typedef base_type<T> type;
 };
 
 template <typename T, int N>
@@ -260,8 +260,13 @@ vector<T, 4> cross(vector<T, 4> a, vector<T, 4> b) {
 }
 
 template <typename T, int N>
+T length2(vector<T, N> a) {
+    return dot(a, a);
+}
+
+template <typename T, int N>
 T length(vector<T, N> a) {
-    return sqrt(dot(a, a));
+    return sqrt(length2(a));
 }
 
 template <typename T, int N>
@@ -380,16 +385,16 @@ std::ostream &operator<<(std::ostream &s, vector<T, N> v) {
 #include <catch.hpp>
 #include "test.hpp"
 
-class VecTestRng : public TestRng {
+namespace test {
+
+template <typename T, int N>
+class Distrib<vector<T, N>> : public Rng {
 public:
-    inline VecTestRng(uint32_t seed) : TestRng(seed) {}
-    template <int N>
-    vector<real, N> vec_normal() {
-        return vector<real, N>::map([this]() { return normal(); });
+    vector<T, N> normal() {
+        return vector<T, N>::map([this]() { return distrib<T>().normal(); });
     }
-    template <int N>
-    vector<real, N> vec_uniform() {
-        return vector<real, N>::map([this]() { return uniform(); });
+    vector<T, N> uniform() {
+        return vector<T, N>::map([this]() { return distrib<T>().uniform(); });
     }
 };
 
@@ -424,5 +429,7 @@ template <typename T, int N>
 VecApprox<T, N> approx(vector<T, N> v) {
     return VecApprox<T, N>(v);
 }
+
+} // namespace test
 
 #endif

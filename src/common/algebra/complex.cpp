@@ -8,38 +8,10 @@
 #include <vector>
 #include <functional>
 
-comp CompTestRng::comp_normal() {
-    return comp(vec_normal<2>());
-}
-comp CompTestRng::comp_unit() {
-    real phi = 2*PI*uniform();
-    return comp(cos(phi), sin(phi));
-}
-comp CompTestRng::comp_nonzero() {
-    comp a;
-    do {
-        a = comp_normal();
-    } while(length2(a) < EPS);
-    return a;
-}
-
-quat QuatTestRng::quat_normal() {
-    return quat(vec_normal<4>());
-}
-quat QuatTestRng::quat_unit() {
-    quat q = quat_nonzero();
-    return q/length(q);
-}
-quat QuatTestRng::quat_nonzero() {
-    quat a;
-    do {
-        a = quat_normal();
-    } while(length2(a) < EPS);
-    return a;
-}
+using namespace test;
 
 TEST_CASE("Complex numbers", "[complex]") {
-    CompTestRng rng(0xbeef);
+    Rng rng(0xBEEF);
 
     SECTION("Constructor") {
         comp a(0.0, 1.0);
@@ -48,21 +20,21 @@ TEST_CASE("Complex numbers", "[complex]") {
     }
     SECTION("Inversion") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = rng.comp_nonzero();
+            comp a = random<comp>(rng).nonzero();
             REQUIRE(a/a == approx(1));
         }
     }
     SECTION("Square root") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = rng.comp_normal();
+            comp a = random<comp>(rng).normal();
             comp b = math::sqrt(a);
             REQUIRE(b*b == approx(a));
         }
     }
     SECTION("Power") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = rng.comp_normal();
-            int n = int(floor(2 + 10*rng.uniform()));
+            comp a = random<comp>(rng).normal();
+            int n = int(math::floor(2 + 10*random<real>(rng).uniform()));
             comp b = math::pow(a, 1.0/n);
             comp c(real(1));
             for (int i = 0; i < n; ++i) {
@@ -79,7 +51,7 @@ TEST_CASE("Complex numbers", "[complex]") {
 };
 
 TEST_CASE("Quaternions", "[quaternion]") {
-    QuatTestRng rng(0xfeed);
+    Rng rng(0xFEED);
 
     SECTION("Imaginary units") {
         REQUIRE(1_i * 1_i == approx(-1_r));
@@ -97,13 +69,13 @@ TEST_CASE("Quaternions", "[quaternion]") {
     }
     SECTION("Inversion") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = rng.quat_nonzero();
+            quat a = random<quat>(rng).nonzero();
             REQUIRE(a/a == approx(1));
         }
     }
     SECTION("Law of cosines") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = rng.quat_normal(), b = rng.quat_normal();
+            quat a = random<quat>(rng).normal(), b = random<quat>(rng).normal();
             REQUIRE(length2(a) + length2(b) + 2*dot(a, b) == approx(length2(a + b)));
         }
     }
@@ -133,8 +105,8 @@ TEST_CASE("Quaternions", "[quaternion]") {
             auto f = p.first;
             auto dfdv = p.second;
             for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-                quat p = rng.quat_normal();
-                quat v = rng.quat_unit();
+                quat p = random<quat>(rng).normal();
+                quat v = random<quat>(rng).unit();
                 REQUIRE((f(p + EPS*v) - f(p))/EPS == approx(dfdv(p, v)));
             }
         }

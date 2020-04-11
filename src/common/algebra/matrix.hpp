@@ -419,11 +419,11 @@ using namespace math;
 
 template <typename T, int N>
 matrix<T, N, N> normalize(matrix<T, N, N> m) {
-    return m/pow(det(m), 1_r/N);
+    return m/math::pow(det(m), 1_r/N);
 }
 template <typename T>
 matrix<T, 2, 2> normalize(matrix<T, 2, 2> m) {
-    return m/sqrt(det(m));
+    return m/math::sqrt(det(m));
 }
 
 template <typename T>

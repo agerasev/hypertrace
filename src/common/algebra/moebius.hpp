@@ -49,14 +49,36 @@ public:
         return m;
     }
 
-    quaternion<T> apply(quaternion<T> p) {
+    C apply(T p) {
         return (a()*p + b())/(c()*p + d());
     }
     complex<T> apply(complex<T> p) {
         return (a()*p + b())/(c()*p + d());
     }
-    C apply(T p) {
+    quaternion<T> apply(quaternion<T> p) {
         return (a()*p + b())/(c()*p + d());
+    }
+
+    C deriv(T p) {
+        C num = a()*p + b();
+        C den = c()*p + d();
+        return (a()*den - num*c())/(den*den);
+    }
+    complex<T> deriv(complex<T> p) {
+        complex<T> num = a()*p + b();
+        complex<T> den = c()*p + d();
+        return (a()*den - num*c())/(den*den);
+    }
+    // For quaternion we can only compute directional derivative
+    quaternion<T> deriv(quaternion<T> p, quaternion<T> v) {
+        quaternion<T> num = a()*p + b();
+        quaternion<T> den = c()*p + d();
+        T den2 = length2(den);
+        quaternion<T> s1 = (a()*v)/den;
+        quaternion<T> s21 = ~(c()*v);
+        quaternion<T> s22 = (2*dot(den, c()*v)/den2)*~den;
+        quaternion<T> s2 = num*(s21 - s22)/den2;
+        return s1 + s2;
     }
 };
 
@@ -64,37 +86,51 @@ public:
 template <typename T>
 class Moebius<quaternion<T>> {};
 
-template <typename T>
-Moebius<T> chain(Moebius<T> a, Moebius<T> b) {
-    return Moebius<T>(dot(a.mat(), b.mat()));
+template <typename C>
+Moebius<C> chain(Moebius<C> a, Moebius<C> b) {
+    return Moebius<C>(dot(a.mat(), b.mat()));
+}
+template <typename C>
+Moebius<C> operator*(Moebius<C> a, Moebius<C> b) {
+    return chain(a, b);
 }
 
-/*
-quaternion mo_apply(Moebius m, quaternion p);
-quaternion mo_deriv(Moebius m, quaternion p, quaternion v);
+template <typename C>
+Moebius<C> inverse(Moebius<C> a) {
+    // We use adjugate matrix instead of true inverse
+    // because all Moebius transformations should be normalized.
+    return Moebius<C>(adj(a.mat()));
+}
+template <typename C>
+Moebius<C> operator!(Moebius<C> a) {
+    return inverse(a);
+}
 
-#define mo_det complex2x2_det
-#define mo_normalize complex2x2_normalize
-#define mo_inverse complex2x2_inverse_normalized
+template <typename C>
+Moebius<C> pow(Moebius<C> a, base_type<C> p) {
+    return pow(a.mat(), p, true);
+}
 
-#define mo_chain complex2x2x2_dot
+template <typename C>
+Moebius<C> interpolate(Moebius<C> a, Moebius<C> b, base_type<C> t) {
+    return a*pow(!a*b, t);
+}
 
-#define mo_eigen complex2x2_eigen_normalized
-#define mo_pow complex2x2_pow
-Moebius mo_interpolate(Moebius a, Moebius b, real t);
 
-#define mo_add complex2x2_add
-#define mo_sub complex2x2_sub
-#define mo_mul complex2x2_mul
-#define mo_div complex2x2_div
+#ifdef UNIT_TEST
+#include <catch.hpp>
+#include "test.hpp"
 
-#define mo_fabs complex2x2_fabs
-real mo_diff(Moebius a, Moebius b);
+namespace test {
 
-#ifdef OPENCL_INTEROP
-#define pack_moebius pack_complex2x2
-#define unpack_moebius unpack_complex2x2
-#define mo_pack pack_moebius
-#define mo_unpack unpack_moebius
-#endif // OPENCL_INTEROP
-*/
+template <typename C>
+class Distrib<Moebius<C>> : public Rng {
+public:
+    Moebius<C> normal() {
+        return Moebius<C>(distrib<matrix<C, 2, 2>>().normalized());
+    }
+};
+
+} // namespace test
+
+#endif

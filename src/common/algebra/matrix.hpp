@@ -4,7 +4,7 @@
 #include <iostream>
 #endif
 
-#include "types.hpp"
+#include <types.h>
 #include "traits.hpp"
 #include "vector.hpp"
 #include "complex.hpp"

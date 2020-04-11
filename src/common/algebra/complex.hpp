@@ -1,10 +1,7 @@
 #pragma once
 
-#ifdef HOST
-#include <cmath>
-#endif
 
-#include "real.hpp"
+#include <real.h>
 #include "vector.hpp"
 
 

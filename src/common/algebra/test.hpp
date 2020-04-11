@@ -2,7 +2,7 @@
 
 #include <random>
 
-#include "real.hpp"
+#include <real.h>
 
 
 #define TEST_ATTEMPTS 16

@@ -25,15 +25,25 @@ set(DEVICE_SRC
     "builtins/math.cl"
     "builtins/vector.cl"
     "render.cl"
+    "trace.cpp"
 )
 include_directories(
     "."
     "../common"
 )
 
-add_library(${PROJECT_NAME} STATIC ${COMMON_SRC} ${DEVICE_SRC})
+set(SRC ${COMMON_SRC} ${DEVICE_SRC})
+
+add_library(${PROJECT_NAME} STATIC ${SRC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC "-DDEVICE")
-set_source_files_properties(${COMMON_SRC} ${DEVICE_SRC} PROPERTIES LANGUAGE C)
-set_source_files_properties(${COMMON_SRC} PROPERTIES COMPILE_FLAGS "-std=c++14")
-set_source_files_properties(${DEVICE_SRC} PROPERTIES COMPILE_FLAGS "-x cl -std=cl1.2")
+set_source_files_properties(${SRC} PROPERTIES LANGUAGE C)
+
+set(CL_SRC ${SRC})
+LIST(FILTER CL_SRC INCLUDE REGEX ".+\\.cl$")
+set_source_files_properties(${CL_SRC} PROPERTIES COMPILE_FLAGS "-x cl -std=cl1.2")
+
+set(CPP_SRC ${SRC})
+LIST(FILTER CPP_SRC INCLUDE REGEX ".+\\.cpp$")
+set_source_files_properties(${CPP_SRC} PROPERTIES COMPILE_FLAGS "-std=c++14")
+
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)

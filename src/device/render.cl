@@ -1,3 +1,9 @@
+#define OPENCL
+
+#include <real.h>
+#include <trace.h>
+
+
 __kernel void render(
     __global float *screen,
     __global uchar *image,
@@ -6,7 +12,13 @@ __kernel void render(
 ) {
     int idx = get_global_id(0);
 
-    float3 color = (float3)(1.0f, 0.5f, 0.0f);
+    real2 pos = (real2)(
+        (real)(idx % width) - 0.5f*(width - 1),
+        (real)(idx / width) - 0.5f*(height - 1)
+    )/height;
+    float3 color;
+
+    trace((float*)&color, (const real*)&pos);
 
     float3 avg_color = (color + vload3(idx, screen)*sample_no)/(sample_no + 1);
     vstore3(avg_color, idx, screen);

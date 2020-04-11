@@ -5,8 +5,8 @@
 #include <cmath>
 #endif
 
+#include <real.h>
 #include "traits.hpp"
-#include "real.hpp"
 
 
 
@@ -364,6 +364,20 @@ pair<vector<T, N>, vector<T, N>> fract(vector<T, N> a) {
 #include "vector_builtin.hpp"
 #endif
 
+
+typedef vector<float, 2> float2;
+typedef vector<float, 3> float3;
+typedef vector<float, 4> float4;
+typedef vector<float, 8> float8;
+typedef vector<float, 16> float16;
+
+#if defined(HOST) || defined(DEVICE_DOUBLE)
+typedef vector<double, 2> double2;
+typedef vector<double, 3> double3;
+typedef vector<double, 4> double4;
+typedef vector<double, 8> double8;
+typedef vector<double, 16> double16;
+#endif
 
 typedef vector<real, 2> real2;
 typedef vector<real, 3> real3;

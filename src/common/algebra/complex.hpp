@@ -74,6 +74,10 @@ private:
     vector<T, dim<complex<T, E>>()> forward(complex<T, E> c) {
         return c.vec();
     }
+    template <int N>
+    vector<T, N> forward(vector<T, N> v) {
+        return v;
+    }
 public:
     complex() = default;
     complex(T r) : v(zero<T>()) {
@@ -431,14 +435,10 @@ public:
         return complex<T, D>(distrib<V>().normal());
     }
     complex<T, D> nonzero() {
-        V a;
-        do {
-            a = distrib<V>().normal();
-        } while(length2(a) < EPS);
-        return complex<T, D>(a);
+        return complex<T, D>(distrib<V>().nonzero());
     }
     complex<T, D> unit() {
-        return normalize(nonzero());
+        return complex<T, D>(distrib<V>().unit());
     }
 };
 

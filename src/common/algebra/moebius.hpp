@@ -5,18 +5,6 @@
 #include "matrix.hpp"
 
 
-template <typename T>
-class Moebius;
-template <typename T>
-class MoebiusDeriv;
-
-inline constexpr int smax(int a, int b) {
-    return a > b ? a : b;
-}
-inline constexpr int smin(int a, int b) {
-    return a < b ? a : b;
-}
-
 template <typename C>
 class Moebius {
 private:
@@ -49,28 +37,28 @@ public:
         return m;
     }
 
-    C apply(T p) {
+    C apply(T p) const {
         return (a()*p + b())/(c()*p + d());
     }
-    complex<T> apply(complex<T> p) {
+    complex<T> apply(complex<T> p) const {
         return (a()*p + b())/(c()*p + d());
     }
-    quaternion<T> apply(quaternion<T> p) {
+    quaternion<T> apply(quaternion<T> p) const {
         return (a()*p + b())/(c()*p + d());
     }
 
-    C deriv(T p) {
+    C deriv(T p) const {
         C num = a()*p + b();
         C den = c()*p + d();
         return (a()*den - num*c())/(den*den);
     }
-    complex<T> deriv(complex<T> p) {
+    complex<T> deriv(complex<T> p) const {
         complex<T> num = a()*p + b();
         complex<T> den = c()*p + d();
         return (a()*den - num*c())/(den*den);
     }
     // For quaternion we can only compute directional derivative
-    quaternion<T> deriv(quaternion<T> p, quaternion<T> v) {
+    quaternion<T> deriv(quaternion<T> p, quaternion<T> v) const {
         quaternion<T> num = a()*p + b();
         quaternion<T> den = c()*p + d();
         T den2 = length2(den);
@@ -126,7 +114,7 @@ namespace test {
 template <typename C>
 class Distrib<Moebius<C>> : public Rng {
 public:
-    Moebius<C> normal() {
+    Moebius<C> some() {
         return Moebius<C>(distrib<matrix<C, 2, 2>>().normalized());
     }
 };

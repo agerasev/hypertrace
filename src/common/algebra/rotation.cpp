@@ -1,0 +1,72 @@
+#include "rotation.hpp"
+
+
+#ifdef UNIT_TEST
+#include <catch.hpp>
+
+using namespace test;
+
+TEST_CASE("Rotation transformation", "[rotation]") {
+    Rng rng(0x807A);
+
+    SECTION("Rotation 2D") {
+        SECTION("Mapping") {
+            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+                real angle = 2*PI*rng.distrib<real>().uniform();
+                Rotation2 r(angle);
+                real2 a = rng.distrib<real2>().normal();
+                real2 b = r.apply(a);
+                REQUIRE(length(a) == approx(length(b)));
+                REQUIRE(dot(a, b)/length2(a) == approx(math::cos(angle)));
+            }
+        }
+        SECTION("Chaining") {
+            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+                Rotation3 a = rng.distrib<Rotation3>().some();
+                Rotation3 b = rng.distrib<Rotation3>().some();
+                real3 v = rng.distrib<real3>().normal();
+                REQUIRE((a*b).apply(v) == approx(a.apply(b.apply(v))));
+            }
+        }
+        SECTION("Inversion") {
+            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+                Rotation2 r = rng.distrib<Rotation2>().some();
+                REQUIRE((r*!r).comp() == approx(Rotation2::identity().comp()));
+            }
+        }
+    }
+    SECTION("Rotation 3D") {
+        SECTION("Mapping") {
+            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+                real3 axis = rng.distrib<real3>().unit();
+                real angle = 2*PI*rng.distrib<real>().uniform();
+                Rotation3 r(axis, angle);
+                real3 a = rng.distrib<real3>().normal();
+                real3 b = r.apply(a);
+                REQUIRE(length(a) == approx(length(b)));
+                a -= dot(a, axis)*axis;
+                b -= dot(b, axis)*axis;
+                real aa = length2(a);
+                REQUIRE(dot(a, b)/aa == approx(math::cos(angle)));
+                REQUIRE(cross(a, b)/aa == approx(axis*math::sin(angle)));
+            }
+        }
+        SECTION("Chaining") {
+            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+                Rotation3 a = rng.distrib<Rotation3>().some();
+                Rotation3 b = rng.distrib<Rotation3>().some();
+                real3 v = rng.distrib<real3>().normal();
+                REQUIRE((a*b).apply(v) == approx(a.apply(b.apply(v))));
+            }
+        }
+        SECTION("Inversion") {
+            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+                Rotation3 r = rng.distrib<Rotation3>().some();
+                REQUIRE((r*!r).quat() == approx(Rotation3::identity().quat()));
+            }
+        }
+    }
+}
+
+#endif
+

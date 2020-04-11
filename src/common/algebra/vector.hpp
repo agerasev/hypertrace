@@ -27,6 +27,13 @@ public:
     }
     template <int P=0>
     static constexpr void check_args() {}
+    
+    template <int P, int ...Ps>
+    static constexpr void check_indices() {
+        static_assert(P >= 0 && P < N, "Index is out of bounds");
+        check_indices<Ps...>();
+    }
+    static constexpr void check_indices() {}
 
 protected:
     T s[L];
@@ -100,6 +107,14 @@ public:
         static_assert(P >= 0 && S > 0 && P + SA <= N, "Indices is out of bounds");
         static_assert((LEN % SA) == 0 && (P % SA) == 0, "Slicing breaks alignment");
         return *reinterpret_cast<const vector<T, S>*>(s + P);
+    }
+    template <typename ...Args>
+    vector<T, sizeof...(Args)> shuffle(Args ...args) const {
+        return vector<T, sizeof...(Args)>(s[args]...);
+    }
+    template <int ...Ps>
+    vector<T, sizeof...(Ps)> shuffle() const {
+        return vector<T, sizeof...(Ps)>(s[Ps]...);
     }
 
     static vector<T, N> load(const T *data, int stride=1) {
@@ -238,7 +253,7 @@ struct ElementType<vector<T, N>> {
 
 template <typename T, int N>
 T dot(vector<T, N> a, vector<T, N> b) {
-    T c = (T)0;
+    T c = zero<T>();
     for (int i = 0; i < N; ++i) {
         c += a[i]*b[i];
     }
@@ -413,6 +428,16 @@ public:
     }
     vector<T, N> uniform() {
         return vector<T, N>::map([this]() { return distrib<T>().uniform(); });
+    }
+    vector<T, N> nonzero() {
+        vector<T, N> a;
+        do {
+            a = normal();
+        } while(length2(a) < EPS);
+        return a;
+    }
+    vector<T, N> unit() {
+        return normalize(nonzero());
     }
 };
 

@@ -5,7 +5,7 @@ set(COMMON_SRC
     "../common/algebra/complex.cpp"
     "../common/algebra/matrix.cpp"
     "../common/algebra/moebius.cpp"
-    #"../common/algebra/rotation.cc"
+    "../common/algebra/rotation.cpp"
     #"../common/geometry/hyperbolic.cc"
     #"../common/geometry/hyperbolic/ray.cc"
     #"../common/geometry/hyperbolic/plane.cc"

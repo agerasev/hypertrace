@@ -424,10 +424,10 @@ template <typename T, int N>
 class Distrib<vector<T, N>> : public Rng {
 public:
     vector<T, N> normal() {
-        return vector<T, N>::map([this]() { return distrib<T>().normal(); });
+        return vector<T, N>::map([this]() { return d<T>().normal(); });
     }
     vector<T, N> uniform() {
-        return vector<T, N>::map([this]() { return distrib<T>().uniform(); });
+        return vector<T, N>::map([this]() { return d<T>().uniform(); });
     }
     vector<T, N> nonzero() {
         vector<T, N> a;

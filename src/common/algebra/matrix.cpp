@@ -41,7 +41,7 @@ TEST_CASE("Matrix types", "[matrix]") {
     }
     SECTION("Inversion") {
         for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-            real4x4 m = rng.distrib<real4x4>().invertible();
+            real4x4 m = rng.d<real4x4>().invertible();
             REQUIRE(dot(m, !m) == approx(one<real4x4>()));
             REQUIRE(dot(!m, m) == approx(one<real4x4>()));
         }
@@ -71,7 +71,7 @@ TEST_CASE("Matrix types", "[matrix]") {
     }
     SECTION("Eigenvalues and eigenvectors") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp2x2 m = rng.distrib<comp2x2>().normal();
+            comp2x2 m = rng.d<comp2x2>().normal();
             comp2x2 l, v;
             eigen(m, &l, &v);
 
@@ -87,10 +87,10 @@ TEST_CASE("Matrix types", "[matrix]") {
     SECTION("Non-diagonalizable matrix") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             comp2x2 m(1, 0, 0, 1);
-            if (rng.distrib<real>().uniform() > 0.5) {
-                m[1] = rng.distrib<comp>().normal();
+            if (rng.d<real>().uniform() > 0.5) {
+                m[1] = rng.d<comp>().normal();
             } else {
-                m[2] = rng.distrib<comp>().normal();
+                m[2] = rng.d<comp>().normal();
             }
             comp2x2 l, v;
             eigen(m, &l, &v);
@@ -101,8 +101,8 @@ TEST_CASE("Matrix types", "[matrix]") {
     }
     SECTION("Power") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp2x2 m = rng.distrib<comp2x2>().normalized();
-            int n = int(math::floor(8*rng.distrib<real>().uniform())) + 2;
+            comp2x2 m = rng.d<comp2x2>().normalized();
+            int n = int(math::floor(8*rng.d<real>().uniform())) + 2;
 
             comp2x2 p = pow(m, 1_r/n);
             comp2x2 o = one<comp2x2>();
@@ -117,13 +117,13 @@ TEST_CASE("Matrix types", "[matrix]") {
     SECTION("Non-diagonalizable power") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             comp2x2 m(1, 0, 0, 1);
-            if (rng.distrib<real>().uniform() > 0.5) {
-                m[1] = rng.distrib<comp>().normal();
+            if (rng.d<real>().uniform() > 0.5) {
+                m[1] = rng.d<comp>().normal();
             } else {
-                m[2] = rng.distrib<comp>().normal();
+                m[2] = rng.d<comp>().normal();
             }
-            int p = (int)math::floor(8*rng.distrib<real>().uniform()) + 2;
-            int q = (int)math::floor(8*rng.distrib<real>().uniform()) + 2;
+            int p = (int)math::floor(8*rng.d<real>().uniform()) + 2;
+            int q = (int)math::floor(8*rng.d<real>().uniform()) + 2;
 
             comp2x2 n = one<comp2x2>();
             for (int i = 0; i < p; ++i) {
@@ -147,7 +147,7 @@ TEST_CASE("Matrix types", "[matrix]") {
         );
 
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            int n = int(math::floor(8*rng.distrib<real>().uniform())) + 2;
+            int n = int(math::floor(8*rng.d<real>().uniform())) + 2;
 
             comp2x2 p = pow(m, 1.0/n);
             comp2x2 o = one<comp2x2>();

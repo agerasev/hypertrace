@@ -24,13 +24,13 @@ public:
     Rng() : Rng(0xDEADBEEF) {}
 
     template <typename T>
-    Distrib<T> &distrib() {
+    Distrib<T> &d() {
         return *reinterpret_cast<Distrib<T>*>(this);
     }
 };
 template <typename T>
 Distrib<T> &random(Rng &rng) {
-    return rng.distrib<T>();
+    return rng.d<T>();
 }
 
 template <>

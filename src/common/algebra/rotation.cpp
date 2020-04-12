@@ -12,9 +12,9 @@ TEST_CASE("Rotation transformation", "[rotation]") {
     SECTION("Rotation 2D") {
         SECTION("Mapping") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                real angle = 2*PI*rng.distrib<real>().uniform();
+                real angle = 2*PI*rng.d<real>().uniform();
                 Rotation2 r(angle);
-                real2 a = rng.distrib<real2>().normal();
+                real2 a = rng.d<real2>().normal();
                 real2 b = r.apply(a);
                 REQUIRE(length(a) == approx(length(b)));
                 REQUIRE(dot(a, b)/length2(a) == approx(math::cos(angle)));
@@ -22,15 +22,15 @@ TEST_CASE("Rotation transformation", "[rotation]") {
         }
         SECTION("Chaining") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation3 a = rng.distrib<Rotation3>().some();
-                Rotation3 b = rng.distrib<Rotation3>().some();
-                real3 v = rng.distrib<real3>().normal();
+                Rotation3 a = rng.d<Rotation3>().some();
+                Rotation3 b = rng.d<Rotation3>().some();
+                real3 v = rng.d<real3>().normal();
                 REQUIRE((a*b).apply(v) == approx(a.apply(b.apply(v))));
             }
         }
         SECTION("Inversion") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation2 r = rng.distrib<Rotation2>().some();
+                Rotation2 r = rng.d<Rotation2>().some();
                 REQUIRE((r*!r).comp() == approx(Rotation2::identity().comp()));
             }
         }
@@ -38,10 +38,10 @@ TEST_CASE("Rotation transformation", "[rotation]") {
     SECTION("Rotation 3D") {
         SECTION("Mapping") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                real3 axis = rng.distrib<real3>().unit();
-                real angle = 2*PI*rng.distrib<real>().uniform();
+                real3 axis = rng.d<real3>().unit();
+                real angle = 2*PI*rng.d<real>().uniform();
                 Rotation3 r(axis, angle);
-                real3 a = rng.distrib<real3>().normal();
+                real3 a = rng.d<real3>().normal();
                 real3 b = r.apply(a);
                 REQUIRE(length(a) == approx(length(b)));
                 a -= dot(a, axis)*axis;
@@ -53,15 +53,15 @@ TEST_CASE("Rotation transformation", "[rotation]") {
         }
         SECTION("Chaining") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation3 a = rng.distrib<Rotation3>().some();
-                Rotation3 b = rng.distrib<Rotation3>().some();
-                real3 v = rng.distrib<real3>().normal();
+                Rotation3 a = rng.d<Rotation3>().some();
+                Rotation3 b = rng.d<Rotation3>().some();
+                real3 v = rng.d<real3>().normal();
                 REQUIRE((a*b).apply(v) == approx(a.apply(b.apply(v))));
             }
         }
         SECTION("Inversion") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation3 r = rng.distrib<Rotation3>().some();
+                Rotation3 r = rng.d<Rotation3>().some();
                 REQUIRE((r*!r).quat() == approx(Rotation3::identity().quat()));
             }
         }

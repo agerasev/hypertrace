@@ -432,13 +432,13 @@ private:
 
 public:
     complex<T, D> normal() {
-        return complex<T, D>(distrib<V>().normal());
+        return complex<T, D>(d<V>().normal());
     }
     complex<T, D> nonzero() {
-        return complex<T, D>(distrib<V>().nonzero());
+        return complex<T, D>(d<V>().nonzero());
     }
     complex<T, D> unit() {
-        return complex<T, D>(distrib<V>().unit());
+        return complex<T, D>(d<V>().unit());
     }
 };
 

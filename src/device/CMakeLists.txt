@@ -18,7 +18,7 @@ set(CMAKE_C_COMPILER "clang")
 set(CMAKE_C_FLAGS "\
 -S -emit-llvm --target=spir64-unknown-unknown \
 -Xclang -finclude-default-header \
--O3 -g -Wall\
+-O3 -Wall\
 ")
 
 set(DEVICE_SRC

@@ -553,12 +553,12 @@ class Distrib<matrix<T, M, N>> : public Rng {
 public:
     matrix<T, M, N> normal() {
         return matrix<T, M, N>::map([this]() {
-            return distrib<T>().normal();
+            return d<T>().normal();
         });
     }
     matrix<T, M, N> uniform() {
         return matrix<T, M, N>::map([this]() {
-            return distrib<T>().uniform();
+            return d<T>().uniform();
         });
     }
     enable_if<M == N, matrix<T, M, N>> invertible() {

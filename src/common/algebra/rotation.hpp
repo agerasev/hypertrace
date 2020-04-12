@@ -117,7 +117,7 @@ template <typename T>
 class Distrib<Rotation<T, 2>> : Rng {
 public:
     Rotation<T, 2> some() {
-        return Rotation<T, 2>(2*PI*distrib<T>().uniform());
+        return Rotation<T, 2>(2*PI*d<T>().uniform());
     }
 };
 template <typename T>
@@ -125,8 +125,8 @@ class Distrib<Rotation<T, 3>> : Rng {
 public:
     Rotation<T, 3> some() {
         return Rotation<T, 3>(
-            distrib<vector<T, 3>>().unit(),
-            2*PI*distrib<T>().uniform()
+            d<vector<T, 3>>().unit(),
+            2*PI*d<T>().uniform()
         );
     }
 };

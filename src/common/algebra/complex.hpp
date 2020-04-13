@@ -314,6 +314,13 @@ struct One<complex<T, D>> {
 };
 
 template <typename T, int D>
+struct Conj<complex<T, D>> {
+    static complex<T, D> conj(complex<T, D> z) {
+        return complex<T, D>(::conj(z.re()), -z.im());
+    }
+};
+
+template <typename T, int D>
 struct Dim<complex<T, D>> {
     static const int value = 1 << D;
 };
@@ -325,10 +332,11 @@ template <typename T, int D>
 struct ElementType<complex<T, D>> {
     typedef T type;
 };
-template <typename T, int D>
-struct Conj<complex<T, D>> {
-    static complex<T, D> conj(complex<T, D> z) {
-        return complex<T, D>(::conj(z.re()), -z.im());
+
+template <typename S, typename T, int D>
+struct Convert<complex<S, D>, complex<T, D>> {
+    static complex<S, D> convert(complex<T, D> v) {
+        return complex<S, D>(::convert<vector<S, (1<<D)>>(v.vec()));
     }
 };
 
@@ -375,6 +383,23 @@ enable_if<!is_complex<T>(), complex<T>> sqrt(complex<T> a) {
 }
 
 } // namespace math
+
+
+#ifdef HOST
+namespace device {
+template <typename T, int D>
+using complex = device::vector<T, (1<<D)>;
+}
+
+template <typename T, int D>
+struct ToDevice<complex<T, D>> {
+    typedef device::complex<device_type<T>, D> type;
+    static type to_device(complex<T, D> v) {
+        return ::to_device(v.vec());
+    }
+};
+
+#endif
 
 #ifdef HOST
 template <typename T, int D>

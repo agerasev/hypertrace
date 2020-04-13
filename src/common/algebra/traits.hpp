@@ -1,18 +1,9 @@
 #pragma once
 
 #include <types.h>
+#include <traits.hpp>
 #include <math.hpp>
 
-
-// Enable if
-template<bool B, typename T = void>
-struct EnableIf {};
-template<typename T>
-struct EnableIf<true, T> {
-    typedef T type;
-};
-template <bool B, typename T = void>
-using enable_if = typename EnableIf<B, T>::type;
 
 // Is int/float
 template <typename T>
@@ -105,6 +96,12 @@ template <typename S, typename T>
 S convert(T x) {
     return Convert<S, T>::convert(x);
 }
+template <typename T>
+struct Convert<T, T> {
+    static T convert(T x) {
+        return x;
+    }
+};
 
 // Norm
 template <typename A>
@@ -148,7 +145,7 @@ static base_type<T> norm_linf(T x) {
 
 // Definitions declaration
 
-#define DEFINE_PRIMITIVE_TRAITS(T) \
+#define DEFINE_PRIMITIVE_ALGEBRA_TRAITS(T) \
 template <> \
 struct Zero<T> { \
     static T zero() { \
@@ -181,22 +178,22 @@ struct Sequence<T> { \
     } \
 }; \
 
-#define DEFINE_PRIMITIVE_TRAITS_UINT(T) \
-DEFINE_PRIMITIVE_TRAITS(T) \
+#define DEFINE_PRIMITIVE_ALGEBRA_TRAITS_UINT(T) \
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS(T) \
 template <> \
 struct IsInt<T> { \
     static const bool value = true; \
 }; \
 
-#define DEFINE_PRIMITIVE_TRAITS_INT(T) \
-DEFINE_PRIMITIVE_TRAITS(T) \
+#define DEFINE_PRIMITIVE_ALGEBRA_TRAITS_INT(T) \
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS(T) \
 template <> \
 struct IsInt<T> { \
     static const bool value = true; \
 }; \
 
-#define DEFINE_PRIMITIVE_TRAITS_FLOAT(T) \
-DEFINE_PRIMITIVE_TRAITS(T) \
+#define DEFINE_PRIMITIVE_ALGEBRA_TRAITS_FLOAT(T) \
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS(T) \
 template <> \
 struct IsFloat<T> { \
     static const bool value = true; \
@@ -204,16 +201,16 @@ struct IsFloat<T> { \
 
 // Actual definition for types
 
-DEFINE_PRIMITIVE_TRAITS_UINT(uchar)
-DEFINE_PRIMITIVE_TRAITS_UINT(ushort)
-DEFINE_PRIMITIVE_TRAITS_UINT(uint)
-DEFINE_PRIMITIVE_TRAITS_UINT(ulong)
-DEFINE_PRIMITIVE_TRAITS_INT(char)
-DEFINE_PRIMITIVE_TRAITS_INT(short)
-DEFINE_PRIMITIVE_TRAITS_INT(int)
-DEFINE_PRIMITIVE_TRAITS_INT(long)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_UINT(uchar)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_UINT(ushort)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_UINT(uint)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_UINT(ulong)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_INT(char)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_INT(short)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_INT(int)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_INT(long)
 
-DEFINE_PRIMITIVE_TRAITS_FLOAT(float)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_FLOAT(float)
 #if defined(HOST) || defined(DEVICE_DOUBLE)
-DEFINE_PRIMITIVE_TRAITS_FLOAT(double)
+DEFINE_PRIMITIVE_ALGEBRA_TRAITS_FLOAT(double)
 #endif

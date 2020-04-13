@@ -1,7 +1,5 @@
 #pragma once
 
-#include <types.h>
-
 
 #ifdef OPENCL
 
@@ -32,22 +30,31 @@ static const __CONSTANT__ double PI = 3.14159265358979323846; \
 static const __CONSTANT__ double EPS = 1e-8; \
 
 
-#ifdef __cplusplus
+#ifndef __cplusplus
+
+#ifdef HOST
+DEFINE_REAL_DOUBLE()
+#endif
+#ifdef DEVICE
+#ifdef DEVICE_DOUBLE
+DEFINE_REAL_DOUBLE()
+#else
+DEFINE_REAL_FLOAT()
+#endif
+#endif
+
+#else // __cplusplus
 
 namespace host {
 DEFINE_REAL_DOUBLE()
 }
 
 namespace device {
-#endif // __cplusplus
-
 #ifdef DEVICE_DOUBLE
 DEFINE_REAL_DOUBLE()
 #else
 DEFINE_REAL_FLOAT()
 #endif
-
-#ifdef __cplusplus
 }
 
 #ifdef HOST

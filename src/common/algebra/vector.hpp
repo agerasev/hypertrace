@@ -394,6 +394,24 @@ pair<vector<T, N>, vector<T, N>> fract(vector<T, N> a) {
 
 } // namespace math
 
+#ifdef HOST
+namespace device {
+template <typename T, int N>
+using vector = vector_base<T, N, N + (N == 3), sizeof(T)*(N + (N == 3))>;
+}
+
+template <typename T, int N>
+struct ToDevice<vector<T, N>> {
+    typedef device::vector<device_type<T>, N> type;
+    static type to_device(vector<T, N> v) {
+        type o;
+        convert<device_type<T>>(v).store(o.data());
+        return o;
+    }
+};
+
+#endif
+
 #ifdef DEVICE
 #include "vector_builtin.hpp"
 #endif

@@ -108,8 +108,8 @@ public:
         }
     }
 
-    template <typename F, typename ...Args>
-    static matrix<T, M, N> map(F f, Args ...args) {
+    template <typename S=T, typename F, typename ...Args>
+    static matrix<S, M, N> map(F f, Args ...args) {
         check_all_dims(args...);
         matrix r;
         for (int i = 0; i < N*M; ++i) {
@@ -257,6 +257,15 @@ struct One<matrix<T, N, N>> {
             r(i, i) = ::one<T>();
         }
         return r;
+    }
+};
+
+template <typename S, typename T, int M, int N>
+struct Convert<matrix<S, M, N>, matrix<T, M, N>> {
+    static matrix<S, M, N> convert(matrix<T, M, N> v) {
+        return matrix<T, M, N>::template map<S>([](T x) {
+            return ::convert<S, T>(x);
+        }, v);
     }
 };
 
@@ -511,6 +520,25 @@ matrix<T, 2, 2> pow(matrix<T, 2, 2> m, base_type<T> p, bool normalized=false) {
     }
     return r;
 }
+
+#ifdef HOST
+namespace device {
+template <typename T, int M, int N>
+struct matrix {
+    T s[M*N];
+};
+}
+
+template <typename T, int M, int N>
+struct ToDevice<matrix<T, M, N>> {
+    typedef device::matrix<device_type<T>, M, N> type;
+    static type to_device(matrix<T, M, N> v) {
+        type o;
+        convert<device_type<T>>(v).store(o.s);
+        return o;
+    }
+};
+#endif
 
 #define DEFINE_MATRIX_TYPENAMES(T) \
 typedef matrix<T, 2, 2> T##2x2; \

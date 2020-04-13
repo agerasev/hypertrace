@@ -13,12 +13,13 @@ public:
 };
 
 #ifdef HOST
+
 namespace device {
 struct View {
-    MoebiusT<::complex<device::real>> pos;
-    device::real fov;
-    device::real lr;
-    device::real fl;
+    matrix<complex<real>, 2, 2> pos;
+    real fov;
+    real lr;
+    real fl;
 };
 }
 
@@ -27,12 +28,10 @@ struct ToDevice<View> {
     typedef device::View type;
     static type to_device(View v) {
         return type {
-            .pos = MoebiusT<complex<device::real>>(
-                convert<matrix<device::real, 2, 2>>(v.position.mat())
-            ),
-            .fov = v.field_of_view,
-            .lr = v.lens_radius,
-            .fl = v.focal_length
+            .pos = ::to_device(v.position.mat()),
+            .fov = ::to_device(v.field_of_view),
+            .lr = ::to_device(v.lens_radius),
+            .fl = ::to_device(v.focal_length),
         };
     }
 };

@@ -386,8 +386,9 @@ enable_if<!is_complex<T>(), complex<T>> sqrt(complex<T> a) {
 
 
 #ifdef HOST
+
 namespace device {
-template <typename T, int D>
+template <typename T, int D=1>
 using complex = device::vector<T, (1<<D)>;
 }
 

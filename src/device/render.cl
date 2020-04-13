@@ -1,13 +1,17 @@
 #include <real.h>
 #include <trace.h>
 
+#include <parameters.h>
+
 
 __kernel void render(
     __global float *screen,
     __global uchar *image,
     int width, int height,
     int sample_no,
-    __global uint *seed
+    __global uint *seed,
+    
+    Parameters params
 ) {
     int idx = get_global_id(0);
 
@@ -20,11 +24,13 @@ __kernel void render(
 
     uint lseed = seed[idx];
 
+
     // Enter single ray tracing computation
     trace(
         (float*)&color,
         (const real*)&pos, 2.0f/height,
-        &lseed
+        &lseed,
+        &params
     );
 
     seed[idx] = lseed;

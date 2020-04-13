@@ -4,7 +4,15 @@
 #include <traits.hpp>
 #include <math.hpp>
 
-
+// Is primitive
+template <typename T>
+struct IsPrimitive {
+    static const bool value = false;
+};
+template <typename T>
+constexpr bool is_prim() {
+    return IsPrimitive<T>::value;
+}
 // Is int/float
 template <typename T>
 struct IsInt {
@@ -146,6 +154,10 @@ static base_type<T> norm_linf(T x) {
 // Definitions declaration
 
 #define DEFINE_PRIMITIVE_ALGEBRA_TRAITS(T) \
+template <> \
+struct IsPrimitive<T> { \
+    static const bool value = true; \
+}; \
 template <> \
 struct Zero<T> { \
     static T zero() { \

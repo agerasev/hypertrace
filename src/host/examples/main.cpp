@@ -66,7 +66,7 @@ int main(int argc, const char *argv[]) {
         duration elapsed;
         auto start = std::chrono::system_clock::now();
 
-        //renderer.set_view(controller.view, controller.view_prev);
+        renderer.set_view(controller.view, controller.view_prev);
         sample_counter += renderer.render_for(0.04, refresh > 0);
 
         viewer.display([&](uint8_t *data) {

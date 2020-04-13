@@ -10,6 +10,8 @@
 #include <random>
 #include <algorithm>
 
+#include <parameters.h>
+
 
 using duration = std::chrono::duration<double>;
 
@@ -100,15 +102,15 @@ void Renderer::store_objects(
 void Renderer::load_image(uint8_t *data) {
     image.load(queue, data);
 }
-/*
+
 void Renderer::set_view(const View &v) {
     set_view(v, v);
 }
 void Renderer::set_view(const View &v, const View &vp) {
-    view = view_pack(v);
-    view_prev = view_pack(vp);
+    view = v;
+    view_prev = vp;
 }
-*/
+
 void Renderer::render(bool fresh) {
     if (fresh) {
         monte_carlo_counter = 0;
@@ -119,9 +121,12 @@ void Renderer::render(bool fresh) {
         screen, image,
         width, height,
         monte_carlo_counter,
-        seeds
+        seeds,
 
-        //view, view_prev,
+        to_device(Parameters {
+            .view = view,
+            .view_prev = view_prev,
+        })
 
         //objects, objects_prev,
         //objects_mask, object_count

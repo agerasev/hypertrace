@@ -5,7 +5,7 @@
 
 #include <opencl/opencl.hpp>
 
-//#include <view.hh>
+#include <view.hpp>
 //#include <object.hh>
 
 // FIXME: Add `set_view()` method and use it instead of `fresh` argument
@@ -37,7 +37,7 @@ class Renderer {
     cl::Buffer screen;
 
     cl::Buffer seeds;
-    
+
     //cl::Buffer objects;
     //cl::Buffer objects_prev;
     //cl::Buffer objects_mask;
@@ -50,7 +50,7 @@ class Renderer {
 
     int monte_carlo_counter = 0;
 
-    //ViewPk view, view_prev;
+    View view, view_prev;
 
     static std::string load_file(const char *path);
     
@@ -70,8 +70,8 @@ class Renderer {
     
     void load_image(uint8_t *data);
 
-    //void set_view(const View &v);
-    //void set_view(const View &v, const View &vp);
+    void set_view(const View &v);
+    void set_view(const View &v, const View &vp);
 
     void render(bool fresh);
     int render_n(int count, bool fresh);

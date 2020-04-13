@@ -395,9 +395,19 @@ pair<vector<T, N>, vector<T, N>> fract(vector<T, N> a) {
 } // namespace math
 
 #ifdef HOST
+
 namespace device {
+template <typename T, int N, typename U=void>
+struct vector;
 template <typename T, int N>
-using vector = vector_base<T, N, N + (N == 3), sizeof(T)*(N + (N == 3))>;
+struct __attribute__((aligned(sizeof(T)*(N + (N == 3)))))
+vector<T, N, enable_if<is_prim<T>()>> {
+    T s[N + (N == 3)];
+};
+template <typename T, int N>
+struct vector<T, N, enable_if<!is_prim<T>()>> {
+    T s[N];
+};
 }
 
 template <typename T, int N>
@@ -405,7 +415,9 @@ struct ToDevice<vector<T, N>> {
     typedef device::vector<device_type<T>, N> type;
     static type to_device(vector<T, N> v) {
         type o;
-        convert<device_type<T>>(v).store(o.data());
+        for (int i = 0; i < N; ++i) {
+            o.s[i] = ::to_device(v[i]);
+        }
         return o;
     }
 };

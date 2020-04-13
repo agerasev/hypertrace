@@ -522,6 +522,7 @@ matrix<T, 2, 2> pow(matrix<T, 2, 2> m, base_type<T> p, bool normalized=false) {
 }
 
 #ifdef HOST
+
 namespace device {
 template <typename T, int M, int N>
 struct matrix {
@@ -534,10 +535,13 @@ struct ToDevice<matrix<T, M, N>> {
     typedef device::matrix<device_type<T>, M, N> type;
     static type to_device(matrix<T, M, N> v) {
         type o;
-        convert<device_type<T>>(v).store(o.s);
+        for (int i = 0; i < M*N; ++i) {
+            o.s[i] = ::to_device(v[i]);
+        }
         return o;
     }
 };
+
 #endif
 
 #define DEFINE_MATRIX_TYPENAMES(T) \

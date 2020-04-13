@@ -6,6 +6,15 @@
 #include "opencl.hpp"
 
 
+static cl_context get_context(cl_command_queue queue) {
+    cl_context context;
+    assert(clGetCommandQueueInfo(
+        queue, CL_QUEUE_CONTEXT,
+        sizeof(cl_context), &context, nullptr
+    ) == CL_SUCCESS);
+    return context;
+}
+
 cl::Context::Context(cl_device_id device) {
     context = clCreateContext(nullptr, 1, &device, nullptr, nullptr, nullptr);
     assert(context != nullptr);
@@ -72,12 +81,23 @@ std::string cl::Program::log() {
     return std::string(buffer.data());
 }
 
-void cl::Buffer::init(cl_context context, size_t size) {
+void cl::Buffer::init(cl_command_queue queue, size_t size, bool zeroed) {
     _size = size;
     if (size > 0) {
-        assert(context != nullptr);
-        buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, size, nullptr, nullptr);
+        assert(queue != nullptr);
+        buffer = clCreateBuffer(
+            get_context(queue), CL_MEM_READ_WRITE,
+            size, nullptr, nullptr
+        );
         assert(buffer != nullptr);
+        if (zeroed) {
+            uint8_t z = 0;
+            assert(CL_SUCCESS == clEnqueueFillBuffer(
+                queue, buffer,
+                &z, 1, 0, size,
+                0, nullptr, nullptr
+            ));
+        }
     } else {
         buffer = nullptr;
     }
@@ -92,8 +112,8 @@ void cl::Buffer::release() {
 cl::Buffer::Buffer() {
     init(nullptr, 0);
 }
-cl::Buffer::Buffer(cl_context context, size_t size) {
-    init(context, size);
+cl::Buffer::Buffer(cl_command_queue queue, size_t size, bool zeroed) {
+    init(queue, size, zeroed);
 }
 cl::Buffer::~Buffer() {
     release();
@@ -132,14 +152,8 @@ void cl::Buffer::store(cl_command_queue queue, const void *data) {
 void cl::Buffer::store(cl_command_queue queue, const void *data, size_t size) {
     if (size > _size) {
         release();
-
-        cl_context context;
-        assert(clGetCommandQueueInfo(
-            queue, CL_QUEUE_CONTEXT,
-            sizeof(cl_context), &context, nullptr
-        ) == CL_SUCCESS);
         
-        init(context, size);
+        init(queue, size);
     }
     if (size <= 0) {
         return;

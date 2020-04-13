@@ -1,6 +1,6 @@
 #pragma once
 
-#include <algebra/quaternion.hh>
+#include <algebra/complex.hpp>
 
 #include <object.hh>
 #include <material.hh>

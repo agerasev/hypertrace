@@ -36,7 +36,7 @@ class Renderer {
     cl::Buffer image;
     cl::Buffer screen;
 
-    //cl::Buffer seeds;
+    cl::Buffer seeds;
     
     //cl::Buffer objects;
     //cl::Buffer objects_prev;

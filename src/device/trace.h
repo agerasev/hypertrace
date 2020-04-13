@@ -8,7 +8,11 @@
 extern "C" {
 #endif
 
-void trace(float *color, const real *pos);
+void trace(
+    float *out_color, // output color
+    const real *pix_pos, real pix_size, // pixel position and size
+    uint *rng_seed // random number generator seed
+);
 
 #ifdef __cplusplus
 };

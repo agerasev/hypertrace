@@ -49,7 +49,7 @@ int main(int argc, const char *argv[]) {
 
     Viewer viewer(width, height);
     Controller controller;
-    controller.grab_mouse(true);
+    //controller.grab_mouse(true);
 
     //controller.view.position = mo_new(
     //    c_new(0.114543, 0.285363),

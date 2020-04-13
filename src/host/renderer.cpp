@@ -39,17 +39,17 @@ Renderer::Renderer(
     ),
     kernel(program, "render"),
 
-    image(context, width*height*4),
-    screen(context, width*height*3*sizeof(cl_float))
+    image(queue, width*height*4),
+    screen(queue, width*height*3*sizeof(cl_float), true),
 
-    //seeds(context, width*height*sizeof(cl_uint))
+    seeds(queue, width*height*sizeof(cl_uint))
 {
     std::mt19937 rng(0xdeadbeef);
     std::vector<uint32_t> host_seeds(width*height);
     for (uint32_t &seed : host_seeds) {
         seed = rng();
     }
-    //seeds.store(queue, host_seeds.data());
+    seeds.store(queue, host_seeds.data());
 
     //set_view(view_init());
 }
@@ -118,8 +118,8 @@ void Renderer::render(bool fresh) {
         queue, width*height,
         screen, image,
         width, height,
-        monte_carlo_counter
-        //seeds,
+        monte_carlo_counter,
+        seeds
 
         //view, view_prev,
 

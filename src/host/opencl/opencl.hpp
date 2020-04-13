@@ -65,12 +65,12 @@ namespace cl {
         cl_mem buffer;
         size_t _size;
 
-        void init(cl_context context, size_t size);
+        void init(cl_command_queue queue, size_t size, bool zeroed=false);
         void release();
 
     public:
         Buffer();
-        Buffer(cl_context context, size_t size);
+        Buffer(cl_command_queue queue, size_t size, bool zeroed=false);
         ~Buffer();
 
         Buffer(const Buffer &other) = delete;

@@ -1,10 +1,11 @@
 #pragma once
 
-#include <types.hh>
+#include <types.h>
 
 
-typedef struct {
+class PathInfo {
+public:
     bool repeat;
     bool face;
     bool diffuse;
-} PathInfo;
+};

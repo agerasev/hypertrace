@@ -1,5 +1,3 @@
-#define OPENCL
-
 #include <real.h>
 #include <trace.h>
 

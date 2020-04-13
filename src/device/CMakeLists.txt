@@ -40,7 +40,7 @@ set_source_files_properties(${SRC} PROPERTIES LANGUAGE C)
 
 set(CL_SRC ${SRC})
 LIST(FILTER CL_SRC INCLUDE REGEX ".+\\.cl$")
-set_source_files_properties(${CL_SRC} PROPERTIES COMPILE_FLAGS "-x cl -std=cl1.2")
+set_source_files_properties(${CL_SRC} PROPERTIES COMPILE_FLAGS "-x cl -std=cl1.2 -DOPENCL")
 
 set(CPP_SRC ${SRC})
 LIST(FILTER CPP_SRC INCLUDE REGEX ".+\\.cpp$")

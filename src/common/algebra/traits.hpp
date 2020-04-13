@@ -94,6 +94,18 @@ public:
     }
 };
 
+// Convert
+template <typename S, typename T>
+struct Convert {
+    static S convert(T x) {
+        return S(x);
+    }
+};
+template <typename S, typename T>
+S convert(T x) {
+    return Convert<S, T>::convert(x);
+}
+
 // Norm
 template <typename A>
 struct Norm {

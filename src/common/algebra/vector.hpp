@@ -39,6 +39,13 @@ protected:
     T s[L];
 
 private:
+    vector<T, N> &as_vec() {
+        return *reinterpret_cast<vector<T, N>*>(this);
+    }
+    const vector<T, N> &as_vec() const {
+        return *reinterpret_cast<const vector<T, N>*>(this);
+    }
+
     template <int P=0, typename ...Args>
     void unwind(T x, Args ...args) {
         static_assert(P < N, "Too many elements in the constructor");
@@ -130,17 +137,20 @@ public:
         }
     }
 
-    template <typename F, typename ...Args>
-    static vector<T, N> map(F f, Args ...args) {
+    template <typename S=T, typename F, typename ...Args>
+    static vector<S, N> map(F f, Args ...args) {
         check_args(args...);
-        vector<T, N> r;
+        vector<S, N> r;
         for (int i = 0; i < N; ++i) {
             r[i] = f((args[i])...);
         }
         return r;
     }
+    template <typename S>
+    vector<S, N> convert() const {
+        return ::convert<vector<S, N>>(as_vec());
+    }
 };
-
 
 template <typename T, int N>
 class vector : public vector_base<T, N, N, alignof(T)> {
@@ -249,6 +259,15 @@ struct BaseType<vector<T, N>> {
 template <typename T, int N>
 struct ElementType<vector<T, N>> {
     typedef T type;
+};
+
+template <typename S, typename T, int N>
+struct Convert<vector<S, N>, vector<T, N>> {
+    static vector<S, N> convert(vector<T, N> v) {
+        return vector<T, N>::template map<S>([](T x) {
+            return ::convert<S, T>(x);
+        }, v);
+    }
 };
 
 template <typename T, int N>

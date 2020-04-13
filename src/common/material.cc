@@ -51,29 +51,3 @@ void lambert_bounce(
     
     *light *= color;
 }
-
-void material_interpolate(
-    Material *o,
-    const Material *a, const Material *b,
-    real t
-) {
-    INTERPOLATE_FIELD(*o, *a, *b, diffuse_color, t);
-    INTERPOLATE_FIELD(*o, *a, *b, gloss, t);
-    INTERPOLATE_FIELD(*o, *a, *b, transparency, t);
-    INTERPOLATE_FIELD(*o, *a, *b, glow, t);
-}
-
-#ifdef OPENCL_INTEROP
-void pack_material(MaterialPk *dst, const Material *src) {
-    dst->diffuse_color = pack_float3(src->diffuse_color);
-    dst->gloss = src->gloss;
-    dst->transparency = src->transparency;
-    dst->glow = pack_float3(src->glow);
-}
-void unpack_material(Material *dst, const MaterialPk *src) {
-    dst->diffuse_color = unpack_float3(src->diffuse_color);
-    dst->gloss = src->gloss;
-    dst->transparency = src->transparency;
-    dst->glow = unpack_float3(src->glow);
-}
-#endif // OPENCL_INTEROP

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <algebra/real.hh>
-#include <random.hh>
-#include <path.hh>
+#include <types.h>
+#include <random.hpp>
+#include <path.hpp>
 
 typedef struct {
     float3 diffuse_color;

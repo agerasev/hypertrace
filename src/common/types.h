@@ -5,7 +5,9 @@ typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
-#else
+#endif
+
+#ifdef DEVICE
 #ifdef X64
 typedef ulong size_t;
 #elif X32

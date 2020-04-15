@@ -15,17 +15,9 @@
 
 using duration = std::chrono::duration<double>;
 
-std::string Renderer::load_file(const char *path) {
-    std::ifstream file(path);
-    assert(file.good());
-    return std::string(
-        std::istreambuf_iterator<char>(file),
-        std::istreambuf_iterator<char>()
-    );
-}
-
 Renderer::Renderer(
     cl_device_id device,
+    const std::string &src,
     int width, int height,
     const Config &config
 ) :
@@ -35,10 +27,7 @@ Renderer::Renderer(
     context(device),
     queue(context, device),
 
-    program(
-        context, device,
-        load_file("build/device/device.gen.cl")
-    ),
+    program(context, device, src),
     kernel(program, "render"),
 
     image(queue, width*height*4),

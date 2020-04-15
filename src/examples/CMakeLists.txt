@@ -7,6 +7,7 @@ include_directories(
     "${CMAKE_SOURCE_DIR}/common"
     "${CMAKE_SOURCE_DIR}/host"
     "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_BINARY_DIR}/device"
 )
 
 # Examples

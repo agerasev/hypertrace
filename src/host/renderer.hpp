@@ -57,6 +57,7 @@ class Renderer {
     public:
     Renderer(
         cl_device_id device,
+        const std::string &src,
         int width, int height,
         const Config &config
     );

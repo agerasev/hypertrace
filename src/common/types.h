@@ -37,6 +37,10 @@ static_assert(sizeof(float) == 4, "Primitive type size check error");
 static_assert(sizeof(double) == 8, "Primitive type size check error");
 #endif
 
+#ifdef DEVICE
+static_assert(sizeof(size_t) == sizeof(void *), "Address bit width check error");
+#endif
+
 
 template <typename T, typename S>
 struct pair {

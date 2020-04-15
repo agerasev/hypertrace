@@ -11,6 +11,7 @@ set(DEVICE_SRC
     "builtins/math.cl"
     "builtins/vector.cl"
     "builtins/memory.cl"
+    "builtins/work.cl"
     "render.cl"
     "trace.cpp"
 )

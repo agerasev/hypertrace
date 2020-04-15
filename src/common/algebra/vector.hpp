@@ -428,26 +428,28 @@ struct ToDevice<vector<T, N>> {
 #include "vector_builtin.hpp"
 #endif
 
+#define DEFINE_VECTOR_ALIAS(T) \
+typedef vector<T, 2> T##2; \
+typedef vector<T, 3> T##3; \
+typedef vector<T, 4> T##4; \
+typedef vector<T, 8> T##8; \
+typedef vector<T, 16> T##16; \
 
-typedef vector<float, 2> float2;
-typedef vector<float, 3> float3;
-typedef vector<float, 4> float4;
-typedef vector<float, 8> float8;
-typedef vector<float, 16> float16;
+DEFINE_VECTOR_ALIAS(uchar)
+DEFINE_VECTOR_ALIAS(ushort)
+DEFINE_VECTOR_ALIAS(uint)
+DEFINE_VECTOR_ALIAS(ulong)
 
+DEFINE_VECTOR_ALIAS(char)
+DEFINE_VECTOR_ALIAS(short)
+DEFINE_VECTOR_ALIAS(int)
+DEFINE_VECTOR_ALIAS(long)
+
+DEFINE_VECTOR_ALIAS(float)
 #if defined(HOST) || defined(DEVICE_DOUBLE)
-typedef vector<double, 2> double2;
-typedef vector<double, 3> double3;
-typedef vector<double, 4> double4;
-typedef vector<double, 8> double8;
-typedef vector<double, 16> double16;
+DEFINE_VECTOR_ALIAS(double)
 #endif
-
-typedef vector<real, 2> real2;
-typedef vector<real, 3> real3;
-typedef vector<real, 4> real4;
-typedef vector<real, 8> real8;
-typedef vector<real, 16> real16;
+DEFINE_VECTOR_ALIAS(real)
 
 
 #ifdef HOST

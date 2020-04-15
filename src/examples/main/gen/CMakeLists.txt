@@ -11,6 +11,7 @@ include_directories(
     "${CMAKE_SOURCE_DIR}/common"
     "${CMAKE_SOURCE_DIR}/host"
 )
+add_definitions("-DHOST")
 target_link_libraries(${GENERATE} host)
 add_custom_command(TARGET ${GENERATE} POST_BUILD
     COMMAND "${CMAKE_CURRENT_BINARY_DIR}/${GENERATE}" ARGS

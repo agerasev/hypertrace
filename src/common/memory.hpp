@@ -3,114 +3,114 @@
 #include <types.h>
 #include <traits.hpp>
 
+#ifdef DEVICE
 #include <builtins/memory.h>
+#endif
 
 
-template <typename T>
-class PrivateConstPtr {
-public:
-    typedef T type;
-    typedef const T *ptr_type;
-private:
-    const T *ptr = nullptr;
-public:
-    PrivateConstPtr() = default;
-    explicit PrivateConstPtr(const T *p) : ptr(p) {}
+#define DEFINE_POINTER_CONST(P) \
+template <typename T> \
+class P##Ptr { \
+public: \
+    typedef T type; \
+    typedef const T *ptr_type; \
+private: \
+    const T *ptr = nullptr; \
+public: \
+    P##Ptr() = default; \
+    explicit P##Ptr(const T *p) : ptr(p) {} \
+    bool is_null() const { \
+        return ptr == nullptr; \
+    } \
+    const T *data() const { \
+        return ptr; \
+    } \
+    T load(size_t i) const { \
+        return ptr[i]; \
+    } \
+    void load(size_t i, T *v) const { \
+        *v = load(i); \
+    } \
+    void load(size_t i, T &v) const { \
+        v = load(i); \
+    } \
+    void load_many(size_t i, size_t n, T *v) { \
+        for (size_t j = 0; j < n; ++j) { \
+            load(i + j, v + j); \
+        } \
+    } \
+    const T &operator[](size_t i) const { \
+        return ptr[i]; \
+    } \
+    template <typename S> \
+    P##Ptr<S> reinterpret() { \
+        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment"); \
+        return P##Ptr<S>(reinterpret_cast<const S *>(ptr)); \
+    } \
+}; \
 
-    bool is_null() const {
-        return ptr == nullptr;
-    }
+#define DEFINE_POINTER(P) \
+DEFINE_POINTER_CONST(P##Const) \
+template <typename T> \
+class P##Ptr { \
+public: \
+    typedef T type; \
+    typedef T *ptr_type; \
+private: \
+    T *ptr = nullptr; \
+public: \
+    P##Ptr() = default; \
+    explicit P##Ptr(T *p) : ptr(p) {} \
+    bool is_null() const { \
+        return ptr == nullptr; \
+    } \
+    T *data() { \
+        return ptr; \
+    } \
+    const T *data() const { \
+        return ptr; \
+    } \
+    void store(size_t i, const T *v) { \
+        ptr[i] = v; \
+    } \
+    void store(size_t i, const T &v) { \
+        store(i, &v); \
+    } \
+    void store_many(size_t i, size_t n, const T *v) { \
+        for (size_t j = 0; j < n; ++j) { \
+            store(i + j, v + j); \
+        } \
+    } \
+    T load(size_t i) const { \
+        return ptr[i]; \
+    } \
+    void load(size_t i, T *v) const { \
+        *v = load(i); \
+    } \
+    void load(size_t i, T &v) const { \
+        v = load(i); \
+    } \
+    void load_many(size_t i, size_t n, T *v) { \
+        for (size_t j = 0; j < n; ++j) { \
+            load(i + j, v + j); \
+        } \
+    } \
+    T &operator[](size_t i) { \
+        return ptr[i]; \
+    } \
+    const T &operator[](size_t i) const { \
+        return ptr[i]; \
+    } \
+    P##ConstPtr<T> const_() const { \
+        return P##ConstPtr<T>(ptr); \
+    } \
+    template <typename S> \
+    P##Ptr<S> reinterpret() { \
+        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment"); \
+        return P##Ptr<S>(reinterpret_cast<S *>(ptr)); \
+    } \
+}; \
 
-    const T *data() const {
-        return ptr;
-    }
-    T load(size_t i) const {
-        return ptr[i];
-    }
-    void load(size_t i, T *v) const {
-        *v = load(i);
-    }
-    void load(size_t i, T &v) const {
-        v = load(i);
-    }
-    void load_many(size_t i, size_t n, T *v) {
-        for (size_t j = 0; j < n; ++j) {
-            load(i + j, v + j);
-        }
-    }
-    const T &operator[](size_t i) const {
-        return ptr[i];
-    }
-
-    template <typename S>
-    PrivateConstPtr<S> reinterpret() {
-        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment");
-        return PrivateConstPtr<S>(reinterpret_cast<const S *>(ptr));
-    }
-};
-
-template <typename T>
-class PrivatePtr {
-public:
-    typedef T type;
-    typedef T *ptr_type;
-private:
-    T *ptr = nullptr;
-public:
-    PrivatePtr() = default;
-    explicit PrivatePtr(T *p) : ptr(p) {}
-
-    bool is_null() const {
-        return ptr == nullptr;
-    }
-
-    T *data() {
-        return ptr;
-    }
-    const T *data() const {
-        return ptr;
-    }
-    void store(size_t i, const T *v) {
-        ptr[i] = v;
-    }
-    void store(size_t i, const T &v) {
-        store(i, &v);
-    }
-    void store_many(size_t i, size_t n, const T *v) {
-        for (size_t j = 0; j < n; ++j) {
-            store(i + j, v + j);
-        }
-    }
-    T load(size_t i) const {
-        return ptr[i];
-    }
-    void load(size_t i, T *v) const {
-        *v = load(i);
-    }
-    void load(size_t i, T &v) const {
-        v = load(i);
-    }
-    void load_many(size_t i, size_t n, T *v) {
-        for (size_t j = 0; j < n; ++j) {
-            load(i + j, v + j);
-        }
-    }
-    T &operator[](size_t i) {
-        return ptr[i];
-    }
-    const T &operator[](size_t i) const {
-        return ptr[i];
-    }
-
-    PrivateConstPtr<T> const_() const {
-        return PrivateConstPtr<T>(ptr);
-    }
-    template <typename S>
-    PrivatePtr<S> reinterpret() {
-        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment");
-        return PrivatePtr<S>(reinterpret_cast<S *>(ptr));
-    }
-};
 
 #define DEFINE_POINTER_BUILTIN_CONST(A, P) \
 template <typename T> \
@@ -286,7 +286,13 @@ public: \
 }; \
 
 
-//DEFINE_POINTER_BUILTIN(private, Private)
+DEFINE_POINTER(Private)
+#ifdef DEVICE
 DEFINE_POINTER_BUILTIN(local, Local)
 DEFINE_POINTER_BUILTIN(global, Global)
 DEFINE_POINTER_BUILTIN_CONST(constant, Constant)
+#else
+DEFINE_POINTER(Local)
+DEFINE_POINTER(Global)
+DEFINE_POINTER_CONST(Constant)
+#endif

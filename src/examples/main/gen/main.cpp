@@ -5,7 +5,9 @@
 #include <types.h>
 #include <traits.hpp>
 
-#include "../device/main.cpp"
+#include <memory.hpp>
+
+//#include "../device/main.cpp"
 
 
 template <typename ...Args>
@@ -147,7 +149,7 @@ int main(int argc, char *argv[]) {
     // kernel.cl
     std::ofstream ker(argv[2]);
     assert(ker.good());
-    print_kernel(trace, "trace", ker);
+    //print_kernel(trace, "trace", ker);
     ker.close();
 
     return 0;

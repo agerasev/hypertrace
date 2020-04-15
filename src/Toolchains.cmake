@@ -12,7 +12,9 @@ set(HOST_C_CREATE_STATIC_LIBRARY ${CMAKE_C_CREATE_STATIC_LIBRARY})
 set(DEVICE_C_OUTPUT_EXTENSION ".ll")
 set(DEVICE_C_COMPILE_OBJECT "\
     clang \
-    -S -emit-llvm --target=spir64-unknown-unknown -O3 \
+    -S -emit-llvm \
+    --target=spir64-unknown-unknown -DX64 \
+    -O3 \
     <DEFINES> <INCLUDES> <FLAGS> \
     -o <OBJECT> -c <SOURCE> \
 ")

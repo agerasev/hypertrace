@@ -5,6 +5,14 @@ typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
+#else
+#ifdef X64
+typedef ulong size_t;
+#elif X32
+typedef uint size_t;
+#else
+#error "Address bit width is not set"
+#endif
 #endif
 
 #include <real.h>

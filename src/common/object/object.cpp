@@ -1,34 +1,17 @@
-#include "object.hh"
+#include "object.hpp"
 
-#include <geometry/hyperbolic/plane.hh>
-#include <geometry/hyperbolic/horosphere.hh>
+#include <geometry/hyperbolic/plane.hpp>
+#include <geometry/hyperbolic/horosphere.hpp>
 
+using namespace random;
+using namespace hyperbolic;
 
-real object_hit(
-    const Object *object, ObjectHit *cache,
+real Object::hit(
+    ObjectHit *cache,
     Rng *rng, PathInfo *path,
     HyRay ray
 ) {
-    HyRay r = hyray_map(mo_inverse(object->map), ray);
-
-    bool h = false;
-    if (object->type == OBJECT_HYPLANE) {
-        h = hyplane_hit(
-            object, cache,
-            path, r
-        );
-    } else if (object->type == OBJECT_HOROSPHERE) {
-        h = horosphere_hit(
-            object, cache,
-            path, r
-        );
-    }
-
-    if (h) {
-        return hy_distance(cache->pos, r.start);
-    } else {
-        return (real)(-1);
-    }
+    
 }
 
 bool object_bounce(

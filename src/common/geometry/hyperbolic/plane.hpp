@@ -2,9 +2,9 @@
 
 #include <algebra/complex.hpp>
 
-#include <object.hh>
-#include <material.hh>
-#include "ray.hh"
+#include <object.hpp>
+#include <material.hpp>
+#include "ray.hpp"
 
 
 #define HYPLANE_TILING_NONE       0

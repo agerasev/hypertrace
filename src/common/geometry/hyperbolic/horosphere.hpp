@@ -1,11 +1,11 @@
 #pragma once
 
-#include <algebra/quaternion.hh>
+#include <algebra/complex.hpp>
 
-#include <object.hh>
-#include <path.hh>
-#include <material.hh>
-#include "ray.hh"
+#include <object.hpp>
+#include <path.hpp>
+#include <material.hpp>
+#include "ray.hpp"
 
 
 #define HOROSPHERE_TILING_NONE 0

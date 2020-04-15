@@ -3,19 +3,17 @@
 #include <geometry/hyperbolic.hpp>
 
 
-using namespace hyperbolic;
-
 const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::MOVE_KEYS = {
-    std::make_pair(SDLK_w, [](double l) { return zshift(l); }),
-    std::make_pair(SDLK_a, [](double l) { return xshift(-l); }),
-    std::make_pair(SDLK_s, [](double l) { return zshift(-l); }),
-    std::make_pair(SDLK_d, [](double l) { return xshift(l); }),
-    std::make_pair(SDLK_SPACE, [](double l) { return yshift(-l); }),
-    std::make_pair(SDLK_c, [](double l) { return yshift(l); })
+    std::make_pair(SDLK_w, [](double l) { return Hy::zshift(l); }),
+    std::make_pair(SDLK_a, [](double l) { return Hy::xshift(-l); }),
+    std::make_pair(SDLK_s, [](double l) { return Hy::zshift(-l); }),
+    std::make_pair(SDLK_d, [](double l) { return Hy::xshift(l); }),
+    std::make_pair(SDLK_SPACE, [](double l) { return Hy::yshift(-l); }),
+    std::make_pair(SDLK_c, [](double l) { return Hy::yshift(l); })
 };
 const std::unordered_map<sdl::Key, std::function<Moebius(double)>> Controller::ROT_KEYS = {
-    std::make_pair(SDLK_q, [](double a) { return zrotate(-a); }),
-    std::make_pair(SDLK_e, [](double a) { return zrotate(a); })
+    std::make_pair(SDLK_q, [](double a) { return Hy::zrotate(-a); }),
+    std::make_pair(SDLK_e, [](double a) { return Hy::zrotate(a); })
 };
 
 
@@ -104,9 +102,9 @@ bool Controller::step(double dt) {
     }
 
     if (mouse_x != 0 || mouse_y != 0) {
-        pos *= xrotate(mouse_sens*mouse_x);
+        pos *= Hy::xrotate(mouse_sens*mouse_x);
         mouse_x = 0;
-        pos *= yrotate(mouse_sens*mouse_y);
+        pos *= Hy::yrotate(mouse_sens*mouse_y);
         mouse_y = 0;
         still = false;
     }

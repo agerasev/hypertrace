@@ -10,6 +10,7 @@ set(CMAKE_C_FLAGS "\
 set(DEVICE_SRC
     "builtins/math.cl"
     "builtins/vector.cl"
+    "builtins/memory.cl"
     "render.cl"
     "trace.cpp"
 )

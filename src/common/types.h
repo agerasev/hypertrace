@@ -7,6 +7,16 @@ typedef unsigned int uint;
 typedef unsigned long ulong;
 #endif
 
+#ifdef DEVICE
+#ifdef X64
+typedef ulong size_t;
+#elif X32
+typedef uint size_t;
+#else
+#error "Address bit width is not set"
+#endif
+#endif
+
 #include <real.h>
 
 

@@ -1,5 +1,6 @@
 #pragma once
 
+
 // Enable if
 template<bool B, typename T = void>
 struct EnableIf {};
@@ -9,6 +10,49 @@ struct EnableIf<true, T> {
 };
 template <bool B, typename T = void>
 using enable_if = typename EnableIf<B, T>::type;
+
+
+// Is primitive
+template <typename T>
+struct IsPrimitive {
+    static const bool value = false;
+};
+template <typename T>
+constexpr bool is_prim() {
+    return IsPrimitive<T>::value;
+}
+// Type name
+template <typename T>
+struct TypeName {};
+template <typename T>
+const char *type_name() {
+    return TypeName<T>::get_name();
+}
+
+#define DEFINE_PRIMITIVE_TRAITS(T) \
+template <> \
+struct IsPrimitive<T> { \
+    static const bool value = true; \
+}; \
+template <> \
+struct TypeName<T> { \
+    static const char *get_name() { \
+        return #T; \
+    } \
+}; \
+
+DEFINE_PRIMITIVE_TRAITS(uchar)
+DEFINE_PRIMITIVE_TRAITS(ushort)
+DEFINE_PRIMITIVE_TRAITS(uint)
+DEFINE_PRIMITIVE_TRAITS(ulong)
+DEFINE_PRIMITIVE_TRAITS(char)
+DEFINE_PRIMITIVE_TRAITS(short)
+DEFINE_PRIMITIVE_TRAITS(int)
+DEFINE_PRIMITIVE_TRAITS(long)
+DEFINE_PRIMITIVE_TRAITS(float)
+#if defined(HOST) || defined(DEVICE_DOUBLE)
+DEFINE_PRIMITIVE_TRAITS(double)
+#endif
 
 #ifdef HOST
 

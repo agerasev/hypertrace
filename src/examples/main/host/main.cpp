@@ -6,7 +6,7 @@
 #include <cmath>
 #include <chrono>
 
-#include <main_device.ll.gen.cl.h>
+#include <device/main_device.ll.gen.cl.h>
 
 //#include <algebra/quaternion.hh>
 //#include <algebra/moebius.hh>

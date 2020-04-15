@@ -6,7 +6,7 @@
 #include <cmath>
 #include <chrono>
 
-#include <device.ll.gen.cl.h>
+#include <main_device.ll.gen.cl.h>
 
 //#include <algebra/quaternion.hh>
 //#include <algebra/moebius.hh>
@@ -43,7 +43,10 @@ int main(int argc, const char *argv[]) {
     cl_device_id device = cl::search_device(platform_no, device_no);
 
     int width = 800, height = 600;
-    std::string src((const char *)device_ll_gen_cl, size_t(device_ll_gen_cl_len));
+    std::string src(
+        (const char *)main_device_ll_gen_cl,
+        size_t(main_device_ll_gen_cl_len)
+    );
     Renderer renderer(
         device, src,
         width, height, Renderer::Config {

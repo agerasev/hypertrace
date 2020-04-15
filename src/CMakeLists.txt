@@ -10,4 +10,4 @@ add_subdirectory(examples)
 add_subdirectory(test)
 
 add_dependencies(host device)
-add_dependencies(examples host)
+add_dependencies(main host)

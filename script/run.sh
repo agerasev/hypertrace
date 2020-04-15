@@ -2,4 +2,4 @@
 
 mkdir -p ./output
 ./script/build.sh $1 && \
-./build/examples/$1 ${@:2}
+./build/examples/$1/host/$1 ${@:2}

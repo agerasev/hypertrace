@@ -26,7 +26,9 @@ set(DEVICE_C_CREATE_STATIC_LIBRARY
 )
 
 macro(use_host_toolchain)
-  if (${CURRENT_TOOLCHAIN} STREQUAL "DEVICE")
+  set(HOST_NAME "HOST")
+  set(DEVICE_NAME "DEVICE")
+  if (${CURRENT_TOOLCHAIN} STREQUAL ${DEVICE_NAME})
     # Save current device flags
     set(DEVICE_C_FLAGS ${CMAKE_C_FLAGS} CACHE STRING "GCC flags for the device toolchain." FORCE)
 
@@ -37,13 +39,15 @@ macro(use_host_toolchain)
     set(CMAKE_STATIC_LIBRARY_SUFFIX ${HOST_STATIC_LIBRARY_SUFFIX})
     set(CMAKE_C_CREATE_STATIC_LIBRARY ${HOST_C_CREATE_STATIC_LIBRARY})
 
-    set(CURRENT_TOOLCHAIN "HOST" CACHE STRING "Which toolchain we are using." FORCE)
+    set(CURRENT_TOOLCHAIN ${HOST_NAME} CACHE STRING "Which toolchain we are using." FORCE)
   endif()
 endmacro()
 
 
 macro(use_device_toolchain)
-  if (${CURRENT_TOOLCHAIN} STREQUAL "HOST")
+  set(HOST_NAME "HOST")
+  set(DEVICE_NAME "DEVICE")
+  if (${CURRENT_TOOLCHAIN} STREQUAL ${HOST_NAME})
     # Save current host flags
     set(HOST_C_FLAGS ${CMAKE_C_FLAGS} CACHE STRING "GCC flags for the host toolchain." FORCE)
 
@@ -54,12 +58,12 @@ macro(use_device_toolchain)
     set(CMAKE_STATIC_LIBRARY_SUFFIX ${DEVICE_STATIC_LIBRARY_SUFFIX})
     set(CMAKE_C_CREATE_STATIC_LIBRARY ${DEVICE_C_CREATE_STATIC_LIBRARY})
 
-    set(CURRENT_TOOLCHAIN "DEVICE" CACHE STRING "Which toolchain we are using." FORCE)
+    set(CURRENT_TOOLCHAIN ${DEVICE_NAME} CACHE STRING "Which toolchain we are using." FORCE)
   endif()
 endmacro()
 
 
-function(set_device_source_properties)
+macro(set_device_source_properties)
   #use_device_toolchain()
   
   set(SRC ${ARGN})
@@ -80,10 +84,10 @@ function(set_device_source_properties)
   set(CPP_SRC ${SRC})
   list(FILTER CPP_SRC INCLUDE REGEX ".+\\.(cpp|cxx|cc)$")
   set_source_files_properties(${CPP_SRC} PROPERTIES COMPILE_FLAGS "-std=c++14")
-endfunction()
+endmacro()
 
-function(set_device_target_properties TARGET)
+macro(set_device_target_properties TARGET)
   #use_device_toolchain()
 
   set_target_properties(${TARGET} PROPERTIES LINKER_LANGUAGE C)
-endfunction()
+endmacro()

@@ -28,8 +28,8 @@ set(DEVICE_SRC
     "trace.cpp"
 )
 include_directories(
-    "."
-    "../common"
+    "${CMAKE_SOURCE_DIR}/common"
+    "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 set(SRC ${COMMON_SRC} ${DEVICE_SRC})
@@ -42,8 +42,12 @@ set(CL_SRC ${SRC})
 LIST(FILTER CL_SRC INCLUDE REGEX ".+\\.cl$")
 set_source_files_properties(${CL_SRC} PROPERTIES COMPILE_FLAGS "-x cl -std=cl1.2 -DOPENCL")
 
+set(C_SRC ${SRC})
+LIST(FILTER C_SRC INCLUDE REGEX ".+\\.c$")
+#set_source_files_properties(${C_SRC} PROPERTIES COMPILE_FLAGS "-std=c99")
+
 set(CPP_SRC ${SRC})
-LIST(FILTER CPP_SRC INCLUDE REGEX ".+\\.cpp$")
+LIST(FILTER CPP_SRC INCLUDE REGEX ".+\\.(cpp|cxx|cc)$")
 set_source_files_properties(${CPP_SRC} PROPERTIES COMPILE_FLAGS "-std=c++14")
 
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE C)

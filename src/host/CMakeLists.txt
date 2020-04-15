@@ -17,9 +17,10 @@ set(CMAKE_CXX_FLAGS "\
 ")
 
 set(COMMON_SRC
-    "builtins/math.cpp"
+    "${CMAKE_SOURCE_DIR}/host/builtins/math.cpp"
     ${COMMON_SRC}
 )
+set(COMMON_SRC ${COMMON_SRC} PARENT_SCOPE)
 
 set(HOST_SRC
     "opencl/search.cpp"
@@ -33,8 +34,8 @@ set(HOST_SRC
 )
 
 include_directories(
-    "."
-    "../common"
+    "${CMAKE_SOURCE_DIR}/common"
+    "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 add_library(${PROJECT_NAME} OBJECT ${COMMON_SRC} ${HOST_SRC})
@@ -44,24 +45,3 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
 )
 
 target_link_libraries(${PROJECT_NAME} OpenCL SDL2 SDL2_image)
-
-# Examples
-
-add_executable(main "examples/main.cpp")
-target_link_libraries(main ${PROJECT_NAME})
-
-#file(GLOB EXAMPLES "examples/*.cpp")
-#foreach(EXAMPLE_PATH ${EXAMPLES})
-#    get_filename_component(EXAMPLE_NAME ${EXAMPLE_PATH} NAME_WE)
-#    add_executable(${EXAMPLE_NAME} ${EXAMPLE_PATH})
-#    target_link_libraries(${EXAMPLE_NAME} ${PROJECT_NAME})
-#endforeach()
-
-
-# Tests
-
-add_executable(test ${COMMON_SRC} "tests/unit_test.cpp")
-target_compile_definitions(test PRIVATE
-    "-DHOST"
-    "-DUNIT_TEST"
-)

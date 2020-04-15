@@ -4,5 +4,8 @@ project(hypertrace)
 add_subdirectory(common)
 add_subdirectory(device)
 add_subdirectory(host)
+add_subdirectory(examples)
+add_subdirectory(test)
 
 add_dependencies(host device)
+add_dependencies(examples host)

@@ -7,7 +7,7 @@
 
 #include <memory.hpp>
 
-#include "../device/main.h"
+//#include "../device/main.h"
 
 
 template <typename ...Args>
@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
     // kernel.cl
     std::ofstream ker(argv[2]);
     assert(ker.good());
-    print_kernel(trace, ker, "trace");
+    //print_kernel(trace, ker, "trace");
     ker.close();
 
     return 0;

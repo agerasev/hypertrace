@@ -1,16 +1,24 @@
-#include "main.h"
-
+#include <types.h>
+#include <real.h>
+#include <memory.hpp>
+#include <algebra/vector.hpp>
+#include <view.hpp>
 #include <work.hpp>
 
-/*
-void trace(
-    global_ptr<float3> screen,
-    global_ptr<uchar4> image,
+
+extern "C" {
+void __kernel_trace(
+    __global float3 *screen_,
+    __global uchar4 *image_,
     int width, int height,
     int sample_no,
-    global_ptr<uint> seed,
+    __global uint *seed_,
     View view
 ) {
+    global_ptr<float3> screen(screen_);
+    global_ptr<uchar4> image(image_);
+    global_ptr<uint> seed(seed_);
+
     int idx = work::get_global_id(0);
 
     real2 pos = 2*real2(
@@ -32,4 +40,4 @@ void trace(
     uchar4 pix = uchar4(convert<uchar3>(0xff*out_color), 0xff);
     image.store(pix, idx);
 }
-*/
+};

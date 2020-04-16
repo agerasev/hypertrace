@@ -12,8 +12,8 @@ set(DEVICE_SRC
     "builtins/vector.cl"
     "builtins/memory.cl"
     "builtins/work.cl"
-    "render.cl"
-    "trace.cpp"
+    #"render.cl"
+    #"trace.cpp"
 )
 include_directories(
     "${CMAKE_SOURCE_DIR}/common"

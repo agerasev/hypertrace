@@ -402,7 +402,7 @@ struct vector;
 template <typename T, int N>
 struct __attribute__((aligned(sizeof(T)*(N + (N == 3)))))
 vector<T, N, enable_if<is_prim<T>()>> {
-    T s[N + (N == 3)];
+    T s[N];
 };
 template <typename T, int N>
 struct vector<T, N, enable_if<!is_prim<T>()>> {

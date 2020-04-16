@@ -26,7 +26,7 @@ Renderer::Renderer(
     queue(context, device),
 
     program(context, device, src),
-    kernel(program, "gen_kernel_trace"),
+    kernel(program, "trace_kernel"),
 
     image(queue, width*height*4),
     screen(queue, width*height*4*sizeof(cl_float), true),

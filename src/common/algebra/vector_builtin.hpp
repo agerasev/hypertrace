@@ -6,9 +6,9 @@
 
 #define DEFINE_VECTOR_BUILTIN(T, N) \
 template <> \
-class vector<T, N> : public vector_base<T, N, N + (N == 3), sizeof(T)*(N + (N == 3))> { \
+class vector<T, N> : public vector_base<T, N, N, sizeof(T)*(N + (N == 3))> { \
 private: \
-    typedef vector_base<T, N, N + (N == 3), sizeof(T)*(N + (N == 3))> base; \
+    typedef vector_base<T, N, N, sizeof(T)*(N + (N == 3))> base; \
 public: \
     template <typename ...Args> \
     inline explicit vector(Args ...args) : base(args...) {} \

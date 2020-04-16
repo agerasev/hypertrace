@@ -8,7 +8,22 @@ void xv_ctor_##T##N##_##T(T *v, T x) { \
 void xv_load_##T##N(T *v, const T *d) { \
     *(T##N*)v = vload##N(0, d); \
 } \
+void xv_load_##T##N##_local(T *v, __local const T *d) { \
+    *(T##N*)v = vload##N(0, d); \
+} \
+void xv_load_##T##N##_global(T *v, __global const T *d) { \
+    *(T##N*)v = vload##N(0, d); \
+} \
+void xv_load_##T##N##_constant(T *v, __constant const T *d) { \
+    *(T##N*)v = vload##N(0, d); \
+} \
 void xv_store_##T##N(const T *v, T *d) { \
+    vstore##N(*(const T##N*)v, 0, d); \
+} \
+void xv_store_##T##N##_local(const T *v, __local T *d) { \
+    vstore##N(*(const T##N*)v, 0, d); \
+} \
+void xv_store_##T##N##_global(const T *v, __global T *d) { \
     vstore##N(*(const T##N*)v, 0, d); \
 } \
 void xv_neg_##T##N(T *o, const T *a) { \

@@ -4,13 +4,21 @@
 #include <algebra/vector.hpp>
 #include <view.hpp>
 
-/*
+
+extern "C" {
+
 void trace(
-    GlobalPtr<float3> screen,
-    GlobalPtr<uchar4> image,
+    global_ptr<float3> screen,
+    global_ptr<uchar4> image,
     int width, int height,
     int sample_no,
-    GlobalPtr<uint> seed,
+    global_ptr<uint> seed,
     View view
-);
-*/
+)
+#ifdef DEVICE
+;
+#else
+{}
+#endif
+
+};

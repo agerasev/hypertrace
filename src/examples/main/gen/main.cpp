@@ -7,7 +7,7 @@
 
 #include <memory.hpp>
 
-//#include "../device/main.cpp"
+#include "../device/main.h"
 
 
 template <typename ...Args>
@@ -41,6 +41,35 @@ struct TypePrinter {
         out << type_name<T>();
     }
 };
+template <typename T, AddressSpace A>
+struct TypePrinter<GenericPtr<T, A>> {
+    std::string name;
+    void print(std::ostream &out) const {
+        switch (A) {
+        case AddressSpace::Global:
+            out << "__global ";
+            break;
+        case AddressSpace::Local:
+            out << "__local ";
+            break;
+        case AddressSpace::Constant:
+            out << "__constant ";
+            break;
+        default:
+            break;
+        }
+        TypePrinter<T>{name}.print(out);
+        out << "*";
+    }
+};
+template <typename T, AddressSpace A>
+struct TypePrinter<GenericConstPtr<T, A>> {
+    std::string name;
+    void print(std::ostream &out) const {
+        out << "const ";
+        TypePrinter<GenericPtr<T, A>>{name}.print(out);
+    }
+};
 template <>
 struct TypePrinter<void> {
     std::string name;
@@ -63,6 +92,20 @@ struct StructPrinter {
     template <typename U=T>
     enable_if<is_prim<U>(), void> print(std::ostream &out) const {
         // skip primitive type
+    }
+};
+template <typename T, AddressSpace A>
+struct StructPrinter<GenericPtr<T, A>> {
+    std::string name;
+    void print(std::ostream &out) const {
+        StructPrinter<T>{name}.print(out);
+    }
+};
+template <typename T, AddressSpace A>
+struct StructPrinter<GenericConstPtr<T, A>> {
+    std::string name;
+    void print(std::ostream &out) const {
+        StructPrinter<T>{name}.print(out);
     }
 };
 template <>
@@ -101,33 +144,55 @@ private:
     std::string name;
 
 public:
-    KernelPrinter(const std::string &name) : name(name) {}
+    KernelPrinter(
+        const std::string &name
+    ) : name(name)
+    {}
     std::string gen_name() const {
         return "gen_kernel_" + name;
     }
     void print_declaration(std::ostream &out) const {
-        StructPrinter<R>{name + "_ret"}.print(out);
+        StructPrinter<R>{name + "Ret"}.print(out);
         Unwinder<Args...>::template for_each<0, StructPrinterWrapper>(
-            name + "_arg_", out
+            name + "Arg", out
         );
+        TypePrinter<R>{name + "Ret"}.print(out);
+        out << " " << name << "(\n";
+        Unwinder<Args...>::template for_each<0, ArgsDefPrinterWrapper>(
+            name + "Arg", out
+        );
+        out << ");\n";
+        out << "\n";
     }
     void print_definition(std::ostream &out) const {
         out << "__kernel ";
-        TypePrinter<R>{name + "_ret"}.print(out);
+        TypePrinter<R>{name + "Ret"}.print(out);
         out << " " << gen_name() << "(\n";
         Unwinder<Args...>::template for_each<0, ArgsDefPrinterWrapper>(
-            name + "_arg_", out
+            name + "Arg", out
         );
         out << ") {\n";
-
+        out << "\t" << name << "(";
+        for (int i = 0; i < sizeof...(Args); ++i) {
+            out << "arg_" << i;
+            if (i + 1 < sizeof...(Args)) {
+                out << ", ";
+            }
+        }
+        out << ");\n";
         out << "}\n";
     }
 };
 
 template <typename F>
-void print_kernel(F*, const std::string &name, std::ostream &out) {
-    KernelPrinter<F>(name).print_declaration(out);
-    KernelPrinter<F>(name).print_definition(out);
+void print_kernel(
+    F*,
+    std::ostream &out,
+    const std::string &name
+) {
+    KernelPrinter<F> kp(name);
+    kp.print_declaration(out);
+    kp.print_definition(out);
 }
 
 
@@ -149,7 +214,7 @@ int main(int argc, char *argv[]) {
     // kernel.cl
     std::ofstream ker(argv[2]);
     assert(ker.good());
-    //print_kernel(trace, "trace", ker);
+    print_kernel(trace, ker, "trace");
     ker.close();
 
     return 0;

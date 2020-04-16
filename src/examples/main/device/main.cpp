@@ -1,44 +1,35 @@
 #include "main.h"
-/*
-#ifdef DEVICE
-#include <memory.hpp>
-#endif
 
+#include <work.hpp>
+
+/*
 void trace(
-    GlobalPtr<float3> screen,
-    GlobalPtr<uchar4> image,
+    global_ptr<float3> screen,
+    global_ptr<uchar4> image,
     int width, int height,
     int sample_no,
-    GlobalPtr<uint> seed,
+    global_ptr<uint> seed,
     View view
 ) {
-    int idx = get_global_id(0);
+    int idx = work::get_global_id(0);
 
-    real2 pos = 2.0f*(real2)(
-        (real)(idx % width) - 0.5f*(width - 1),
-        (real)(idx / width) - 0.5f*(height - 1)
+    real2 pos = 2*real2(
+        (real)(idx % width) - 0.5_r*(width - 1),
+        (real)(idx / width) - 0.5_r*(height - 1)
     )/height;
 
-    float3 color = (float3)(0.0f);
+    float3 color(0);
 
-    uint lseed = seed[idx];
+    uint lseed = seed.load(idx);
 
 
-    // Enter single ray tracing computation
-    trace(
-        (float*)&color,
-        (const real*)&pos, 2.0f/height,
-        &lseed,
-        &params
-    );
+    seed.store(lseed, idx);
 
-    seed[idx] = lseed;
+    float3 avg_color = (color + screen.load(idx)*sample_no)/(sample_no + 1);
+    screen.store(avg_color, idx);
 
-    float3 avg_color = (color + vload3(idx, screen)*sample_no)/(sample_no + 1);
-    vstore3(avg_color, idx, screen);
-
-    float3 out_color = clamp(avg_color, 0.0f, 1.0f);
-    uchar4 pix = (uchar4)(convert_uchar3(0xff*out_color), 0xff);
-    vstore4(pix, idx, image);
+    float3 out_color = clamp(avg_color, float3(0), float3(1));
+    uchar4 pix = uchar4(convert<uchar3>(0xff*out_color), 0xff);
+    image.store(pix, idx);
 }
 */

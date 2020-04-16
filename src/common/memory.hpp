@@ -7,292 +7,208 @@
 #include <builtins/memory.h>
 #endif
 
+enum AddressSpace : uint {
+    Private = 0,
+    Global = 1,
+    Constant = 2,
+    Local = 3
+};
 
-#define DEFINE_POINTER_CONST(P) \
-template <typename T> \
-class P##Ptr { \
-public: \
-    typedef T type; \
-    typedef const T *ptr_type; \
-private: \
-    const T *ptr = nullptr; \
-public: \
-    P##Ptr() = default; \
-    explicit P##Ptr(const T *p) : ptr(p) {} \
-    bool is_null() const { \
-        return ptr == nullptr; \
-    } \
-    const T *data() const { \
-        return ptr; \
-    } \
-    T load(size_t i) const { \
-        return ptr[i]; \
-    } \
-    void load(size_t i, T *v) const { \
-        *v = load(i); \
-    } \
-    void load(size_t i, T &v) const { \
-        v = load(i); \
-    } \
-    void load_many(size_t i, size_t n, T *v) { \
-        for (size_t j = 0; j < n; ++j) { \
-            load(i + j, v + j); \
-        } \
-    } \
-    const T &operator[](size_t i) const { \
-        return ptr[i]; \
-    } \
-    template <typename S> \
-    P##Ptr<S> reinterpret() { \
-        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment"); \
-        return P##Ptr<S>(reinterpret_cast<const S *>(ptr)); \
-    } \
-}; \
-
-#define DEFINE_POINTER(P) \
-DEFINE_POINTER_CONST(P##Const) \
-template <typename T> \
-class P##Ptr { \
-public: \
-    typedef T type; \
-    typedef T *ptr_type; \
-private: \
-    T *ptr = nullptr; \
-public: \
-    P##Ptr() = default; \
-    explicit P##Ptr(T *p) : ptr(p) {} \
-    bool is_null() const { \
-        return ptr == nullptr; \
-    } \
-    T *data() { \
-        return ptr; \
-    } \
-    const T *data() const { \
-        return ptr; \
-    } \
-    void store(size_t i, const T *v) { \
-        ptr[i] = v; \
-    } \
-    void store(size_t i, const T &v) { \
-        store(i, &v); \
-    } \
-    void store_many(size_t i, size_t n, const T *v) { \
-        for (size_t j = 0; j < n; ++j) { \
-            store(i + j, v + j); \
-        } \
-    } \
-    T load(size_t i) const { \
-        return ptr[i]; \
-    } \
-    void load(size_t i, T *v) const { \
-        *v = load(i); \
-    } \
-    void load(size_t i, T &v) const { \
-        v = load(i); \
-    } \
-    void load_many(size_t i, size_t n, T *v) { \
-        for (size_t j = 0; j < n; ++j) { \
-            load(i + j, v + j); \
-        } \
-    } \
-    T &operator[](size_t i) { \
-        return ptr[i]; \
-    } \
-    const T &operator[](size_t i) const { \
-        return ptr[i]; \
-    } \
-    P##ConstPtr<T> const_() const { \
-        return P##ConstPtr<T>(ptr); \
-    } \
-    template <typename S> \
-    P##Ptr<S> reinterpret() { \
-        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment"); \
-        return P##Ptr<S>(reinterpret_cast<S *>(ptr)); \
-    } \
-}; \
+template <typename T, AddressSpace A=AddressSpace::Private>
+struct PtrType {
+    typedef __address_space(A) T *type;
+    typedef __address_space(A) const T *const_type;
+};
+template <typename T, AddressSpace A=AddressSpace::Private>
+using ptr_type = typename PtrType<T, A>::type;
+template <typename T, AddressSpace A=AddressSpace::Private>
+using const_ptr_type = typename PtrType<T, A>::const_type;
 
 
-#define DEFINE_POINTER_BUILTIN_CONST(A, P) \
-template <typename T> \
-class P##Ptr { \
-public: \
-    typedef T type; \
-    typedef const T *ptr_type; \
-private: \
-    typedef size_t l_ptr_type; \
-    l_ptr_type ptr; \
-private: \
-    static_assert((sizeof(T) % alignof(T)) == 0, "Size is not multiple of alignment"); \
-    static constexpr bool is_aligned(int p) { \
-        int i = 3; \
-        for (; i > p; --i) { \
-            if ((alignof(T) % (1<<i)) == 0) { \
-                return false; \
-            } \
-        } \
-        return (alignof(T) % (1<<p)) == 0; \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(3), void> l_load(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<3); \
-        xm_load_##A##_ulong((size_t)ptr, i*N, N, (ulong *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(2), void> l_load(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<2); \
-        xm_load_##A##_uint((size_t)ptr, i*N, N, (uint *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(1), void> l_load(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<1); \
-        xm_load_##A##_ushort((size_t)ptr, i*N, N, (ushort *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(0), void> l_load(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<0); \
-        xm_load_##A##_uchar((size_t)ptr, i*N, N, (uchar *)v); \
-    } \
-public: \
-    P##Ptr() = default; \
-    explicit P##Ptr(l_ptr_type p) : ptr(p) {} \
-    bool is_null() const { \
-        return xm_is_null_global_uchar(ptr); \
-    } \
-    void load(size_t i, T *v) const { \
-        l_load(i, 1, v); \
-    } \
-    void load(size_t i, T &v) const { \
-        load(i, &v); \
-    } \
-    T load(size_t i) const { \
-        T t; \
-        load(i, &t); \
-        return t; \
-    } \
-    void load_many(size_t i, size_t n, T *v) { \
-        l_load(i, n, v); \
-    } \
-    T operator[](size_t i) const { \
-        return load(i); \
-    } \
-    template <typename S> \
-    P##Ptr<S> reinterpret() { \
-        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment"); \
-        return P##Ptr<S>(ptr); \
-    } \
-}; \
+template <typename T, AddressSpace A>
+struct PrivateMemAccess {
+    static void load(const_ptr_type<T, A> p, T *v, size_t i, size_t n) {
+        for (int j = 0; j < n; ++j) {
+            v[j] = p[i + j];
+        }
+    }
+    static void store(ptr_type<T, A> p, T *v, size_t i, size_t n) {
+        for (int j = 0; j < n; ++j) {
+            p[i + j] = v[j];
+        }
+    }
+};
 
-#define DEFINE_POINTER_BUILTIN(A, P) \
-DEFINE_POINTER_BUILTIN_CONST(A, P##Const) \
-template <typename T> \
-class P##Ptr { \
-public: \
-    typedef T type; \
-    typedef const T *ptr_type; \
-private: \
-    typedef size_t l_ptr_type; \
-    l_ptr_type ptr; \
-private: \
-    static_assert((sizeof(T) % alignof(T)) == 0, "Size is not multiple of alignment"); \
-    static constexpr bool is_aligned(int p) { \
-        int i = 3; \
-        for (; i > p; --i) { \
-            if ((alignof(T) % (1<<i)) == 0) { \
-                return false; \
-            } \
-        } \
-        return (alignof(T) % (1<<p)) == 0; \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(3), void> l_load(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<3); \
-        xm_load_##A##_ulong((size_t)ptr, i*N, N, (ulong *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(2), void> l_load(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<2); \
-        xm_load_##A##_uint((size_t)ptr, i*N, N, (uint *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(1), void> l_load(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<1); \
-        xm_load_##A##_ushort((size_t)ptr, i*N, N, (ushort *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(0), void> l_load(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<0); \
-        xm_load_##A##_uchar((size_t)ptr, i*N, N, (uchar *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(3), void> l_store(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<3); \
-        xm_store_##A##_ulong((size_t)ptr, i*N, N, (const ulong *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(2), void> l_store(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<2); \
-        xm_store_##A##_uint((size_t)ptr, i*N, N, (const uint *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(1), void> l_store(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<1); \
-        xm_store_##A##_ushort((size_t)ptr, i*N, N, (const ushort *)v); \
-    } \
-    template <typename U=T> \
-    enable_if<is_aligned(0), void> l_store(size_t i, size_t n, T *v) { \
-        int N = sizeof(T)/(1<<0); \
-        xm_store_##A##_uchar((size_t)ptr, i*N, N, (const uchar *)v); \
-    } \
-public: \
-    P##Ptr() = default; \
-    explicit P##Ptr(l_ptr_type p) : ptr(p) {} \
-    bool is_null() const { \
-        return xm_is_null_global_uchar(ptr); \
-    } \
-    void load(size_t i, T *v) const { \
-        l_load(i, 1, v); \
-    } \
-    void load(size_t i, T &v) const { \
-        load(i, &v); \
-    } \
-    T load(size_t i) const { \
-        T t; \
-        load(i, &t); \
-        return t; \
-    } \
-    void load_many(size_t i, size_t n, T *v) { \
-        l_load(i, n, v); \
-    } \
-    void store(size_t i, const T *v) { \
-        l_store(i, 1, v); \
-    } \
-    void store(size_t i, const T &v) { \
-        store(i, &v); \
-    } \
-    void store_many(size_t i, size_t n, const T *v) { \
-        l_store(i, n, v); \
-    } \
-    T operator[](size_t i) const { \
-        return load(i); \
-    } \
-    P##ConstPtr<T> const_() const { \
-        return P##ConstPtr<T>(ptr); \
-    } \
-    template <typename S> \
-    P##Ptr<S> reinterpret() { \
-        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment"); \
-        return P##Ptr<S>(ptr); \
-    } \
-}; \
-
-
-DEFINE_POINTER(Private)
 #ifdef DEVICE
-DEFINE_POINTER_BUILTIN(local, Local)
-DEFINE_POINTER_BUILTIN(global, Global)
-DEFINE_POINTER_BUILTIN_CONST(constant, Constant)
-#else
-DEFINE_POINTER(Local)
-DEFINE_POINTER(Global)
-DEFINE_POINTER_CONST(Constant)
+template <typename T, int MP=3>
+static constexpr bool alignment_power() {
+    for (int i = MP; i > 0; --i) {
+        if ((alignof(T) % (1<<i)) == 0) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+template <typename T, AddressSpace A, int P>
+struct BuiltinMemAccess {};
+
+template <typename T, AddressSpace A>
+struct ForeignMemAccess {
+    static void load(const_ptr_type<T, A> p, T *v, size_t i, size_t n) {
+        BuiltinMemAccess<T, A, alignment_power<T>()>::load(p, v, i, n);
+    }
+    static void store(ptr_type<T, A> p, const T *v, size_t i, size_t n) {
+        BuiltinMemAccess<T, A, alignment_power<T>()>::store(p, v, i, n);
+    }
+};
+
+#define DEFINE_BUILTIN_MEM_ACCESS_METHOD_LOAD(A, M, P, S) \
+    static_assert((sizeof(T) % alignof(T)) == 0, "Size is not multiple of alignment"); \
+    static void load(const_ptr_type<T, A> p, T *v, size_t i, size_t n) { \
+        static const int N = sizeof(T)/(1<<P); \
+        xm_load_##M##_##S((const_ptr_type<S, A>)p, i*N, N, (S *)v); \
+    } \
+
+#define DEFINE_BUILTIN_MEM_ACCESS_METHOD_STORE(A, M, P, S) \
+    static void store(ptr_type<T, A> p, const T *v, size_t i, size_t n) { \
+        static const int N = sizeof(T)/(1<<P); \
+        xm_store_##M##_##S((ptr_type<S, A>)p, i*N, N, (const S *)v); \
+    } \
+
+#define DEFINE_BUILTIN_MEM_ACCESS_CONST(A, M, P, S) \
+template <typename T> \
+struct BuiltinMemAccess<T, A, P> { \
+DEFINE_BUILTIN_MEM_ACCESS_METHOD_LOAD(A, M, P, S) \
+}; \
+
+#define DEFINE_BUILTIN_MEM_ACCESS(A, M, P, S) \
+template <typename T> \
+struct BuiltinMemAccess<T, A, P> { \
+DEFINE_BUILTIN_MEM_ACCESS_METHOD_LOAD(A, M, P, S) \
+DEFINE_BUILTIN_MEM_ACCESS_METHOD_STORE(A, M, P, S) \
+}; \
+
+#define DEFINE_BUILTIN_MEM_ACCESS_ALL(P, S) \
+DEFINE_BUILTIN_MEM_ACCESS(AddressSpace::Local, local, P, S) \
+DEFINE_BUILTIN_MEM_ACCESS(AddressSpace::Global, global, P, S) \
+DEFINE_BUILTIN_MEM_ACCESS_CONST(AddressSpace::Constant, constant, P, S) \
+
+DEFINE_BUILTIN_MEM_ACCESS_ALL(3, ulong) \
+DEFINE_BUILTIN_MEM_ACCESS_ALL(2, uint) \
+DEFINE_BUILTIN_MEM_ACCESS_ALL(1, ushort) \
+DEFINE_BUILTIN_MEM_ACCESS_ALL(0, uchar) \
+
+
 #endif
+
+template <typename T, AddressSpace A>
+struct MemAccessType {
+    typedef PrivateMemAccess<T, A> type;
+};
+
+#ifdef DEVICE
+template <typename T>
+struct MemAccessType<T, AddressSpace::Local> {
+    typedef ForeignMemAccess<T, AddressSpace::Local> type;
+};
+template <typename T>
+struct MemAccessType<T, AddressSpace::Global> {
+    typedef ForeignMemAccess<T, AddressSpace::Global> type;
+};
+template <typename T>
+struct MemAccessType<T, AddressSpace::Constant> {
+    typedef ForeignMemAccess<T, AddressSpace::Constant> type;
+};
+#endif
+
+template <typename T, AddressSpace A>
+using MemAccess = typename MemAccessType<T, A>::type;
+
+template <typename T, AddressSpace A>
+class GenericConstPtr {
+public:
+    typedef T type;
+    static const AddressSpace addrspace = A;
+private:
+    const __address_space(A) T *ptr = nullptr;
+public:
+    GenericConstPtr() = default;
+    GenericConstPtr(const __address_space(A) T *p) : ptr(p) {}
+    bool is_null() const {
+        return ptr == nullptr;
+    }
+    const __address_space(A) T *raw() const {
+        return ptr;
+    }
+    operator const __address_space(A) T *() const {
+        return ptr;
+    }
+    T load(size_t i=0) const {
+        T x;
+        MemAccess<T, A>::load(ptr, &x, i, 1);
+        return x;
+    }
+    T operator[](size_t i) const {
+        return load(i);
+    }
+    template <typename S>
+    GenericConstPtr<S, A> reinterpret() {
+        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment");
+        return GenericConstPtr<S, A>(reinterpret_cast<const __address_space(A) S *>(ptr));
+    }
+};
+
+template <typename T, AddressSpace A>
+class GenericPtr {
+public:
+    typedef T type;
+    static const AddressSpace addrspace = A;
+private:
+    __address_space(A) T *ptr = nullptr;
+public:
+    GenericPtr() = default;
+    GenericPtr(__address_space(A) T *p) : ptr(p) {}
+    bool is_null() const {
+        return ptr == nullptr;
+    }
+    const __address_space(A) T *raw() const {
+        return ptr;
+    }
+    __address_space(A) T *raw() {
+        return ptr;
+    }
+    operator const __address_space(A) T *() const {
+        return ptr;
+    }
+    operator __address_space(A) T *() {
+        return ptr;
+    }
+    T load(size_t i=0) const {
+        T x;
+        MemAccess<T, A>::load(ptr, &x, i, 1);
+        return x;
+    }
+    T operator[](size_t i) const {
+        return load(i);
+    }
+    void store(const T &t, size_t i=0) {
+        MemAccess<T, A>::store(ptr, &t, i, 1);
+    }
+    GenericConstPtr<T, A> as_const() const {
+        return GenericConstPtr<T, A>(ptr);
+    }
+    template <typename S>
+    GenericPtr<S, A> reinterpret() {
+        static_assert((alignof(T) % alignof(S)) == 0, "Pointer conversion breaks alignment");
+        return GenericPtr<S, A>(reinterpret_cast<const __address_space(A) S *>(ptr));
+    }
+};
+
+template <typename T> using private_const_ptr = GenericConstPtr<T, AddressSpace::Private>;
+template <typename T> using private_ptr = GenericPtr<T, AddressSpace::Private>;
+template <typename T> using local_const_ptr = GenericConstPtr<T, AddressSpace::Local>;
+template <typename T> using local_ptr = GenericPtr<T, AddressSpace::Local>;
+template <typename T> using global_const_ptr = GenericConstPtr<T, AddressSpace::Global>;
+template <typename T> using global_ptr = GenericPtr<T, AddressSpace::Global>;
+template <typename T> using constant_ptr = GenericConstPtr<T, AddressSpace::Constant>;

@@ -17,8 +17,29 @@ public: \
         xv_load_##T##N(v.s, data); \
         return v; \
     } \
+    inline static vector load(__local const T *data) { \
+        vector v; \
+        xv_load_##T##N##_local(v.s, data); \
+        return v; \
+    } \
+    inline static vector load(__global const T *data) { \
+        vector v; \
+        xv_load_##T##N##_global(v.s, data); \
+        return v; \
+    } \
+    inline static vector load(__constant const T *data) { \
+        vector v; \
+        xv_load_##T##N##_constant(v.s, data); \
+        return v; \
+    } \
     inline void store(T *data) const { \
         xv_store_##T##N(s, data); \
+    } \
+    inline void store(__local T *data) const { \
+        xv_store_##T##N##_local(s, data); \
+    } \
+    inline void store(__global T *data) const { \
+        xv_store_##T##N##_global(s, data); \
     } \
     template <typename F, typename ...Args> \
     inline static vector<T, N> map(F f, Args ...args) { \

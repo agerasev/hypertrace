@@ -5,6 +5,19 @@ typedef unsigned char uchar;
 typedef unsigned short ushort;
 typedef unsigned int uint;
 typedef unsigned long ulong;
+#ifdef DEVICE
+#define __address_space(as) __attribute__((address_space((uint)as)))
+#define __private __address_space(0)
+#define __global __address_space(1)
+#define __constant __address_space(2)
+#define __local __address_space(3)
+#else
+#define __address_space(as)
+#define __private
+#define __global
+#define __constant
+#define __local
+#endif
 #endif
 
 #ifdef DEVICE

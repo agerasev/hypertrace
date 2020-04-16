@@ -4,12 +4,12 @@
 
 
 #define DECLARE_BUILTIN_POINTER_CONST(A, T) \
-uchar xm_is_null_##A##_##T(size_t p); \
-void xm_load_##A##_##T(size_t p, size_t i, size_t s, T *v); \
+uchar xm_is_null_##A##_##T(__##A const T *p); \
+void xm_load_##A##_##T(__##A const T *p, size_t i, size_t s, T *v); \
 
 #define DECLARE_BUILTIN_POINTER(A, T) \
 DECLARE_BUILTIN_POINTER_CONST(A, T) \
-void xm_store_##A##_##T(size_t p, size_t i, size_t s, const T *v); \
+void xm_store_##A##_##T(__##A T *p, size_t i, size_t s, const T *v); \
 
 
 #define DECLARE_BUILTIN_POINTER_ALL(T) \

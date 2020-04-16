@@ -10,8 +10,6 @@
 #include <random>
 #include <algorithm>
 
-#include <parameters.h>
-
 
 using duration = std::chrono::duration<double>;
 
@@ -28,10 +26,10 @@ Renderer::Renderer(
     queue(context, device),
 
     program(context, device, src),
-    kernel(program, "render"),
+    kernel(program, "gen_kernel_trace"),
 
     image(queue, width*height*4),
-    screen(queue, width*height*3*sizeof(cl_float), true),
+    screen(queue, width*height*4*sizeof(cl_float), true),
 
     seeds(queue, width*height*sizeof(cl_uint))
 {
@@ -112,10 +110,8 @@ void Renderer::render(bool fresh) {
         monte_carlo_counter,
         seeds,
 
-        to_device(Parameters {
-            .view = view,
-            .view_prev = view_prev,
-        })
+        to_device(view)
+        //to_device(view_prev)
 
         //objects, objects_prev,
         //objects_mask, object_count

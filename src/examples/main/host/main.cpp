@@ -6,20 +6,19 @@
 #include <cmath>
 #include <chrono>
 
-#include <device/main_device.ll.gen.cl.h>
-
-//#include <algebra/quaternion.hh>
-//#include <algebra/moebius.hh>
-//#include <view.hh>
+#include <geometry/hyperbolic.hpp>
+#include <view.hpp>
 //#include <object.hh>
 
 #include <opencl/search.hpp>
 #include <sdl/viewer.hpp>
 #include <sdl/controller.hpp>
 #include <renderer.hpp>
-//#include <color.hpp>
 
 //#include "scene.hpp"
+
+#include <device/main_device.ll.gen.cl.h>
+
 
 using duration = std::chrono::duration<double>;
 
@@ -47,14 +46,14 @@ int main(int argc, const char *argv[]) {
         (const char *)main_device_ll_gen_cl,
         size_t(main_device_ll_gen_cl_len)
     );
-    Renderer renderer(
+    Renderer<Hyperbolic> renderer(
         device, src,
         width, height
     );
     //renderer.store_objects(create_scene());
 
     Viewer viewer(width, height);
-    Controller controller;
+    Controller<Hyperbolic> controller;
     controller.grab_mouse(true);
 
     //controller.view.position = mo_new(

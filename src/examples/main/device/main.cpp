@@ -10,6 +10,7 @@
 #include <view.hpp>
 #include <work.hpp>
 
+#include <geometry/hyperbolic.hpp>
 #include <geometry/hyperbolic/ray.hpp>
 #include <random.hpp>
 
@@ -18,7 +19,7 @@
 static_assert(sizeof(Orig) == sizeof(Dummy), "Dummy structure size mismatch"); \
 static_assert(alignof(Orig) == alignof(Dummy), "Dummy structure alignment mismatch"); \
 
-ASSERT_DUMMY(_View, View);
+ASSERT_DUMMY(_View, View<Hy>);
 
 
 using namespace hyperbolic;
@@ -55,7 +56,7 @@ void trace(
     int width, int height,
     int sample_no,
     global_ptr<uint> seed,
-    const View &view
+    const View<Hy> &view
 ) {
     int idx = work::get_global_id(0);
 
@@ -104,6 +105,6 @@ void trace_iface(
         width, height,
         sample_no,
         global_ptr<uint>(seed),
-        *(View*)view
+        *(View<Hy>*)view
     );
 }

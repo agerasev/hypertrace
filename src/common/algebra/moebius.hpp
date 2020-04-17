@@ -108,6 +108,18 @@ MoebiusT<C> interpolate(MoebiusT<C> a, MoebiusT<C> b, base_type<C> t) {
     return a*pow(!a*b, t);
 }
 
+#ifdef HOST
+
+template <typename C>
+struct ToDevice<MoebiusT<C>> {
+    typedef device_type<matrix<C, 2, 2>> type;
+    static type to_device(MoebiusT<C> m) {
+        return ::to_device(m.mat());
+    }
+};
+
+#endif
+
 typedef MoebiusT<comp> Moebius;
 
 #ifdef UNIT_TEST

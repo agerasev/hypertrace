@@ -28,8 +28,6 @@ set(HOST_SRC
     "sdl/base.cpp"
     "sdl/controller.cpp"
     "sdl/viewer.cpp"
-    "renderer.cpp"
-    #"scenario.hpp"
     #"scenario.cpp"
 )
 

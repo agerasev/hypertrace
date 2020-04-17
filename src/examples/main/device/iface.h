@@ -8,8 +8,6 @@ typedef struct __attribute__((aligned(align))) { \
 } Name; \
 
 
-DEFINE_DUMMY(_float3, 3*4, 4*4);
-DEFINE_DUMMY(_uchar4, 4, 4);
 DEFINE_DUMMY(_View, 4*2*4 + 3*4, 2*4);
 
 
@@ -18,8 +16,8 @@ extern "C" {
 #endif
 
 void trace_iface(
-    __global _float3 *screen,
-    __global _uchar4 *image,
+    __global float *screen,
+    __global uchar *image,
     int width, int height,
     int sample_no,
     __global uint *seed,

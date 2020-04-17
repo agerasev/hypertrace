@@ -18,8 +18,6 @@
 static_assert(sizeof(Orig) == sizeof(Dummy), "Dummy structure size mismatch"); \
 static_assert(alignof(Orig) == alignof(Dummy), "Dummy structure alignment mismatch"); \
 
-ASSERT_DUMMY(_float3, float3);
-ASSERT_DUMMY(_uchar4, uchar4);
 ASSERT_DUMMY(_View, View);
 
 
@@ -52,8 +50,8 @@ bool hit_horosphere(Ray ray, quat &h) {
 }
 
 void trace(
-    global_ptr<float3> screen,
-    global_ptr<uchar4> image,
+    global_ptr<float> screen,
+    global_ptr<uchar> image,
     int width, int height,
     int sample_no,
     global_ptr<uint> seed,
@@ -83,26 +81,26 @@ void trace(
 
     float3 avg_color = color;
     if (sample_no != 0) {
-        avg_color = (color + screen.load(idx)*sample_no)/(sample_no + 1);
+        avg_color = (color + screen.vload<3>(idx)*sample_no)/(sample_no + 1);
     }
-    screen.store(avg_color, idx);
+    screen.vstore(avg_color, idx);
 
     float3 out_color = clamp(avg_color, float3(0), float3(1));
     uchar4 pix = uchar4(convert<uchar3>(0xff*out_color), 0xff);
-    image.store(pix, idx);
+    image.vstore(pix, idx);
 }
 
 void trace_iface(
-	__global _float3 *screen,
-    __global _uchar4 *image,
+	__global float *screen,
+    __global uchar *image,
     int width, int height,
     int sample_no,
     __global uint *seed,
     _View *view
 ) {
     trace(
-        global_ptr<float3>((__global float3 *)screen),
-        global_ptr<uchar4>((__global uchar4 *)image),
+        global_ptr<float>(screen),
+        global_ptr<uchar>(image),
         width, height,
         sample_no,
         global_ptr<uint>(seed),

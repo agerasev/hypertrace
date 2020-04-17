@@ -6,13 +6,13 @@
 
 #define DECLARE_BUILTIN_VECTOR(T, N) \
 void xv_ctor_##T##N##_##T(T *v, T x); \
-void xv_load_##T##N(T *v, const T *d); \
-void xv_load_##T##N##_local(T *v, __local const T *d); \
-void xv_load_##T##N##_global(T *v, __global const T *d); \
-void xv_load_##T##N##_constant(T *v, __constant const T *d); \
-void xv_store_##T##N(const T *v, T *d); \
-void xv_store_##T##N##_local(const T *v, __local T *d); \
-void xv_store_##T##N##_global(const T *v, __global T *d); \
+void xv_load_##T##N(T *v, size_t i, const T *d); \
+void xv_load_##T##N##_local(T *v, size_t i, __local const T *d); \
+void xv_load_##T##N##_global(T *v, size_t i, __global const T *d); \
+void xv_load_##T##N##_constant(T *v, size_t i, __constant const T *d); \
+void xv_store_##T##N(const T *v, size_t i, T *d); \
+void xv_store_##T##N##_local(const T *v, size_t i, __local T *d); \
+void xv_store_##T##N##_global(const T *v, size_t i, __global T *d); \
 void xv_neg_##T##N(T *o, const T *a); \
 void xv_add_##T##N##_##T##N(T *o, const T *a, const T *b); \
 void xv_add_##T##N##_##T(T *o, const T *a, T b); \

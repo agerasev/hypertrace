@@ -58,8 +58,7 @@ class Renderer {
     Renderer(
         cl_device_id device,
         const std::string &src,
-        int width, int height,
-        const Config &config
+        int width, int height
     );
 
     //void store_objects(const std::vector<Object> &objs);

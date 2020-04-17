@@ -4,6 +4,15 @@
 #include <builtins/vector.h>
 
 
+template <typename T>
+struct IsBuiltinVector {
+    static const bool value = false;
+};
+template <typename T>
+constexpr bool is_builtin_vector() {
+    return IsBuiltinVector<T>::value;
+}
+
 #define DEFINE_VECTOR_BUILTIN(T, N) \
 template <> \
 class vector<T, N> : public vector_base<T, N, N, sizeof(T)*(N + (N == 3))> { \
@@ -14,32 +23,32 @@ public: \
     inline explicit vector(Args ...args) : base(args...) {} \
     inline static vector load(const T *data) { \
         vector v; \
-        xv_load_##T##N(v.s, data); \
-        return v; \
-    } \
-    inline static vector load(__local const T *data) { \
-        vector v; \
-        xv_load_##T##N##_local(v.s, data); \
-        return v; \
-    } \
-    inline static vector load(__global const T *data) { \
-        vector v; \
-        xv_load_##T##N##_global(v.s, data); \
-        return v; \
-    } \
-    inline static vector load(__constant const T *data) { \
-        vector v; \
-        xv_load_##T##N##_constant(v.s, data); \
+        xv_load_##T##N(v.s, 0, data); \
         return v; \
     } \
     inline void store(T *data) const { \
-        xv_store_##T##N(s, data); \
+        xv_store_##T##N(s, 0, data); \
     } \
-    inline void store(__local T *data) const { \
-        xv_store_##T##N##_local(s, data); \
+    inline static vector<T, N> vload(__local const T *p, size_t i=0) { \
+        vector v; \
+        xv_load_##T##N##_local(v.s, i, p); \
+        return v; \
     } \
-    inline void store(__global T *data) const { \
-        xv_store_##T##N##_global(s, data); \
+    inline static vector<T, N> vload(__global const T *p, size_t i=0) { \
+        vector v; \
+        xv_load_##T##N##_global(v.s, i, p); \
+        return v; \
+    } \
+    inline static vector<T, N> vload(__constant const T *p, size_t i=0) { \
+        vector v; \
+        xv_load_##T##N##_constant(v.s, i, p); \
+        return v; \
+    } \
+    inline void vstore(__local T *p, size_t i=0) const { \
+        xv_store_##T##N##_local(s, i, p); \
+    } \
+    inline void vstore(__global T *p, size_t i=0) const { \
+        xv_store_##T##N##_global(s, i, p); \
     } \
     template <typename F, typename ...Args> \
     inline static vector<T, N> map(F f, Args ...args) { \
@@ -145,6 +154,10 @@ public: \
         xv_divassign_##T##N##_##T(s, a); \
         return *this; \
     } \
+}; \
+template <> \
+struct IsBuiltinVector<vector<T, N>> { \
+    static const bool value = true; \
 }; \
 
 #define DEFINE_VECTOR_BUILTIN_TRAITS(T, N) \

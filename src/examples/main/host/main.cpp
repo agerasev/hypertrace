@@ -49,10 +49,8 @@ int main(int argc, const char *argv[]) {
     );
     Renderer renderer(
         device, src,
-        width, height, Renderer::Config {
-        .path_max_depth = 3,
-    //    .blur = { .lens = true, .motion = true }
-    });
+        width, height
+    );
     //renderer.store_objects(create_scene());
 
     Viewer viewer(width, height);
@@ -67,7 +65,7 @@ int main(int argc, const char *argv[]) {
     //);
     //controller.view.lens_radius = 1e-1;
 
-    duration time_counter;
+    duration time_counter(0);
     int sample_counter = 0;
     int refresh = 1;
     for(;;) {

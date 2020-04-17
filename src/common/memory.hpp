@@ -2,6 +2,7 @@
 
 #include <types.h>
 #include <traits.hpp>
+#include <algebra/vector.hpp>
 
 #ifdef DEVICE
 #include <builtins/memory.h>
@@ -28,12 +29,12 @@ using const_ptr_type = typename PtrType<T, A>::const_type;
 template <typename T, AddressSpace A>
 struct PrivateMemAccess {
     static void load(const_ptr_type<T, A> p, T *v, size_t i, size_t n) {
-        for (int j = 0; j < n; ++j) {
+        for (size_t j = 0; j < n; ++j) {
             v[j] = p[i + j];
         }
     }
     static void store(ptr_type<T, A> p, T *v, size_t i, size_t n) {
-        for (int j = 0; j < n; ++j) {
+        for (size_t j = 0; j < n; ++j) {
             p[i + j] = v[j];
         }
     }
@@ -149,6 +150,10 @@ public:
         MemAccess<T, A>::load(ptr, &x, i, 1);
         return x;
     }
+    template <int N>
+    vector<T, N> vload(size_t i=0) const {
+        return vector<T, N>::vload(ptr, i);
+    }
     T operator[](size_t i) const {
         return load(i);
     }
@@ -189,11 +194,19 @@ public:
         MemAccess<T, A>::load(ptr, &x, i, 1);
         return x;
     }
+    template <int N>
+    vector<T, N> vload(size_t i=0) const {
+        return vector<T, N>::vload(ptr, i);
+    }
     T operator[](size_t i) const {
         return load(i);
     }
     void store(const T &t, size_t i=0) {
         MemAccess<T, A>::store(ptr, &t, i, 1);
+    }
+    template <int N>
+    void vstore(vector<T, N> v, size_t i=0) const {
+        return v.vstore(ptr, i);
     }
     GenericConstPtr<T, A> as_const() const {
         return GenericConstPtr<T, A>(ptr);

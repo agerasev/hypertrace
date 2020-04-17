@@ -16,8 +16,7 @@ using duration = std::chrono::duration<double>;
 Renderer::Renderer(
     cl_device_id device,
     const std::string &src,
-    int width, int height,
-    const Config &config
+    int width, int height
 ) :
     width(width),
     height(height),
@@ -29,7 +28,7 @@ Renderer::Renderer(
     kernel(program, "trace_kernel"),
 
     image(queue, width*height*4),
-    screen(queue, width*height*4*sizeof(cl_float), true),
+    screen(queue, width*height*3*sizeof(cl_float), true),
 
     seeds(queue, width*height*sizeof(cl_uint))
 {
@@ -39,8 +38,6 @@ Renderer::Renderer(
         seed = rng();
     }
     seeds.store(queue, host_seeds.data());
-
-    //set_view(view_init());
 }
 /*
 void Renderer::store_objs_to_buf(

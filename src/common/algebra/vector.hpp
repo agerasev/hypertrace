@@ -9,7 +9,6 @@
 #include "traits.hpp"
 
 
-
 template <typename T, int N, int L, int A>
 class vector_base;
 template <typename T, int N>
@@ -135,6 +134,13 @@ public:
         for (int i = 0; i < N; ++i) {
             data[i*stride] = (*this)[i];
         }
+    }
+
+    static vector<T, N> vload(const T *p, size_t i=0) {
+        load(p + i*N);
+    }
+    void vstore(T *p, size_t i=0) const {
+        store(p + i*N);
     }
 
     template <typename S=T, typename F, typename ...Args>

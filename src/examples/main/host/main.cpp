@@ -46,13 +46,13 @@ int main(int argc, const char *argv[]) {
         (const char *)main_device_ll_gen_cl,
         size_t(main_device_ll_gen_cl_len)
     );
+    Viewer viewer(width, height);
     Renderer<Hyperbolic> renderer(
         device, src,
         width, height
     );
     //renderer.store_objects(create_scene());
 
-    Viewer viewer(width, height);
     Controller<Hyperbolic> controller;
     controller.grab_mouse(true);
 

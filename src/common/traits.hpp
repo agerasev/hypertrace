@@ -13,6 +13,32 @@ struct EnableIf<true, T> {
 template <bool B, typename T = void>
 using enable_if = typename EnableIf<B, T>::type;
 
+// Nth argument
+template <int N, typename ...Args>
+struct NthArg {};
+template <int N, typename T, typename ...Args>
+struct NthArg<N, T, Args...> {
+    typedef typename NthArg<N - 1, Args...>::type type;
+};
+template <typename T, typename ...Args>
+struct NthArg<0, T, Args...> {
+    typedef T type;
+};
+template <int N, typename ...Args>
+using nth_arg = typename NthArg<N, Args...>::type;
+
+// Forward
+template <typename T> struct remove_reference       { typedef T type; };
+template <typename T> struct remove_reference<T &>  { typedef T type; };
+template <typename T> struct remove_reference<T &&> { typedef T type; };
+template <typename T>
+inline T &&forward(typename remove_reference<T>::type  &t) {
+    return static_cast<T &&>(t);
+}
+template <typename T>
+inline T &&forward(typename remove_reference<T>::type &&t) {
+    return static_cast<T &&>(t);
+}
 
 // Is primitive
 template <typename T>

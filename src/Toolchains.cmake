@@ -85,7 +85,7 @@ macro(set_device_source_properties)
 
   set(CPP_SRC ${SRC})
   list(FILTER CPP_SRC INCLUDE REGEX ".+\\.(cpp|cxx|cc)$")
-  set_source_files_properties(${CPP_SRC} PROPERTIES COMPILE_FLAGS "-std=c++14")
+  set_source_files_properties(${CPP_SRC} PROPERTIES COMPILE_FLAGS "-std=c++17")
 endmacro()
 
 macro(set_device_target_properties TARGET)

@@ -1,12 +1,14 @@
 #pragma once
 
 #include <algebra/complex.hpp>
-#include <algebra/moebius.hpp>
+#include <geometry/hyperbolic.hpp>
 
 
-namespace hyperbolic {
+template <typename G>
+class Ray {};
 
-class Ray {
+template <>
+class Ray<Hyperbolic> {
 public:
     quat start;
     quat direction;
@@ -19,4 +21,6 @@ public:
     }
 };
 
-} // namespace hyperbolic
+namespace hyperbolic {
+typedef Ray<Hy> Ray;
+}

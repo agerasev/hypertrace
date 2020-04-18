@@ -40,7 +40,7 @@ public:
     DERIVE_VARIANT_METHOD_CONST(get)
 };
 
-TEST_CASE("Variant object", "[variant]") {
+TEST_CASE("Variant", "[variant]") {
     Rng rng(0x807A);
 
     SECTION("Union") {

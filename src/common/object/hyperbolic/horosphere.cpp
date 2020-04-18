@@ -1,50 +1,42 @@
-#include "horosphere.hh"
+#include "horosphere.hpp"
 
-#include <geometry/hyperbolic.hh>
+namespace hyperbolic {
 
-
-bool horosphere_hit(
-    const Object *plane, ObjectHit *cache,
-    PathInfo *path, HyRay ray
-) {
+real Horosphere::hit(Context &context, Cache &cache, Ray ray) const {
     bool face = true;
-    quaternion p = ray.start, d = ray.direction;
-    real dxy = length(d.xy);
+    quat p = ray.start, d = ray.direction;
+    real dxy = length(d.re());
     // FIXME: check (dxy < EPS)
 
-    if (p.z < dxy) {
-        return false;
+    if (p[2] < dxy) {
+        return -1_r;
     }
     
-    real dt = sqrt(p.z*p.z - dxy*dxy);
-    real t = p.z*d.z - dt;
-    if (t < (real)0 || (path->repeat && path->face != face)) {
-        t += (real)2*dt;
+    real dt = math::sqrt(p[2]*p[2] - dxy*dxy);
+    real t = p[2]*d[2] - dt;
+    if (t < (real)0 || (context.path.repeat && context.path.face != face)) {
+        t += 2*dt;
         face = false;
     }
-    if (t < (real)0 || (path->repeat && path->face != face)) {
-        return false;
+    if (t < (real)0 || (context.path.repeat && context.path.face != face)) {
+        return -1_r;
     }
 
     t /= dxy*dxy;
-    quaternion h = q_new(
-        p.xy + d.xy*t,
-        (real)1, (real)0
-    );
+    quat h(p.re() + d.re()*t, 1, 0);
 
-    cache->pos = h;
-    cache->dir = hy_dir_at(p, d, h);
+    cache.pos = h;
+    cache.dir = Hy::dir_at(p, d, h);
 
-    path->face = face;
+    context.path.face = face;
 
-    return true;
+    return Hy::length(h);
 }
 
-void horosphere_bounce(
-    const Object *horosphere, const ObjectHit *cache,
-    quaternion *hit_dir, quaternion *normal,
-    Material *material
-) {
+bool Horosphere::bounce(
+    Context &context, const Cache &cache,
+    float3 &luminance, Ray &new_ray) const {
+    /*
     int material_no = 0;
     bool border = false;
 
@@ -88,4 +80,10 @@ void horosphere_bounce(
     } else {
         *material = horosphere->materials[mod(material_no, horosphere->material_count)];
     }
+    */
+    real2 fr = math::fract(cache.pos.re().vec()).first;
+    luminance += float3(fr[0], fr[1], 0);
+    return false;
+}
+
 }

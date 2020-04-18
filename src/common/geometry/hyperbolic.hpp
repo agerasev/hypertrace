@@ -11,6 +11,9 @@ public:
     typedef quat Direction;
     typedef Moebius Map;
 
+    static Position origin();
+
+    static real length(Position a);
     static real distance(Position a, Position b);
 
     // Returns the direction of the line at point `dst_pos`
@@ -38,5 +41,7 @@ public:
     static Map move_at(Position pos);
     static Map move_to(Direction dir, real dist);
 };
-
 typedef Hyperbolic Hy;
+
+namespace hyperbolic {}
+namespace hy = hyperbolic;

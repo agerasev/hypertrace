@@ -1,8 +1,16 @@
 #include "hyperbolic.hpp"
 
 
+quat Hy::origin() {
+    return 1_j;
+}
+
+real Hy::length(quat a) {
+    return Hy::distance(a, origin());
+}
+
 real Hy::distance(quat a, quat b) {
-    real x = 1 + length2(a - b)/(2*a[2]*b[2]);
+    real x = 1 + ::length2(a - b)/(2*a[2]*b[2]);
     return math::log(x + math::sqrt(x*x - 1));
 }
 
@@ -11,7 +19,7 @@ quat Hy::dir_at(quat src_pos, quat src_dir, quat dst_pos) {
     return quat(
         h[2]/p[2]*d[0],
         h[2]/p[2]*d[1],
-        d[2] - length(p.re() - h.re())/p[2]*length(d.re()),
+        d[2] - ::length(p.re() - h.re())/p[2]*::length(d.re()),
         (real)0
     );
 }
@@ -56,20 +64,20 @@ Moebius Hy::horosphere(comp pos) {
 Moebius Hy::look_to(quat dir) {
 	// We look at the top (along the z axis).
 	real phi = -math::atan2(dir[1], dir[0]);
-	real theta = -math::atan2(length(dir.re()), dir[2]);
+	real theta = -math::atan2(::length(dir.re()), dir[2]);
 	return xrotate(theta)*zrotate(phi);
 }
 
 Moebius Hy::look_at(quat pos) {
     // The origin is at *j* (z = 1).
 	real phi = -math::atan2(pos[1], pos[0]);
-	real theta = -math::atan2(2*length(pos.re()), length2(pos) - 1);
+	real theta = -math::atan2(2*::length(pos.re()), ::length2(pos) - 1);
 	return xrotate(theta)*zrotate(phi);
 }
 
 Moebius Hy::move_at(quat pos) {
     Moebius a = look_at(pos);
-    Moebius b = zshift(-distance(1_j, pos));
+    Moebius b = zshift(-Hy::length(pos));
     return !a*b*a;
 }
 

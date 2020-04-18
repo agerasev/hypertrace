@@ -11,8 +11,12 @@
 #include <work.hpp>
 
 #include <geometry/hyperbolic.hpp>
-#include <geometry/hyperbolic/ray.hpp>
+#include <geometry/ray.hpp>
 #include <random.hpp>
+
+#include <object/hyperbolic/horosphere.hpp>
+
+#include "render/renderer.hpp"
 
 
 #define ASSERT_DUMMY(Orig, Dummy) \
@@ -24,32 +28,6 @@ ASSERT_DUMMY(_View, View<Hy>);
 
 using namespace hyperbolic;
 
-bool hit_horosphere(Ray ray, quat &h) {
-    quat p = ray.start, d = ray.direction;
-    real dxy = length(d.re());
-
-    if (p[2] < dxy) {
-        return false;
-    }
-    
-    real dt = math::sqrt(p[2]*p[2] - dxy*dxy);
-    real t = p[2]*d[2] - dt;
-    if (t < 0) {
-        t += 2*dt;
-    }
-    if (t < 0) {
-        return false;
-    }
-
-    t /= dxy*dxy;
-    h = quat(
-        p.re() + d.re()*t,
-        1, 0
-    );
-
-    return true;
-}
-
 void trace(
     global_ptr<float> screen,
     global_ptr<uchar> image,
@@ -60,23 +38,15 @@ void trace(
 ) {
     int idx = work::get_global_id(0);
 
-    real2 pix_pos = 2*real2(
-        (real)(idx % width) - 0.5_r*(width - 1),
-        (real)(idx / width) - 0.5_r*(height - 1)
+    Rng rng(seed.load(idx));
+
+    real2 pos = 2*real2(
+        (real)(idx % width) - 0.5_r*(width) + xrand::uniform<real>(rng),
+        (real)(idx / width) - 0.5_r*(height) + xrand::uniform<real>(rng)
     )/height;
-    real pix_size = 2_r/height;
 
-    float3 color(0);
-
-    random::LCRng rng(seed.load(idx));
-
-    real2 new_pix_pos = pix_pos + pix_size*(random::uniform<real2>(rng) - real2(0.5_r));
-    Ray ray = Ray(1_j, normalize(quat(new_pix_pos, 1, 0))).map(view.position);
-
-    quat h;
-    if (hit_horosphere(ray, h)) {
-        color = float3(fract(h.re().vec()).first, 0);
-    }
+    hy::Horosphere obj;
+    float3 color = Renderer<Hy>(rng).trace(view, pos, obj);
 
     seed.store(rng.state(), idx);
 

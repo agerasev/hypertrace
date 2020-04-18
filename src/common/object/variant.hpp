@@ -31,32 +31,32 @@ struct Caller {};
 
 template <typename T, typename ...Elems>
 struct Caller<T, Elems...> {
-    template <template <typename> typename F, typename ...Args>
+    template <template <typename, int> typename F, int P, typename ...Args>
     static decltype(auto) call(const Union<T, Elems...> &u, int i, Args &&...args) {
-        if (i == 0) {
-            return F<T>::call(u.value, forward<Args>(args)...);
+        if (i == P) {
+            return F<T, P>::call(u.value, forward<Args>(args)...);
         } else {
-            return u.inner.template call<F>(i - 1, forward<Args>(args)...);
+            return u.inner.template call<F, P + 1>(i, forward<Args>(args)...);
         }
     }
-    template <template <typename> typename F, typename ...Args>
+    template <template <typename, int> typename F, int P, typename ...Args>
     static decltype(auto) call(Union<T, Elems...> &u, int i, Args &&...args) {
-        if (i == 0) {
-            return F<T>::call(u.value, forward<Args>(args)...);
+        if (i == P) {
+            return F<T, P>::call(u.value, forward<Args>(args)...);
         } else {
-            return u.inner.template call<F>(i - 1, forward<Args>(args)...);
+            return u.inner.template call<F, P + 1>(i, forward<Args>(args)...);
         }
     }
 };
 template <typename T>
 struct Caller<T> {
-    template <template <typename> typename F, typename ...Args>
+    template <template <typename, int> typename F, int P, typename ...Args>
     static decltype(auto) call(const Union<T> &u, int i, Args &&...args) {
-        return F<T>::call(u.value, forward<Args>(args)...);
+        return F<T, P>::call(u.value, forward<Args>(args)...);
     }
-    template <template <typename> typename F, typename ...Args>
+    template <template <typename, int> typename F, int P, typename ...Args>
     static decltype(auto) call(Union<T> &u, int i, Args &&...args) {
-        return F<T>::call(u.value, forward<Args>(args)...);
+        return F<T, P>::call(u.value, forward<Args>(args)...);
     }
 };
 
@@ -82,13 +82,13 @@ public:
         return Accessor<P, T, Elems...>::elem(*this);
     }
 
-    template <template <typename> typename F, typename ...Args>
+    template <template <typename, int> typename F, int P, typename ...Args>
     decltype(auto) call(int i, Args &&...args) const {
-        return Caller<T, Elems...>::template call<F>(*this, i, forward<Args>(args)...);
+        return Caller<T, Elems...>::template call<F, P>(*this, i, forward<Args>(args)...);
     }
-    template <template <typename> typename F, typename ...Args>
+    template <template <typename, int> typename F, int P, typename ...Args>
     decltype(auto) call(int i, Args &&...args) {
-        return Caller<T, Elems...>::template call<F>(*this, i, forward<Args>(args)...);
+        return Caller<T, Elems...>::template call<F, P>(*this, i, forward<Args>(args)...);
     }
 };
 
@@ -119,7 +119,7 @@ public:
 
 #define DERIVE_VARIANT_METHOD(name) \
 private: \
-    template <typename E> \
+    template <typename E, int P> \
     struct name##Caller { \
         template <typename ...Args> \
         static decltype(auto) call(E &e, Args &&...args) { \
@@ -129,12 +129,12 @@ private: \
 public: \
     template <typename ...Args> \
     decltype(auto) name(Args &&...args) { \
-        return call<name##Caller>(id(), forward<Args>(args)...); \
+        return call<name##Caller, 0>(id(), forward<Args>(args)...); \
     } \
 
 #define DERIVE_VARIANT_METHOD_CONST(name) \
 private: \
-    template <typename E> \
+    template <typename E, int P> \
     struct name##Caller { \
         template <typename ...Args> \
         static decltype(auto) call(const E &e, Args &&...args) { \
@@ -144,7 +144,7 @@ private: \
 public: \
     template <typename ...Args> \
     decltype(auto) name(Args &&...args) const { \
-        return call<name##Caller>(id(), forward<Args>(args)...); \
+        return call<name##Caller, 0>(id(), forward<Args>(args)...); \
     } \
 
 /*

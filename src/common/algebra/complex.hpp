@@ -154,19 +154,6 @@ public:
         return v;
     }
 
-    friend T length(complex x) {
-        return length(x.v);
-    }
-    friend T length2(complex x) {
-        return length2(x.v);
-    }
-    friend complex normalize(complex x) {
-        return x/length(x);
-    }
-    friend complex inverse(complex x) {
-        return conj(x)/length2(x);
-    }
-
     friend complex operator~(complex a) {
         return conj(a);
     }
@@ -339,6 +326,23 @@ struct Convert<complex<S, D>, complex<T, D>> {
         return complex<S, D>(::convert<vector<S, (1<<D)>>(v.vec()));
     }
 };
+
+template <typename T, int D>
+T length(complex<T, D> x) {
+    return length(x.vec());
+}
+template <typename T, int D>
+T length2(complex<T, D> x) {
+    return length2(x.vec());
+}
+template <typename T, int D>
+complex<T, D> normalize(complex<T, D> x) {
+    return x/length(x);
+}
+template <typename T, int D>
+complex<T, D> inverse(complex<T, D> x) {
+    return conj(x)/length2(x);
+}
 
 template <typename T, int D>
 T dot(complex<T, D> a, complex<T, D> b) {

@@ -58,5 +58,3 @@ real3 hemisphere_cosine(Rng &rng);
 real3 sphere_cap(Rng &rng, real cos_alpha);
 
 }
-
-using Rng = xrand::Rng;

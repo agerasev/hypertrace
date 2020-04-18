@@ -46,3 +46,39 @@ if (border) {
     *material = horosphere->materials[mod(material_no, horosphere->material_count)];
 }
 */
+
+
+#ifdef UNIT_TEST
+#include <catch.hpp>
+#include <test.hpp>
+
+using namespace test;
+using namespace hyperbolic;
+
+
+TEST_CASE("Horosphere", "[horosphere]") {
+    Rng rng(0x807A);
+
+    struct DummyCtx {} ctx;
+
+    SECTION("Collision") {
+        Horosphere h;
+        for (int i = 0; i < 10*TEST_ATTEMPTS; ++i) {
+            Ray<Hy> incoming(
+                quat(rng.d<real2>().normal(), math::exp(rng.d<real>().normal()), 0),
+                quat(rng.d<real3>().unit(), 0)
+            );
+            Light<Hy> light{incoming, float3(0)};
+            Horosphere::Cache cache;
+            real dist = h.detect(ctx, cache, light);
+            if (incoming.start[2] > 1_r) {
+                REQUIRE(dist > 0_r);
+            }
+            if (dist > 0_r) {
+                REQUIRE(light.ray.start[2] == approx(1));
+            }
+        }
+    }
+}
+
+#endif

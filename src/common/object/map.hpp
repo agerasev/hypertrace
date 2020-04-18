@@ -93,12 +93,12 @@ public:
         }
 
         real3 bounce_dir;
-            material_bounce(
-                &material,
-                rng, path,
-                hit_dir.xyz, normal.xyz, &bounce_dir,
-                light, emission
-            );
+        material_bounce(
+            &material,
+            rng, path,
+            hit_dir.xyz, normal.xyz, &bounce_dir,
+            light, emission
+        );
 
         ray->start = cache->pos;
         ray->direction = q_new(bounce_dir, (real)0);

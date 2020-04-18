@@ -19,8 +19,5 @@ public:
     inline Ray map(Moebius m) const {
         return Ray(m.apply(start), normalize(m.deriv(start, direction)));
     }
+    //inline Ray advance(real l) const {}
 };
-
-namespace hyperbolic {
-typedef Ray<Hy> Ray;
-}

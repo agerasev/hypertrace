@@ -19,7 +19,7 @@
 
 //#include "scene.hpp"
 
-#include <device/main_device.ll.gen.cl.h>
+#include <device/kernel.gen.cl.h>
 
 
 using duration = std::chrono::duration<double>;
@@ -45,8 +45,8 @@ int main(int argc, const char *argv[]) {
 
     int width = 800, height = 600;
     std::string src(
-        (const char *)main_device_ll_gen_cl,
-        size_t(main_device_ll_gen_cl_len)
+        (const char *)kernel_gen_cl,
+        size_t(kernel_gen_cl_len)
     );
     Viewer viewer(width, height);
     Renderer<Hyperbolic, MyObject> renderer(
@@ -55,13 +55,11 @@ int main(int argc, const char *argv[]) {
     );
 
     std::vector<MyObject> objects{
-        MyObject(
-            hy::Horosphere(),
-            Moebius::identity()
+        MyObject::init<0>(
+            hy::Plane()
         ),
-        MyObject(
-            hy::Horosphere(),
-            Hyperbolic::xrotate(PI)
+        MyObject::init<1>(
+            hy::Horosphere()
         ),
     };
     renderer.store_objects(objects);

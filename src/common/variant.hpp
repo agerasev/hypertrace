@@ -94,16 +94,17 @@ public:
 
 
 template <typename ...Elems>
-class Variant : public Union<Elems...>{
+class Variant {
 private:
     int id_ = -1;
+    Union<Elems...> union_;
 
 public:
     Variant() = default;
     template <int P>
     void set(const nth_arg<P, Elems...> &e) {
         static_assert(P >= 0 && P < sizeof...(Elems), "Index is out of bounds");
-        Union<Elems...>::template elem<P>() = e;
+        as_union().template elem<P>() = e;
         id_ = P;
     }
     template <int P>
@@ -114,6 +115,12 @@ public:
     }
     int id() const {
         return id_;
+    }
+    const Union<Elems...> &as_union() const {
+        return union_;
+    }
+    Union<Elems...> &as_union() {
+        return union_;
     }
 };
 
@@ -129,7 +136,7 @@ private: \
 public: \
     template <typename ...Args> \
     decltype(auto) name(Args &&...args) { \
-        return call<name##Caller, 0>(id(), forward<Args>(args)...); \
+        return as_union().call<name##Caller, 0>(id(), forward<Args>(args)...); \
     } \
 
 #define DERIVE_VARIANT_METHOD_CONST(name) \
@@ -144,7 +151,7 @@ private: \
 public: \
     template <typename ...Args> \
     decltype(auto) name(Args &&...args) const { \
-        return call<name##Caller, 0>(id(), forward<Args>(args)...); \
+        return as_union().call<name##Caller, 0>(id(), forward<Args>(args)...); \
     } \
 
 /*

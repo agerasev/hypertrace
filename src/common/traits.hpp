@@ -54,6 +54,18 @@ inline T &&forward(typename remove_reference<T>::type &&t) {
     return static_cast<T &&>(t);
 }
 
+// Any / all
+template<bool ...B>
+struct BoolPack {};
+template<bool ...B> 
+constexpr bool all() {
+    return is_same<BoolPack<B..., true>, BoolPack<true, B...>>();
+}
+template<bool ...B> 
+constexpr bool any() {
+    return !is_same<BoolPack<B..., false>, BoolPack<false, B...>>();
+}
+
 // Is primitive
 template <typename T>
 struct IsPrimitive {

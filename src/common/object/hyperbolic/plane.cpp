@@ -1,46 +1,7 @@
-#include "plane.hh"
-
-#include <geometry/hyperbolic.hh>
+#include "plane.hpp"
 
 
-bool hyplane_hit(
-    const Object *plane, ObjectHit *cache,
-    PathInfo *path, HyRay ray
-) {
-    // Line cannot intersect plane twice
-    if (path->repeat) {
-        return false;
-    }
-
-    quaternion p = ray.start, d = ray.direction;
-    //real dxy = sqrt(d.x*d.x + d.y*d.y);
-    // FIXME: check (dxy < EPS)
-
-    real pd = dot(p, d);
-    if (fabs(pd) < EPS) {
-        return false;
-    }
-    real t = ((real)1 - q_abs2(p))/((real)2*pd);
-    if (t < (real)0) {
-        return false;
-    }
-    quaternion h = q_new(
-        p.xy + d.xy*t,
-        (real)0, (real)0
-    );
-    
-    real pxy2 = c_abs2(h.xy);
-    if (pxy2 > (real)1) {
-        return false;
-    }
-    h.z = sqrt((real)1 - pxy2);
-
-    cache->pos = h;
-    cache->dir = hy_dir_at(p, d, h);
-
-    return true;
-}
-
+/*
 void hyplane_bounce(
     const Object *plane, const ObjectHit *cache,
     quaternion *hit_dir, quaternion *normal,
@@ -145,3 +106,41 @@ void hyplane_bounce(
     *hit_dir = cache->dir;
     *normal = cache->pos;
 }
+*/
+
+#ifdef UNIT_TEST
+#include <catch.hpp>
+#include <test.hpp>
+
+using namespace test;
+using namespace hyperbolic;
+
+
+TEST_CASE("Hyperbolic Plane", "[hyperbolic.plane]") {
+    Rng rng(0x807A);
+
+    struct DummyCtx {
+        bool repeat = false;
+    } ctx;
+
+    SECTION("Collision") {
+        Plane h;
+        int hits = 0;
+        for (int i = 0; i < 64; ++i) {
+            Ray<Hy> incoming(
+                quat(rng.d<real2>().normal(), math::exp(rng.d<real>().normal()), 0),
+                quat(rng.d<real3>().unit(), 0)
+            );
+            Light<Hy> light{incoming, float3(0)};
+            Plane::Cache cache;
+            real dist = h.detect(ctx, cache, light);
+            if (dist > 0_r) {
+                hits += 1;
+                REQUIRE(length(light.ray.start) == approx(1));
+            }
+        }
+        REQUIRE(hits > 0);
+    }
+}
+
+#endif

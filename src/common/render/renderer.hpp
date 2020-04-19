@@ -9,6 +9,7 @@ class Renderer {
 public:
     struct Context {
         xrand::Rng &rng;
+        bool repeat = false;
     };
 
     xrand::Rng &rng;

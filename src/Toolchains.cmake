@@ -14,7 +14,7 @@ set(DEVICE_C_COMPILE_OBJECT "\
     clang \
     -S -emit-llvm \
     --target=spir64-unknown-unknown -DX64 \
-    -O3 \
+    -O1 \
     <DEFINES> <INCLUDES> <FLAGS> \
     -o <OBJECT> -c <SOURCE> \
 ")
@@ -22,9 +22,10 @@ set(DEVICE_STATIC_LIBRARY_PREFIX "")
 set(DEVICE_STATIC_LIBRARY_SUFFIX ".ll")
 set(DEVICE_C_CREATE_STATIC_LIBRARY
     "llvm-link -S <LINK_FLAGS> <OBJECTS> -o <TARGET>"
-    "opt -S -O3 <TARGET> -o <TARGET>"
+    "opt -S -O1 <TARGET> -o <TARGET>"
     "llvm-opencl <TARGET> -o <TARGET>.gen.cl"
-    "xxd -i <TARGET>.gen.cl <TARGET>.gen.cl.h"
+    "cp <TARGET>.gen.cl kernel.gen.cl"
+    "xxd -i kernel.gen.cl kernel.gen.cl.h"
 )
 
 macro(use_host_toolchain)

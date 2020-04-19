@@ -16,8 +16,8 @@ public:
 public:
     template <typename Context>
     real detect(
-        const Context &context, Cache &cache,
-        Light<Hy> &light, bool repeat=false
+        Context &context, Cache &cache,
+        Light<Hy> &light
     ) const {
         quat p = light.ray.start, d = light.ray.direction;
         real dxy = length(d.re());
@@ -29,10 +29,10 @@ public:
         
         real dt = math::sqrt(p[2]*p[2] - dxy*dxy);
         real t = p[2]*d[2] - dt;
-        if (t < 0_r + repeat*EPS) {
+        if (t < 0_r + context.repeat*EPS) {
             t += 2*dt;
         }
-        if (t < 0_r + repeat*EPS) {
+        if (t < 0_r + context.repeat*EPS) {
             return -1_r;
         }
 
@@ -47,7 +47,7 @@ public:
 
     template <typename Context>
     bool interact(
-        const Context &context, const Cache &cache,
+        Context &context, const Cache &cache,
         Light<Hy> &light, float3 &luminance
     ) const {
         real2 fr = math::fract(light.ray.start.re().vec()).first;

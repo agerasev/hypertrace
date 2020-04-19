@@ -48,9 +48,9 @@ TEST_CASE("Variant", "[variant]") {
         Variant<A, B> b = Variant<A, B>::init<1>(B{3.1415});
 
         REQUIRE(a.id() == 0);
-        REQUIRE(a.elem<0>().x == 1);
+        REQUIRE(a.as_union().elem<0>().x == 1);
         REQUIRE(b.id() == 1);
-        REQUIRE(b.elem<1>().x == Approx(3.1415));
+        REQUIRE(b.as_union().elem<1>().x == Approx(3.1415));
     }
     SECTION("Derive") {
         Var a = Var::init<0>(A{1});

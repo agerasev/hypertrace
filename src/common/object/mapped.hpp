@@ -19,11 +19,11 @@ public:
 
     template <typename Context>
     real detect(
-        const Context &context, Cache &cache,
-        Light<typename Obj::Geo> &light, bool repeat=false
+        Context &context, Cache &cache,
+        Light<typename Obj::Geo> &light
     ) const {
         light.ray = light.ray.map(map);
-        real dist = inner.detect(context, cache, light, repeat);
+        real dist = inner.detect(context, cache, light);
         if (dist > 0_r) {
             light.ray = light.ray.map(inverse(map));
         }
@@ -32,7 +32,7 @@ public:
 
     template <typename Context>
     bool interact(
-        const Context &context, const Cache &cache,
+        Context &context, const Cache &cache,
         Light<typename Obj::Geo> &light, float3 &luminance
     ) const {
         light.ray = light.ray.map(map);

@@ -56,14 +56,16 @@ using namespace test;
 using namespace hyperbolic;
 
 
-TEST_CASE("Horosphere", "[horosphere]") {
+TEST_CASE("Horosphere", "[hyperbolic.horosphere]") {
     Rng rng(0x807A);
 
-    struct DummyCtx {} ctx;
+    struct DummyCtx {
+        bool repeat = false;
+    } ctx;
 
     SECTION("Collision") {
         Horosphere h;
-        for (int i = 0; i < 10*TEST_ATTEMPTS; ++i) {
+        for (int i = 0; i < 64; ++i) {
             Ray<Hy> incoming(
                 quat(rng.d<real2>().normal(), math::exp(rng.d<real>().normal()), 0),
                 quat(rng.d<real3>().unit(), 0)

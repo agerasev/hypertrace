@@ -1,52 +1,94 @@
 #pragma once
 
 #include <types.h>
+#include <algebra/rotation.hpp>
 #include <render/context.hpp>
+#include <render/light.hpp>
 
-
-struct BounceParams {
-    // in
-    real3 normal;
-    real3 enter_dir;
-    // out
-    real3 &exit_dir;
-    float3 &light;
-    float3 &emission;
-};
 
 class Material {};
+class SurfaceMaterial : public Material {};
+class VolumeMaterial : public Material {};
 
-class Void : public Material {
+class Black : public SurfaceMaterial {
 public:
-    bool bounce(Context &context, BounceParams &params);
+    template <typename Ctx>
+    bool interact(
+        Ctx &context, real3 normal,
+        LocalLight &light, float3 &emission
+    ) {
+        return false;
+    }
 };
-class Transparent : public Material {
+class Transparent : public SurfaceMaterial {
 public:
-    bool bounce(Context &context, BounceParams &params);
+    template <typename Ctx>
+    bool interact(
+        Ctx &context, real3 normal,
+        LocalLight &light, float3 &emission
+    ) {
+        //light.face = !light.face;
+        return true;
+    }
 };
 
-class Void : public Material {
+class Specular : public SurfaceMaterial {
 public:
-    bool bounce(Context &context, BounceParams &params);
+    template <typename Ctx>
+    bool interact(
+        Ctx &context, real3 normal,
+        LocalLight &light, float3 &emission
+    ) {
+        light.direction -= (2*dot(light.direction, normal))*normal;
+        return true;
+    }
 };
-class Specular : public Material {
+class Lambertian : public SurfaceMaterial {
 public:
-    bool bounce(Context &context, BounceParams &params);
+    template <typename Ctx>
+    bool interact(
+        Ctx &context, real3 normal,
+        LocalLight &light, float3 &emission
+    ) {
+        if (dot(normal, light.direction) > 0) {
+            normal = -normal;
+        }
+        real3 rand = xrand::hemisphere_cosine(context.rng);
+        Rotation3 rot = Rotation3::look_at(normal);
+        light.direction = rot.apply(rand);
+        light.diffuse = true;
+        return true;
+    }
 };
-class Lambertian : public Material {
-public:
-    bool bounce(Context &context, BounceParams &params);
-};
+
 
 template <typename M>
-class Colored {
+class Colored : public SurfaceMaterial {
 public:
+    M base;
     float3 color;
-    bool bounce(Context &context, BounceParams &params);
+
+    template <typename Ctx>
+    bool interact(
+        Ctx &context, real3 normal,
+        LocalLight &light, float3 &emission
+    ) {
+        light.color *= color;
+        return base.interact(context, normal, light, emission);
+    }
 };
 template <typename M>
-class Emission {
+class Emissive : public SurfaceMaterial {
 public:
+    M base;
     float3 color;
-    bool bounce(Context &context, BounceParams &params);
+
+    template <typename Ctx>
+    bool interact(
+        Ctx &context, real3 normal,
+        LocalLight &light, float3 &emission
+    ) {
+        emission += color*light.color;
+        return base.interact(context, normal, light, emission);
+    }
 };

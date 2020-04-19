@@ -6,5 +6,5 @@
 
 class Context {
 public:
-    Rng &rng;
+    xrand::Rng &rng;
 };

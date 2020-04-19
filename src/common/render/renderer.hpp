@@ -7,10 +7,10 @@
 template <typename G>
 class Renderer {
 public:
-    Rng &rng;
+    xrand::Rng &rng;
 
 public:
-    Renderer(Rng &rng) :
+    Renderer(xrand::Rng &rng) :
         rng(rng)
     {}
 
@@ -21,7 +21,9 @@ public:
                 G::origin(),
                 normalize(quat(pix_pos, 1, 0))
             ).map(view.position),
-            float3(1)
+            BaseLight(
+                float3(1)
+            )
         };
 
         Context context{rng};

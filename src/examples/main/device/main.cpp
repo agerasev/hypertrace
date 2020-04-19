@@ -38,7 +38,7 @@ void trace(
 ) {
     int idx = work::get_global_id(0);
 
-    Rng rng(seed.load(idx));
+    xrand::Rng rng(seed.load(idx));
 
     real2 pos = 2*real2(
         (real)(idx % width) - 0.5_r*(width) + xrand::uniform<real>(rng),

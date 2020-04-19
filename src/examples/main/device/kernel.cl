@@ -7,7 +7,9 @@ __kernel void trace_kernel(
     int width, int height,
     int sample_no,
     __global uint *seed,
-    _View view
+    _View view,
+    __global const _MyObject *objects,
+    int object_count
 ) {
     trace_iface(
         screen,
@@ -15,6 +17,8 @@ __kernel void trace_kernel(
         width, height,
         sample_no,
         seed,
-        &view
+        &view,
+        objects,
+        object_count
     );
 }

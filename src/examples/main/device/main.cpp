@@ -16,14 +16,24 @@
 
 #include <object/hyperbolic/horosphere.hpp>
 
-#include "render/renderer.hpp"
+#include <render/renderer.hpp>
+
+#include <myobject.hpp>
 
 
-#define ASSERT_DUMMY(Orig, Dummy) \
-static_assert(sizeof(Orig) == sizeof(Dummy), "Dummy structure size mismatch"); \
-static_assert(alignof(Orig) == alignof(Dummy), "Dummy structure alignment mismatch"); \
+#define ASSERT_DUMMY(Dummy, Orig) \
+static_assert(sizeof(Dummy) == sizeof(Orig), "Dummy structure size mismatch"); \
+static_assert(alignof(Dummy) == alignof(Orig), "Dummy structure alignment mismatch"); \
+
+#define ASSERT_DUMMY_ALIGN(Dummy, Orig) \
+static_assert( \
+    (alignof(Dummy) % alignof(Orig)) == 0, \
+    "Dummy structure alignment is not multiple of original structure alignment" \
+); \
+
 
 ASSERT_DUMMY(_View, View<Hy>);
+ASSERT_DUMMY_ALIGN(_MyObject, MyObject);
 
 
 using namespace hyperbolic;
@@ -34,7 +44,9 @@ void trace(
     int width, int height,
     int sample_no,
     global_ptr<uint> seed,
-    const View<Hy> &view
+    const View<Hy> &view,
+    global_const_ptr<MyObject> objects,
+    int object_count
 ) {
     int idx = work::get_global_id(0);
 
@@ -45,8 +57,7 @@ void trace(
         (real)(idx / width) - 0.5_r*(height) + xrand::uniform<real>(rng)
     )/height;
 
-    hy::Horosphere obj;
-    float3 color = Renderer<Hy>(rng).trace(view, pos, obj);
+    float3 color = Renderer<Hy>(rng).trace(view, pos, objects, object_count);
 
     seed.store(rng.state(), idx);
 
@@ -67,7 +78,9 @@ void trace_iface(
     int width, int height,
     int sample_no,
     __global uint *seed,
-    _View *view
+    _View *view,
+    __global const _MyObject *objects,
+    int object_count
 ) {
     trace(
         global_ptr<float>(screen),
@@ -75,6 +88,8 @@ void trace_iface(
         width, height,
         sample_no,
         global_ptr<uint>(seed),
-        *(View<Hy>*)view
+        *(View<Hy>*)view,
+        global_const_ptr<_MyObject>(objects).reinterpret<MyObject>(),
+        object_count
     );
 }

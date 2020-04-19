@@ -7,8 +7,13 @@ typedef struct __attribute__((aligned(align))) { \
     uchar data[size]; \
 } Name; \
 
+#define DEFINE_DUMMY_ALIGN(Name, align) \
+typedef struct __attribute__((aligned(align))) { \
+    uchar data[align]; \
+} Name; \
 
 DEFINE_DUMMY(_View, 4*2*4 + 3*4, 2*4);
+DEFINE_DUMMY_ALIGN(_MyObject, 128);
 
 
 #ifdef __cplusplus
@@ -21,7 +26,9 @@ void trace_iface(
     int width, int height,
     int sample_no,
     __global uint *seed,
-    _View *view
+    _View *view,
+    __global const _MyObject *objects,
+    int object_count
 );
 
 #ifdef __cplusplus

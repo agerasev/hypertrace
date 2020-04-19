@@ -9,6 +9,7 @@
 template <typename G>
 class Object {
 public:
+    typedef G Geo;
     // Storage for state between detection and interaction
     struct Cache {};
     // Allow repeated collisions or not

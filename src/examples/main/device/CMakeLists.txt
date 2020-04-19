@@ -15,6 +15,7 @@ add_library(${DEVICE} STATIC ${SRC})
 target_include_directories(${DEVICE} PUBLIC
     "${CMAKE_SOURCE_DIR}/common"
     "${CMAKE_SOURCE_DIR}/device"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../common"
 )
 target_compile_definitions(${DEVICE} PUBLIC "-DDEVICE")
 set_device_source_properties(${SRC})

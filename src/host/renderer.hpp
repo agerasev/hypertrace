@@ -10,15 +10,21 @@
 
 #include <opencl/opencl.hpp>
 
+#include <traits.hpp>
 #include <geometry.hpp>
 #include <view.hpp>
 //#include <object.hh>
 
 
 // FIXME: Use `set_view()` method instead of `fresh` argument
-template <typename G>
+template <typename Geo, typename Obj>
 class Renderer {
 public:
+    static_assert(
+        is_same<Geo, typename Obj::Geo>(),
+        "Object and renderer geometry mismatch"
+    );
+
     struct Config {
         struct Blur {
             bool lens = false;
@@ -46,28 +52,25 @@ private:
 
     cl::Buffer seeds;
 
-    //cl::Buffer objects;
-    //cl::Buffer objects_prev;
-    //cl::Buffer objects_mask;
-    //int object_count = 0;
+    cl::Buffer objects;
+    cl::Buffer objects_prev;
+    cl::Buffer objects_mask;
+    int object_count = 0;
 
-    /*
     static void store_objs_to_buf(
         cl::Queue &queue, cl::Buffer &buf,
-        const std::vector<Object> &objs
+        const std::vector<Obj> &objs
     ) {
-        std::vector<ObjectPk> pack(objs.size());
-
+        std::vector<device_type<Obj>> pack(objs.size());
         for (size_t i = 0; i < objs.size(); ++i) {
-            pack_object(&pack[i], &objs[i]);
+            pack[i] = to_device(objs[i]);
         }
-        buf.store(queue, pack.data(), sizeof(ObjectPk)*objs.size());
+        buf.store(queue, pack.data(), sizeof(device_type<Obj>)*objs.size());
     }
-    */
 
     int monte_carlo_counter = 0;
 
-    View<G> view, view_prev;
+    View<Geo> view, view_prev;
     
     using duration = std::chrono::duration<double>;
 
@@ -98,18 +101,18 @@ public:
         }
         seeds.store(queue, host_seeds.data());
     }
-    /*
-    void store_objects(const std::vector<Object> &objs) {
+    
+    void store_objects(const std::vector<Obj> &objs) {
         store_objects(
             objs,
-            std::vector<Object>(),
+            std::vector<Obj>(),
             std::vector<bool>(objs.size(), false)
         );
     }
 
     void store_objects(
-        const std::vector<Object> &objs,
-        const std::vector<Object> &objs_prev,
+        const std::vector<Obj> &objs,
+        const std::vector<Obj> &objs_prev,
         const std::vector<bool> &objs_mask
     ) {
         store_objs_to_buf(queue, objects, objs);
@@ -120,25 +123,24 @@ public:
         }
 
         assert(objs.size() == objs_mask.size());
-        std::vector<uchar_pk> mask_pk(objs_mask.size());
+        std::vector<uchar> mask_pk(objs_mask.size());
         std::transform(
             objs_mask.begin(), objs_mask.end(),
-            mask_pk.begin(), [](bool x) { return (uchar_pk)x; }
+            mask_pk.begin(), [](uchar x) { return uchar(x); }
         );
         objects_mask.store(queue, mask_pk.data(), mask_pk.size());
 
         object_count = objs.size();
     }
-    */
     
     void load_image(uint8_t *data) {
         image.load(queue, data);
     }
 
-    void set_view(const View<G> &v) {
+    void set_view(const View<Geo> &v) {
         set_view(v, v);
     }
-    void set_view(const View<G> &v, const View<G> &vp) {
+    void set_view(const View<Geo> &v, const View<Geo> &vp) {
         view = v;
         view_prev = vp;
     }
@@ -155,11 +157,13 @@ public:
             monte_carlo_counter,
             seeds,
 
-            to_device(view)
+            to_device(view),
             //to_device(view_prev)
 
-            //objects, objects_prev,
-            //objects_mask, object_count
+            objects,
+            //objects_prev,
+            //objects_mask, 
+            object_count
         );
 
         monte_carlo_counter += 1;

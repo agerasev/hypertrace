@@ -15,6 +15,8 @@
 #include <sdl/controller.hpp>
 #include <renderer.hpp>
 
+#include <myobject.hpp>
+
 //#include "scene.hpp"
 
 #include <device/main_device.ll.gen.cl.h>
@@ -47,11 +49,22 @@ int main(int argc, const char *argv[]) {
         size_t(main_device_ll_gen_cl_len)
     );
     Viewer viewer(width, height);
-    Renderer<Hyperbolic> renderer(
+    Renderer<Hyperbolic, MyObject> renderer(
         device, src,
         width, height
     );
-    //renderer.store_objects(create_scene());
+
+    std::vector<MyObject> objects{
+        MyObject(
+            hy::Horosphere(),
+            Moebius::identity()
+        ),
+        MyObject(
+            hy::Horosphere(),
+            Hyperbolic::xrotate(PI)
+        ),
+    };
+    renderer.store_objects(objects);
 
     Controller<Hyperbolic> controller;
     controller.grab_mouse(true);

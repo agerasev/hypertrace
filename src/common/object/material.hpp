@@ -2,8 +2,8 @@
 
 #include <types.h>
 #include <algebra/rotation.hpp>
-#include <render/context.hpp>
 #include <render/light.hpp>
+#include <random.hpp>
 
 
 class Material {};

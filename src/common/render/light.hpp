@@ -12,6 +12,13 @@ struct BaseLight {
     BaseLight(float3 col, bool diff=false) :
         color(col), diffuse(diff)
     {}
+
+    const BaseLight &base() const {
+        return *this;
+    }
+    BaseLight &base() {
+        return *this;
+    }
 };
 
 struct LocalLight : public BaseLight {
@@ -45,11 +52,11 @@ struct Light<Hyperbolic> : public BaseLight {
     LocalLight get_local() const {
         return LocalLight(
             ray.direction.vec().shuffle(0,1,2),
-            (BaseLight&)*this
+            base()
         );
     }
     void set_local(const LocalLight &ll) {
         ray.direction = quat(ll.direction, 0);
-        (LocalLight&)*this = ll;
+        base() = ll.base();
     }
 };

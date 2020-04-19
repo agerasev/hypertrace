@@ -13,6 +13,20 @@ struct EnableIf<true, T> {
 template <bool B, typename T = void>
 using enable_if = typename EnableIf<B, T>::type;
 
+// Is same
+template<class T, class U>
+struct IsSame {
+    static const bool value = false;
+};
+template<class T>
+struct IsSame<T, T> {
+    static const bool value = true;
+};
+template <typename T, typename U>
+constexpr bool is_same() {
+    return IsSame<T, U>::value;
+}
+
 // Nth argument
 template <int N, typename ...Args>
 struct NthArg {};

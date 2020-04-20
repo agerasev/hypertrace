@@ -1,7 +1,8 @@
 #pragma once
 
 #include <traits.hpp>
-#include <variant.hpp>
+#include <container/variant.hpp>
+
 #include "shape.hpp"
 #include "object.hpp"
 
@@ -12,20 +13,27 @@ constexpr bool _shp_repeated() {
 }
 
 template <typename ...Shps>
-class VariantShape :
-    public Shape<typename nth_arg<0, Shps...>::Geo>,
-    public Variant<Shps...>
-{
+class VariantShape : public Shape<typename nth_arg<0, Shps...>::Geo> {
 public:
     typedef typename nth_arg<0, Shps...>::Geo Geo;
     static_assert(all<is_same<typename Shps::Geo, Geo>()...>());
     static const bool repeated = any<_shp_repeated<Shps>()...>();
+    
+private:
+    Variant<Shps...> variant;
 
+public:
     VariantShape() = default;
-    VariantShape(Variant<Shps...> v) : Variant<Shps...>(v) {}
+    VariantShape(Variant<Shps...> v) : variant(v) {}
     template <int P, typename E>
     static VariantShape init(const E &e) {
         return VariantShape(Variant<Shps...>::template init<P>(e));
+    }
+    Variant<Shps...> &as_variant() {
+        return variant;
+    }
+    const Variant<Shps...> &as_variant() const {
+        return variant;
     }
 
 private:
@@ -44,8 +52,8 @@ public:
     real detect(
         Context &context, typename Geo::Direction &normal, Light<Hy> &light
     ) const {
-        return Variant<Shps...>::as_union().template call<DetectCaller, 0>(
-            Variant<Shps...>::id(), context, normal, light
+        return variant.as_union().template call<DetectCaller, 0>(
+            variant.id(), context, normal, light
         );
     }
 };
@@ -59,10 +67,7 @@ constexpr bool _obj_repeated() {
 }
 
 template <typename ...Objs>
-class VariantObject :
-    public Object<typename nth_arg<0, Objs...>::Geo>,
-    public Variant<Objs...>
-{
+class VariantObject : public Object<typename nth_arg<0, Objs...>::Geo> {
 public:
     typedef typename nth_arg<0, Objs...>::Geo Geo;
     static_assert(all<is_same<typename Objs::Geo, Geo>()...>());
@@ -71,11 +76,22 @@ public:
 
     static const bool repeated = any<_obj_repeated<Objs>()...>();
 
+    
+private:
+    Variant<Objs...> variant;
+
+public:
     VariantObject() = default;
-    VariantObject(Variant<Objs...> v) : Variant<Objs...>(v) {}
+    VariantObject(Variant<Objs...> v) : variant(v) {}
     template <int P, typename E>
     static VariantObject init(const E &e) {
         return VariantObject(Variant<Objs...>::template init<P>(e));
+    }
+    Variant<Objs...> &as_variant() {
+        return variant;
+    }
+    const Variant<Objs...> &as_variant() const {
+        return variant;
     }
 
 private:
@@ -100,8 +116,8 @@ private:
 public:
     template <typename Context>
     real detect(Context &context, Cache &cache, Light<Hy> &light) const {
-        return Variant<Objs...>::as_union().template call<DetectCaller, 0>(
-            Variant<Objs...>::id(), context, cache, light
+        return variant.as_union().template call<DetectCaller, 0>(
+            variant.id(), context, cache, light
         );
     }
     template <typename Context>
@@ -109,8 +125,8 @@ public:
         Context &context, const Cache &cache,
         Light<Hy> &light, float3 &luminance
     ) const {
-        return Variant<Objs...>::as_union().template call<InteractCaller, 0>(
-            Variant<Objs...>::id(), context, cache, light, luminance
+        return variant.as_union().template call<InteractCaller, 0>(
+            variant.id(), context, cache, light, luminance
         );
     }
 };
@@ -131,8 +147,8 @@ private:
     };
 public:
     static type to_device(const VariantShape<Shps...> &shp) {
-        return shp.Variant<Shps...>::as_union().template call<PackCaller, 0>(
-            shp.Variant<Shps...>::id()
+        return shp.as_variant().as_union().template call<PackCaller, 0>(
+            shp.as_variant().id()
         );
     }
 };
@@ -150,8 +166,8 @@ private:
     };
 public:
     static type to_device(const VariantObject<Objs...> &obj) {
-        return obj.Variant<Objs...>::as_union().template call<PackCaller, 0>(
-            obj.Variant<Objs...>::id()
+        return obj.as_variant().as_union().template call<PackCaller, 0>(
+            obj.as_variant().id()
         );
     }
 };

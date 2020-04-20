@@ -57,11 +57,21 @@ int main(int argc, const char *argv[]) {
     std::vector<MyObject> objects{
         MyObject(
             MyShape::init<0>(hy::Plane()),
-            MyMaterial(Lambertian(), float3(0.9f, 0.9f, 0.1f))
+            MyMaterial(
+                make_pair(0.2, Specular()),
+                make_pair(0.8, Colored<Lambertian>(
+                    Lambertian(), float3(0.9f, 0.9f, 0.1f)
+                ))
+            )
         ),
         MyObject(
             MyShape::init<1>(hy::Horosphere()),
-            MyMaterial(Lambertian(), float3(0.1f, 0.1f, 0.9f))
+            MyMaterial(
+                make_pair(0.1, Specular()),
+                make_pair(0.9, Colored<Lambertian>(
+                    Lambertian(), float3(0.1f, 0.1f, 0.9f)
+                ))
+            )
         ),
     };
     renderer.store_objects(objects);

@@ -28,16 +28,18 @@ struct B {
     }
 };
 
-class Var : public Variant<A, B> {
+class Var {
 public:
-    Var(Variant<A, B> v) : Variant<A, B>(v) {}
+    Variant<A, B> var;
+
+    Var(Variant<A, B> v) : var(v) {}
     
     template <int P, typename E>
     static Var init(const E &e) {
         return Var(Variant<A, B>::init<P>(e));
     }
-    DERIVE_VARIANT_METHOD(set)
-    DERIVE_VARIANT_METHOD_CONST(get)
+    DERIVE_VARIANT_METHOD(var, set)
+    DERIVE_VARIANT_METHOD_CONST(var, get)
 };
 
 TEST_CASE("Variant", "[variant]") {
@@ -47,6 +49,7 @@ TEST_CASE("Variant", "[variant]") {
         Variant<A, B> a = Variant<A, B>::init<0>(A{1});
         Variant<A, B> b = Variant<A, B>::init<1>(B{3.1415});
 
+        REQUIRE(a.size() == 2);
         REQUIRE(a.id() == 0);
         REQUIRE(a.as_union().elem<0>().x == 1);
         REQUIRE(b.id() == 1);

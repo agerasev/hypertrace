@@ -3,7 +3,7 @@
 mkdir -p build && \
 cd build && \
 
-cmake .. && \
+cmake ../src && \
 if [ -z $1 ]; then
     make
 else

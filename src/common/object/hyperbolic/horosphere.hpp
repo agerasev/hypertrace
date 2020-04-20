@@ -83,11 +83,11 @@ public:
         const Mat &bm,
         Args ...args
     ) :
+        materials{args...},
+        border_material(bm),
         tiling(ti),
         cell_size(cs),
-        border_width(bw),
-        border_material(bm),
-        materials{args...}
+        border_width(bw)
     {}
     
     template <typename Context>

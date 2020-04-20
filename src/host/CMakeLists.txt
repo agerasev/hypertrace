@@ -13,7 +13,6 @@ set(CMAKE_C_FLAGS "\
 set(CMAKE_CXX_FLAGS "\
     ${CMAKE_CXX_FLAGS} \
     ${COMMON_FLAGS} \
-    -std=c++14 \
 ")
 
 set(COMMON_SRC
@@ -38,7 +37,6 @@ include_directories(
 
 add_library(${PROJECT_NAME} OBJECT ${COMMON_SRC} ${HOST_SRC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC
-    "-DHOST"
     "-DCL_TARGET_OPENCL_VERSION=120"
 )
 

@@ -12,6 +12,5 @@ include_directories(
 
 add_executable(test ${COMMON_SRC} "unit_test.cpp")
 target_compile_definitions(test PRIVATE
-    "-DHOST"
     "-DUNIT_TEST"
 )

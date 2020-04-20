@@ -5,7 +5,7 @@ compiler:
   - clang
 
 os: linux
-#dist: bionic
+dist: bionic
 
 #before_install:
 #  - sudo apt-get update

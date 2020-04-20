@@ -2,7 +2,7 @@
 
 #include <types.h>
 #include <traits.hpp>
-#include <geometry.hpp>
+#include <geometry/geometry.hpp>
 
 
 template <typename G>

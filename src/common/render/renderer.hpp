@@ -4,20 +4,19 @@
 #include "light.hpp"
 #include <view.hpp>
 
-template <typename G>
+
+template <typename G, typename Rng>
 class Renderer {
 public:
     struct Context {
-        xrand::Rng &rng;
+        xrand::LCRng &rng;
         bool repeat = false;
     };
 
-    xrand::Rng &rng;
+    Rng &rng;
 
 public:
-    Renderer(xrand::Rng &rng) :
-        rng(rng)
-    {}
+    Renderer(Rng &rng) : rng(rng) {}
 
     template <typename Obj>
     float3 trace(
@@ -60,7 +59,7 @@ public:
                 Obj obj = objects.load(nearest_i);
                 obj.interact(context, nearest_cache, nearest_light, luminance);
             } else {
-                luminance += light.color;
+                luminance += light.intensity;
                 break;
             }
         }

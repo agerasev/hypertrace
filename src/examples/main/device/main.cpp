@@ -5,19 +5,12 @@
 #include <memory.hpp>
 
 #include <algebra/vector.hpp>
-#include <algebra/complex.hpp>
 
 #include <view.hpp>
 #include <work.hpp>
 
 #include <geometry/hyperbolic.hpp>
-#include <geometry/ray.hpp>
-#include <random.hpp>
-
-#include <object/hyperbolic/horosphere.hpp>
-
 #include <render/renderer.hpp>
-
 #include <myobject.hpp>
 
 
@@ -36,7 +29,7 @@ ASSERT_DUMMY(_View, View<Hy>);
 ASSERT_DUMMY_ALIGN(_MyObject, MyObject);
 
 
-using namespace hyperbolic;
+typedef xrand::LCRng Rng;
 
 void trace(
     global_ptr<float> screen,
@@ -50,14 +43,16 @@ void trace(
 ) {
     int idx = work::get_global_id(0);
 
-    xrand::Rng rng(seed.load(idx));
+    Rng rng(seed.load(idx));
 
     real2 pos = 2*real2(
         (real)(idx % width) - 0.5_r*(width) + xrand::uniform<real>(rng),
         (real)(idx / width) - 0.5_r*(height) + xrand::uniform<real>(rng)
     )/height;
 
-    float3 color = Renderer<Hy>(rng).trace(view, pos, objects, object_count);
+    Renderer<Hy, Rng> renderer(rng);
+
+    float3 color = renderer.trace(view, pos, objects, object_count);
 
     seed.store(rng.state(), idx);
 

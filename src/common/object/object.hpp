@@ -1,7 +1,7 @@
 #pragma once
 
 #include <types.h>
-#include <geometry.hpp>
+#include <geometry/geometry.hpp>
 #include <render/light.hpp>
 
 
@@ -13,5 +13,5 @@ public:
     // Storage for state between detection and interaction
     struct Cache {};
     // Allow repeated collisions or not
-    static const bool repeat = false;
+    static const bool repeated = false;
 };

@@ -12,9 +12,9 @@ class VolumeMaterial : public Material {};
 
 class Black : public SurfaceMaterial {
 public:
-    template <typename Ctx>
+    template <typename Context>
     bool interact(
-        Ctx &context, real3 normal,
+        Context &context, real3 normal,
         LocalLight &light, float3 &emission
     ) {
         return false;
@@ -22,9 +22,9 @@ public:
 };
 class Transparent : public SurfaceMaterial {
 public:
-    template <typename Ctx>
+    template <typename Context>
     bool interact(
-        Ctx &context, real3 normal,
+        Context &context, real3 normal,
         LocalLight &light, float3 &emission
     ) {
         //light.face = !light.face;
@@ -34,9 +34,9 @@ public:
 
 class Specular : public SurfaceMaterial {
 public:
-    template <typename Ctx>
+    template <typename Context>
     bool interact(
-        Ctx &context, real3 normal,
+        Context &context, real3 normal,
         LocalLight &light, float3 &emission
     ) {
         light.direction -= (2*dot(light.direction, normal))*normal;
@@ -45,9 +45,9 @@ public:
 };
 class Lambertian : public SurfaceMaterial {
 public:
-    template <typename Ctx>
+    template <typename Context>
     bool interact(
-        Ctx &context, real3 normal,
+        Context &context, real3 normal,
         LocalLight &light, float3 &emission
     ) {
         if (dot(normal, light.direction) > 0) {
@@ -68,12 +68,12 @@ public:
     M base;
     float3 color;
 
-    template <typename Ctx>
+    template <typename Context>
     bool interact(
-        Ctx &context, real3 normal,
+        Context &context, real3 normal,
         LocalLight &light, float3 &emission
     ) {
-        light.color *= color;
+        light.intensity *= color;
         return base.interact(context, normal, light, emission);
     }
 };
@@ -83,12 +83,12 @@ public:
     M base;
     float3 color;
 
-    template <typename Ctx>
+    template <typename Context>
     bool interact(
-        Ctx &context, real3 normal,
+        Context &context, real3 normal,
         LocalLight &light, float3 &emission
     ) {
-        emission += color*light.color;
+        emission += color*light.intensity;
         return base.interact(context, normal, light, emission);
     }
 };

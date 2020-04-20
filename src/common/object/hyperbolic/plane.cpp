@@ -132,8 +132,7 @@ TEST_CASE("Hyperbolic Plane", "[hyperbolic.plane]") {
                 quat(rng.d<real3>().unit(), 0)
             );
             Light<Hy> light{incoming, float3(0)};
-            Plane::Cache cache;
-            real dist = h.detect(ctx, cache, light);
+            real dist = h.detect(ctx, light);
             if (dist > 0_r) {
                 hits += 1;
                 REQUIRE(length(light.ray.start) == approx(1));

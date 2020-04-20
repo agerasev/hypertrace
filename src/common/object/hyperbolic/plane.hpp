@@ -1,21 +1,16 @@
 #include <traits.hpp>
 #include <algebra/complex.hpp>
 #include <geometry/hyperbolic.hpp>
-#include <object.hpp>
+#include <object/shape.hpp>
 #include <render/light.hpp>
 
 
 namespace hyperbolic {
-class Plane : public Object<Hy> {
-public:
-    typedef Object<Hy>::Cache Cache;
 
+class Plane : public Shape<Hy> {
 public:
     template <typename Context>
-    real detect(
-        Context &context, Cache &cache,
-        Light<Hy> &light
-    ) const {
+    real detect(Context &context, Light<Hy> &light) const {
         // Line cannot intersect plane twice
         if (context.repeat) {
             return -1_r;
@@ -45,15 +40,6 @@ public:
         light.ray.direction = Hy::dir_at(p, d, h);
 
         return Hy::distance(p, h);
-    }
-
-    template <typename Context>
-    bool interact(
-        Context &context, const Cache &cache,
-        Light<Hy> &light, float3 &luminance
-    ) const {
-        luminance += float3(1.0f, 0.75f, 0.5f);
-        return false;
     }
 };
 

@@ -11,7 +11,7 @@
 #include <opencl/opencl.hpp>
 
 #include <traits.hpp>
-#include <geometry.hpp>
+#include <geometry/geometry.hpp>
 #include <view.hpp>
 //#include <object.hh>
 

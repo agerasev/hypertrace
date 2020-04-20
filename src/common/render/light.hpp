@@ -5,12 +5,12 @@
 #include <geometry/hyperbolic.hpp>
 
 struct BaseLight {
-    float3 color;
+    float3 intensity;
     bool diffuse = false;
 
     BaseLight() = default;
     BaseLight(float3 col, bool diff=false) :
-        color(col), diffuse(diff)
+        intensity(col), diffuse(diff)
     {}
 
     const BaseLight &base() const {

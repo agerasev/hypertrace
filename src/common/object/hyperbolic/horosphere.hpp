@@ -3,22 +3,19 @@
 #include <traits.hpp>
 #include <algebra/complex.hpp>
 #include <geometry/hyperbolic.hpp>
-#include <object.hpp>
+#include <object/shape.hpp>
 #include <render/light.hpp>
 
 
 namespace hyperbolic {
-class Horosphere : public Object<Hy> {
+
+class Horosphere : public Shape<Hy> {
 public:
-    typedef Object<Hy>::Cache Cache;
     static const bool repeated = true;
 
 public:
     template <typename Context>
-    real detect(
-        Context &context, Cache &cache,
-        Light<Hy> &light
-    ) const {
+    real detect(Context &context, Light<Hy> &light) const {
         quat p = light.ray.start, d = light.ray.direction;
         real dxy = length(d.re());
         // FIXME: check (dxy < EPS)
@@ -43,20 +40,6 @@ public:
         light.ray.direction = Hy::dir_at(p, d, h);
 
         return Hy::distance(p, h);
-    }
-
-    template <typename Context>
-    bool interact(
-        Context &context, const Cache &cache,
-        Light<Hy> &light, float3 &luminance
-    ) const {
-        real2 fr = math::fract(light.ray.start.re().vec()).first;
-        if (fr[0] > 0.1_r && fr[1] > 0.1_r) {
-            luminance += float3(0.5f, 0.5f, 1.0f);
-        } else {
-            luminance += float3(0, 0, 1);
-        }
-        return false;
     }
 };
 

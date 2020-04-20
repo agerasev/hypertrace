@@ -71,8 +71,7 @@ TEST_CASE("Horosphere", "[hyperbolic.horosphere]") {
                 quat(rng.d<real3>().unit(), 0)
             );
             Light<Hy> light{incoming, float3(0)};
-            Horosphere::Cache cache;
-            real dist = h.detect(ctx, cache, light);
+            real dist = h.detect(ctx, light);
             if (incoming.start[2] > 1_r) {
                 REQUIRE(dist > 0_r);
             }

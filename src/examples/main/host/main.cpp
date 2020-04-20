@@ -55,11 +55,13 @@ int main(int argc, const char *argv[]) {
     );
 
     std::vector<MyObject> objects{
-        MyObject::init<0>(
-            hy::Plane()
+        MyObject(
+            MyShape::init<0>(hy::Plane()),
+            float3(1, 1, 0)
         ),
-        MyObject::init<1>(
-            hy::Horosphere()
+        MyObject(
+            MyShape::init<1>(hy::Horosphere()),
+            float3(0, 0, 1)
         ),
     };
     renderer.store_objects(objects);

@@ -7,14 +7,7 @@
 
 namespace xrand {
 
-template <typename T>
-class RngBase {
-public:
-    T next();
-    T state() const;
-};
-
-class LCRng : public RngBase<uint> {
+class LCRng {
 private:
     uint state_;
 public:
@@ -27,18 +20,18 @@ public:
     }
 };
 
-typedef LCRng Rng;
-
-template <typename T>
+template <typename T, typename Rng>
 T uniform(Rng &rng);
 template <typename T>
 struct Uniform {
+    template <typename Rng>
     static T sample(Rng &rng) {
         return T(rng.next()/0x100000000_r);
     }
 };
 template <typename T, int N>
 struct Uniform<vector<T, N>> {
+    template <typename Rng>
     static vector<T, N> sample(Rng &rng) {
         vector<T, N> v;
         for (int i = 0; i < N; ++i) {
@@ -47,14 +40,46 @@ struct Uniform<vector<T, N>> {
         return v;
     }
 };
-template <typename T>
+template <typename T, typename Rng>
 T uniform(Rng &rng) {
     return Uniform<T>::sample(rng);
 }
 
-real3 sphere(Rng &rng);
-real3 hemisphere(Rng &rng);
-real3 hemisphere_cosine(Rng &rng);
-real3 sphere_cap(Rng &rng, real cos_alpha);
+inline real3 _sphere_point(real cos_theta, real sin_theta, real phi) {
+    return real3(math::cos(phi)*sin_theta, math::sin(phi)*sin_theta, cos_theta);
+}
+
+template <typename Rng>
+real3 sphere(Rng &rng) {
+    real phi = 2*PI*uniform<real>(rng);
+    real cos_theta = 1 - 2*uniform<real>(rng);
+    real sin_theta = math::sqrt(1 - cos_theta*cos_theta);
+    return _sphere_point(cos_theta, sin_theta, phi);
+}
+
+template <typename Rng>
+real3 hemisphere(Rng &rng) {
+    real phi = 2*PI*uniform<real>(rng);
+    real cos_theta = uniform<real>(rng);
+    real sin_theta = math::sqrt(1 - cos_theta*cos_theta);
+    return _sphere_point(cos_theta, sin_theta, phi);
+}
+
+template <typename Rng>
+real3 hemisphere_cosine(Rng &rng) {
+    real phi = 2*PI*uniform<real>(rng);
+    real sqr_cos_theta = uniform<real>(rng);
+    real cos_theta = math::sqrt(sqr_cos_theta);
+    real sin_theta = math::sqrt(1 - sqr_cos_theta);
+    return _sphere_point(cos_theta, sin_theta, phi);
+}
+
+template <typename Rng>
+real3 sphere_cap(Rng &rng, real cos_alpha) {
+    real phi = 2*PI*uniform<real>(rng);
+    real cos_theta = 1 - (1 - cos_alpha)*uniform<real>(rng);
+    real sin_theta = math::sqrt(1 - cos_theta*cos_theta);
+    return _sphere_point(cos_theta, sin_theta, phi);
+}
 
 }

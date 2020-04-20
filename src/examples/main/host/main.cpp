@@ -57,11 +57,11 @@ int main(int argc, const char *argv[]) {
     std::vector<MyObject> objects{
         MyObject(
             MyShape::init<0>(hy::Plane()),
-            float3(1, 1, 0)
+            MyMaterial(Lambertian(), float3(0.9f, 0.9f, 0.1f))
         ),
         MyObject(
             MyShape::init<1>(hy::Horosphere()),
-            float3(0, 0, 1)
+            MyMaterial(Lambertian(), float3(0.1f, 0.1f, 0.9f))
         ),
     };
     renderer.store_objects(objects);

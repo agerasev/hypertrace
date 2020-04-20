@@ -132,10 +132,16 @@ TEST_CASE("Hyperbolic Plane", "[hyperbolic.plane]") {
                 quat(rng.d<real3>().unit(), 0)
             );
             Light<Hy> light{incoming, float3(0)};
-            real dist = h.detect(ctx, light);
+            quat normal;
+            real dist = h.detect(ctx, normal, light);
             if (dist > 0_r) {
                 hits += 1;
+
                 REQUIRE(length(light.ray.start) == approx(1));
+                REQUIRE(length(light.ray.direction) == approx(1));
+
+                REQUIRE(length(normal) == approx(1));
+                REQUIRE(normal == approx(light.ray.start));
             }
         }
         REQUIRE(hits > 0);

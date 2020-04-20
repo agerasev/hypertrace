@@ -5,6 +5,13 @@ quat Hy::origin() {
     return 1_j;
 }
 
+real3 Hy::dir_to_local(quat, quat dir) {
+    return dir.vec().shuffle(0,1,2);
+}
+quat Hy::dir_from_local(quat, real3 dir) {
+    return quat(dir, 0);
+}
+
 real Hy::length(quat a) {
     return Hy::distance(a, origin());
 }

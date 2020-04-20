@@ -4,50 +4,57 @@
 #include "object.hpp"
 
 
-template <typename Shp>
+template <typename Shp, typename Mat>
 class Covered : public Object<typename Shp::Geo> {
 public:
     typedef typename Shp::Geo Geo;
-    typedef Object<Hy>::Cache Cache;
+    struct Cache : public Object<Hy>::Cache {
+        typename Geo::Direction normal;
+    };
     static const bool repeated = Shp::repeated;
 
 public:
     Shp shape;
-    float3 color;
+    Mat material;
 
 public:
     Covered() = default;
-    Covered(const Shp &shp, float3 col) :
-        shape(shp), color(col)
+    Covered(const Shp &shp, const Mat &mat) :
+        shape(shp), material(mat)
     {}
 
     template <typename Context>
-    real detect(Context &context, Cache &, Light<Hy> &light) const {
-        return shape.detect(context, light);
+    real detect(Context &context, Cache &cache, Light<Hy> &light) const {
+        return shape.detect(context, cache.normal, light);
     }
 
     template <typename Context>
     bool interact(
-        Context &context, const Cache &,
+        Context &context, const Cache &cache,
         Light<Hy> &light, float3 &luminance
     ) const {
-        luminance += color*light.intensity;
-        return false;
+        real3 ln = Geo::dir_to_local(light.ray.start, cache.normal);
+        LocalLight ll = light.get_local();
+        bool bounce = material.interact(context, ln, ll, luminance);
+        if (bounce) {
+            light.set_local(ll);
+        }
+        return bounce;
     }
 };
 
 #ifdef HOST
 
-template <typename Shp>
-struct ToDevice<Covered<Shp>> {
+template <typename Shp, typename Mat>
+struct ToDevice<Covered<Shp, Mat>> {
     struct type {
         device_type<Shp> shape;
-        device_type<float3> color;
+        device_type<Mat> material;
     };
-    static type to_device(const Covered<Shp> &cov) {
+    static type to_device(const Covered<Shp, Mat> &cov) {
         return type {
             .shape = ::to_device(cov.shape),
-            .color = ::to_device(cov.color),
+            .material = ::to_device(cov.material),
         };
     }
 };

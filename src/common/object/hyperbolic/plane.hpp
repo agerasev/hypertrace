@@ -7,10 +7,10 @@
 
 namespace hyperbolic {
 
-class Plane : public Shape<Hy> {
+class Plane : public SurfaceShape<Hy> {
 public:
     template <typename Context>
-    real detect(Context &context, Light<Hy> &light) const {
+    real detect(Context &context, quat &normal, Light<Hy> &light) const {
         // Line cannot intersect plane twice
         if (context.repeat) {
             return -1_r;
@@ -38,6 +38,7 @@ public:
 
         light.ray.start = h;
         light.ray.direction = Hy::dir_at(p, d, h);
+        normal = h;
 
         return Hy::distance(p, h);
     }

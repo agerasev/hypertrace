@@ -15,6 +15,8 @@ public:
 
     Rng &rng;
 
+    float3 background = float3(1);
+
 public:
     Renderer(Rng &rng) : rng(rng) {}
 
@@ -36,7 +38,7 @@ public:
         float3 luminance(0);
         Light<G> light = init_light;
 
-        for (int k = 0; k < 1; ++k) {
+        for (int k = 0; k < 3; ++k) {
             int nearest_i = -1;
             real nearest_dist = -1_r;
             typename Obj::Cache nearest_cache;
@@ -57,9 +59,11 @@ public:
 
             if (nearest_i >= 0) {
                 Obj obj = objects.load(nearest_i);
-                obj.interact(context, nearest_cache, nearest_light, luminance);
+                if (obj.interact(context, nearest_cache, nearest_light, luminance)) {
+                    light = nearest_light;
+                }
             } else {
-                luminance += light.intensity;
+                luminance += light.intensity*background;
                 break;
             }
         }

@@ -14,4 +14,19 @@ public:
     struct Cache {};
     // Allow repeated collisions or not
     static const bool repeated = false;
+
+    template <typename Context>
+    real detect(
+        Context &context,
+        Cache &cache,
+        Light<G> &light
+    ) const;
+
+    template <typename Context>
+    bool interact(
+        Context &context,
+        const Cache &cache,
+        Light<G> &light,
+        float3 &luminance
+    ) const;
 };

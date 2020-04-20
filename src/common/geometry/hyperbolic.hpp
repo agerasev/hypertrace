@@ -12,6 +12,8 @@ public:
     typedef Moebius Map;
 
     static Position origin();
+    static real3 dir_to_local(Position pos, Direction dir);
+    static Direction dir_from_local(Position pos, real3 dir);
 
     static real length(Position a);
     static real distance(Position a, Position b);

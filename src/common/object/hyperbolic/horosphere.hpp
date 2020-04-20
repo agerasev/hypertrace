@@ -9,13 +9,13 @@
 
 namespace hyperbolic {
 
-class Horosphere : public Shape<Hy> {
+class Horosphere : public SurfaceShape<Hy> {
 public:
     static const bool repeated = true;
 
 public:
     template <typename Context>
-    real detect(Context &context, Light<Hy> &light) const {
+    real detect(Context &context, quat &normal, Light<Hy> &light) const {
         quat p = light.ray.start, d = light.ray.direction;
         real dxy = length(d.re());
         // FIXME: check (dxy < EPS)
@@ -38,6 +38,7 @@ public:
 
         light.ray.start = h;
         light.ray.direction = Hy::dir_at(p, d, h);
+        normal = quat(0, 0, 1, 0);
 
         return Hy::distance(p, h);
     }

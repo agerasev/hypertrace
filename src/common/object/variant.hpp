@@ -6,6 +6,11 @@
 #include "object.hpp"
 
 
+template <typename Shp>
+constexpr bool _shp_repeated() {
+    return Shp::repeated;
+}
+
 template <typename ...Shps>
 class VariantShape :
     public Shape<typename nth_arg<0, Shps...>::Geo>,
@@ -14,6 +19,7 @@ class VariantShape :
 public:
     typedef typename nth_arg<0, Shps...>::Geo Geo;
     static_assert(all<is_same<typename Shps::Geo, Geo>()...>());
+    static const bool repeated = any<_shp_repeated<Shps>()...>();
 
     VariantShape() = default;
     VariantShape(Variant<Shps...> v) : Variant<Shps...>(v) {}
@@ -26,22 +32,31 @@ private:
     template <typename E, int P>
     struct DetectCaller {
         template <typename Context>
-        static real call(const E &e, Context &context, Light<Hy> &light) {
-            return e.detect(context, light);
+        static real call(
+            const E &e, 
+            Context &context, typename Geo::Direction &normal, Light<Hy> &light
+        ) {
+            return e.detect(context, normal, light);
         }
     };
 public:
     template <typename Context>
-    real detect(Context &context, Light<Hy> &light) const {
+    real detect(
+        Context &context, typename Geo::Direction &normal, Light<Hy> &light
+    ) const {
         return Variant<Shps...>::as_union().template call<DetectCaller, 0>(
-            Variant<Shps...>::id(), context, light
+            Variant<Shps...>::id(), context, normal, light
         );
     }
 };
 
 
 template <typename Obj>
-using obj_cache_type = typename Obj::Cache;
+using _obj_cache_type = typename Obj::Cache;
+template <typename Obj>
+constexpr bool _obj_repeated() {
+    return Obj::repeated;
+}
 
 template <typename ...Objs>
 class VariantObject :
@@ -52,7 +67,9 @@ public:
     typedef typename nth_arg<0, Objs...>::Geo Geo;
     static_assert(all<is_same<typename Objs::Geo, Geo>()...>());
 
-    typedef Union<obj_cache_type<Objs>...> Cache;
+    typedef Union<_obj_cache_type<Objs>...> Cache;
+
+    static const bool repeated = any<_obj_repeated<Objs>()...>();
 
     VariantObject() = default;
     VariantObject(Variant<Objs...> v) : Variant<Objs...>(v) {}

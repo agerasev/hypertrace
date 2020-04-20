@@ -9,6 +9,12 @@
 #include <object/mapped.hpp>
 
 
-typedef VariantShape<hy::Plane, hy::Horosphere> MyShape;
-typedef Combination<Specular, Colored<Lambertian>> MyMaterial;
-typedef Covered<MyShape, MyMaterial> MyObject;
+//typedef VariantShape<hy::Plane, hy::Horosphere> MyShape;
+//typedef Combination<Specular, Colored<Lambertian>> MyMaterial;
+//typedef Covered<MyShape, MyMaterial> MyObject;
+
+typedef Colored<Lambertian> MyMaterial;
+typedef VariantObject<
+    hy::TiledPlane<MyMaterial, 2>,
+    hy::TiledHorosphere<MyMaterial, 4>
+> MyObject;

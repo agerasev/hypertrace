@@ -12,7 +12,6 @@ private:
     Union<Elems...> union_;
 
 public:
-    Variant() = default;
     template <int P>
     void set(const nth_arg<P, Elems...> &e) {
         static_assert(P >= 0 && P < sizeof...(Elems), "Index is out of bounds");

@@ -131,4 +131,13 @@ DEFINE_PRIMITIVE_MATH_FLOAT(float)
 DEFINE_PRIMITIVE_MATH_FLOAT(double)
 #endif
 
+template <typename T>
+T mod(T x, T y) {
+    return x % y;
+}
+template <typename T>
+T rem(T x, T y) {
+    return math::mod(math::mod(x, y) + y, y);
+}
+
 }

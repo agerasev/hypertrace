@@ -112,9 +112,8 @@ public:
     float3 color;
 
     Colored() = default;
-    Colored(const M &b, float3 v) :
-        base(b), color(v)
-    {}
+    Colored(float3 v) : color(v) {}
+    Colored(float3 v, const M &b) : base(b), color(v) {}
 
     template <typename Context>
     bool interact(
@@ -132,9 +131,8 @@ public:
     float3 intensity;
 
     Emissive() = default;
-    Emissive(const M &b, float3 v) :
-        base(b), intensity(v)
-    {}
+    Emissive(float3 v) : intensity(v) {}
+    Emissive(float3 v, const M &b) : base(b), intensity(v) {}
 
     template <typename Context>
     bool interact(

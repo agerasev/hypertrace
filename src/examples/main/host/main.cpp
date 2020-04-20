@@ -54,6 +54,7 @@ int main(int argc, const char *argv[]) {
         width, height
     );
 
+    /*
     std::vector<MyObject> objects{
         MyObject(
             MyShape::init<0>(hy::Plane()),
@@ -73,6 +74,25 @@ int main(int argc, const char *argv[]) {
                 ))
             )
         ),
+    };
+    */
+    std::vector<MyObject> objects{
+        MyObject::init<0>(hy::TiledPlane<MyMaterial, 2>(
+            hy::PlaneTiling::PENTAGONAL,
+            0.05_r,
+            Colored<Lambertian>(float3(0.1f, 0.1f, 0.1f)),
+            Colored<Lambertian>(float3(0.9f, 0.1f, 0.1f)),
+            Colored<Lambertian>(float3(0.1f, 0.9f, 0.1f))
+        )),
+        MyObject::init<1>(hy::TiledHorosphere<MyMaterial, 4>(
+            hy::HorosphereTiling::HEXAGONAL,
+            0.5_r, 0.05_r,
+            Colored<Lambertian>(float3(0.1f, 0.1f, 0.1f)),
+            Colored<Lambertian>(float3(0.1f, 0.1f, 0.9f)),
+            Colored<Lambertian>(float3(0.9f, 0.9f, 0.1f)),
+            Colored<Lambertian>(float3(0.9f, 0.1f, 0.1f)),
+            Colored<Lambertian>(float3(0.1f, 0.9f, 0.1f))
+        )),
     };
     renderer.store_objects(objects);
 

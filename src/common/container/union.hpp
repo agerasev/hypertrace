@@ -22,6 +22,8 @@ private:
     friend struct helper::Caller;
 
 public:
+    Union() {}
+
     static constexpr int size() {
         return sizeof...(Elems) + 1;
     }

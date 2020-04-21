@@ -58,7 +58,7 @@ int main(int argc, const char *argv[]) {
     Controller<Hyperbolic> controller;
     controller.grab_mouse(true);
 
-    controller.view.position = Moebius(
+    controller.view.position = Moebius<comp>(
         comp(0.114543, 0.285363),
         comp(2.9287, -0.678274),
         comp(-0.0461927, -0.0460196),

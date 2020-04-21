@@ -7,6 +7,8 @@ set(COMMON_SRC
     "${CMAKE_SOURCE_DIR}/common/algebra/vector.cpp"
     "${CMAKE_SOURCE_DIR}/common/algebra/complex.cpp"
     "${CMAKE_SOURCE_DIR}/common/algebra/matrix.cpp"
+    "${CMAKE_SOURCE_DIR}/common/algebra/linear.cpp"
+    "${CMAKE_SOURCE_DIR}/common/algebra/affine.cpp"
     "${CMAKE_SOURCE_DIR}/common/algebra/moebius.cpp"
     "${CMAKE_SOURCE_DIR}/common/algebra/rotation.cpp"
     "${CMAKE_SOURCE_DIR}/common/geometry/hyperbolic.cpp"

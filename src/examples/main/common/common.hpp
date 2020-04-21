@@ -50,7 +50,7 @@ typedef Mapped<VariantObject<MyPlane, MyHorosphere>> MyObject;
 
 
 MyObject make_plane(
-    Moebius map,
+    Moebius<comp> map,
     MyPlane::Tiling tiling,
     const MyPlaneMaterials &mats,
     real bw = 0,
@@ -64,7 +64,7 @@ MyObject make_plane(
     );
 }
 MyObject make_horosphere(
-    Moebius map,
+    Moebius<comp> map,
     MyHorosphere::Tiling tiling,
     const MyHorosphereMaterials &mats,
     real cs = 1,

@@ -11,7 +11,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
 
     SECTION("Complex coefficients") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius m = rng.d<Moebius>().some();
+            Moebius<comp> m = rng.d<Moebius<comp>>().some();
             real a = rng.d<real>().normal();
             comp b = rng.d<comp>().normal();
             quat c = rng.d<quat>().normal();
@@ -23,8 +23,8 @@ TEST_CASE("Moebius transformation", "[moebius]") {
     }
     SECTION("Chaining") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a(rng.d<comp2x2>().normalized());
-            Moebius b(rng.d<comp2x2>().normalized());
+            Moebius<comp> a(rng.d<comp2x2>().normalized());
+            Moebius<comp> b(rng.d<comp2x2>().normalized());
             quat c = rng.d<quat>().normal();
 
             REQUIRE((a*b).apply(c) == approx(a.apply(b.apply(c))));
@@ -33,7 +33,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
     
     SECTION("Complex derivation") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = rng.d<Moebius>().some();
+            Moebius<comp> a = rng.d<Moebius<comp>>().some();
             comp p = rng.d<comp>().normal();
             comp v = rng.d<comp>().nonzero();
             
@@ -42,7 +42,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
     }
     SECTION("Quaternion directional derivation") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = rng.d<Moebius>().some();
+            Moebius<comp> a = rng.d<Moebius<comp>>().some();
             quat p = rng.d<quat>().normal();
             quat v = rng.d<quat>().nonzero();
             

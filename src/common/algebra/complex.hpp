@@ -8,6 +8,7 @@
 template <typename T, int D=1>
 class complex;
 
+
 // Is complex
 template <typename X>
 struct IsComplex {
@@ -56,6 +57,15 @@ struct ComplexType<T, 0> {
 };
 template <typename T, int D>
 using complex_type = typename ComplexType<T, D>::type;
+
+template <typename T, int M, int N>
+class matrix;
+template <typename T, int D, typename C=complex_type<T, D - 1>>
+matrix<C, 2, 2> lower(complex<T, D> c);
+template <typename T, int D, typename C=complex_type<T, D - 1>, int N=(1 << D)>
+enable_if<!is_complex<C>(), matrix<T, N, N>> to_matrix(complex<T, D> c);
+template <typename T, int D, typename C=complex_type<T, D - 1>, int N=(1 << D)>
+enable_if<is_complex<C>(), matrix<T, N, N>> to_matrix(complex<T, D> c);
 
 
 template <typename T, int D>
@@ -280,6 +290,13 @@ public:
     complex &operator/=(T a) {
         return *this = *this / a;
     }
+
+    matrix<C, 2, 2> lower() const {
+        return ::lower(*this);
+    }
+    matrix<T, N, N> to_matrix() const {
+        return ::to_matrix(*this);
+    }
 };
 
 // Complex of degree 0 is real number
@@ -375,15 +392,15 @@ enable_if<!is_complex<T>(), complex<T>> exp(complex<T> p) {
 // TODO: Add (complex, complex) power.
 template <typename T>
 enable_if<!is_complex<T>(), complex<T>> pow(complex<T> a, T p) {
-    T r = pow(length2(a), p/2);
-    T phi = p*atan2(a.im(), a.re());
-    return complex<T>(r*cos(phi), r*sin(phi));
+    T r = math::pow(length2(a), p/2);
+    T phi = p*math::atan2(a.im(), a.re());
+    return complex<T>(r*math::cos(phi), r*math::sin(phi));
 }
 template <typename T>
 enable_if<!is_complex<T>(), complex<T>> sqrt(complex<T> a) {
-    T r = sqrt(length(a));
-    T phi = T(0.5)*atan2(a.im(), a.re());
-    return complex<T>(r*cos(phi), r*sin(phi));
+    T r = math::sqrt(length(a));
+    T phi = T(0.5)*math::atan2(a.im(), a.re());
+    return complex<T>(r*math::cos(phi), r*math::sin(phi));
 }
 
 } // namespace math
@@ -553,4 +570,3 @@ CompApprox<T, D> approx(complex<T, D> c) {
 } // namespace test
 
 #endif
-

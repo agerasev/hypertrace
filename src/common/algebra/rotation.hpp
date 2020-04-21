@@ -5,6 +5,7 @@
 #include "traits.hpp"
 #include "vector.hpp"
 #include "complex.hpp"
+#include "linear.hpp"
 
 
 template <typename T, int N>

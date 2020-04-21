@@ -2,15 +2,15 @@
 
 #include "geometry.hpp"
 
-#include <algebra/complex.hpp>
-#include <algebra/moebius.hpp>
+#include <algebra/vector.hpp>
+#include <algebra/linear.hpp>
 
-class Hyperbolic {
+class Euclidean {
 // : public Geometry
 public:
-    typedef quat Position;
-    typedef quat Direction;
-    typedef Moebius<comp> Map;
+    typedef real3 Position;
+    typedef real3 Direction;
+    typedef Linear<real, 3> Map;
 
     static Position origin();
     static real3 dir_to_local(Position pos, Direction dir);
@@ -30,9 +30,6 @@ public:
     static Map xrotate(real theta);
     static Map yrotate(real theta);
 
-    // Move to position at the horosphere.
-    static Map horosphere(comp pos);
-
     // Turns direction `dir` to *j*.
     static Map look_to(Direction dir);
 
@@ -44,7 +41,7 @@ public:
     static Map move_at(Position pos);
     static Map move_to(Direction dir, real dist);
 };
-typedef Hyperbolic Hy;
+typedef Euclidean Eu;
 
-namespace hyperbolic {}
-namespace hy = hyperbolic;
+namespace euclidean {}
+namespace eu = euclidean;

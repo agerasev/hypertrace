@@ -363,6 +363,7 @@ public:
     }
 };
 
+
 #define DEFINE_MATRIX_MATH_FUNCTION_A(F) \
 template <typename T, int M, int N> \
 matrix<T, M, N> F(matrix<T, M, N> a) { \
@@ -450,7 +451,7 @@ void eigen(
     } else {
         T m0p3 = m[0] + m[3];
         T ad = m0p3/2;
-        T dis = sqrt(ad*ad - D);
+        T dis = math::sqrt(ad*ad - D);
         if (norm_l1(dis) > EPS) {
             *l = matrix<T, 2, 2>(ad + dis, T0, T0, ad - dis);
             if (norm_l1(m[1]) > EPS) {
@@ -519,6 +520,30 @@ matrix<T, 2, 2> pow(matrix<T, 2, 2> m, base_type<T> p, bool normalized=false) {
         }
     }
     return r;
+}
+
+template <typename T, int D, typename C=complex_type<T, D - 1>>
+matrix<C, 2, 2> lower(complex<T, D> c) {
+    return matrix<C, 2, 2>(
+        c.re(),        c.im(),
+        -conj(c.im()), conj(c.re())
+    );
+}
+template <typename T, int D, typename C=complex_type<T, D - 1>, int N=(1 << D)>
+enable_if<!is_complex<C>(), matrix<T, N, N>> to_matrix(complex<T, D> c) {
+    static_assert(N == 2, "Unreachable");
+    return lower(c);
+}
+template <typename T, int D, typename C=complex_type<T, D - 1>, int N=(1 << D)>
+enable_if<is_complex<C>(), matrix<T, N, N>> to_matrix(complex<T, D> c) {
+    matrix<T, N, N> m;
+    matrix<C, 2, 2> l = lower(c);
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            to_matrix(l(i, j)).store(m.data() + (i*N + j)*(N/2), N);
+        }
+    }
+    return m;
 }
 
 #ifdef HOST

@@ -1,8 +1,11 @@
 #pragma once
 
-
 #include <real.h>
 #include "vector.hpp"
+
+#ifdef UNIT_TEST
+#include <catch.hpp>
+#endif
 
 
 template <typename T, int D=1>
@@ -280,6 +283,21 @@ public:
     complex &operator/=(T a) {
         return *this = *this / a;
     }
+
+#ifdef UNIT_TEST
+    bool operator==(Approx a) const {
+        if (a != (*this)[0]) {
+            return false;
+        }
+        for (int i = 1; i < size(); ++i) {
+            if (Approx(0) != (*this)[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    TEST_DEFINE_CMP_OPS(, friend, complex, Approx)
+#endif
 };
 
 // Complex of degree 0 is real number
@@ -447,7 +465,6 @@ inline quat operator ""_k(long double x) {
 
 
 #ifdef UNIT_TEST
-#include <catch.hpp>
 
 #include "test.hpp"
 
@@ -493,11 +510,15 @@ public:
         }
         return true;
     }
+    TEST_DEFINE_CMP_OPS(, friend, CompApprox, complex<T COMMA D>)
+
     template <int E>
     bool operator==(complex<T, E> a) {
         static const int G = E > D ? E : D;
         return CompApprox<T, G>(v) == complex<T, G>(a);
     }
+    TEST_DEFINE_CMP_OPS(template <int E>, friend, CompApprox, complex<T COMMA E>)
+
     bool operator==(T a) {
         if (approx(v[0]) != a) {
             return false;
@@ -509,41 +530,12 @@ public:
         }
         return true;
     }
+    TEST_DEFINE_CMP_OPS(, friend, CompApprox, T)
 
     friend std::ostream &operator<<(std::ostream &s, CompApprox a) {
         return s << a.v;
     }
 };
-
-template <typename T, int D>
-bool operator==(Approx a, complex<T, D> b) {
-    if (a != b[0]) {
-        return false;
-    }
-    for (int i = 1; i < b.size(); ++i) {
-        if (Approx(0) != b[i]) {
-            return false;
-        }
-    }
-    return true;
-}
-
-TEST_DEFINE_CMP_OPS(
-    template <typename T COMMA int D>,
-    CompApprox<T COMMA D>, complex<T COMMA D>
-)
-TEST_DEFINE_CMP_OPS(
-    template <typename T COMMA int D COMMA int E>,
-    CompApprox<T COMMA D>, complex<T COMMA E>
-)
-TEST_DEFINE_CMP_OPS(
-    template <typename T COMMA int D>,
-    CompApprox<T COMMA D>, T
-)
-TEST_DEFINE_CMP_OPS(
-    template <typename T COMMA int D>,
-    Approx, complex<T COMMA D>
-)
 
 template <typename T, int D>
 CompApprox<T, D> approx(complex<T, D> c) {

@@ -623,16 +623,12 @@ public:
         }
         return true;
     }
+    TEST_DEFINE_CMP_OPS(, friend, MatApprox, matrix<T COMMA M COMMA N>)
 
     friend std::ostream &operator<<(std::ostream &s, MatApprox a) {
         return s << a.v;
     }
 };
-
-TEST_DEFINE_CMP_OPS(
-    template <typename T COMMA int M COMMA int N>,
-    MatApprox<T COMMA M COMMA N>, matrix<T COMMA M COMMA N>
-)
 
 template <typename T, int M, int N>
 MatApprox<T, M, N> approx(matrix<T, M, N> v) {

@@ -514,16 +514,13 @@ public:
         }
         return true;
     }
+    TEST_DEFINE_CMP_OPS(, friend, VecApprox, vector<T COMMA N>)
 
     friend std::ostream &operator<<(std::ostream &s, VecApprox a) {
         return s << a.v;
     }
 };
 
-TEST_DEFINE_CMP_OPS(
-    template <typename T COMMA int N>,
-    VecApprox<T COMMA N>, vector<T COMMA N>
-)
 
 template <typename T, int N>
 VecApprox<T, N> approx(vector<T, N> v) {

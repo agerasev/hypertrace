@@ -52,17 +52,17 @@ inline Approx approx(real x) {
 
 #define COMMA ,
 
-#define TEST_DEFINE_CMP_OPS(Template, Self, V) \
+#define TEST_DEFINE_CMP_OPS(Template, prefix, Self, V) \
 Template \
-bool operator==(V a, Self b) { \
+prefix bool operator==(V a, Self b) { \
     return b == a; \
 } \
 Template \
-bool operator!=(Self a, V b) { \
+prefix bool operator!=(Self a, V b) { \
     return !(a == b); \
 } \
 Template \
-bool operator!=(V a, Self b) { \
+prefix bool operator!=(V a, Self b) { \
     return b != a; \
 } \
 

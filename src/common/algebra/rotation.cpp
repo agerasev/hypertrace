@@ -22,9 +22,9 @@ TEST_CASE("Rotation transformation", "[rotation]") {
         }
         SECTION("Chaining") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation3 a = rng.d<Rotation3>().some();
-                Rotation3 b = rng.d<Rotation3>().some();
-                real3 v = rng.d<real3>().normal();
+                Rotation2 a = rng.d<Rotation2>().some();
+                Rotation2 b = rng.d<Rotation2>().some();
+                real2 v = rng.d<real2>().normal();
                 REQUIRE((a*b).apply(v) == approx(a.apply(b.apply(v))));
             }
         }
@@ -32,6 +32,15 @@ TEST_CASE("Rotation transformation", "[rotation]") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
                 Rotation2 r = rng.d<Rotation2>().some();
                 REQUIRE((r*!r).comp() == approx(Rotation2::identity().comp()));
+            }
+        }
+        SECTION("To linear") {
+            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+                Rotation2 a = rng.d<Rotation2>().some();
+                Rotation2 b = rng.d<Rotation2>().some();
+                real2 x = rng.d<real2>().normal();
+                REQUIRE(a.to_linear().apply(x) == approx(a.apply(x)));
+                REQUIRE((a.to_linear()*b.to_linear()).mat() == approx((a*b).to_linear().mat()));
             }
         }
     }
@@ -63,6 +72,15 @@ TEST_CASE("Rotation transformation", "[rotation]") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
                 Rotation3 r = rng.d<Rotation3>().some();
                 REQUIRE((r*!r).quat() == approx(Rotation3::identity().quat()));
+            }
+        }
+        SECTION("To linear") {
+            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+                Rotation3 a = rng.d<Rotation3>().some();
+                Rotation3 b = rng.d<Rotation3>().some();
+                real3 x = rng.d<real3>().normal();
+                REQUIRE(a.to_linear().apply(x) == approx(a.apply(x)));
+                REQUIRE((a.to_linear()*b.to_linear()).mat() == approx((a*b).to_linear().mat()));
             }
         }
     }

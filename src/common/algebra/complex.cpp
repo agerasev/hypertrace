@@ -22,7 +22,7 @@ TEST_CASE("Complex numbers", "[complex]") {
     SECTION("Inversion") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             comp a = random<comp>(rng).nonzero();
-            REQUIRE(a/a == approx(1));
+            REQUIRE(a/a == approx(1_r));
         }
     }
     SECTION("Square root") {

@@ -60,12 +60,19 @@ using complex_type = typename ComplexType<T, D>::type;
 
 template <typename T, int M, int N>
 class matrix;
-template <typename T, int D, typename C=complex_type<T, D - 1>>
-matrix<C, 2, 2> lower(complex<T, D> c);
-template <typename T, int D, typename C=complex_type<T, D - 1>, int N=(1 << D)>
-enable_if<!is_complex<C>(), matrix<T, N, N>> to_matrix(complex<T, D> c);
-template <typename T, int D, typename C=complex_type<T, D - 1>, int N=(1 << D)>
-enable_if<is_complex<C>(), matrix<T, N, N>> to_matrix(complex<T, D> c);
+
+template <typename T, int D>
+matrix<complex_type<T, D - 1>, 2, 2> lower(complex<T, D> c);
+template <typename T, int D>
+enable_if<
+    !is_complex<complex_type<T, D - 1>>(),
+    matrix<T, (1 << D), (1 << D)>
+> to_matrix(complex<T, D> c);
+template <typename T, int D>
+enable_if<
+    is_complex<complex_type<T, D - 1>>(),
+    matrix<T, (1 << D), (1 << D)>
+> to_matrix(complex<T, D> c);
 
 
 template <typename T, int D>

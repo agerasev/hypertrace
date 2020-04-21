@@ -43,6 +43,10 @@ public:
     friend Rotation inverse(Rotation a) {
         return Rotation(~a.c);
     }
+    
+    Linear<T, 2> to_linear() const {
+        return Linear<T, 2>((~c).to_matrix());
+    }
 };
 
 template <typename T>
@@ -92,6 +96,22 @@ public:
 
     friend Rotation inverse(Rotation a) {
         return Rotation(~a.c);
+    }
+
+    Linear<T, 3> to_linear() const {
+        return Linear<T, 3>(
+            1 - 2*c[2]*c[2] - 2*c[3]*c[3],
+            2*c[1]*c[2] - 2*c[3]*c[0],
+            2*c[1]*c[3] + 2*c[2]*c[0],
+
+            2*c[1]*c[2] + 2*c[3]*c[0],
+            1 - 2*c[1]*c[1] - 2*c[3]*c[3],
+            2*c[2]*c[3] - 2*c[1]*c[0],
+
+            2*c[1]*c[3] - 2*c[2]*c[0],
+            2*c[2]*c[3] + 2*c[1]*c[0],
+            1 - 2*c[1]*c[1] - 2*c[2]*c[2]
+        );
     }
 };
 

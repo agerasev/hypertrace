@@ -4,7 +4,7 @@
 #include <geometry/geometry.hpp>
 #include <render/light.hpp>
 
-
+/*
 // Base class for all shapes, depends on geometry
 template <typename G>
 class Shape {
@@ -28,3 +28,4 @@ class VolumeShape : public Shape<G> {
 public:
     static const bool repeated = true;
 };
+*/

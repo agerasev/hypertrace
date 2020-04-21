@@ -1,6 +1,7 @@
 #pragma once
 
 #include <traits.hpp>
+#include <container/array.hpp>
 #include <algebra/complex.hpp>
 #include <geometry/hyperbolic.hpp>
 #include <object/shape.hpp>
@@ -11,13 +12,15 @@
 
 namespace hyperbolic {
 
-class Horosphere : public SurfaceShape<Hy> {
+class Horosphere {
+// : public SurfaceShape<Hy>
 public:
+    typedef Hy Geo;
     static const bool repeated = true;
 
 public:
     template <typename Context>
-    real detect(Context &context, quat &normal, Light<Hy> &light) const {
+    static real detect(Context &context, quat &normal, Light<Hy> &light) {
         quat p = light.ray.start, d = light.ray.direction;
         real dxy = length(d.re());
         // FIXME: check (dxy < EPS)
@@ -46,6 +49,12 @@ public:
     }
 };
 
+} // namespace hyperbolic
+
+template <> struct IsEmpty<hy::Horosphere> { static const bool value = true; };
+
+namespace hyperbolic {
+
 struct HorosphereTiling {
     enum type : uint {
         NONE = 0,
@@ -55,18 +64,22 @@ struct HorosphereTiling {
 };
 
 template <typename Mat, int N>
-class TiledHorosphere : public Object<Hy> {
+class TiledHorosphere {
+// : public Object<Hy>
 public:
-    struct Cache : public Object<Hy>::Cache {
+    struct Cache {
+    // : public Object<Hy>::Cache
         quat normal;
     };
+    typedef Hy Geo;
     static const bool repeated = true;
 
     typedef HorosphereTiling::type Tiling;
 
-    Horosphere surface;
+    static_assert(is_empty<Horosphere>(), "Surface is not empty");
+    //Horosphere surface;
 
-    Mat materials[N];
+    Array<Mat, N> materials;
     Mat border_material;
 
     Tiling tiling;
@@ -75,15 +88,14 @@ public:
 
 public:
     TiledHorosphere() {}
-    template <typename ...Args>
     TiledHorosphere(
         Tiling ti,
+        const Array<Mat, N> &ms,
         real cs,
-        real bw,
         const Mat &bm,
-        Args ...args
+        real bw
     ) :
-        materials{args...},
+        materials(ms),
         border_material(bm),
         tiling(ti),
         cell_size(cs),
@@ -92,7 +104,7 @@ public:
     
     template <typename Context>
     real detect(Context &context, Cache &cache, Light<Hy> &light) const {
-        return surface.detect(context, cache.normal, light);
+        return Horosphere::detect(context, cache.normal, light);
     }
 
     template <typename Context>
@@ -142,7 +154,7 @@ public:
         if (border) {
             material = &border_material;
         } else {
-            material = &materials[math::rem(material_no, N)];
+            material = &materials[math::rem(material_no, materials.size())];
         }
         
         real3 ln = Hy::dir_to_local(light.ray.start, cache.normal);
@@ -155,7 +167,7 @@ public:
     }
 };
 
-}
+} // namespace hyperbolic
 
 #ifdef HOST
 
@@ -170,8 +182,8 @@ struct ToDevice<hy::Horosphere> {
 template <typename Mat, int N>
 struct ToDevice<hy::TiledHorosphere<Mat, N>> {
     struct type {
-        device_type<hy::Horosphere> surface;
-        device_type<Mat> materials[N];
+        //device_type<hy::Horosphere> surface;
+        Array<device_type<Mat>, N> materials;
         device_type<Mat> border_material;
         uint tiling;
         device::real cell_size;
@@ -179,12 +191,13 @@ struct ToDevice<hy::TiledHorosphere<Mat, N>> {
     };
     static type to_device(const hy::TiledHorosphere<Mat, N> &th) {
         type out{
-            .surface = ::to_device(th.surface),
+            //.surface = ::to_device(th.surface),
             .border_material = ::to_device(th.border_material),
             .tiling = uint(th.tiling),
             .cell_size = device::real(th.cell_size),
             .border_width = device::real(th.border_width),
         };
+        out.materials.size() = th.materials.size();
         for (int i = 0; i < N; ++i) {
             out.materials[i] = ::to_device(th.materials[i]);
         }

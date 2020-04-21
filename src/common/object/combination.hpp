@@ -8,7 +8,8 @@
 
 
 template <typename ...Mats>
-class Combination : public Material {
+class Combination {
+// : public Material
 private:
     real probs[sizeof...(Mats)];
     Tuple<Mats...> tuple;
@@ -27,10 +28,10 @@ private:
 
     void normalize_probs() {
         real a = 0_r;
-        for (int i = 0; i < sizeof...(Mats); ++i) {
+        for (int i = 0; i < int(sizeof...(Mats)); ++i) {
             a += probs[i];
         }
-        for (int i = 0; i < sizeof...(Mats); ++i) {
+        for (int i = 0; i < int(sizeof...(Mats)); ++i) {
             probs[i] /= a;
         }
     }
@@ -112,7 +113,7 @@ public:
 public:
     static type to_device(const Combination<Mats...> &mat) {
         type out;
-        for (int i = 0; i < sizeof...(Mats); ++i) {
+        for (int i = 0; i < int(sizeof...(Mats)); ++i) {
             out.probs[i] = ::to_device(mat.portions()[i]);
         }
         _CombinationPacker<sizeof...(Mats), Mats...>::pack(out.tuple, mat.as_tuple());

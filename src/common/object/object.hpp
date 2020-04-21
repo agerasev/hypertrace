@@ -4,7 +4,7 @@
 #include <geometry/geometry.hpp>
 #include <render/light.hpp>
 
-
+/*
 // Base class for all objects, depends on geometry
 template <typename G>
 class Object {
@@ -30,3 +30,4 @@ public:
         float3 &luminance
     ) const;
 };
+*/

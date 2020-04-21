@@ -2,13 +2,16 @@
 
 #include "shape.hpp"
 #include "object.hpp"
+#include "material.hpp"
 
 
 template <typename Shp, typename Mat>
-class Covered : public Object<typename Shp::Geo> {
+class Covered {
+// : public Object<typename Shp::Geo> 
 public:
     typedef typename Shp::Geo Geo;
-    struct Cache : public Object<Hy>::Cache {
+    struct Cache {
+    // : public Object<Hy>::Cache
         typename Geo::Direction normal;
     };
     static const bool repeated = Shp::repeated;

@@ -5,14 +5,17 @@
 
 
 template <typename T, int N>
-class array {
+class Array {
 private:
     T elems[N];
     int count;
     
 public:
-    Array() = default;
-    explicit Array(Args ...args) : elems{args...}, count(sizeof...(args)) {}
+    Array() : count(0) {}
+    template <typename ...Args>
+    explicit Array(Args ...args) : elems{args...}, count(sizeof...(Args)) {
+        static_assert(sizeof...(Args) <= N, "Too many arguments");
+    }
 
     T *data() {
         return elems;
@@ -27,6 +30,9 @@ public:
         return elems[i];
     }
     int size() const {
+        return count;
+    }
+    int &size() {
         return count;
     }
     static constexpr int capacity() {

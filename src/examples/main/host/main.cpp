@@ -8,16 +8,14 @@
 
 #include <geometry/hyperbolic.hpp>
 #include <view.hpp>
-//#include <object.hh>
 
 #include <opencl/search.hpp>
 #include <sdl/viewer.hpp>
 #include <sdl/controller.hpp>
 #include <renderer.hpp>
 
-#include <myobject.hpp>
-
-//#include "scene.hpp"
+#include <common.hpp>
+#include "scene.hpp"
 
 #include <device/kernel.gen.cl.h>
 
@@ -54,57 +52,18 @@ int main(int argc, const char *argv[]) {
         width, height
     );
 
-    /*
-    std::vector<MyObject> objects{
-        MyObject(
-            MyShape::init<0>(hy::Plane()),
-            MyMaterial(
-                make_pair(0.2, Specular()),
-                make_pair(0.8, Colored<Lambertian>(
-                    Lambertian(), float3(0.9f, 0.9f, 0.1f)
-                ))
-            )
-        ),
-        MyObject(
-            MyShape::init<1>(hy::Horosphere()),
-            MyMaterial(
-                make_pair(0.1, Specular()),
-                make_pair(0.9, Colored<Lambertian>(
-                    Lambertian(), float3(0.1f, 0.1f, 0.9f)
-                ))
-            )
-        ),
-    };
-    */
-    std::vector<MyObject> objects{
-        MyObject::init<0>(hy::TiledPlane<MyMaterial, 2>(
-            hy::PlaneTiling::PENTAGONAL,
-            0.05_r,
-            Colored<Lambertian>(float3(0.1f, 0.1f, 0.1f)),
-            Colored<Lambertian>(float3(0.9f, 0.1f, 0.1f)),
-            Colored<Lambertian>(float3(0.1f, 0.9f, 0.1f))
-        )),
-        MyObject::init<1>(hy::TiledHorosphere<MyMaterial, 4>(
-            hy::HorosphereTiling::HEXAGONAL,
-            0.5_r, 0.05_r,
-            Colored<Lambertian>(float3(0.1f, 0.1f, 0.1f)),
-            Colored<Lambertian>(float3(0.1f, 0.1f, 0.9f)),
-            Colored<Lambertian>(float3(0.9f, 0.9f, 0.1f)),
-            Colored<Lambertian>(float3(0.9f, 0.1f, 0.1f)),
-            Colored<Lambertian>(float3(0.1f, 0.9f, 0.1f))
-        )),
-    };
+    std::vector<MyObject> objects = create_scene();
     renderer.store_objects(objects);
 
     Controller<Hyperbolic> controller;
     controller.grab_mouse(true);
 
-    //controller.view.position = mo_new(
-    //    c_new(0.114543, 0.285363),
-    //    c_new(2.9287, -0.678274),
-    //    c_new(-0.0461927, -0.0460196),
-    //    c_new(0.697521, -2.64087)
-    //);
+    controller.view.position = Moebius(
+        comp(0.114543, 0.285363),
+        comp(2.9287, -0.678274),
+        comp(-0.0461927, -0.0460196),
+        comp(0.697521, -2.64087)
+    );
     //controller.view.lens_radius = 1e-1;
 
     duration time_counter(0);

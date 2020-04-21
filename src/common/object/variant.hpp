@@ -13,7 +13,8 @@ constexpr bool _shp_repeated() {
 }
 
 template <typename ...Shps>
-class VariantShape : public Shape<typename nth_arg<0, Shps...>::Geo> {
+class VariantShape {
+// : public Shape<typename nth_arg<0, Shps...>::Geo>
 public:
     typedef typename nth_arg<0, Shps...>::Geo Geo;
     static_assert(all<is_same<typename Shps::Geo, Geo>()...>());
@@ -44,7 +45,11 @@ private:
             const E &e, 
             Context &context, typename Geo::Direction &normal, Light<Hy> &light
         ) {
-            return e.detect(context, normal, light);
+            if (!context.repeat || E::repeated) {
+                return e.detect(context, normal, light);
+            } else {
+                return -1_r;
+            }
         }
     };
 public:
@@ -67,7 +72,8 @@ constexpr bool _obj_repeated() {
 }
 
 template <typename ...Objs>
-class VariantObject : public Object<typename nth_arg<0, Objs...>::Geo> {
+class VariantObject {
+// : public Object<typename nth_arg<0, Objs...>::Geo>
 public:
     typedef typename nth_arg<0, Objs...>::Geo Geo;
     static_assert(all<is_same<typename Objs::Geo, Geo>()...>());
@@ -99,7 +105,11 @@ private:
     struct DetectCaller {
         template <typename Context>
         static real call(const E &e, Context &context, Cache &cache, Light<Hy> &light) {
-            return e.detect(context, cache.template elem<P>(), light);
+            if (!context.repeat || E::repeated) {
+                return e.detect(context, cache.template elem<P>(), light);
+            } else {
+                return -1_r;
+            }
         }
     };
     template <typename E, int P>

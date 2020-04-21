@@ -37,6 +37,7 @@ public:
         Context context{rng};
         float3 luminance(0);
         Light<G> light = init_light;
+        int prev_i = -1;
 
         for (int k = 0; k < 3; ++k) {
             int nearest_i = -1;
@@ -45,6 +46,10 @@ public:
             Light<G> nearest_light;
 
             for (int i = 0; i < object_count; ++i) {
+                context.repeat = (prev_i == i);
+                if (!Obj::repeated) {
+                    continue;
+                }
                 Obj obj = objects.load(i);
                 Light<G> temp_light = light;
                 typename Obj::Cache cache;
@@ -61,6 +66,9 @@ public:
                 Obj obj = objects.load(nearest_i);
                 if (obj.interact(context, nearest_cache, nearest_light, luminance)) {
                     light = nearest_light;
+                    prev_i = nearest_i;
+                } else {
+                    break;
                 }
             } else {
                 luminance += light.intensity*background;

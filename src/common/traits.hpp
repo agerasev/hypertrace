@@ -66,6 +66,16 @@ constexpr bool any() {
     return !is_same<BoolPack<B..., false>, BoolPack<false, B...>>();
 }
 
+// Is empty struct
+template <typename T>
+struct IsEmpty {
+    static const bool value = false;
+};
+template <typename T>
+static constexpr bool is_empty() {
+    return IsEmpty<T>::value;
+}
+
 // Is primitive
 template <typename T>
 struct IsPrimitive {

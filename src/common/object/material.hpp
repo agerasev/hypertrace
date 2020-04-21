@@ -5,7 +5,7 @@
 #include <render/light.hpp>
 #include <random.hpp>
 
-
+/*
 class Material {
     template <typename Context>
     bool interact(
@@ -18,48 +18,57 @@ class Material {
 
 class SurfaceMaterial : public Material {};
 class VolumeMaterial : public Material {};
+*/
 
-
-class Black : public SurfaceMaterial {
+class Black {
+// : public SurfaceMaterial
 public:
     template <typename Context>
-    bool interact(
+    static bool interact(
         Context &context, real3 normal,
         LocalLight &light, float3 &emission
-    ) const {
+    ) {
         return false;
     }
 };
-class Transparent : public SurfaceMaterial {
+template <> struct IsEmpty<Black> { static const bool value = true; };
+
+class Transparent {
+// : public SurfaceMaterial
 public:
     template <typename Context>
-    bool interact(
+    static bool interact(
         Context &context, real3 normal,
         LocalLight &light, float3 &emission
-    ) const {
+    ) {
         //light.face = !light.face;
         return true;
     }
 };
+template <> struct IsEmpty<Transparent> { static const bool value = true; };
 
-class Specular : public SurfaceMaterial {
+class Specular {
+// : public SurfaceMaterial
 public:
     template <typename Context>
-    bool interact(
+    static bool interact(
         Context &context, real3 normal,
         LocalLight &light, float3 &emission
-    ) const {
+    ) {
         light.direction -= (2*dot(light.direction, normal))*normal;
         return true;
     }
 };
-class Lambertian : public SurfaceMaterial {
+template <> struct IsEmpty<Specular> { static const bool value = true; };
+
+class Lambertian {
+// : public SurfaceMaterial
 public:
     template <typename Context>
-    bool interact(
+    static bool interact(
         Context &context, real3 normal,
         LocalLight &light, float3 &emission
-    ) const {
+    ) {
         if (dot(normal, light.direction) > 0) {
             normal = -normal;
         }
@@ -70,6 +79,7 @@ public:
         return true;
     }
 };
+template <> struct IsEmpty<Lambertian> { static const bool value = true; };
 
 #ifdef HOST
 
@@ -105,14 +115,14 @@ struct ToDevice<Lambertian> {
 #endif
 
 
-template <typename M>
-class Colored : public Material {
+template <typename M, bool Z=is_empty<M>()>
+class Colored {
+// : public Material
 public:
     M base;
     float3 color;
 
     Colored() = default;
-    Colored(float3 v) : color(v) {}
     Colored(float3 v, const M &b) : base(b), color(v) {}
 
     template <typename Context>
@@ -125,13 +135,32 @@ public:
     }
 };
 template <typename M>
-class Emissive : public Material {
+class Colored<M, true> {
+// : public Material
+public:
+    float3 color;
+
+    Colored() = default;
+    Colored(float3 v) : color(v) {}
+
+    template <typename Context>
+    bool interact(
+        Context &context, real3 normal,
+        LocalLight &light, float3 &emission
+    ) const {
+        light.intensity *= color;
+        return M::interact(context, normal, light, emission);
+    }
+};
+
+template <typename M, bool Z=is_empty<M>()>
+class Emissive {
+// : public Material
 public:
     M base;
     float3 intensity;
 
     Emissive() = default;
-    Emissive(float3 v) : intensity(v) {}
     Emissive(float3 v, const M &b) : base(b), intensity(v) {}
 
     template <typename Context>
@@ -143,12 +172,30 @@ public:
         return base.interact(context, normal, light, emission);
     }
 };
+template <typename M>
+class Emissive<M, true> {
+// : public Material
+public:
+    float3 intensity;
+
+    Emissive() = default;
+    Emissive(float3 v) : intensity(v) {}
+
+    template <typename Context>
+    bool interact(
+        Context &context, real3 normal,
+        LocalLight &light, float3 &emission
+    ) const {
+        emission += intensity*light.intensity;
+        return M::interact(context, normal, light, emission);
+    }
+};
 
 
 #ifdef HOST
 
 template <typename M>
-struct ToDevice<Colored<M>> {
+struct ToDevice<Colored<M, false>> {
     struct type {
         device_type<M> base;
         device_type<float3> color;
@@ -161,15 +208,37 @@ struct ToDevice<Colored<M>> {
     }
 };
 template <typename M>
-struct ToDevice<Emissive<M>> {
+struct ToDevice<Colored<M, true>> {
+    struct type {
+        device_type<float3> color;
+    };
+    static type to_device(const Colored<M> &mat) {
+        return type {
+            .color = ::to_device(mat.color),
+        };
+    }
+};
+template <typename M>
+struct ToDevice<Emissive<M, false>> {
     struct type {
         device_type<M> base;
-        device_type<float3> intesity;
+        device_type<float3> intensity;
     };
     static type to_device(const Emissive<M> &mat) {
         return type {
             .base = ::to_device(mat.base),
-            .intesity = ::to_device(mat.intesity),
+            .intensity = ::to_device(mat.intensity),
+        };
+    }
+};
+template <typename M>
+struct ToDevice<Emissive<M, true>> {
+    struct type {
+        device_type<float3> intensity;
+    };
+    static type to_device(const Emissive<M> &mat) {
+        return type {
+            .intensity = ::to_device(mat.intensity),
         };
     }
 };

@@ -11,7 +11,7 @@
 
 #include <geometry/hyperbolic.hpp>
 #include <render/renderer.hpp>
-#include <myobject.hpp>
+#include <common.hpp>
 
 
 #define ASSERT_DUMMY(Dummy, Orig) \

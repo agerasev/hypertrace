@@ -1,4 +1,7 @@
+#pragma once
+
 #include <traits.hpp>
+#include <container/array.hpp>
 #include <algebra/complex.hpp>
 #include <geometry/hyperbolic.hpp>
 #include <object/shape.hpp>
@@ -9,10 +12,14 @@
 
 namespace hyperbolic {
 
-class Plane : public SurfaceShape<Hy> {
+class Plane {
+// : public SurfaceShape<Hy>
 public:
+    typedef Hy Geo;
+    static const bool repeated = false;
+
     template <typename Context>
-    real detect(Context &context, quat &normal, Light<Hy> &light) const {
+    static real detect(Context &context, quat &normal, Light<Hy> &light) {
         // Line cannot intersect plane twice
         if (context.repeat) {
             return -1_r;
@@ -46,6 +53,11 @@ public:
     }
 };
 
+} // namespace hyperbolic
+
+template <> struct IsEmpty<hy::Plane> { static const bool value = true; };
+
+namespace hyperbolic {
 
 struct PlaneTiling {
     enum type : uint {
@@ -56,17 +68,22 @@ struct PlaneTiling {
 };
 
 template <typename Mat, int N>
-class TiledPlane : public Object<Hy> {
+class TiledPlane {
+// : public Object<Hy>
 public:
-    struct Cache : public Object<Hy>::Cache {
+    struct Cache {
+    // : public Object<Hy>::Cache
         quat normal;
     };
+    typedef Hy Geo;
+    static const bool repeated = false;
 
     typedef PlaneTiling::type Tiling;
 
-    Plane surface;
+    static_assert(is_empty<Plane>(), "Surface is not empty");
+    //Plane surface;
 
-    Mat materials[N];
+    Array<Mat, N> materials;
     Mat border_material;
 
     Tiling tiling;
@@ -74,14 +91,13 @@ public:
 
 public:
     TiledPlane() {}
-    template <typename ...Args>
     TiledPlane(
         Tiling ti,
-        real bw,
+        const Array<Mat, N> &ms,
         const Mat &bm,
-        Args ...args
+        real bw
     ) :
-        materials{args...},
+        materials(ms),
         border_material(bm),
         tiling(ti),
         border_width(bw)
@@ -89,7 +105,7 @@ public:
     
     template <typename Context>
     real detect(Context &context, Cache &cache, Light<Hy> &light) const {
-        return surface.detect(context, cache.normal, light);
+        return Plane::detect(context, cache.normal, light);
     }
 
     template <typename Context>
@@ -168,7 +184,7 @@ public:
                 }
             }
             if (bh == 0) {
-                if (w || N < 2) {
+                if (w || materials.size() < 2) {
                     material = &materials[0];
                 } else {
                     material = &materials[1];
@@ -190,7 +206,7 @@ public:
     }
 };
 
-}
+} // namespace hyperbolic
 
 #ifdef HOST
 
@@ -205,19 +221,20 @@ struct ToDevice<hy::Plane> {
 template <typename Mat, int N>
 struct ToDevice<hy::TiledPlane<Mat, N>> {
     struct type {
-        device_type<hy::Plane> surface;
-        device_type<Mat> materials[N];
+        //device_type<hy::Plane> surface;
+        Array<device_type<Mat>, N> materials;
         device_type<Mat> border_material;
         uint tiling;
         device::real border_width;
     };
     static type to_device(const hy::TiledPlane<Mat, N> &tp) {
         type out{
-            .surface = ::to_device(tp.surface),
+            //.surface = ::to_device(tp.surface),
             .border_material = ::to_device(tp.border_material),
             .tiling = uint(tp.tiling),
             .border_width = device::real(tp.border_width),
         };
+        out.materials.size() = tp.materials.size();
         for (int i = 0; i < N; ++i) {
             out.materials[i] = ::to_device(tp.materials[i]);
         }

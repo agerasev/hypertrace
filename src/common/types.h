@@ -28,6 +28,8 @@ typedef uint size_t;
 #else
 #error "Address bit width is not set"
 #endif
+#else
+#include <cstdlib>
 #endif
 
 #include <real.h>

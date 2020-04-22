@@ -2,6 +2,7 @@
 
 #include <random.hpp>
 #include "light.hpp"
+#include "background.hpp"
 #include <view.hpp>
 
 
@@ -20,9 +21,9 @@ public:
 public:
     Renderer(Rng &rng) : rng(rng) {}
 
-    template <typename Obj>
+    template <typename Obj, typename Bg>
     float3 trace(
-        const View<G> &view, real2 pix_pos,
+        const View<G> &view, real2 pix_pos, Bg background,
         global_const_ptr<Obj> objects, int object_count
     ) {
         Light<G> init_light;
@@ -71,7 +72,7 @@ public:
                     break;
                 }
             } else {
-                luminance += light.intensity*background;
+                background.interact(context, nearest_light, luminance);
                 break;
             }
         }

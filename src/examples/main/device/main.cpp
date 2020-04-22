@@ -11,6 +11,8 @@
 
 #include <geometry/hyperbolic.hpp>
 #include <render/renderer.hpp>
+#include <render/filter.hpp>
+
 #include <common.hpp>
 
 
@@ -50,9 +52,10 @@ void trace(
         (real)(idx / width) - 0.5_r*(height) + xrand::uniform<real>(rng)
     )/height;
 
+    ConstantBackground<Hy> bg(float3(0));
     Renderer<Hy, Rng> renderer(rng);
 
-    float3 color = renderer.trace(view, pos, objects, object_count);
+    float3 color = renderer.trace(view, pos, bg, objects, object_count);
 
     seed.store(rng.state(), idx);
 
@@ -62,7 +65,9 @@ void trace(
     }
     screen.vstore(avg_color, idx);
 
-    float3 out_color = math::clamp(avg_color, float3(0), float3(1));
+    GammaFilter filter;
+    float3 out_color = filter.apply(avg_color);
+    out_color = math::clamp(out_color, float3(0), float3(1));
     uchar4 pix = uchar4(convert<uchar3>(0xff*out_color), 0xff);
     image.vstore(pix, idx);
 }

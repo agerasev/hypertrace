@@ -49,6 +49,20 @@ DEFINE_VECTOR_MATH_FUNCTION_A(sinh)
 DEFINE_VECTOR_MATH_FUNCTION_A(tan)
 DEFINE_VECTOR_MATH_FUNCTION_A(tanh)
 DEFINE_VECTOR_MATH_FUNCTION_A(tgamma)
+
+template <typename T, int N>
+vector<T, N> min(vector<T, N> a, T b) {
+    return vector<T, N>::map([b](T x) { return min(x, b); }, a);
+}
+template <typename T, int N>
+vector<T, N> max(vector<T, N> a, T b) {
+    return vector<T, N>::map([b](T x) { return max(x, b); }, a);
+}
+template <typename T, int N>
+vector<T, N> pow(vector<T, N> a, T b) {
+    return vector<T, N>::map([b](T x) { return pow(x, b); }, a);
+}
+
 template <typename T, int N>
 vector<T, N> clamp(vector<T, N> a, vector<T, N> b, vector<T, N> c) {
     return vector<T, N>::map(
@@ -56,6 +70,14 @@ vector<T, N> clamp(vector<T, N> a, vector<T, N> b, vector<T, N> c) {
         a, b, c
     );
 }
+template <typename T, int N>
+vector<T, N> clamp(vector<T, N> a, T b, T c) {
+    return vector<T, N>::map(
+        [b, c](T x) { return clamp(x, b, c); },
+        a
+    );
+}
+
 template <typename T, int N>
 pair<vector<T, N>, vector<T, N>> fract(vector<T, N> a) {
     pair<vector<T, N>, vector<T, N>> p;

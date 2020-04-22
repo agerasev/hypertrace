@@ -191,6 +191,11 @@ inline vector<T, N> clamp(vector<T, N> a, vector<T, N> b, vector<T, N> c) { \
     xv_clamp_##T##N(o.data(), a.data(), b.data(), c.data()); \
     return o; \
 } \
+inline vector<T, N> clamp(vector<T, N> a, T b, T c) { \
+    vector<T, N> o; \
+    xv_clamp_##T##N##_(o.data(), a.data(), b, c); \
+    return o; \
+} \
 
 #define DEFINE_VECTOR_BUILTIN_MATH_FLOAT(T, N) \
 DEFINE_VECTOR_BUILTIN_MATH_COMMON(T, N) \
@@ -226,18 +231,41 @@ inline pair<vector<T, N>, vector<T, N>> fract(vector<T, N> a) { \
     xv_fract_##T##N(p.first.data(), a.data(), p.second.data()); \
     return p; \
 } \
+inline vector<T, N> min(vector<T, N> a, T b) { \
+    vector<T, N> o; \
+    xv_fmin_##T##N##_(o.data(), a.data(), b); \
+    return o; \
+} \
+inline vector<T, N> max(vector<T, N> a, T b) { \
+    vector<T, N> o; \
+    xv_fmax_##T##N##_(o.data(), a.data(), b); \
+    return o; \
+} \
+inline vector<T, N> pow(vector<T, N> a, T b) { \
+    vector<T, N> o; \
+    xv_pow_##T##N##_(o.data(), a.data(), b); \
+    return o; \
+} \
+
 
 #define DEFINE_VECTOR_BUILTIN_MATH_INT(T, N) \
 DEFINE_VECTOR_BUILTIN_MATH_COMMON(T, N) \
 DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, abs, abs) \
 DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, max, max) \
 DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, min, min) \
+inline vector<T, N> min(vector<T, N> a, T b) { \
+    vector<T, N> o; \
+    xv_min_##T##N##_(o.data(), a.data(), b); \
+    return o; \
+} \
+inline vector<T, N> max(vector<T, N> a, T b) { \
+    vector<T, N> o; \
+    xv_max_##T##N##_(o.data(), a.data(), b); \
+    return o; \
+} \
 
 #define DEFINE_VECTOR_BUILTIN_MATH_UINT(T, N) \
-DEFINE_VECTOR_BUILTIN_MATH_COMMON(T, N) \
-DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, abs, abs) \
-DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, max, max) \
-DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_AB(T, N, min, min) \
+DEFINE_VECTOR_BUILTIN_MATH_INT(T, N) \
 
 #define DEFINE_VECTOR_BUILTIN_UINT(T, N) \
 DEFINE_VECTOR_BUILTIN(T, N) \

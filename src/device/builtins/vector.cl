@@ -209,8 +209,14 @@ void xv_floor_##T##N(T *o, const T *a) { \
 void xv_fmax_##T##N(T *o, const T *a, const T *b) { \
     *(T##N*)o = fmax(*(const T##N*)a, *(const T##N*)b); \
 } \
+void xv_fmax_##T##N##_(T *o, const T *a, T b) { \
+    *(T##N*)o = fmax(*(const T##N*)a, b); \
+} \
 void xv_fmin_##T##N(T *o, const T *a, const T *b) { \
     *(T##N*)o = fmin(*(const T##N*)a, *(const T##N*)b); \
+} \
+void xv_fmin_##T##N##_(T *o, const T *a, T b) { \
+    *(T##N*)o = fmin(*(const T##N*)a, b); \
 } \
 void xv_fmod_##T##N(T *o, const T *a, const T *b) { \
     *(T##N*)o = fmod(*(const T##N*)a, *(const T##N*)b); \
@@ -223,6 +229,9 @@ void xv_log_##T##N(T *o, const T *a) { \
 } \
 void xv_pow_##T##N(T *o, const T *a, const T *b) { \
     *(T##N*)o = pow(*(const T##N*)a, *(const T##N*)b); \
+} \
+void xv_pow_##T##N##_(T *o, const T *a, T b) { \
+    *(T##N*)o = pow(*(const T##N*)a, b); \
 } \
 void xv_round_##T##N(T *o, const T *a) { \
     *(T##N*)o = round(*(const T##N*)a); \

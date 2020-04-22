@@ -95,11 +95,14 @@ void xv_exp_##T##N(T *o, const T *a); \
 void xv_fabs_##T##N(T *o, const T *a); \
 void xv_floor_##T##N(T *o, const T *a); \
 void xv_fmax_##T##N(T *o, const T *a, const T *b); \
+void xv_fmax_##T##N##_(T *o, const T *a, T b); \
 void xv_fmin_##T##N(T *o, const T *a, const T *b); \
+void xv_fmin_##T##N##_(T *o, const T *a, T b); \
 void xv_fmod_##T##N(T *o, const T *a, const T *b); \
 void xv_fract_##T##N(T *o, const T *a, T *b); \
 void xv_log_##T##N(T *o, const T *a); \
 void xv_pow_##T##N(T *o, const T *a, const T *b); \
+void xv_pow_##T##N##_(T *o, const T *a, T b); \
 void xv_round_##T##N(T *o, const T *a); \
 void xv_sqrt_##T##N(T *o, const T *a); \
 void xv_sin_##T##N(T *o, const T *a); \

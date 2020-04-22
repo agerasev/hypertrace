@@ -69,7 +69,6 @@ pair<matrix<T, M, N>, matrix<T, M, N>> fract(matrix<T, M, N> a) {
 
 } // namespace math
 
-using namespace math;
 
 template <typename T, int N>
 matrix<T, N, N> normalize(matrix<T, N, N> m) {
@@ -95,7 +94,7 @@ void eigen(
     } else {
         T m0p3 = m[0] + m[3];
         T ad = m0p3/2;
-        T dis = sqrt(ad*ad - D);
+        T dis = math::sqrt(ad*ad - D);
         if (norm_l1(dis) > EPS) {
             *l = matrix<T, 2, 2>(ad + dis, T0, T0, ad - dis);
             if (norm_l1(m[1]) > EPS) {
@@ -145,12 +144,12 @@ matrix<T, 2, 2> pow(matrix<T, 2, 2> m, base_type<T> p, bool normalized=false) {
 
         if (norm_l1(j[1]) < EPS) {
             k = matrix<T, 2, 2>(
-                pow(j[0], p), T0,
-                T0, pow(j[3], p)
+                math::pow(j[0], p), T0,
+                T0, math::pow(j[3], p)
             );
         } else {
             // Assume j[0] == j[3]
-            T l = pow(j[0], p);
+            T l = math::pow(j[0], p);
             k = matrix<T, 2, 2>(
                 l, p*(l/j[0])*j[1],
                 T0, l
@@ -165,6 +164,7 @@ matrix<T, 2, 2> pow(matrix<T, 2, 2> m, base_type<T> p, bool normalized=false) {
     }
     return r;
 }
+
 
 #ifdef HOST
 

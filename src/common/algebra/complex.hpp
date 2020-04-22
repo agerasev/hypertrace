@@ -1,27 +1,26 @@
 #pragma once
 
-#include "complex_base.hpp"
 #include <real.h>
-
+#include "complex_base.hpp"
 
 namespace math {
 
 template <typename T>
-enable_if<!is_complex<T>(), complex<T>> exp(complex<T> p) {
+complex<T> exp(complex<T> p) {
     return exp(p.re())*complex<T>(cos(p.im()), sin(p.im()));
 }
 // TODO: Add (complex, complex) power.
 template <typename T>
-enable_if<!is_complex<T>(), complex<T>> pow(complex<T> a, T p) {
-    T r = pow(length2(a), p/2);
-    T phi = p*atan2(a.im(), a.re());
-    return complex<T>(r*cos(phi), r*sin(phi));
+complex<T> pow(complex<T> a, T p) {
+    T r = math::pow(length2(a), p/2);
+    T phi = p*math::atan2(a.im(), a.re());
+    return complex<T>(r*math::cos(phi), r*math::sin(phi));
 }
 template <typename T>
-enable_if<!is_complex<T>(), complex<T>> sqrt(complex<T> a) {
-    T r = sqrt(length(a));
-    T phi = T(0.5)*atan2(a.im(), a.re());
-    return complex<T>(r*cos(phi), r*sin(phi));
+complex<T> sqrt(complex<T> a) {
+    T r = math::sqrt(length(a));
+    T phi = T(0.5)*math::atan2(a.im(), a.re());
+    return complex<T>(r*math::cos(phi), r*math::sin(phi));
 }
 
 } // namespace math
@@ -165,4 +164,3 @@ CompApprox<T, D> approx(complex<T, D> c) {
 } // namespace test
 
 #endif
-

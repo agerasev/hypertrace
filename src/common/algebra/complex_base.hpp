@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vector.hpp"
+#include "matrix_base.hpp"
 
 #ifdef UNIT_TEST
 #include <catch.hpp>
@@ -281,6 +282,29 @@ public:
     }
     complex &operator/=(T a) {
         return *this = *this / a;
+    }
+
+    matrix<C, 2, 2> lower() const {
+        return matrix<C, 2, 2>(
+            re(),        im(),
+            -conj(im()), conj(re())
+        );
+    }
+    template <typename U=C>
+    enable_if<!is_complex<U>(), matrix<T, N, N>> to_matrix() {
+        static_assert(N == 2, "Unreachable");
+        return lower();
+    }
+    template <typename U=C>
+    enable_if<is_complex<U>(), matrix<T, N, N>> to_matrix() {
+        matrix<T, N, N> m;
+        matrix<C, 2, 2> l = lower();
+        for (int i = 0; i < 2; ++i) {
+            for (int j = 0; j < 2; ++j) {
+                l(i, j).to_matrix().store(m.data() + (i*N + j)*(N/2), N);
+            }
+        }
+        return m;
     }
 
 #ifdef UNIT_TEST

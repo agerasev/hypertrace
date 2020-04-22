@@ -6,19 +6,19 @@
 
 
 template <typename C>
-class MoebiusT {
+class Moebius {
 private:
     typedef base_type<C> T;
     static const int D = degree<C>();
     matrix<C, 2, 2> m;
 public:
-    MoebiusT() = default;
+    Moebius() = default;
     template <typename ...Args>
-    explicit MoebiusT(Args ...args) : m(args...) {}
-    explicit MoebiusT(matrix<C, 2, 2> m) : m(m) {}
+    explicit Moebius(Args ...args) : m(args...) {}
+    explicit Moebius(matrix<C, 2, 2> m) : m(m) {}
 
-    static MoebiusT identity() {
-        return MoebiusT(one<matrix<C, 2, 2>>());
+    static Moebius identity() {
+        return Moebius(one<matrix<C, 2, 2>>());
     }
 
     C &a() { return m[0]; }
@@ -69,58 +69,56 @@ public:
         return s1 + s2;
     }
 
-    MoebiusT &operator*=(MoebiusT a) {
+    Moebius &operator*=(Moebius a) {
         return *this = chain(*this, a);
     }
 };
 
-// MoebiusT transformation with quaternion coefficients is not supported yet.
+// Moebius transformation with quaternion coefficients is not supported yet.
 template <typename T>
-class MoebiusT<quaternion<T>> {};
+class Moebius<quaternion<T>> {};
 
 template <typename C>
-MoebiusT<C> chain(MoebiusT<C> a, MoebiusT<C> b) {
-    return MoebiusT<C>(dot(a.mat(), b.mat()));
+Moebius<C> chain(Moebius<C> a, Moebius<C> b) {
+    return Moebius<C>(dot(a.mat(), b.mat()));
 }
 template <typename C>
-MoebiusT<C> operator*(MoebiusT<C> a, MoebiusT<C> b) {
+Moebius<C> operator*(Moebius<C> a, Moebius<C> b) {
     return chain(a, b);
 }
 
 template <typename C>
-MoebiusT<C> inverse(MoebiusT<C> a) {
+Moebius<C> inverse(Moebius<C> a) {
     // We use adjugate matrix instead of true inverse
-    // because all MoebiusT transformations should be normalized.
-    return MoebiusT<C>(adj(a.mat()));
+    // because all Moebius transformations should be normalized.
+    return Moebius<C>(adj(a.mat()));
 }
 template <typename C>
-MoebiusT<C> operator!(MoebiusT<C> a) {
+Moebius<C> operator!(Moebius<C> a) {
     return inverse(a);
 }
 
 template <typename C>
-MoebiusT<C> pow(MoebiusT<C> a, base_type<C> p) {
-    return MoebiusT<C>(pow(a.mat(), p, true));
+Moebius<C> pow(Moebius<C> a, base_type<C> p) {
+    return Moebius<C>(pow(a.mat(), p, true));
 }
 
 template <typename C>
-MoebiusT<C> interpolate(MoebiusT<C> a, MoebiusT<C> b, base_type<C> t) {
+Moebius<C> interpolate(Moebius<C> a, Moebius<C> b, base_type<C> t) {
     return a*pow(!a*b, t);
 }
 
 #ifdef HOST
 
 template <typename C>
-struct ToDevice<MoebiusT<C>> {
+struct ToDevice<Moebius<C>> {
     typedef device_type<matrix<C, 2, 2>> type;
-    static type to_device(MoebiusT<C> m) {
+    static type to_device(Moebius<C> m) {
         return ::to_device(m.mat());
     }
 };
 
 #endif
-
-typedef MoebiusT<comp> Moebius;
 
 #ifdef UNIT_TEST
 #include <catch.hpp>
@@ -129,10 +127,10 @@ typedef MoebiusT<comp> Moebius;
 namespace test {
 
 template <typename C>
-class Distrib<MoebiusT<C>> : public Rng {
+class Distrib<Moebius<C>> : public Rng {
 public:
-    MoebiusT<C> some() {
-        return MoebiusT<C>(d<matrix<C, 2, 2>>().normalized());
+    Moebius<C> some() {
+        return Moebius<C>(d<matrix<C, 2, 2>>().normalized());
     }
 };
 

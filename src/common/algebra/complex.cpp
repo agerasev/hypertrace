@@ -1,4 +1,5 @@
 #include "complex.hpp"
+#include "matrix.hpp"
 
 
 #ifdef UNIT_TEST
@@ -21,7 +22,7 @@ TEST_CASE("Complex numbers", "[complex]") {
     SECTION("Inversion") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             comp a = random<comp>(rng).nonzero();
-            REQUIRE(a/a == approx(1));
+            REQUIRE(a/a == approx(1_r));
         }
     }
     SECTION("Square root") {
@@ -47,6 +48,17 @@ TEST_CASE("Complex numbers", "[complex]") {
         REQUIRE(norm_l1(comp(-1, 2)) == approx(3));
         REQUIRE(norm_l2(comp(3, -4)) == approx(5));
         REQUIRE(norm_linf(comp(1, -2)) == approx(2));
+    }
+    SECTION("Matrix representation") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            comp a = random<comp>(rng).normal();
+            comp b = random<comp>(rng).normal();
+            REQUIRE(a.lower() == approx(a.to_matrix()));
+            REQUIRE(a.to_matrix() + b.to_matrix() == approx((a + b).to_matrix()));
+            REQUIRE(dot(a.to_matrix(), b.to_matrix()) == approx((a*b).to_matrix()));
+            REQUIRE(transpose(a.to_matrix()) == approx((~a).to_matrix()));
+            REQUIRE(inverse(a.to_matrix()) == approx((!a).to_matrix()));
+        }
     }
 };
 
@@ -115,6 +127,26 @@ TEST_CASE("Quaternions", "[quaternion]") {
         REQUIRE(norm_l1(quat(-1, 2, -3, 4)) == approx(10));
         REQUIRE(norm_l2(quat(1, -1, 1, -1)) == approx(2));
         REQUIRE(norm_linf(quat(1, -2, 3, -4)) == approx(4));
+    }
+    SECTION("Degree lowering") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            quat a = random<quat>(rng).normal();
+            quat b = random<quat>(rng).normal();
+            REQUIRE(a.lower() + b.lower() == approx((a + b).lower()));
+            REQUIRE(dot(a.lower(), b.lower()) == approx((a*b).lower()));
+            //REQUIRE(transpose(a.lower()) == approx((~a).lower()));
+            REQUIRE(inverse(a.lower()) == approx((!a).lower()));
+        }
+    }
+    SECTION("Matrix representation") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            quat a = random<quat>(rng).normal();
+            quat b = random<quat>(rng).normal();
+            REQUIRE(a.to_matrix() + b.to_matrix() == approx((a + b).to_matrix()));
+            REQUIRE(dot(a.to_matrix(), b.to_matrix()) == approx((a*b).to_matrix()));
+            REQUIRE(transpose(a.to_matrix()) == approx((~a).to_matrix()));
+            REQUIRE(inverse(a.to_matrix()) == approx((!a).to_matrix()));
+        }
     }
 };
 

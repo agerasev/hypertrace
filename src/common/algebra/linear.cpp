@@ -38,5 +38,13 @@ TEST_CASE("Linear transformation", "[linear]") {
             REQUIRE(a.apply((!a).apply(x)) == approx(x));
         }
     }
+    SECTION("Look to the direction") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            real3 d = rng.d<real3>().unit();
+            Linear<real, 3> m = Linear<real, 3>::look_to(d);
+
+            REQUIRE(m.apply(d) == approx(real3(0,0,1)));
+        }
+    }
 };
 #endif // UNIT_TEST

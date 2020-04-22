@@ -62,22 +62,6 @@ public:
     static Rotation identity() {
         return Rotation(quaternion<T>(1, 0, 0, 0));
     }
-    static Rotation look_at(vector<T, 3> pos) {
-        vector<T, 3> dir = normalize(pos);
-        vector<T, 3> axis(-dir[1], dir[0], zero<T>());
-        T axis_length = length(axis);
-        if (axis_length > EPS) {
-            axis /= axis_length;
-            T angle = math::atan2(axis_length, dir[2]);
-            return Rotation(axis, angle);
-        } else {
-            if (dir[2] > zero<T>()) {
-                return Rotation(quaternion<T>(1, 0, 0, 0));
-            } else {
-                return Rotation(quaternion<T>(0, 1, 0, 0));
-            }
-        }
-    }
 
     quaternion<T> &quat() {
         return c;

@@ -24,10 +24,7 @@ class Black {
 // : public SurfaceMaterial
 public:
     template <typename Context>
-    static bool interact(
-        Context &context, real3 normal,
-        LocalLight &light, float3 &emission
-    ) {
+    static bool interact(Context &, real3, LocalLight &, float3 &) {
         return false;
     }
 };
@@ -37,10 +34,7 @@ class Transparent {
 // : public SurfaceMaterial
 public:
     template <typename Context>
-    static bool interact(
-        Context &context, real3 normal,
-        LocalLight &light, float3 &emission
-    ) {
+    static bool interact(Context &, real3, LocalLight &, float3 &) {
         //light.face = !light.face;
         return true;
     }
@@ -51,10 +45,7 @@ class Specular {
 // : public SurfaceMaterial
 public:
     template <typename Context>
-    static bool interact(
-        Context &context, real3 normal,
-        LocalLight &light, float3 &emission
-    ) {
+    static bool interact(Context &, real3 normal, LocalLight &light, float3 &) {
         light.direction -= (2*dot(light.direction, normal))*normal;
         return true;
     }
@@ -67,13 +58,13 @@ public:
     template <typename Context>
     static bool interact(
         Context &context, real3 normal,
-        LocalLight &light, float3 &emission
+        LocalLight &light, float3 &
     ) {
         if (dot(normal, light.direction) > 0) {
             normal = -normal;
         }
         real3 rand = xrand::hemisphere_cosine(context.rng);
-        Rotation3 rot = Rotation3::look_at(normal);
+        Linear<real, 3> rot = Linear<real, 3>::look_to(normal);
         light.direction = rot.apply(rand);
         light.diffuse = true;
         return true;

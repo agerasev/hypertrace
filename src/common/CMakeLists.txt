@@ -11,7 +11,7 @@ set(COMMON_SRC
     "${CMAKE_SOURCE_DIR}/common/algebra/affine.cpp"
     "${CMAKE_SOURCE_DIR}/common/algebra/rotation.cpp"
     "${CMAKE_SOURCE_DIR}/common/algebra/moebius.cpp"
-    #"${CMAKE_SOURCE_DIR}/common/geometry/euclidean.cpp"
+    "${CMAKE_SOURCE_DIR}/common/geometry/euclidean.cpp"
     "${CMAKE_SOURCE_DIR}/common/geometry/hyperbolic.cpp"
     "${CMAKE_SOURCE_DIR}/common/object/hyperbolic/horosphere.cpp"
     "${CMAKE_SOURCE_DIR}/common/object/hyperbolic/plane.cpp"

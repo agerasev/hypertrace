@@ -102,7 +102,7 @@ Moebius<comp> Hy::move_to(quat dir, real dist) {
 
 using namespace test;
 
-quat rand_pos(test::Rng &rng) {
+static quat rand_pos(test::Rng &rng) {
     return quat(rng.d<comp>().normal(), math::exp(rng.d<real>().normal()), 0);
 }
 

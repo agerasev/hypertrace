@@ -3,14 +3,14 @@
 #include "geometry.hpp"
 
 #include <algebra/vector.hpp>
-#include <algebra/linear.hpp>
+#include <algebra/affine.hpp>
 
 class Euclidean {
 // : public Geometry
 public:
     typedef real3 Position;
     typedef real3 Direction;
-    typedef Linear<real, 3> Map;
+    typedef Affine<real, 3> Map;
 
     static Position origin();
     static real3 dir_to_local(Position pos, Direction dir);
@@ -23,12 +23,15 @@ public:
     // when we know that the line at the point `src_pos` has direction of `src_dir`.
     static Direction dir_at(Position src_pos, Direction src_dir, Position dst_pos);
 
-    static Map zshift(real l);
-    static Map xshift(real l);
-    static Map yshift(real l);
-    static Map zrotate(real phi);
-    static Map xrotate(real theta);
-    static Map yrotate(real theta);
+    static Map shift(Direction pos);
+    inline static Map xshift(real l) { return shift(Direction(l,0,0)); }
+    inline static Map yshift(real l) { return shift(Direction(0,l,0)); }
+    inline static Map zshift(real l) { return shift(Direction(0,0,l)); }
+
+    static Map rotate(Direction axis, real phi);
+    inline static Map xrotate(real angle) { return rotate(Direction(1,0,0), angle); }
+    inline static Map yrotate(real angle) { return rotate(Direction(0,1,0), angle); }
+    inline static Map zrotate(real angle) { return rotate(Direction(0,0,1), angle); }
 
     // Turns direction `dir` to *j*.
     static Map look_to(Direction dir);

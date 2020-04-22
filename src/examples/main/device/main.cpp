@@ -62,7 +62,7 @@ void trace(
     }
     screen.vstore(avg_color, idx);
 
-    float3 out_color = clamp(avg_color, float3(0), float3(1));
+    float3 out_color = math::clamp(avg_color, float3(0), float3(1));
     uchar4 pix = uchar4(convert<uchar3>(0xff*out_color), 0xff);
     image.vstore(pix, idx);
 }

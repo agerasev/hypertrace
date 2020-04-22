@@ -18,6 +18,20 @@ public:
     static Linear identity() {
         return Linear(one<matrix<T, N, N>>());
     }
+    template <int K=N>
+    static enable_if<K == 3, Linear<T, 3>> look_to(vector<T, 3> dir, vector<T, 3> up) {
+        vector<T, N> right = normalize(cross(dir, up));
+        vector<T, N> down = cross(dir, right);
+        return Linear<T, 3>(right, down, dir);
+    }
+    template <int K=N>
+    static enable_if<K == 3, Linear<T, 3>> look_to(vector<T, 3> dir) {
+        if (2*math::abs(dir[2]) < 1) {
+            return look_to(dir, vector<T, 3>(0,0,1));
+        } else {
+            return look_to(dir, vector<T, 3>(0,1,0));
+        }
+    }
 
     matrix<T, N, N> &mat() {
         return m;

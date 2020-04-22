@@ -3,45 +3,44 @@
 #include "traits.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
+#include "linear.hpp"
 
 
 template <typename T, int N>
 class Affine {
 private:
-    matrix<T, N, N> m;
+    Linear<T, N> m;
     vector<T, N> v;
 public:
     Affine() = default;
     explicit Affine(
         const matrix<T, N, N> &m,
-        const vector<T, N> &v
-    ) : m(m), v(v)
-    {}
+        const vector<T, N> &v=zero<vector<T, N>>()
+    ) : m(m), v(v) {}
+    explicit Affine(
+        const Linear<T, N> &m,
+        const vector<T, N> &v=zero<vector<T, N>>()
+    ) : m(m), v(v) {}
 
     static Affine identity() {
         return Affine(
-            one<matrix<T, N, N>>(),
+            Linear<T, N>::identity(),
             zero<vector<T, N>>()
         );
     }
 
-    matrix<T, N, N> &mat() {
-        return m;
-    }
-    const matrix<T, N, N> &mat() const {
-        return m;
-    }
-    vector<T, N> &vec() {
-        return v;
-    }
-    const vector<T, N> &vec() const {
-        return v;
-    }
+    matrix<T, N, N> &mat() { return m.mat(); }
+    const matrix<T, N, N> &mat() const { return m.mat(); }
+    Linear<T, N> &linear() { return m; }
+    const Linear<T, N> &linear() const { return m; }
+    vector<T, N> &vec() { return v; }
+    const vector<T, N> &vec() const { return v; }
+    vector<T, N> &shift() { return v; }
+    const vector<T, N> &shift() const { return v; }
 
     vector<T, N> apply(vector<T, N> p) const {
-        return dot(m, p) + v;
+        return m.apply(p) + v;
     }
-
     Affine &operator*=(Affine a) {
         return *this = chain(*this, a);
     }
@@ -49,7 +48,10 @@ public:
 
 template <typename T, int N>
 Affine<T, N> chain(Affine<T, N> a, Affine<T, N> b) {
-    return Affine<T, N>(dot(a.mat(), b.mat()), a.vec() + dot(a.mat(), b.vec()));
+    return Affine<T, N>(
+        a.linear()*b.linear(),
+        a.vec() + a.linear().apply(b.vec())
+    );
 }
 template <typename T, int N>
 Affine<T, N> operator*(Affine<T, N> a, Affine<T, N> b) {
@@ -58,8 +60,8 @@ Affine<T, N> operator*(Affine<T, N> a, Affine<T, N> b) {
 
 template <typename T, int N>
 Affine<T, N> inverse(Affine<T, N> a) {
-    matrix<T, N, N> m = inverse(a.mat());
-    return Affine<T, N>(m, -dot(m, a.vec()));
+    Linear<T, N> m = inverse(a.linear());
+    return Affine<T, N>(m, -m.apply(a.vec()));
 }
 template <typename T, int N>
 Affine<T, N> operator!(Affine<T, N> a) {
@@ -80,13 +82,13 @@ Affine<T, N> interpolate(Affine<T, N> a, Affine<T, N> b, T t) {
 template <typename T, int N>
 struct ToDevice<Affine<T, N>> {
     struct type {
-        device_type<matrix<T, N, N>> m;
+        device_type<Linear<T, N>> m;
         device_type<vector<T, N>> v;
     };
     static type to_device(Affine<T, N> a) {
         return type {
-            .m = ::to_device(a.mat()),
-            .v = ::to_device(a.vec()),
+            .m = ::to_device(a.linear()),
+            .v = ::to_device(a.shift()),
         };
     }
 };

@@ -27,7 +27,6 @@ set(HOST_SRC
     "sdl/base.cpp"
     "sdl/controller.cpp"
     "sdl/viewer.cpp"
-    #"scenario.cpp"
 )
 
 include_directories(

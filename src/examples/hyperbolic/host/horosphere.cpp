@@ -8,12 +8,9 @@
 #include <cmath>
 #include <chrono>
 
-#include <algebra/quaternion.hh>
-#include <algebra/moebius.hh>
-#include <geometry/hyperbolic.hh>
-#include <geometry/hyperbolic/horosphere.hh>
-#include <view.hh>
-#include <object.hh>
+#include <math.hpp>
+#include <geometry/hyperbolic.hpp>
+#include <algebra/color.hpp>
 
 #include <opencl/search.hpp>
 #include <sdl/viewer.hpp>
@@ -21,11 +18,15 @@
 #include <sdl/image.hpp>
 #include <renderer.hpp>
 #include <scenario.hpp>
-#include <color.hpp>
 
-class MyScenario : public PathScenario {
+#include <common.hpp>
+
+#include <device/kernel.gen.cl.h>
+
+
+class MyScenario : public PathScenario<MyObject> {
     private:
-    std::vector<Object> objects;
+    std::vector<MyObject> objects;
     std::vector<double> ts; // timestamps
 
     template <typename Tr>
@@ -36,23 +37,18 @@ class MyScenario : public PathScenario {
     public:
     MyScenario() {
         objects = {
-            Object{
-                .type = OBJECT_HOROSPHERE,
-                .map = mo_identity(),
-                .materials = {
-                    Material {make_color(0x6ec3c1), 0.0, 0.0, float3(0)},
-                    Material {make_color(0x335120), 0.0, 0.0, float3(0)},
-                    Material {make_color(0x9dcc5f), 0.0, 0.0, float3(0)},
-                    Material {make_color(0x0d5f8a), 0.0, 0.0, float3(0)},
-                },
-                .material_count = 4,
-                .tiling = {
-                    .type = HOROSPHERE_TILING_SQUARE,
-                    .cell_size = 0.25,
-                    .border_width = 0.03,
-                    .border_material = Material {float3(0.0), 0.0, 0, float3(0)},
-                },
-            }
+            make_horosphere(
+                Moebius<comp>::identity(),
+                MyHorosphere::Tiling::SQUARE,
+                MyHorosphereMaterials(
+                    make_material(make_color(0x6ec3c1)),
+                    make_material(make_color(0x335120)),
+                    make_material(make_color(0x9dcc5f)),
+                    make_material(make_color(0x0d5f8a))
+                ),
+                0.25, 0.03,
+                make_material(float3(0))
+            ),
         };
         
         ts = {
@@ -64,31 +60,32 @@ class MyScenario : public PathScenario {
             20.0, // End
         };
 
-        std::vector<View> points {
-            view_position(mo_chain(hy_horosphere(c_new(2, 2)), hy_zshift(-1.0))),
-            view_position(mo_chain(hy_horosphere(0.5*c_new(0.25, 0.25)), hy_zshift(-1.0))),
-            view_position(mo_chain(hy_horosphere(0.5*c_new(0.75, 0.75)), hy_zshift(-1.0))),
-            view_position(mo_chain(hy_horosphere(0.5*c_new(0.75, 0.75)), hy_zshift(0.1))),
-            view_position(mo_chain(hy_horosphere(c_new(-4, -4)), hy_zshift(0.1))),
+        std::vector<View<Hy>> points {
+            View<Hy>{Hy::horosphere(comp(2, 2))*Hy::zshift(-1.0)},
+            View<Hy>{Hy::horosphere(0.5*comp(0.25, 0.25))*Hy::zshift(-1.0)},
+            View<Hy>{Hy::horosphere(0.5*comp(0.75, 0.75))*Hy::zshift(-1.0)},
+            View<Hy>{Hy::horosphere(0.5*comp(0.75, 0.75))*Hy::zshift(0.1)},
+            View<Hy>{Hy::horosphere(comp(-4, -4))*Hy::zshift(0.1)},
         };
 
-        add_any(SquareTransition(ts[1] - ts[0], points[0], points[1], 0.0, 1.0));
-        add_any(DelayTransition(ts[2] - ts[1], points[1]));
-        add_any(LinearTransition(ts[3] - ts[2], points[1], points[2]));
-        add_any(SquareTransition(ts[4] - ts[3], points[2], points[3], 0.0, 1.0));
-        add_any(SquareTransition(ts[5] - ts[4], points[3], points[4], 0.0, 1.0));
+        add_any(SquareTransition<Hy>(ts[1] - ts[0], points[0], points[1], 0.0, 1.0));
+        add_any(DelayTransition<Hy>(ts[2] - ts[1], points[1]));
+        add_any(LinearTransition<Hy>(ts[3] - ts[2], points[1], points[2]));
+        add_any(SquareTransition<Hy>(ts[4] - ts[3], points[2], points[3], 0.0, 1.0));
+        add_any(SquareTransition<Hy>(ts[5] - ts[4], points[3], points[4], 0.0, 1.0));
     }
-    virtual std::vector<Object> get_objects(double t) const {
-        std::vector<Object> objs(objects);
+    virtual std::vector<MyObject> get_objects(double t) const {
+        std::vector<MyObject> objs(objects);
+        MyHorosphere &hor = objs[0].inner.as_variant().as_union().template elem<1>();
 
-        real tr = 0.5*(1.0 - clamp((ts[2] - t)/(ts[2] - ts[1]), 0.0, 1.0));
-        for (int i = 0; i < objs[0].material_count; ++i) {
-            objs[0].materials[i].transparency = tr;
+        real tr = 0.5*(1.0 - math::clamp((ts[2] - t)/(ts[2] - ts[1]), 0.0, 1.0));
+        for (int i = 0; i < hor.materials.size(); ++i) {
+            set_transparency(hor.materials[i], tr);
         }
 
-        real cs = 0.25 + 0.5*clamp((t - ts[2])/(ts[3] - ts[2]), 0.0, 1.0);
-        objs[0].tiling.cell_size = cs;
-        objs[0].tiling.border_width = 0.1*cs;
+        real cs = 0.25 + 0.5*math::clamp((t - ts[2])/(ts[3] - ts[2]), 0.0, 1.0);
+        hor.cell_size = cs;
+        hor.border_width = 0.1*cs;
 
         return objs;
     }
@@ -116,15 +113,16 @@ int main(int argc, const char *argv[]) {
 
     int width = 800, height = 600;
     //int width = 1920, height = 1080;
-    Renderer renderer(device, width, height, Renderer::Config {
-        .path_max_depth = 3,
-        .blur = { .lens = true, .motion = true, .object_motion = true }
-    });
+    std::string src(
+        (const char *)kernel_gen_cl,
+        size_t(kernel_gen_cl_len)
+    );
+    Renderer<MyObject> renderer(device, src, width, height);
     MyScenario scenario;
     
     Viewer viewer(width, height);
-    Controller controller;
-    controller.view.focal_length = 2.0;
+    Controller<Hy> controller;
+    //controller.view.focal_length = 2.0;
     
 
     int counter = 0;

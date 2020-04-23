@@ -8,13 +8,7 @@
 #include <cmath>
 #include <chrono>
 
-#include <algebra/quaternion.hh>
-#include <algebra/moebius.hh>
-#include <geometry/hyperbolic.hh>
-#include <geometry/hyperbolic/plane.hh>
-#include <geometry/hyperbolic/horosphere.hh>
-#include <view.hh>
-#include <object.hh>
+#include <geometry/hyperbolic.hpp>
 
 #include <opencl/search.hpp>
 #include <sdl/viewer.hpp>
@@ -22,17 +16,20 @@
 #include <sdl/image.hpp>
 #include <renderer.hpp>
 #include <scenario.hpp>
-#include <color.hpp>
+
+#include <common.hpp>
 
 #include "scene.hpp"
+
+#include <device/kernel.gen.cl.h>
 
 
 using duration = std::chrono::duration<double>;
 
-class MyScenario : public PathScenario {
+class MyScenario : public PathScenario<MyObject> {
     public:
-    std::vector<Object> get_objects(double t) const override {
-        return std::vector<Object>();
+    std::vector<MyObject> get_objects(double t) const override {
+        return std::vector<MyObject>();
     }
 };
 
@@ -55,58 +52,62 @@ int main(int argc, const char *argv[]) {
     cl_device_id device = cl::search_device(platform_no, device_no);
 
     int width = 1280, height = 720;
-    Renderer renderer(device, width, height, Renderer::Config {
-        .path_max_depth = 3,
-        .blur = { .lens = true, .motion = true }
-    });
+    std::string src(
+        (const char *)kernel_gen_cl,
+        size_t(kernel_gen_cl_len)
+    );
+    Renderer<MyObject> renderer(
+        device, src,
+        width, height
+    );
     renderer.store_objects(create_scene());
 
     Viewer viewer(width, height);
-    Controller controller;
+    Controller<Hy> controller;
 
-    std::vector<View> points {
-        view_position(mo_new(
-            c_new(0.0704422, 0.388156),
-            c_new(3.25709, -0.644618),
-            c_new(0.0280217, 0.0111143),
-            c_new(0.542426, -2.73144)
-        )),
-        view_position(mo_new(
-            c_new(0.0286821, 0.683827),
-            c_new(2.8249, -1.7697),
-            c_new(-0.0203855, 0.451223),
-            c_new(2.02, -2.46116)
-        )),
-        view_position(mo_new(
-            c_new(0.605603, -0.0125093),
-            c_new(1.13499, -2.28722),
-            c_new(0.296042, -0.0701192),
-            c_new(1.96622, -1.20888)
-        )),
-        view_position(mo_new(
-            c_new(0.155695, -0.546314),
-            c_new(-1.72239, -0.323492),
-            c_new(-0.0113209, -0.0551297),
-            c_new(0.316326, 1.74335)
-        )),
-        view_position(mo_new(
-            c_new(0.0748133, -0.111905),
-            c_new(-5.96229, 0.107037),
-            c_new(0.0470794, -0.0507573),
-            c_new(1.09217, 5.74615)
-        )),
+    std::vector<View<Hy>> points {
+        View<Hy>{ .position = Moebius<comp>(
+            comp(0.0704422, 0.388156),
+            comp(3.25709, -0.644618),
+            comp(0.0280217, 0.0111143),
+            comp(0.542426, -2.73144)
+        ) },
+        View<Hy>{ .position = Moebius<comp>(
+            comp(0.0286821, 0.683827),
+            comp(2.8249, -1.7697),
+            comp(-0.0203855, 0.451223),
+            comp(2.02, -2.46116)
+        ) },
+        View<Hy>{ .position = Moebius<comp>(
+            comp(0.605603, -0.0125093),
+            comp(1.13499, -2.28722),
+            comp(0.296042, -0.0701192),
+            comp(1.96622, -1.20888)
+        ) },
+        View<Hy>{ .position = Moebius<comp>(
+            comp(0.155695, -0.546314),
+            comp(-1.72239, -0.323492),
+            comp(-0.0113209, -0.0551297),
+            comp(0.316326, 1.74335)
+        ) },
+        View<Hy>{ .position = Moebius<comp>(
+            comp(0.0748133, -0.111905),
+            comp(-5.96229, 0.107037),
+            comp(0.0470794, -0.0507573),
+            comp(1.09217, 5.74615)
+        ) },
     };
     
     MyScenario scenario;
-    std::vector<SquareTransition> transitions {
-        SquareTransition(8.0, points[0], points[1], 0.0, 1.0),
-        SquareTransition(8.0, points[1], points[2], 0.0, 1.0),
-        SquareTransition(8.0, points[2], points[3], 0.0, 1.0),
-        SquareTransition(8.0, points[3], points[4], 0.0, 1.0)
+    std::vector<SquareTransition<Hy>> transitions {
+        SquareTransition<Hy>(8.0, points[0], points[1], 0.0, 1.0),
+        SquareTransition<Hy>(8.0, points[1], points[2], 0.0, 1.0),
+        SquareTransition<Hy>(8.0, points[2], points[3], 0.0, 1.0),
+        SquareTransition<Hy>(8.0, points[3], points[4], 0.0, 1.0)
     };
     
     for (const auto &t : transitions) {
-        scenario.add_transition(std::make_unique<SquareTransition>(t));
+        scenario.add_transition(std::make_unique<SquareTransition<Hy>>(t));
     }
 
     //controller.view.lens_radius = 1e-1;

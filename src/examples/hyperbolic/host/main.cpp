@@ -47,7 +47,7 @@ int main(int argc, const char *argv[]) {
         size_t(kernel_gen_cl_len)
     );
     Viewer viewer(width, height);
-    Renderer<Hyperbolic, MyObject> renderer(
+    Renderer<MyObject> renderer(
         device, src,
         width, height
     );

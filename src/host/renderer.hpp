@@ -17,13 +17,10 @@
 
 
 // FIXME: Use `set_view()` method instead of `fresh` argument
-template <typename Geo, typename Obj>
+template <typename Obj>
 class Renderer {
 public:
-    static_assert(
-        is_same<Geo, typename Obj::Geo>(),
-        "Object and renderer geometry mismatch"
-    );
+    typedef typename Obj::Geo Geo;
 
     struct Config {
         struct Blur {

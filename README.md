@@ -47,15 +47,15 @@ pacman -S \
 To build and run example:
 
 ```bash
-./script/run.sh main
+./script/run.sh hyperbolic main
 ```
 
-You may use name of another example instead of `main` as well.
+You may use a name of another example instead of `main` as well.
 
 To select the OpenCL platform and device:
 
 ```bash
-./script/run.sh <example-name> [platform-no] [device-no]
+./script/run.sh <example-group> <example-name> [platform-no] [device-no]
 ```
 
 To list all available platforms and devices enter `-1` as `[platform-no]`.

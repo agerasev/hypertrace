@@ -40,6 +40,11 @@ MyMaterial make_material(
     );
 }
 
+void set_transparency(MyMaterial &mat, real transparency) {
+    mat.portions()[0] = transparency;
+    mat.portions()[1] = 1 - transparency;
+}
+
 typedef hy::TiledPlane<MyMaterial, 2> MyPlane;
 typedef hy::TiledHorosphere<MyMaterial, 4> MyHorosphere;
 

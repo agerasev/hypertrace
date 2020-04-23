@@ -14,6 +14,16 @@ public:
     real focal_length = 5.0_r;
 };
 
+template <typename G>
+View<G> interpolate(const View<G> &a, const View<G> &b, real t) {
+    return View<G>{
+        .position = ::interpolate(a.position, b.position, t),
+        .field_of_view = a.field_of_view*(1 - t) + b.field_of_view*t,
+        .lens_radius = a.lens_radius*(1 - t) + b.lens_radius*t,
+        .focal_length = a.focal_length*(1 - t) + b.focal_length*t,
+    };
+}
+
 #ifdef HOST
 
 namespace device {

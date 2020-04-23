@@ -16,8 +16,6 @@ public:
 
     Rng &rng;
 
-    float3 background = float3(1);
-
 public:
     Renderer(Rng &rng) : rng(rng) {}
 
@@ -72,7 +70,7 @@ public:
                     break;
                 }
             } else {
-                background.interact(context, nearest_light, luminance);
+                background.interact(context, light, luminance);
                 break;
             }
         }

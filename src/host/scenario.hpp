@@ -5,71 +5,127 @@
 #include <cassert>
 #include <algorithm>
 
-#include <view.hh>
-#include <object.hh>
+#include <view.hpp>
 
 
+template <typename G>
 class Transition {
-    public:
+public:
     double duration = 1.0; // seconds
 
-    Transition(double d);
+    Transition(double d) : duration(d) {}
     virtual ~Transition() = default;
-    virtual View get_view(double p) const = 0;
+    virtual View<G> get_view(double p) const = 0;
 };
 
-class DelayTransition : public Transition {
-    public:
-    View view;
+template <typename G>
+class DelayTransition : public Transition<G> {
+public:
+    View<G> view;
 
-    DelayTransition(double d, View p);
-    View get_view(double p) const override;
+    DelayTransition(double d, View<G> p) : Transition<G>(d), view(p) {}
+    View<G> get_view(double p) const override {
+        return view;
+    }
 };
 
-class LinearTransition : public Transition {
-    public:
-    View start, stop;
+template <typename G>
+class LinearTransition : public Transition<G> {
+public:
+    View<G> start, stop;
 
-    LinearTransition(double d, View a, View b);
-    View get_view(double p) const override;
+    LinearTransition(double d, View<G> a, View<G> b) :
+        Transition<G>(d), start(a), stop(b) {}
+    View<G> get_view(double p) const override {
+        return interpolate(start, stop, p);
+    }
 };
 
-class SquareTransition : public LinearTransition {
-    public:
+template <typename G>
+class SquareTransition : public LinearTransition<G> {
+public:
     double markers[2];
 
-    SquareTransition(double d, View a, View b, double at, double bt);
-    View get_view(double p) const override;
+    SquareTransition(double d, View<G> a, View<G> b, double at, double bt) :
+        LinearTransition<G>(d, a, b), markers{at, bt} {}
+    View<G> get_view(double p) const override {
+        return interpolate(
+            this->start, this->stop,
+            (3*(markers[0]*(1-p) + markers[1]*p)*(1-p) + p*p)*p
+        );
+    }
 };
 
+template <typename Obj>
 class Scenario {
-    public:
+public:
+    typedef typename Obj::Geo Geo;
+
     virtual double duration() const = 0;
-    virtual View get_view(double time) const = 0;
-    virtual std::vector<Object> get_objects(double time) const = 0;
+    virtual View<Geo> get_view(double time) const = 0;
+    virtual std::vector<Obj> get_objects(double time) const = 0;
 };
 
-class PathScenario : public Scenario {
-    private:
-    std::vector<std::pair<std::unique_ptr<Transition>, double>> index;
+template <typename Obj>
+class PathScenario : public Scenario<Obj> {
+public:
+    typedef typename Scenario<Obj>::Geo Geo;
 
-    public:
-    void add_transition(std::unique_ptr<Transition> t);
+private:
+    std::vector<std::pair<std::unique_ptr<Transition<Geo>>, double>> index;
+
+public:
+    void add_transition(std::unique_ptr<Transition<Geo>> t) {
+        index.push_back(std::make_pair(
+            std::move(t),
+            path_duration() + t->duration
+        ));
+    }
     template <typename ... Args>
-    void add_transition(std::unique_ptr<Transition> t, Args ...args) {
+    void add_transition(std::unique_ptr<Transition<Geo>> t, Args ...args) {
         add_transition(std::move(t));
         add_transition(args...);
     }
 
-    public:
-    PathScenario();
+public:
+    PathScenario() = default;
     template <typename ... Args>
     PathScenario(Args ...args) : PathScenario() {
         add_transition(args...);
     }
 
-    double path_duration() const;
+    double path_duration() const {
+        if (index.size() > 0) {
+            return index.back().second;
+        } else {
+            return 0.0;
+        }
+    }
 
-    double duration() const override;
-    View get_view(double time) const override;
+    double duration() const override {
+        return path_duration();
+    }
+    View<Geo> get_view(double time) const override {
+        assert(index.size() > 0);
+
+        static const auto comp = [](
+            const std::pair<std::unique_ptr<Transition<Geo>>, double> &a,
+            double b
+        ) {
+            return a.second < b;
+        };
+
+        auto i = std::lower_bound(index.begin(), index.end(), time, comp);
+        if (i == index.end()) {
+            return index.back().first->get_view(1.0);
+        }
+
+        const auto &t = i->first;
+        double p = 1.0 - (i->second - time)/t->duration;
+        if (p <= 0.0) {
+            p = 0.0;
+        }
+
+        return t->get_view(p);
+    }
 };

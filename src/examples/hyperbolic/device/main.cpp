@@ -52,7 +52,7 @@ void trace(
         (real)(idx / width) - 0.5_r*(height) + xrand::uniform<real>(rng)
     )/height;
 
-    ConstantBackground<Hy> bg(float3(0));
+    ConstantBackground<Hy> bg(float3(1));
     Renderer<Hy, Rng> renderer(rng);
 
     float3 color = renderer.trace(view, pos, bg, objects, object_count);

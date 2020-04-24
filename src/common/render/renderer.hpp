@@ -21,8 +21,8 @@ public:
 
     template <typename Obj, typename Bg>
     float3 trace(
-        const View<G> &view, real2 pix_pos, Bg background,
-        global_const_ptr<Obj> objects, int object_count
+        const View<G> &view, real2 pix_pos, int depth, 
+        Bg background, global_const_ptr<Obj> objects, int object_count
     ) {
         Light<G> init_light;
         init_light.ray.start = G::origin();
@@ -38,7 +38,7 @@ public:
         Light<G> light = init_light;
         int prev_i = -1;
 
-        for (int k = 0; k < 3; ++k) {
+        for (int k = 0; k < depth; ++k) {
             int nearest_i = -1;
             real nearest_dist = -1_r;
             typename Obj::Cache nearest_cache;

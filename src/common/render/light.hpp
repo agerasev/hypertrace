@@ -41,6 +41,28 @@ struct Light : public BaseLight {
 };
 
 template <>
+struct Light<Euclidean> : public BaseLight {
+    Ray<Eu> ray;
+
+    Light() = default;
+    Light(Ray<Eu> ray, const BaseLight &base) :
+        BaseLight(base), ray(ray)
+    {}
+
+    LocalLight get_local() const {
+        return LocalLight(
+            ray.direction,
+            base()
+        );
+    }
+    void set_local(const LocalLight &ll) {
+        ray.direction = ll.direction;
+        base() = ll.base();
+    }
+};
+
+
+template <>
 struct Light<Hyperbolic> : public BaseLight {
     Ray<Hy> ray;
 

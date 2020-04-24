@@ -3,9 +3,9 @@ project(examples)
 
 add_custom_target(${PROJECT_NAME})
 
-# Examples
-
 add_subdirectory(hyperbolic)
+add_subdirectory(raymarching)
+
 #add_dependencies(main examples)
 
 #file(GLOB EXAMPLES "examples/*.cpp")

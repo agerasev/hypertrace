@@ -50,11 +50,11 @@ struct Caller<A, T, Elems...> {
 template <template <typename...> typename A, typename T>
 struct Caller<A, T> {
     template <template <typename, int> typename F, int P, typename ...Args>
-    static decltype(auto) call(const A<T> &u, int i, Args &&...args) {
+    static decltype(auto) call(const A<T> &u, int, Args &&...args) {
         return F<T, P>::call(u.value, forward<Args>(args)...);
     }
     template <template <typename, int> typename F, int P, typename ...Args>
-    static decltype(auto) call(A<T> &u, int i, Args &&...args) {
+    static decltype(auto) call(A<T> &u, int, Args &&...args) {
         return F<T, P>::call(u.value, forward<Args>(args)...);
     }
 };

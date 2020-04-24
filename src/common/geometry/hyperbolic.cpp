@@ -56,12 +56,12 @@ Moebius<comp> Hy::zrotate(real phi) {
 
 Moebius<comp> Hy::xrotate(real theta) {
     real c = math::cos(theta/2), s = math::sin(theta/2);
-    return Moebius<comp>(c, -s, s, c);
+    return Moebius<comp>(c, s*1_i, s*1_i, c);
 }
 
 Moebius<comp> Hy::yrotate(real theta) {
     real c = math::cos(theta/2), s = math::sin(theta/2);
-    return Moebius<comp>(c, s*1_i, s*1_i, c);
+    return Moebius<comp>(c, -s, s, c);
 }
 
 Moebius<comp> Hy::horosphere(comp pos) {
@@ -72,14 +72,14 @@ Moebius<comp> Hy::look_to(quat dir) {
 	// We look at the top (along the z axis).
 	real phi = -math::atan2(dir[1], dir[0]);
 	real theta = -math::atan2(::length(dir.re()), dir[2]);
-	return xrotate(theta)*zrotate(phi);
+	return yrotate(theta)*zrotate(phi);
 }
 
 Moebius<comp> Hy::look_at(quat pos) {
     // The origin is at *j* (z = 1).
 	real phi = -math::atan2(pos[1], pos[0]);
 	real theta = -math::atan2(2*::length(pos.re()), ::length2(pos) - 1);
-	return xrotate(theta)*zrotate(phi);
+	return yrotate(theta)*zrotate(phi);
 }
 
 Moebius<comp> Hy::move_at(quat pos) {
@@ -111,7 +111,7 @@ TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
 
     SECTION("Distance invariance") {
         std::vector<std::function<Moebius<comp>(Rng &)>> elem = {
-            [](Rng &rng) { return Hy::xrotate(2*PI*rng.d<real>().uniform()); },
+            [](Rng &rng) { return Hy::yrotate(2*PI*rng.d<real>().uniform()); },
             [](Rng &rng) { return Hy::zrotate(2*PI*rng.d<real>().uniform()); },
             [](Rng &rng) { return Hy::zshift(rng.d<real>().normal()); }
         };
@@ -136,7 +136,7 @@ TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
             real phi = -math::atan2(q[1], q[0]);
             real theta = -math::atan2(length(q.re()), q[2]);
 
-            Moebius<comp> c = Hy::xrotate(theta)*Hy::zrotate(phi);
+            Moebius<comp> c = Hy::yrotate(theta)*Hy::zrotate(phi);
 
             REQUIRE(c.deriv(1_j, q) == approx(1_j));
         }
@@ -162,7 +162,7 @@ TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
     }
     SECTION("Rotation interpolation at small angles") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius<comp> m = Hy::xrotate(1e-3*PI*rng.d<real>().uniform());
+            Moebius<comp> m = Hy::yrotate(1e-3*PI*rng.d<real>().uniform());
             int q = (int)math::floor(8*rng.d<real>().uniform()) + 2;
 
             Moebius<comp> l = Moebius<comp>::identity();

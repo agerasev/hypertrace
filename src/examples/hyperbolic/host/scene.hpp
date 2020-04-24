@@ -21,7 +21,7 @@ std::vector<MyObject> create_scene() {
             make_material(border_color, 0.0, 0, float3(1.0))
         ),
         make_horosphere(
-            Moebius<comp>(1_r, math::sqrt(2_r), 0_r, 1_r)*Hy::yrotate(PI),
+            Moebius<comp>(1_r, math::sqrt(2_r), 0_r, 1_r)*Hy::xrotate(PI),
             MyHorosphere::Tiling::SQUARE,
             MyHorosphereMaterials(
                 make_material(make_color(0xfe7401), 0.1, 0.1),

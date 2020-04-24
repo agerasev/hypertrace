@@ -80,9 +80,9 @@ public:
         }
 
         if (mouse_x != 0 || mouse_y != 0) {
-            pos *= G::xrotate(mouse_sens*mouse_x);
+            pos *= G::yrotate(mouse_sens*mouse_x);
             mouse_x = 0;
-            pos *= G::yrotate(mouse_sens*mouse_y);
+            pos *= G::xrotate(mouse_sens*mouse_y);
             mouse_y = 0;
             still = false;
         }

@@ -9,7 +9,7 @@
 #include <view.hpp>
 #include <work.hpp>
 
-#include <geometry/hyperbolic.hpp>
+#include <geometry/euclidean.hpp>
 #include <render/renderer.hpp>
 #include <render/filter.hpp>
 
@@ -27,7 +27,7 @@ static_assert( \
 ); \
 
 
-ASSERT_DUMMY(_View, View<Hy>);
+ASSERT_DUMMY(_View, View<Eu>);
 ASSERT_DUMMY_ALIGN(_MyObject, MyObject);
 
 
@@ -39,7 +39,7 @@ void trace(
     int width, int height,
     int sample_no,
     global_ptr<uint> seed,
-    const View<Hy> &view,
+    const View<Eu> &view,
     global_const_ptr<MyObject> objects,
     int object_count
 ) {
@@ -52,10 +52,10 @@ void trace(
         (real)(idx / width) - 0.5_r*(height) + xrand::uniform<real>(rng)
     )/height;
 
-    ConstantBackground<Hy> bg(float3(1));
-    Renderer<Hy, Rng> renderer(rng);
+    GradientBackground bg(real3(0,0,1), float3(1), float3(0));
+    Renderer<Eu, Rng> renderer(rng);
 
-    float3 color = renderer.trace(view, pos, 3, bg, objects, object_count);
+    float3 color = renderer.trace(view, pos, 2, bg, objects, object_count);
 
     seed.store(rng.state(), idx);
 
@@ -88,7 +88,7 @@ void trace_iface(
         width, height,
         sample_no,
         global_ptr<uint>(seed),
-        *(View<Hy>*)view,
+        *(View<Eu>*)view,
         global_const_ptr<_MyObject>(objects).reinterpret<MyObject>(),
         object_count
     );

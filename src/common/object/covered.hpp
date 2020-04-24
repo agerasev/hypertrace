@@ -27,14 +27,14 @@ public:
     {}
 
     template <typename Context>
-    real detect(Context &context, Cache &cache, Light<Hy> &light) const {
+    real detect(Context &context, Cache &cache, Light<Geo> &light) const {
         return shape.detect(context, cache.normal, light);
     }
 
     template <typename Context>
     bool interact(
         Context &context, const Cache &cache,
-        Light<Hy> &light, float3 &luminance
+        Light<Geo> &light, float3 &luminance
     ) const {
         real3 ln = Geo::dir_to_local(light.ray.start, cache.normal);
         LocalLight ll = light.get_local();

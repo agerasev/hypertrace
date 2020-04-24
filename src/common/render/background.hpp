@@ -1,5 +1,6 @@
 #pragma once
 
+#include <geometry/euclidean.hpp>
 #include "light.hpp"
 
 
@@ -25,3 +26,20 @@ public:
         emission += color*light.intensity;
     }
 };
+
+class GradientBackground {
+// : public Background<Eu>
+public:
+    real3 dir;
+    float3 up, down;
+
+    GradientBackground() = default;
+    GradientBackground(real3 dir, float3 u, float3 d) : dir(dir), up(u), down(d) {}
+    template <typename Context>
+    void interact(Context &, Light<Eu> &light, float3 &emission) const {
+        real t = 0.5_r*(dot(light.ray.direction, dir) + 1_r);
+        float3 color = t*up + (1 - t)*down;
+        emission += color*light.intensity;
+    }
+};
+

@@ -10,13 +10,13 @@
 
 
 typedef Combination<
-    Specular,
-    Colored<Lambertian>
+    Colored<Lambertian>,
+    Specular
 > MyBaseMaterial;
 
 typedef Combination<
-    Transparent,
-    Emissive<MyBaseMaterial>
+    Emissive<MyBaseMaterial>,
+    Transparent
 > MyMaterial;
 
 MyMaterial make_material(
@@ -26,17 +26,17 @@ MyMaterial make_material(
     float3 emission=float3(0)
 ) {
     return MyMaterial(
-        make_pair(transparency, Transparent()),
         make_pair(
             1 - transparency,
             Emissive<MyBaseMaterial>(
                 emission,
                 MyBaseMaterial(
-                    make_pair(specularity, Specular()),
-                    make_pair(1 - specularity, Colored<Lambertian>(diffuse))
+                    make_pair(1 - specularity, Colored<Lambertian>(diffuse)),
+                    make_pair(specularity, Specular())
                 )
             )
-        )
+        ),
+        make_pair(transparency, Transparent())
     );
 }
 

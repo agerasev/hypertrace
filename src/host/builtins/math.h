@@ -38,6 +38,7 @@ T x_sinh_##T(T a); \
 T x_tan_##T(T a); \
 T x_tanh_##T(T a); \
 T x_tgamma_##T(T a); \
+T x_sign_##T(T a); \
 
 #define DECLARE_BUILTIN_FUNCTIONS_UINT(T) \
 DECLARE_BUILTIN_FUNCTIONS_COMMON(T) \

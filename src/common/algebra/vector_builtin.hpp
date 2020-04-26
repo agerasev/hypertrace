@@ -226,6 +226,7 @@ DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, sinh, sinh) \
 DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, tan, tan) \
 DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, tanh, tanh) \
 DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, tgamma, tgamma) \
+DEFINE_VECTOR_BUILTIN_MATH_FUNCTION_A(T, N, sign, sign) \
 inline pair<vector<T, N>, vector<T, N>> fract(vector<T, N> a) { \
     pair<vector<T, N>, vector<T, N>> p; \
     xv_fract_##T##N(p.first.data(), a.data(), p.second.data()); \

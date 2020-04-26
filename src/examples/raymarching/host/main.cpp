@@ -51,11 +51,23 @@ int main(int argc, const char *argv[]) {
         width, height
     );
 
+    /*
     std::vector<MyObject> objects {
         make_object(
             Affine<real, 3>::identity(),
-            Sdf{1.0, 1.0, 5.0},
+            Sdf{1.0, 1.0, 5.0}, 0.2,
             make_material(float3(0.5f, 0.9f, 0.3f), 0.1f)
+        ),
+    };
+    */
+    std::vector<MyObject> objects {
+        make_object(
+            Affine<real, 3>::identity(),
+            make_material(float3(0.5f, 0.9f, 0.3f), 0.1f)
+        ),
+        make_object(
+            Affine<real, 3>(Rotation<real, 3>(normalize(real3(1,1,0)), PI/4).to_linear()),
+            make_material(float3(0.5f, 0.3f, 0.9f), 0.1f)
         ),
     };
     renderer.store_objects(objects);

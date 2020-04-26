@@ -102,6 +102,9 @@ T x_tanh_##T(T a) { \
 T x_tgamma_##T(T a) { \
     return std::tgamma(a); \
 } \
+T x_sign_##T(T a) { \
+    return ((T(0) < a) - (a - T(0))); \
+} \
 
 #define DEFINE_BUILTIN_FUNCTIONS_UINT(T) \
 DEFINE_BUILTIN_FUNCTIONS_COMMON(T) \

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algebra/differential.hpp>
 #include <geometry/euclidean.hpp>
 #include <object/shape.hpp>
 
@@ -11,7 +12,6 @@ template <typename F>
 class DistanceFunction {
 // : public Shape<Eu>
 public:
-    static const int MAX_STEPS = 1000;
     static constexpr const real EPSILON = 1e-4;
 
     typedef Eu Geo;
@@ -20,6 +20,8 @@ public:
     F function;
     real radius;
     real step = 1_r;
+    int max_steps = 1000;
+    real eps = 1e-4;
 
     DistanceFunction() = default;
     explicit DistanceFunction(F f, real r, real s=1_r) :
@@ -41,25 +43,30 @@ public:
             pos += (dlen - math::sqrt(rad2 - nrad2))*dir;
         }
         
-        bool found = false;
+        bool found = false;//true;
+        real depth = 0_r;
+        real3 npos = pos;
         //real sign = function(pos) > 0_r ? 1_r : -1_r;
-        for (int i = 0; i < MAX_STEPS; ++i) {
-            real dist = function(pos);
-            if (dist > EPSILON) {
-                pos += (dist*step)*dir;
-                if (length2(pos) > rad2) {
-                    break;
-                }
+        for (int i = 0; i < max_steps; ++i) {
+            real3 npos = pos + depth*dir;
+            if (length2(npos) > rad2 + eps) {
+                //found = false;
+                break;
+            }
+            real dist = function(npos);
+            if (dist > eps) {
+                depth += dist*step;
             } else {
                 found = true;
                 break;
             }
         }
+        pos = npos;
 
         if (found) {
             real dist = dot(pos - light.ray.start, dir);
             light.ray.start = pos;
-            normal = function.grad(pos);
+            normal = gradient(function, pos);
             return dist;
         } else {
             return -1_r;
@@ -78,12 +85,16 @@ struct ToDevice<eu::DistanceFunction<F>> {
         device_type<F> function;
         device::real radius;
         device::real step;
+        int max_steps;
+        device::real eps;
     };
     static type to_device(const eu::DistanceFunction<F> &df) {
         return type{
             .function = ::to_device(df.function),
             .radius = ::to_device(df.radius),
             .step = ::to_device(df.step),
+            .max_steps = ::to_device(df.max_steps),
+            .eps = ::to_device(df.eps),
         };
     }
 };

@@ -97,6 +97,9 @@ inline T tanh(T a) { \
 inline T tgamma(T a) { \
     return x_tgamma_##T(a); \
 } \
+inline T sign(T a) { \
+    return x_sign_##T(a); \
+} \
 
 #define DEFINE_PRIMITIVE_MATH_INT(T) \
 DEFINE_PRIMITIVE_MATH_COMMON(T) \

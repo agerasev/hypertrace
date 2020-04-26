@@ -49,6 +49,7 @@ DEFINE_VECTOR_MATH_FUNCTION_A(sinh)
 DEFINE_VECTOR_MATH_FUNCTION_A(tan)
 DEFINE_VECTOR_MATH_FUNCTION_A(tanh)
 DEFINE_VECTOR_MATH_FUNCTION_A(tgamma)
+DEFINE_VECTOR_MATH_FUNCTION_A(sign)
 
 template <typename T, int N>
 vector<T, N> min(vector<T, N> a, T b) {

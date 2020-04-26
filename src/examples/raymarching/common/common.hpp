@@ -1,11 +1,11 @@
 #pragma once
 
-#include <object/euclidean/sdf.hpp>
+#include <object/euclidean/shape.hpp>
+#include <object/euclidean/distance_function.hpp>
 #include <object/material.hpp>
 #include <object/combination.hpp>
 #include <object/covered.hpp>
 #include <object/mapped.hpp>
-
 
 typedef Combination<
     Colored<Lambertian>,
@@ -42,6 +42,14 @@ public:
         );
     }
 };
+/*
+template <>
+struct Gradient<Sdf> {
+    static real3 apply(Sdf f, real3 p) {
+        return f.grad(p);
+    }
+};
+*/
 
 #ifdef HOST
 template <>
@@ -60,18 +68,34 @@ struct ToDevice<Sdf> {
     }
 };
 #endif
-
+/*
 typedef Mapped<Covered<eu::DistanceFunction<Sdf>, MyMaterial>> MyObject;
 
 MyObject make_object(
     const Affine<real, 3> &map,
-    const Sdf &sdf,
+    const Sdf &sdf, real step,
     const MyMaterial &mat
 ) {
     return MyObject(
         map,
         Covered<eu::DistanceFunction<Sdf>, MyMaterial>(
-            eu::DistanceFunction<Sdf>(sdf, sdf.rad + sdf.fac, 0.5),
+            eu::DistanceFunction<Sdf>(sdf, sdf.rad + sdf.fac, step),
+            mat
+        )
+    );
+}
+*/
+
+typedef Mapped<Covered<eu::Cube, MyMaterial>> MyObject;
+
+MyObject make_object(
+    const Affine<real, 3> &map,
+    const MyMaterial &mat
+) {
+    return MyObject(
+        map,
+        Covered<eu::Cube, MyMaterial>(
+            eu::Cube(),
             mat
         )
     );

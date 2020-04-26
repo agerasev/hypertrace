@@ -110,6 +110,7 @@ void xv_sinh_##T##N(T *o, const T *a); \
 void xv_tan_##T##N(T *o, const T *a); \
 void xv_tanh_##T##N(T *o, const T *a); \
 void xv_tgamma_##T##N(T *o, const T *a); \
+void xv_sign_##T##N(T *o, const T *a); \
 
 #define DECLARE_BUILTIN_VECTOR_UINT(T, N) \
 DECLARE_BUILTIN_VECTOR(T, N) \

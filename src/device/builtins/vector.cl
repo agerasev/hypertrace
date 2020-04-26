@@ -254,6 +254,9 @@ void xv_tanh_##T##N(T *o, const T *a) { \
 void xv_tgamma_##T##N(T *o, const T *a) { \
     *(T##N*)o = tgamma(*(const T##N*)a); \
 } \
+void xv_sign_##T##N(T *o, const T *a) { \
+    *(T##N*)o = sign(*(const T##N*)a); \
+} \
 
 
 #define DEFINE_BUILTIN_VECTOR_UINT(T, N) \

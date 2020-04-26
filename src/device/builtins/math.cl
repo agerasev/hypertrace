@@ -98,6 +98,9 @@ T x_tanh_##T(T a) { \
 T x_tgamma_##T(T a) { \
     return tgamma(a); \
 } \
+T x_sign_##T(T a) { \
+    return sign(a); \
+} \
 
 #define DEFINE_BUILTIN_FUNCTIONS_UINT(T) \
 DEFINE_BUILTIN_FUNCTIONS_COMMON(T) \

@@ -46,7 +46,7 @@ public:
 
             for (int i = 0; i < object_count; ++i) {
                 context.repeat = (prev_i == i);
-                if (!Obj::repeated) {
+                if (context.repeat && !Obj::repeated) {
                     continue;
                 }
                 Obj obj = objects.load(i);

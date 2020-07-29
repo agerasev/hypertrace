@@ -2,24 +2,7 @@
 
 #include <common/types.hh>
 
-#ifdef HOST
-
-typedef double real;
-
-#ifdef INTEROP
-typedef double_dev   real_dev;
-#define real_load    double_load
-#define real_store   double_store
-#endif // INTEROP
-
-#define PI 3.14159265358979323846
-#define EPS 1e-8
-#define R0 0.0
-#define R1 1.0
-
-#else // HOST
-
-#ifdef DEVICE_DOUBLE
+#if defined(HOST) || defined(DEV_F64)
 
 typedef double real;
 
@@ -28,7 +11,7 @@ typedef double real;
 #define R0 0.0
 #define R1 1.0
 
-#else // DEVICE_DOUBLE
+#else // HOST || DEV_F64
 
 typedef float real;
 
@@ -37,12 +20,11 @@ typedef float real;
 #define R0 0.0f
 #define R1 1.0f
 
-#endif // DEVICE_DOUBLE
-
-#endif // HOST
+#endif // HOST || DEV_F64
 
 
 #ifdef UNIT_TEST
+
 #include <catch.hpp>
 
 #include <random>
@@ -65,8 +47,10 @@ public:
     }
 };
 
-Approx approx(real v) {
+inline Approx approx(real v) {
     return Approx(v);
 }
+
+#define TEST_ATTEMPTS 16
 
 #endif // UNIT_TEST

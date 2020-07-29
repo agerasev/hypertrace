@@ -10,21 +10,21 @@
 // Alias
 
 #define VECTOR_ALIAS(T, N) \
-typedef vector<T, N> T##N;
+typedef vec<T, N> T##N;
 
 // Make
 
 #define VECTOR_MAKE(T, N) \
 template <typename... Args> \
-inline vector<T, N> make_##T##N(Args ...args) { \
-    return vector<T, N>(args...); \
+inline vec<T, N> make_##T##N(Args ...args) { \
+    return vec<T, N>(args...); \
 }
 
 // Cast
 
 #define VECTOR_CAST(T, N) \
 template <typename S> \
-inline vector<T, N> convert_##T##N(vector<S, N> v) { \
+inline vec<T, N> convert_##T##N(vec<S, N> v) { \
     return v.template cast<T>(); \
 }
 
@@ -121,7 +121,7 @@ VECTOR_INTEROP_N(real,   cl_float)
 template <typename T, int N>
 class VecApprox {
     public:
-    typedef vector<T, N> vtype;
+    typedef vec<T, N> vtype;
     vtype v;
     VecApprox(vtype c) : v(c) {}
     friend bool operator==(vtype a, VecApprox b) {
@@ -147,7 +147,7 @@ class VecApprox {
 };
 
 template <typename T, int N>
-VecApprox<T, N> approx(vector<T, N> v) {
+VecApprox<T, N> approx(vec<T, N> v) {
     return VecApprox<T, N>(v);
 }
 

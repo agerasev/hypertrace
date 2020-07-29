@@ -8,4 +8,8 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector_math.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/complex.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/complex.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/quaternion.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/quaternion.cc"
 PARENT_SCOPE)

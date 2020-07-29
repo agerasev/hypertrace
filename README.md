@@ -1,25 +1,34 @@
 # HyperTrace
 
-Lobachevsky (hyperbolic) space ray tracer powered by OpenCL.
+Physically based ray tracer powered by OpenCL.
+
+The whole program including **host** part (which runs on CPU) as well as **device** part (which runs on GPUs and other OpenCL supporting devices) is written mostly in **C++**. As much common code as possible is shared between these parts. The code is written in highly modular and generic manner.
+
+The ray tracer supports Euclidean as well as non-Euclidean spaces like Lobachevsky (hyperbolic) space. You may add your own functionality or entities like shapes and materials by writing plain C++ code which could be able to run both on CPU and GPU.
+
+This project is done mostly for educational purpose and intended to use for experimenting with computer graphics.
 
 ## Requirements
 
 + OpenCL 1.2
-+ SDL2
-+ SDL2_Image
++ SDL2 with SDL2_Image
++ Clang and LLVM
++ [LLVM-OpenCL](https://github.com/agerasev/llvm-opencl)**\***
+
+**\*** This project uses custom LLVM-based tool to translate LLVM-IR code (to which C++ is compiled) to OpenCL source code. It depends on LLVM code tree so you need to build LLVM and Clang from source first. LLVM project is huge so make sure you have enough space and computational power. You can find the detailed description by the link above.
 
 ## Setup
 
-### Linux
-
-+ Install GCC, Make and CMake.
++ Install GCC or Clang.
++ Install Make and CMake.
 + Install `*-opencl-dev` and `*-opencl-icd` for your device.
++ Clone and build LLVM, Clang and [LLVM-OpenCL](https://github.com/agerasev/llvm-opencl).
 
 ### Windows
 
-+ Install [MSYS2](https://www.msys2.org/).
+To build on Windows it is recomended to use [MSYS2](https://www.msys2.org/).
 
-+ With MSYS2 install required packages:
+To install packages with MSYS2:
 
 ```bash
 pacman -S \
@@ -38,15 +47,15 @@ pacman -S \
 To build and run example:
 
 ```bash
-./script/run.sh main
+./script/run.sh hyperbolic main
 ```
 
-You may use name of another example instead of `main` as well.
+You may use a name of another example instead of `main` as well.
 
 To select the OpenCL platform and device:
 
 ```bash
-./script/run.sh <example-name> [platform-no] [device-no]
+./script/run.sh <example-group> <example-name> [platform-no] [device-no]
 ```
 
 To list all available platforms and devices enter `-1` as `[platform-no]`.
@@ -94,13 +103,13 @@ In some examples you may fly around the scene using your keyboard and mouse.
 
 ### Effects
 
-- [x] Lens blur (depth of field)
-- [x] Motion blur
-- [x] Motion blur on moving objects
+- [ ] Lens blur (depth of field)
+- [ ] Motion blur
+- [ ] Motion blur on moving objects
 
 ### Post-processing
 
-- [x] Gamma correction
+- [ ] Gamma correction
 - [ ] Noise reduction (maybe using DL)
 
 ### Other improvements

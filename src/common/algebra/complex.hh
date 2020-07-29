@@ -14,7 +14,7 @@ typedef real2 comp;
 comp c_conj(comp a);
 real c_abs2(comp a);
 real c_abs(comp a);
-real c_fabs(comp a);
+real c_norm_l1(comp a);
 
 comp c_mul(comp a, comp b);
 comp c_inverse(comp a);

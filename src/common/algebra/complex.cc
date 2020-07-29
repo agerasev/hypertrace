@@ -10,7 +10,7 @@ real c_abs2(comp a) {
 real c_abs(comp a) {
     return length(a);
 }
-real c_fabs(comp a) {
+real c_norm_l1(comp a) {
     return fabs(a.x) + fabs(a.y);
 }
 

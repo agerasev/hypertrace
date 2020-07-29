@@ -13,4 +13,7 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/complex.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/quaternion.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/quaternion.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/matrix.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/matrix.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/matrix_test.cpp"
 PARENT_SCOPE)

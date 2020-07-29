@@ -43,3 +43,13 @@ public:
     }
 };
 
+class TestBackground {
+// : public Background<Eu>
+public:
+    TestBackground() = default;
+    template <typename Context>
+    void interact(Context &, Light<Eu> &light, float3 &emission) const {
+        emission += 0.5*(light.ray.direction + 1)*light.intensity;
+    }
+};
+

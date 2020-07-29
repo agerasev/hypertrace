@@ -52,10 +52,11 @@ void trace(
         (real)(idx / width) - 0.5_r*(height) + xrand::uniform<real>(rng)
     )/height;
 
-    GradientBackground bg(real3(0,0,1), float3(1), float3(0));
+    //GradientBackground bg(real3(0,0,1), float3(1), float3(0));
+    TestBackground bg;
     Renderer<Eu, Rng> renderer(rng);
 
-    float3 color = renderer.trace(view, pos, 2, bg, objects, object_count);
+    float3 color = renderer.trace(view, pos, 3, bg, objects, object_count);
 
     seed.store(rng.state(), idx);
 

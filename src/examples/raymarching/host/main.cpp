@@ -51,15 +51,14 @@ int main(int argc, const char *argv[]) {
         width, height
     );
 
-    /*
     std::vector<MyObject> objects {
         make_object(
             Affine<real, 3>::identity(),
-            Sdf{1.0, 1.0, 5.0}, 0.2,
-            make_material(float3(0.5f, 0.9f, 0.3f), 0.1f)
+            Sdf{1.0, 0.4, 10.0}, 0.2,
+            make_material(float3(0.5f, 0.5f, 0.5f), 0.9f)
         ),
     };
-    */
+    /*
     std::vector<MyObject> objects {
         make_object(
             Affine<real, 3>::identity(),
@@ -70,6 +69,7 @@ int main(int argc, const char *argv[]) {
             make_material(float3(0.5f, 0.3f, 0.9f), 0.1f)
         ),
     };
+    */
     renderer.store_objects(objects);
 
     Controller<Euclidean> controller;

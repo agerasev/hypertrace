@@ -29,8 +29,10 @@ public:
 
     template <typename Context>
     real detect(Context &context, real3 &normal, Light<Eu> &light) const {
-        real3 pos = light.ray.start;
+        real3 start = light.ray.start;
         real3 dir = light.ray.direction;
+        real depth = 0_r;//eps*context.repeat;
+        real3 pos = start + depth*dir;
 
         real rad2 = radius*radius;
         real len2 = length2(pos);
@@ -40,20 +42,21 @@ public:
             if (dlen < 0_r || nrad2 > rad2) {
                 return -1_r;
             }
-            pos += (dlen - math::sqrt(rad2 - nrad2))*dir;
+            depth += dlen - math::sqrt(rad2 - nrad2);
+            pos = start + depth*dir;
+        } else {
+            start += eps*gradient(function, pos);
         }
         
-        bool found = false;//true;
-        real depth = 0_r;
-        real3 npos = pos;
+        bool found = false;
         //real sign = function(pos) > 0_r ? 1_r : -1_r;
         for (int i = 0; i < max_steps; ++i) {
-            real3 npos = pos + depth*dir;
-            if (length2(npos) > rad2 + eps) {
+            pos = start + depth*dir;
+            if (length2(pos) > rad2 + eps) {
                 //found = false;
                 break;
             }
-            real dist = function(npos);
+            real dist = function(pos);
             if (dist > eps) {
                 depth += dist*step;
             } else {
@@ -61,13 +64,12 @@ public:
                 break;
             }
         }
-        pos = npos;
 
         if (found) {
-            real dist = dot(pos - light.ray.start, dir);
+            pos = start + depth*dir;
             light.ray.start = pos;
             normal = gradient(function, pos);
-            return dist;
+            return depth;
         } else {
             return -1_r;
         }

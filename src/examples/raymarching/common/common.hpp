@@ -26,9 +26,10 @@ public:
     real freq;
 
     real operator()(real3 pos) const {
-        real3 cp = math::cos(freq*pos);
-        return fac*cp[0]*cp[1]*cp[2] + length(pos) - rad;
+        real3 sp = math::sin(freq*pos);
+        return fac*sp[0]*sp[1]*sp[2] + length(pos) - rad;
     }
+    /*
     real3 grad(real3 pos) const {
         real3 cp = math::cos(freq*pos);
         real3 sp = math::sin(freq*pos);
@@ -41,6 +42,7 @@ public:
             )
         );
     }
+    */
 };
 /*
 template <>
@@ -68,7 +70,6 @@ struct ToDevice<Sdf> {
     }
 };
 #endif
-/*
 typedef Mapped<Covered<eu::DistanceFunction<Sdf>, MyMaterial>> MyObject;
 
 MyObject make_object(
@@ -84,8 +85,8 @@ MyObject make_object(
         )
     );
 }
-*/
 
+/*
 typedef Mapped<Covered<eu::Cube, MyMaterial>> MyObject;
 
 MyObject make_object(
@@ -100,3 +101,4 @@ MyObject make_object(
         )
     );
 }
+*/

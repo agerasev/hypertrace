@@ -7,28 +7,29 @@
 
 typedef real8 comp2x2;
 
+#define c22_new MAKE(comp2x2)
 
-comp2x2 comp2x2_zero();
-comp2x2 comp2x2_one();
+comp2x2 c22_zero();
+comp2x2 c22_one();
 
-comp2x2 comp2x2_transpose(comp2x2 m);
-comp2x2 comp2x2_mul(comp2x2 m, comp c);
-comp2x2 comp2x2_div(comp2x2 m, comp c);
-real comp2x2_norm_l1(comp2x2 m);
+comp2x2 c22_transpose(comp2x2 m);
+comp2x2 c22_mul(comp2x2 m, comp c);
+comp2x2 c22_div(comp2x2 m, comp c);
+real c22_norm_l1(comp2x2 m);
 
-comp2x2 comp2x2_dot(comp2x2 a, comp2x2 b);
+comp2x2 c22_dot(comp2x2 a, comp2x2 b);
 
-comp comp2x2_det(comp2x2 m);
-comp2x2 comp2x2_normalize(comp2x2 m);
+comp c22_det(comp2x2 m);
+comp2x2 c22_normalize(comp2x2 m);
 
-comp2x2 comp2x2_inverse(comp2x2 m);
-comp2x2 comp2x2_inverse_n(comp2x2 m);
+comp2x2 c22_inverse(comp2x2 m);
+comp2x2 c22_inverse_n(comp2x2 m);
 
-void comp2x2_eigen(comp2x2 m, comp2x2 *l, comp2x2 *v);
-void comp2x2_eigen_n(comp2x2 m, comp2x2 *l, comp2x2 *v);
+void c22_eigen(comp2x2 m, comp2x2 *l, comp2x2 *v);
+void c22_eigen_n(comp2x2 m, comp2x2 *l, comp2x2 *v);
 
-comp2x2 comp2x2_pow(comp2x2 m, real p);
-comp2x2 comp2x2_pow_n(comp2x2 m, real p);
+comp2x2 c22_pow(comp2x2 m, real p);
+comp2x2 c22_pow_n(comp2x2 m, real p);
 
 
 #ifdef UNIT_TEST
@@ -51,7 +52,7 @@ public:
         comp2x2 r;
         do {
             r = normal();
-        } while(c_norm_l1(comp2x2_det(r)) < EPS);
+        } while(c_norm_l1(c22_det(r)) < EPS);
         return r;
     }
     comp2x2 normalized() {

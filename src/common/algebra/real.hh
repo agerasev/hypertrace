@@ -40,8 +40,7 @@ private:
     std::normal_distribution<> norm;
 
 public:
-    inline explicit TestRng(uint32_t seed) : rng(seed) {}
-    inline TestRng() : TestRng(0xdeadbeef) {}
+    inline explicit TestRng(uint32_t seed=0xdeadbeef) : rng(seed) {}
 
     inline real uniform() {
         return unif(rng);

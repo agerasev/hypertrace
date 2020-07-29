@@ -9,39 +9,39 @@ TEST_CASE("Matrix types", "[matrix]") {
     TestRngComp2x2 mrng(0xCAFE);
 
     SECTION("One") {
-        REQUIRE((MAKE(comp2x2)(C1, C0, C0, C1)) == approx(comp2x2_one()));
+        REQUIRE((c22_new(C1, C0, C0, C1)) == approx(c22_one()));
     }
     SECTION("Determinant") {
-        REQUIRE(comp2x2_det(MAKE(comp2x2)(C1, 2*C1, 3*C1, 4*C1)) == approx(-2*C1));
+        REQUIRE(c22_det(c22_new(C1, 2*C1, 3*C1, 4*C1)) == approx(-2*C1));
     }
     SECTION("Inversion") {
         for (int k = 0; k < TEST_ATTEMPTS; ++k) {
             comp2x2 m = mrng.invertible();
-            REQUIRE(comp2x2_dot(m, comp2x2_inverse(m)) == approx(comp2x2_one()));
-            REQUIRE(comp2x2_dot(comp2x2_inverse(m), m) == approx(comp2x2_one()));
+            REQUIRE(c22_dot(m, c22_inverse(m)) == approx(c22_one()));
+            REQUIRE(c22_dot(c22_inverse(m), m) == approx(c22_one()));
         }
     }
     SECTION("Norm") {
-        REQUIRE(comp2x2_norm_l1(MAKE(comp2x2)(-1*C1, 2*C1, -3*C1, 4*C1)) == approx(10));
-        REQUIRE(length(MAKE(comp2x2)(-1*C1, 1*C1, -1*C1, 1*C1)) == approx(2));
+        REQUIRE(c22_norm_l1(c22_new(-1*C1, 2*C1, -3*C1, 4*C1)) == approx(10));
+        REQUIRE(length(c22_new(-1*C1, 1*C1, -1*C1, 1*C1)) == approx(2));
     }
     SECTION("Abs") {
         REQUIRE(
-            fabs(MAKE(comp2x2)(1*C1, -2*C1, 3*C1, -4*C1)) ==
-            approx(MAKE(comp2x2)(1*C1, 2*C1, 3*C1, 4*C1))
+            fabs(c22_new(1*C1, -2*C1, 3*C1, -4*C1)) ==
+            approx(c22_new(1*C1, 2*C1, 3*C1, 4*C1))
         );
     }
     SECTION("Eigenvalues and eigenvectors") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             comp2x2 m = mrng.normal();
             comp2x2 l, v;
-            comp2x2_eigen(m, &l, &v);
+            c22_eigen(m, &l, &v);
 
-            comp2x2 x = comp2x2_dot(m, v);
-            comp2x2 y = comp2x2_dot(v, MAKE(comp2x2)(l.s01, C0, C0, l.s67));
+            comp2x2 x = c22_dot(m, v);
+            comp2x2 y = c22_dot(v, c22_new(l.s01, C0, C0, l.s67));
             REQUIRE(x == approx(y));
 
-            comp2x2 o = comp2x2_dot(comp2x2_dot(v, l), comp2x2_inverse(v));
+            comp2x2 o = c22_dot(c22_dot(v, l), c22_inverse(v));
             REQUIRE(o == approx(m));
         }
     }
@@ -54,9 +54,9 @@ TEST_CASE("Matrix types", "[matrix]") {
                 m.s45 = crng.normal();
             }
             comp2x2 l, v;
-            comp2x2_eigen(m, &l, &v);
+            c22_eigen(m, &l, &v);
 
-            comp2x2 o = comp2x2_dot(comp2x2_dot(v, l), comp2x2_inverse(v));
+            comp2x2 o = c22_dot(c22_dot(v, l), c22_inverse(v));
             REQUIRE(o == approx(m));
         }
     }
@@ -65,11 +65,11 @@ TEST_CASE("Matrix types", "[matrix]") {
             comp2x2 m = mrng.normalized();
             int n = int(floor(8*rng.uniform())) + 2;
 
-            comp2x2 p = comp2x2_pow(m, R1/n);
-            comp2x2 o = comp2x2_one();
+            comp2x2 p = c22_pow(m, R1/n);
+            comp2x2 o = c22_one();
 
             for(int i = 0; i < n; ++i) {
-                o = comp2x2_dot(o, p);
+                o = c22_dot(o, p);
             }
 
             REQUIRE(o == approx(m));
@@ -86,14 +86,14 @@ TEST_CASE("Matrix types", "[matrix]") {
             int p = int(floor(8*rng.uniform())) + 2;
             int q = int(floor(8*rng.uniform())) + 2;
 
-            comp2x2 n = comp2x2_one();
+            comp2x2 n = c22_one();
             for (int i = 0; i < p; ++i) {
-                n = comp2x2_dot(n, m);
+                n = c22_dot(n, m);
             }
-            comp2x2 l = comp2x2_pow(m, (real)p/q);
-            comp2x2 o = comp2x2_one();
+            comp2x2 l = c22_pow(m, (real)p/q);
+            comp2x2 o = c22_one();
             for (int i = 0; i < q; ++i) {
-                o = comp2x2_dot(o, l);
+                o = c22_dot(o, l);
             }
 
             REQUIRE(o == approx(n));
@@ -110,10 +110,10 @@ TEST_CASE("Matrix types", "[matrix]") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             int n = int(floor(8*rng.uniform())) + 2;
 
-            comp2x2 p = comp2x2_pow(m, R1/n);
-            comp2x2 o = comp2x2_one();
+            comp2x2 p = c22_pow(m, R1/n);
+            comp2x2 o = c22_one();
             for(int i = 0; i < n; ++i) {
-                o = comp2x2_dot(o, p);
+                o = c22_dot(o, p);
             }
 
             REQUIRE(o == approx(m));

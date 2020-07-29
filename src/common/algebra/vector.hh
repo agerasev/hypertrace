@@ -52,12 +52,59 @@ VECTOR_ALL_N(int)
 VECTOR_ALL_N(long)
 
 VECTOR_ALL_N(float)
-#ifdef DEVICE_DOUBLE
+#ifdef DEV_F64
 VECTOR_ALL_N(double)
-#endif
+#endif // DEV_F64
 VECTOR_ALL_N(real)
 
 #define MAKE(x) x
+
+#ifdef INTEROP
+
+#include <CL/cl.h>
+
+#define VECTOR_INTEROP(T, S, N) \
+template <> \
+struct Interop<T##N> { \
+    typedef T##N Host; \
+    typedef S##N Dev; \
+    static void load(Host *dst, const Dev *src) { \
+        for (size_t i = 0; i < N; ++i) { \
+            (*dst)[i] = (T)src->s[i]; \
+        } \
+    } \
+    static void store(Dev *dst, const Host *src) { \
+        for (size_t i = 0; i < N; ++i) { \
+            dst->s[i] = (S)(*src)[i]; \
+        } \
+    } \
+};
+
+#define VECTOR_INTEROP_N(T, S) \
+VECTOR_INTEROP(T, S, 2) \
+VECTOR_INTEROP(T, S, 3) \
+VECTOR_INTEROP(T, S, 4) \
+VECTOR_INTEROP(T, S, 8) \
+VECTOR_INTEROP(T, S, 16)
+
+VECTOR_INTEROP_N(uchar,  cl_uchar)
+VECTOR_INTEROP_N(ushort, cl_ushort)
+VECTOR_INTEROP_N(uint,   cl_uint)
+VECTOR_INTEROP_N(ulong,  cl_ulong)
+VECTOR_INTEROP_N(char,   cl_char)
+VECTOR_INTEROP_N(short,  cl_short)
+VECTOR_INTEROP_N(int,    cl_int)
+VECTOR_INTEROP_N(long,   cl_long)
+
+VECTOR_INTEROP_N(float,  cl_float)
+#ifdef DEV_F64
+VECTOR_INTEROP_N(double, cl_double)
+VECTOR_INTEROP_N(real,   cl_double)
+#else // DEV_F64
+VECTOR_INTEROP_N(real,   cl_float)
+#endif // DEV_F64
+
+#endif // INTEROP
 
 #else // HOST
 

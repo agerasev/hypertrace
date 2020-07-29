@@ -1,16 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 project(test)
 
-
-include_directories(
-    "${CMAKE_SOURCE_DIR}/common"
-    "${CMAKE_SOURCE_DIR}/host"
-    "${CMAKE_CURRENT_SOURCE_DIR}"
+add_executable(${PROJECT_NAME}
+    ${COMMON_SRC}
+    "unit_test.cpp"
 )
-
-# Unit tests
-
-add_executable(test ${COMMON_SRC} "unit_test.cpp")
-target_compile_definitions(test PRIVATE
+target_compile_definitions(${PROJECT_NAME} PRIVATE
     "-DUNIT_TEST"
 )

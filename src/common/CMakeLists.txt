@@ -1,9 +1,11 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.0)
 
 set(COMMON_SRC
-    #"container/union.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/types.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/real.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/real.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector_struct.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector_math.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector.cc"
 PARENT_SCOPE)
-
-#set(COMMON_SRC
-#    list(TRANSFORM ${SRC} PREPEND "${CMAKE_SOURCE_DIR}/common/")
-#PARENT_SCOPE)

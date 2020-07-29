@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.0)
 project(hypertrace)
 
 set(CMAKE_C_FLAGS "-DHOST -Wall -Wextra")
@@ -9,8 +9,7 @@ add_subdirectory(common)
 add_subdirectory(host)
 
 include_directories(
-    "${CMAKE_SOURCE_DIR}/common"
-    "${CMAKE_SOURCE_DIR}/host"
+    "${CMAKE_SOURCE_DIR}"
 )
 
 add_library(${PROJECT_NAME} OBJECT ${HOST_SRC})
@@ -23,4 +22,4 @@ target_link_libraries(${PROJECT_NAME} OpenCL SDL2 SDL2_image)
 
 
 add_subdirectory(examples)
-#add_subdirectory(test)
+add_subdirectory(test)

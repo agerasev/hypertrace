@@ -49,23 +49,8 @@ comp c_sqrt(comp a) {
 
 #include <iostream>
 
-comp rand_c_normal(TestRng &rng) {
-    return comp(rng.normal(), rng.normal());
-}
-comp rand_c_unit(TestRng &rng) {
-    real phi = 2*PI*rng.uniform();
-    return comp(cos(phi), sin(phi));
-}
-comp rand_c_nonzero(TestRng &rng) {
-    comp a;
-    do {
-        a = rand_c_normal(rng);
-    } while(c_abs2(a) < EPS);
-    return a;
-}
-
 TEST_CASE("Complex numbers", "[comp]") {
-    TestRng rng(0xbeef);
+    TestRng<comp> crng(0xbeef);
 
     SECTION("Constructor") {
         comp a = c_new(0.0, 1.0);
@@ -75,7 +60,7 @@ TEST_CASE("Complex numbers", "[comp]") {
 
     SECTION("Inversion") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = rand_c_nonzero(rng);
+            comp a = crng.nonzero();
             REQUIRE(c_div(a, a) == approx(C1));
         }
     }

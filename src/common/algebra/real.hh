@@ -29,14 +29,18 @@ typedef float real;
 
 #include <random>
 
-class TestRng {
+template <typename T>
+class TestRng;
+
+template <>
+class TestRng<real> {
 private:
     std::minstd_rand rng;
     std::uniform_real_distribution<> unif;
     std::normal_distribution<> norm;
 
 public:
-    inline TestRng(uint32_t seed) : rng(seed) {}
+    inline explicit TestRng(uint32_t seed) : rng(seed) {}
     inline TestRng() : TestRng(0xdeadbeef) {}
 
     inline real uniform() {

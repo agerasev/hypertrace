@@ -57,29 +57,16 @@ quat cq_div(comp a, quat b) {
 
 
 #ifdef UNIT_TEST
+
 #include <catch.hpp>
 
 #include <vector>
 #include <utility>
 #include <functional>
 
-quat rand_q_normal(TestRng &rng) {
-    return quat(rng.normal(), rng.normal(), rng.normal(), rng.normal());
-}
-quat rand_q_nonzero(TestRng &rng) {
-    quat a;
-    do {
-        a = rand_q_normal(rng);
-    } while(q_abs2(a) < EPS);
-    return a;
-}
-quat rand_q_unit(TestRng &rng) {
-    quat q = rand_q_nonzero(rng);
-    return q/q_abs(q);
-}
 
 TEST_CASE("Quaternions", "[quat]") {
-    TestRng rng(0xfeed);
+    TestRng<quat> qrng(0xfeed);
 
     SECTION("Imaginary units") {
         REQUIRE(q_mul(QI, QI) == approx(-Q1));
@@ -97,13 +84,13 @@ TEST_CASE("Quaternions", "[quat]") {
     }
     SECTION("Inversion") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = rand_q_nonzero(rng);
+            quat a = qrng.nonzero();
             REQUIRE(q_div(a, a) == approx(Q1));
         }
     }
     SECTION("Law of cosines") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = rand_q_normal(rng), b = rand_q_normal(rng);
+            quat a = qrng.normal(), b = qrng.normal();
             REQUIRE(q_abs2(a) + q_abs2(b) + 2*dot(a, b) == Approx(q_abs2(a + b)));
         }
     }
@@ -133,11 +120,12 @@ TEST_CASE("Quaternions", "[quat]") {
             auto f = p.first;
             auto dfdv = p.second;
             for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-                quat p = rand_q_normal(rng);
-                quat v = rand_q_unit(rng);
+                quat p = qrng.normal();
+                quat v = qrng.unit();
                 REQUIRE((f(p + EPS*v) - f(p))/EPS == approx(dfdv(p, v)));
             }
         }
     }
 };
+
 #endif // UNIT_TEST

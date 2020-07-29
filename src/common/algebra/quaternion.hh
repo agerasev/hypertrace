@@ -27,10 +27,3 @@ quat q_inverse(quat a);
 quat q_div(quat a, quat b);
 quat qc_div(quat a, comp b);
 quat cq_div(comp a, quat b);
-
-
-#ifdef UNIT_TEST
-quat rand_q_normal(TestRng &rng);
-quat rand_q_nonzero(TestRng &rng);
-quat rand_q_unit(TestRng &rng);
-#endif // UNIT_TEST

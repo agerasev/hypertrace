@@ -40,13 +40,13 @@ vec<T, N> normalize(vec<T, N> a) {
 #define VECTOR_MATH_FA(F) \
 template <typename T, int N> \
 vec<T, N> F(vec<T, N> a) { \
-    return vmap([](T x) { return F(x); }, a); \
+    return vec<T, N>::map([](T x) { return F(x); }, a); \
 } \
 
 #define VECTOR_MATH_FAB(F) \
 template <typename T, int N> \
 vec<T, N> F(vec<T, N> a, vec<T, N> b) { \
-    return vmap([](T x, T y) { return F(x, y); }, a, b); \
+    return vec<T, N>::map([](T x, T y) { return F(x, y); }, a, b); \
 } \
 
 VECTOR_MATH_FA(fabs)
@@ -80,27 +80,27 @@ VECTOR_MATH_FA(sign)
 
 template <typename T, int N>
 vec<T, N> fmin(vec<T, N> a, T b) {
-    return vmap([b](T x) { return fmin(x, b); }, a);
+    return vec<T, N>::map([b](T x) { return fmin(x, b); }, a);
 }
 template <typename T, int N>
 vec<T, N> fmax(vec<T, N> a, T b) {
-    return vmap([b](T x) { return fmax(x, b); }, a);
+    return vec<T, N>::map([b](T x) { return fmax(x, b); }, a);
 }
 template <typename T, int N>
 vec<T, N> pow(vec<T, N> a, T b) {
-    return vmap([b](T x) { return pow(x, b); }, a);
+    return vec<T, N>::map([b](T x) { return pow(x, b); }, a);
 }
 
 template <typename T, int N>
 vec<T, N> clamp(vec<T, N> a, vec<T, N> b, vec<T, N> c) {
-    return vmap(
+    return vec<T, N>::map(
         [](T x, T y, T z) { return clamp(x, y, z); },
         a, b, c
     );
 }
 template <typename T, int N>
 vec<T, N> clamp(vec<T, N> a, T b, T c) {
-    return vmap(
+    return vec<T, N>::map(
         [b, c](T x) { return clamp(x, b, c); },
         a
     );

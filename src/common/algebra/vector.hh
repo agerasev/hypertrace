@@ -113,10 +113,41 @@ VECTOR_INTEROP_N(real,   cl_float)
 #endif // HOST
 
 
+// Shortcuts
+
+#define length2(x) dot((x), (x))
+
 
 #ifdef UNIT_TEST
 
 #include <catch.hpp>
+
+template <int N>
+class TestRng<vec<real, N>> {
+private:
+    TestRng<real> rng;
+
+public:
+    inline TestRng() = default;
+    inline explicit TestRng(uint32_t seed) : rng(seed) {}
+
+    vec<real, N> normal() {
+        return vec<real, N>::map([this]() { return rng.normal(); });
+    }
+    vec<real, N> uniform() {
+        return vec<real, N>::map([this]() { return rng.uniform(); });
+    }
+    vec<real, N> nonzero() {
+        vec<real, N> a;
+        do {
+            a = normal();
+        } while(length2(a) < EPS);
+        return a;
+    }
+    vec<real, N> unit() {
+        return normalize(nonzero());
+    }
+};
 
 template <typename T, int N>
 class VecApprox {

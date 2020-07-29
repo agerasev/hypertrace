@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
-project(examples)
 
-add_custom_target(${PROJECT_NAME})
-
-add_subdirectory(hyperbolic)
-add_subdirectory(raymarching)
+add_subdirectory(empty)
+#add_subdirectory(hyperbolic)
+#add_subdirectory(raymarching)
 
 #add_dependencies(main examples)
 

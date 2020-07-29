@@ -1,14 +1,26 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.12)
 project(hypertrace)
 
-
-set(CMAKE_C_FLAGS "-DHOST -Wall")
+set(CMAKE_C_FLAGS "-DHOST -Wall -Wextra")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17")
 
-include("Toolchains.cmake")
 
 add_subdirectory(common)
-add_subdirectory(device)
 add_subdirectory(host)
+
+include_directories(
+    "${CMAKE_SOURCE_DIR}/common"
+    "${CMAKE_SOURCE_DIR}/host"
+)
+
+add_library(${PROJECT_NAME} OBJECT ${HOST_SRC})
+target_compile_definitions(${PROJECT_NAME} PUBLIC
+    "-DCL_TARGET_OPENCL_VERSION=120"
+    "-DOPENCL_INTEROP"
+)
+
+target_link_libraries(${PROJECT_NAME} OpenCL SDL2 SDL2_image)
+
+
 add_subdirectory(examples)
-add_subdirectory(test)
+#add_subdirectory(test)

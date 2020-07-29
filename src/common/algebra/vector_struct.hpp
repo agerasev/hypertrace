@@ -91,7 +91,7 @@ struct _vector<T, 16> {
     };
     _vector() = default;
     _vector(T s0, T s1, T s2, T s3, T s4, T s5, T s6, T s7, T s8, T s9, T sa, T sb, T sc, T sd, T se, T sf) :
-        s{s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, sa, sb, sc, sd, se} {}
+        s{s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, sa, sb, sc, sd, se, sf} {}
     explicit _vector(T c) : _vector(c, c, c, c, c, c, c, c, c, c, c, c, c, c, c, c) {}
     _vector(vector<T, 2> s01, vector<T, 2> s23, vector<T, 2> s45, vector<T, 2> s67, vector<T, 2> s89, vector<T, 2> sab, vector<T, 2> scd, vector<T, 2> sef) :
         _vector(s01.x, s01.y, s23.x, s23.y, s45.x, s45.y, s67.x, s67.y, s89.x, s89.y, sab.x, sab.y, scd.x, scd.y, sef.x, sef.y) {}

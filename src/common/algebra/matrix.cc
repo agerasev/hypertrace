@@ -168,3 +168,79 @@ comp2x2 c22_pow_n(comp2x2 m, real p) {
     r = c22_normalize(r);
     return r;
 }
+
+
+real4x4 r44_zero() {
+    return r44_new(R0);
+}
+
+real4x4 r44_one() {
+    return r44_new(
+        R1, R0, R0, R0,
+        R0, R1, R0, R0,
+        R0, R0, R1, R0,
+        R0, R0, R0, R1
+    );
+}
+
+real4x4 r44_transpose(real4x4 m) {
+    return r44_new(
+        m.s0, m.s4, m.s8, m.sc,
+        m.s1, m.s5, m.s9, m.sd,
+        m.s2, m.s6, m.sa, m.se,
+        m.s3, m.s7, m.sb, m.sf
+    );
+}
+
+real4x4 r44_dot(real4x4 a, real4x4 b) {
+    real4x4 tb = r44_transpose(b);
+    return r44_transpose(r44_new(
+        r44_dot_mv(tb, a.s0123),
+        r44_dot_mv(tb, a.s4567),
+        r44_dot_mv(tb, a.s89ab),
+        r44_dot_mv(tb, a.scdef)
+    ));
+}
+real4 r44_dot_mv(real4x4 a, real4 b) {
+    return MAKE(real4)(
+        dot(a.s0123, b),
+        dot(a.s4567, b),
+        dot(a.s89ab, b),
+        dot(a.scdef, b)
+    );
+}
+real4 r44_dot_vm(real4 a, real4x4 b) {
+    return r44_dot_mv(r44_transpose(b), a);
+}
+
+real4x4 r44_outer(real4 a, real4 b) {
+    return r44_new(a.x*b, a.y*b, a.z*b, a.w*b);
+}
+
+real r33_det(real4x4 m) {
+    return
+    + m.s0*m.s5*m.sa + m.s1*m.s6*m.s8 + m.s2*m.s4*m.s9
+    - m.s0*m.s6*m.s9 - m.s1*m.s4*m.sa - m.s2*m.s5*m.s8;
+}
+
+real4x4 r33_inverse(real4x4 m) {
+    real4x4 r = r44_new(
+        m.s5*m.sa - m.s6*m.s9, m.s2*m.s9 - m.s1*m.sa, m.s1*m.s6 - m.s2*m.s5, R0,
+        m.s6*m.s8 - m.s4*m.sa, m.s0*m.sa - m.s2*m.s8, m.s2*m.s4 - m.s0*m.s6, R0,
+        m.s4*m.s9 - m.s5*m.s8, m.s1*m.s8 - m.s0*m.s9, m.s0*m.s5 - m.s1*m.s4, R0,
+        R0, R0, R0, R0
+    )/r33_det(m);
+    r.sf = R1;
+    return r;
+}
+
+real4x4 r33_clip(real4x4 m) {
+    m *= r44_new(
+        R1, R1, R1, R0,
+        R1, R1, R1, R0,
+        R1, R1, R1, R0,
+        R0, R0, R0, R0
+    );
+    m.sf = R1;
+    return m;
+}

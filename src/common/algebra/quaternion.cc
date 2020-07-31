@@ -94,6 +94,13 @@ TEST_CASE("Quaternions", "[quat]") {
             REQUIRE(q_abs2(a) + q_abs2(b) + 2*dot(a, b) == Approx(q_abs2(a + b)));
         }
     }
+    SECTION("Conjugation") {
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            quat a = qrng.normal();
+            REQUIRE(q_mul(a, q_conj(a)) == approx(q_abs2(a)*Q1));
+            REQUIRE(q_mul(q_conj(a), a) == approx(q_abs2(a)*Q1));
+        }
+    }
     SECTION("Derivation") {
         std::vector<std::pair<
             std::function<quat(quat)>,

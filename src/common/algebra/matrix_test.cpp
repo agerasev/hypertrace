@@ -90,7 +90,7 @@ TEST_CASE("Matrix types", "[matrix]") {
         }
         SECTION("Non-diagonalizable matrix") {
             for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-                comp2x2 m(1, 0, 0, 1);
+                comp2x2 m(C1, C0, C0, C1);
                 if (rng.uniform() > 0.5) {
                     m.s23 = crng.normal();
                 } else {
@@ -120,7 +120,7 @@ TEST_CASE("Matrix types", "[matrix]") {
         }
         SECTION("Non-diagonalizable power") {
             for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-                comp2x2 m(1, 0, 0, 1);
+                comp2x2 m(C1, C0, C0, C1);
                 if (rng.uniform() > 0.5) {
                     m.s23 = crng.normal();
                 } else {

@@ -16,7 +16,7 @@ public:
 
     vec() = default;
     template <typename ... Args>
-    vec(Args ...args) : _vec<T, N>(args...) {}
+    explicit vec(Args ...args) : _vec<T, N>(args...) {}
 
     T &operator[](int i) {
         return this->s[i];

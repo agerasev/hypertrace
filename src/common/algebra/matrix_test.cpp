@@ -166,6 +166,7 @@ TEST_CASE("Matrix types", "[matrix]") {
     SECTION("Real matrices") {
         TestRngReal3x3 r3rng(0xABC3);
         TestRngReal4x4 r4rng(0xABC4);
+        TestRng<quat> qrng(0xABC5);
 
         SECTION("Transpose") {
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
@@ -233,6 +234,26 @@ TEST_CASE("Matrix types", "[matrix]") {
                 0, 4, 8, 12
             );
             REQUIRE(r44_outer(a, b) == approx(c));
+        }
+        SECTION("Complex representation") {
+            for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+                comp a = crng.normal();
+                comp b = crng.normal();
+                REQUIRE(r22_from_comp(a) + r22_from_comp(b) == approx(r22_from_comp(a + b)));
+                REQUIRE(r22_dot(r22_from_comp(a), r22_from_comp(b)) == approx(r22_from_comp(c_mul(a, b))));
+                REQUIRE(r22_transpose(r22_from_comp(a)) == approx(r22_from_comp(c_conj(a))));
+                REQUIRE(r22_inverse(r22_from_comp(a)) == approx(r22_from_comp(c_inverse(a))));
+            }
+        }
+        SECTION("Quaternion representation") {
+            for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+                quat a = qrng.normal();
+                quat b = qrng.normal();
+                REQUIRE(r44_from_quat(a) + r44_from_quat(b) == approx(r44_from_quat(a + b)));
+                REQUIRE(r44_dot(r44_from_quat(a), r44_from_quat(b)) == approx(r44_from_quat(q_mul(a, b))));
+                REQUIRE(r44_transpose(r44_from_quat(a)) == approx(r44_from_quat(q_conj(a))));
+                //REQUIRE(r44_inverse(r44_from_quat(a)) == approx(r44_from_quat(q_inverse(a))));
+            }
         }
     }
 };

@@ -14,7 +14,8 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/quaternion.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/quaternion.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/matrix.hh"
-    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/matrix.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/matrix_real.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/matrix_complex.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/matrix_test.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/moebius.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/moebius.cc"
@@ -22,4 +23,6 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/linear.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/affine.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/affine.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/rotation.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/rotation.cc"
 PARENT_SCOPE)

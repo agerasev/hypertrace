@@ -21,5 +21,5 @@ comp c_inverse(comp a);
 comp c_div(comp a, comp b);
 
 comp c_exp(comp p);
-comp c_powr(comp a, real p);
+comp c_pow_r(comp a, real p);
 comp c_sqrt(comp a);

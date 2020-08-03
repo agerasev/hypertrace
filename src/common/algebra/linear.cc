@@ -1,6 +1,23 @@
 #include "linear.hh"
 
 
+Linear2 lin2_identity() {
+    return r22_one();
+}
+
+real2 lin2_apply(Linear2 m, real2 v) {
+    return r22_dot_mv(m, v);
+}
+
+Linear2 lin2_chain(Linear2 a, Linear2 b) {
+    return r22_dot(a, b);
+}
+
+Linear2 lin2_inverse(Linear2 m) {
+    return r22_inverse(m);
+}
+
+
 Linear3 lin3_identity() {
     return r44_one();
 }
@@ -34,11 +51,6 @@ Linear3 lin3_chain(Linear3 a, Linear3 b) {
 
 Linear3 lin3_inverse(Linear3 m) {
     return r33_inverse(m);
-}
-
-Linear3 interpolate(Linear3 a, Linear3 b, real t) {
-    // FIXME: Use matrix power operation
-    return (R1 - t)*a + t*b;
 }
 
 

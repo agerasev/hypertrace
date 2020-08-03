@@ -9,8 +9,8 @@ typedef real4x4 Affine3;
 Affine3 aff3_identity();
 Affine3 aff3_from_ls(Linear3 m, real3 v);
 
-Linear3 aff3_linear(Affine3 m);
-real3 aff3_shift(Affine3 m);
+Linear3 aff3_get_linear(Affine3 m);
+real3 aff3_get_shift(Affine3 m);
 
 real4 aff3_apply4(Affine3 m, real4 v);
 real3 aff3_apply_pos(Affine3 m, real3 p);

@@ -22,14 +22,14 @@ comp2x2 TestRngComp2x2::normalized() {
     return normalize(invertible());
 }
 
-real4x4 TestRngReal3x3::normal() {
+real3x3 TestRngReal3x3::normal() {
     return r44_clip_to_r33(rng.normal());
 }
-real4x4 TestRngReal3x3::uniform() {
+real3x3 TestRngReal3x3::uniform() {
     return r44_clip_to_r33(rng.uniform());
 }
-real4x4 TestRngReal3x3::invertible() {
-    real4x4 r;
+real3x3 TestRngReal3x3::invertible() {
+    real3x3 r;
     do {
         r = normal();
     } while(abs(r33_det(r)) < EPS);
@@ -218,6 +218,7 @@ TEST_CASE("Matrix types", "[matrix]") {
 
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
                 real4x4 m = r3rng.invertible();
+
                 REQUIRE(r33_dot(m, r33_inverse(m)) == approx(r33_one()));
                 REQUIRE(r33_dot(r33_inverse(m), m) == approx(r33_one()));
             }

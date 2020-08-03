@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/algebra/matrix.hh>
+#include "matrix.hh"
 
 
 typedef real3x3 Linear3;

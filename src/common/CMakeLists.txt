@@ -20,4 +20,6 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/moebius.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/linear.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/linear.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/affine.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/affine.cc"
 PARENT_SCOPE)

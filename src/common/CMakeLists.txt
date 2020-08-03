@@ -18,4 +18,6 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/matrix_test.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/moebius.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/moebius.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/linear.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/linear.cc"
 PARENT_SCOPE)

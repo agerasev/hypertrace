@@ -23,10 +23,10 @@ comp2x2 TestRngComp2x2::normalized() {
 }
 
 real4x4 TestRngReal3x3::normal() {
-    return r33_clip(rng.normal());
+    return r44_clip_to_r33(rng.normal());
 }
 real4x4 TestRngReal3x3::uniform() {
-    return r33_clip(rng.uniform());
+    return r44_clip_to_r33(rng.uniform());
 }
 real4x4 TestRngReal3x3::invertible() {
     real4x4 r;
@@ -183,6 +183,10 @@ TEST_CASE("Matrix types", "[matrix]") {
 
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
                 real4x4 a = r4rng.normal(), b = r4rng.normal();
+
+                REQUIRE(r44_dot(a, r44_one()) == approx(a));
+                REQUIRE(r44_dot(r44_one(), b) == approx(b));
+
                 REQUIRE(
                     r44_transpose(r44_dot(r44_transpose(b), r44_transpose(a))) ==
                     approx(r44_dot(a, b))
@@ -191,36 +195,36 @@ TEST_CASE("Matrix types", "[matrix]") {
         }
         SECTION("Determinant") {
             real4x4 r2 = r44_one();
-            r2.s01 = MAKE(real2)(1, 2);
-            r2.s45 = MAKE(real2)(3, 4);
+            r2.s01 = r2_new(1, 2);
+            r2.s45 = r2_new(3, 4);
             REQUIRE(r33_det(r2) == approx(-2));
 
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                real4x4 a = r3rng.normal(), b = r3rng.normal();
-                REQUIRE(r33_det(a)*r33_det(b) == approx(r33_det(r44_dot(a, b))));
+                real3x3 a = r3rng.normal(), b = r3rng.normal();
+                REQUIRE(r33_det(a)*r33_det(b) == approx(r33_det(r33_dot(a, b))));
             }
         }
         SECTION("Inversion") {
-            REQUIRE(r33_inverse(r44_one()) == approx(r44_one()));
+            REQUIRE(r33_inverse(r33_one()) == approx(r33_one()));
 
             REQUIRE(
-                r33_inverse(r44_new(1, -2, 0, 0, 3, 4, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)) ==
-                approx(r44_new(0.4, 0.2, 0, 0, -0.3, 0.1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1))
+                r33_inverse(r33_new(1, -2, 0, 0, 3, 4, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)) ==
+                approx(r33_new(0.4, 0.2, 0, 0, -0.3, 0.1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1))
             );
             REQUIRE(
-                r33_inverse(r44_new(1, 0, 0, 0, 0, 1, -2, 0, 0, 3, 4, 0, 0, 0, 0, 1)) ==
-                approx(r44_new(1, 0, 0, 0, 0, 0.4, 0.2, 0, 0, -0.3, 0.1, 0, 0, 0, 0, 1))
+                r33_inverse(r33_new(1, 0, 0, 0, 0, 1, -2, 0, 0, 3, 4, 0, 0, 0, 0, 1)) ==
+                approx(r33_new(1, 0, 0, 0, 0, 0.4, 0.2, 0, 0, -0.3, 0.1, 0, 0, 0, 0, 1))
             );
 
             for (int k = 0; k < TEST_ATTEMPTS; ++k) {
                 real4x4 m = r3rng.invertible();
-                REQUIRE(r44_dot(m, r33_inverse(m)) == approx(r44_one()));
-                REQUIRE(r44_dot(r33_inverse(m), m) == approx(r44_one()));
+                REQUIRE(r33_dot(m, r33_inverse(m)) == approx(r33_one()));
+                REQUIRE(r33_dot(r33_inverse(m), m) == approx(r33_one()));
             }
         }
         SECTION("Outer product") {
-            real4 a = MAKE(real4)(0, 1, 2, 4);
-            real4 b = MAKE(real4)(0, 1, 2, 3);
+            real4 a = r4_new(0, 1, 2, 4);
+            real4 b = r4_new(0, 1, 2, 3);
             real4x4 c = r44_new(
                 0, 0, 0, 0,
                 0, 1, 2, 3,

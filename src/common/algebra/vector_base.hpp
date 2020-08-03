@@ -84,7 +84,7 @@ struct _vec<T, 16> {
         struct { T s0, s1, s2, s3, s4, s5, s6, s7, s8, s9, sa, sb, sc, sd, se, sf; };
         struct { vec<T, 2> s01, s23, s45, s67, s89, sab, scd, sef; };
         struct { vec<T, 4> s0123, s4567, s89ab, scdef; };
-        struct { vec<T, 8> s01234567, s89abscdef; };
+        struct { vec<T, 8> s01234567, s89abcdef; };
     };
     _vec() = default;
     _vec(T s0, T s1, T s2, T s3, T s4, T s5, T s6, T s7, T s8, T s9, T sa, T sb, T sc, T sd, T se, T sf) :

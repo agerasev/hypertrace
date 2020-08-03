@@ -113,6 +113,10 @@ VECTOR_INTEROP_N(real,   cl_float)
 #endif // HOST
 
 
+#define r2_new MAKE(real2)
+#define r3_new MAKE(real3)
+#define r4_new MAKE(real4)
+
 // Shortcuts
 
 #define length2(x) dot((x), (x))

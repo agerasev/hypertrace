@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <type_traits>
 
 #include "vector_base.hpp"
 
@@ -8,6 +9,8 @@
 template <typename T, int N>
 class vec : public _vec<T, N> {
 private:
+    // check vector size
+    static_assert(sizeof(T)*N == sizeof(_vec<T, N>));
     // check vec alignment is the same as the element type
     static_assert(std::alignment_of_v<T> == std::alignment_of_v<_vec<T, N>>);
 
@@ -54,6 +57,21 @@ public:
             r[i] = f((args[i])...);
         }
         return r;
+    }
+
+    bool any() {
+        bool v = false;
+        for (int i = 0; i < N; ++i) {
+            v = v || (*this)[i];
+        }
+        return v;
+    }
+    bool all() {
+        bool v = true;
+        for (int i = 0; i < N; ++i) {
+            v = v && (*this)[i];
+        }
+        return v;
     }
 
     friend vec<T, N> operator+(vec<T, N> a) {
@@ -124,6 +142,13 @@ public:
     }
     vec &operator/=(T s) {
         return *this = *this / s;
+    }
+
+    friend bool operator==(vec<T, N> a, vec<T, N> b) {
+        return map([](T x, T y) { return x == y; }, a, b).all();
+    }
+    friend bool operator!=(vec<T, N> a, vec<T, N> b) {
+        return !(a == b);
     }
 
     friend std::ostream &operator<<(std::ostream &s, vec<T, N> v) {

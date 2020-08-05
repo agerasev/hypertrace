@@ -46,13 +46,13 @@ real mo_diff(Moebius a, Moebius b) {
 
 class TestRngMoebius {
 private:
-    TestRng<Moebius> rng;
+    TestRng<comp2x2> rng;
 public:
     inline TestRngMoebius() = default;
     inline explicit TestRngMoebius(uint32_t seed) : rng(seed) {}
 
-    Moebius random() {
-        return mo_normalize(rng.normal());
+    Moebius normal() {
+        return c22_normalize(rng.normal());
     }
 };
 
@@ -63,7 +63,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
 
     SECTION("Chaining") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng.random(), b = trng.random();
+            Moebius a = trng.normal(), b = trng.normal();
             quat c = qrng.normal();
             REQUIRE(
                 mo_apply_q(mo_chain(a, b), c) == 
@@ -74,7 +74,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
 
     SECTION("Complex derivation") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng.random();
+            Moebius a = trng.normal();
             comp p = crng.normal();
             comp v = crng.nonzero();
             
@@ -86,7 +86,7 @@ TEST_CASE("Moebius transformation", "[moebius]") {
     }
     SECTION("Quaternion directional derivation") {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng.random();
+            Moebius a = trng.normal();
             quat p = qrng.normal();
             quat v = qrng.nonzero();
             

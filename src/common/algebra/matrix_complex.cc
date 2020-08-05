@@ -1,5 +1,7 @@
 #include "matrix.hh"
 
+// FIXME: Why 1e-4?
+#define POW_EPS ((real)1e4*EPS)
 
 comp2x2 c22_zero() {
     return c22_new(R0);
@@ -124,47 +126,50 @@ void c22_eigen_n(comp2x2 m, comp2x2 *l, comp2x2 *v) {
 }
 
 comp2x2 _c22_pow_c(
-    comp2x2 m,
     real p,
     comp2x2 j,
     comp2x2 v
 ) {
+    comp2x2 k;
+    if (c_norm_l1(j.s23) < EPS) {
+        k = c22_new(
+            c_pow_r(j.s01, p),
+            C0,
+            C0,
+            c_pow_r(j.s67, p)
+        );
+    } else {
+        // Assume j.s01 == j.s67
+        comp l = c_pow_r(j.s01, p);
+        k = c22_new(
+            l,
+            p*c_mul(c_div(l, j.s01), j.s23),
+            C0,
+            l
+        );
+    }
+    return c22_dot(c22_dot(v, k), c22_inverse(v));
+}
+comp2x2 c22_pow(comp2x2 m, real p) {
     comp2x2 x = m - c22_one();
     real y = c22_norm_l1(x);
-    // FIXME: Why 1e4?
-    if (y*y > 1e4*EPS) {
-        comp2x2 k;
-        if (c_norm_l1(j.s23) < EPS) {
-            k = c22_new(
-                c_pow_r(j.s01, p),
-                C0,
-                C0,
-                c_pow_r(j.s67, p)
-            );
-        } else {
-            // Assume j.s01 == j.s67
-            comp l = c_pow_r(j.s01, p);
-            k = c22_new(
-                l,
-                p*c_mul(c_div(l, j.s01), j.s23),
-                C0,
-                l
-            );
-        }
-        return c22_dot(c22_dot(v, k), c22_inverse(v));
+    if (y*y > POW_EPS) {
+        comp2x2 j, v;
+        c22_eigen(m, &j, &v);
+        return _c22_pow_c(p, j, v);
     } else {
         return c22_one() + x*p;
     }
 }
-comp2x2 c22_pow(comp2x2 m, real p) {
-    comp2x2 j, v;
-    c22_eigen(m, &j, &v);
-    return _c22_pow_c(m, p, j, v);
-}
 comp2x2 c22_pow_n(comp2x2 m, real p) {
-    comp2x2 j, v;
-    c22_eigen_n(m, &j, &v);
-    comp2x2 r = _c22_pow_c(m, p, j, v);
-    r = c22_normalize(r);
-    return r;
+    comp2x2 x = m - c22_one();
+    real y = c22_norm_l1(x);
+    if (y*y > POW_EPS) {
+        comp2x2 j, v;
+        c22_eigen_n(m, &j, &v);
+        return _c22_pow_c(p, j, v);
+    } else {
+        comp2x2 r = c22_one() + x*p;
+        return c22_normalize(r);
+    }
 }

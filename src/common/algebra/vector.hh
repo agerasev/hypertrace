@@ -155,13 +155,25 @@ public:
 
 template <typename T, int N>
 class VecApprox {
-    public:
+private:
     typedef vec<T, N> vtype;
     vtype v;
+    T eps = -1;
+
+public:
     VecApprox(vtype c) : v(c) {}
+    VecApprox &epsilon(T e) {
+        eps = e;
+        return *this;
+    }
+
     friend bool operator==(vtype a, VecApprox b) {
         for (int i = 0; i < N; ++i) {
-            if (a[i] != Approx(b.v[i])) {
+            auto ap = Approx(b.v[i]);
+            if (b.eps > 0) {
+                ap.epsilon(b.eps);
+            } 
+            if (a[i] != ap) {
                 return false;
             }
         }

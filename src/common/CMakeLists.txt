@@ -25,4 +25,8 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/affine.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/rotation.hh"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/rotation.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/geometry/euclidean.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/geometry/euclidean.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/geometry/hyperbolic.hh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/geometry/hyperbolic.cc"
 PARENT_SCOPE)

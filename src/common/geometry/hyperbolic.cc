@@ -1,34 +1,34 @@
 #include "hyperbolic.hh"
 
 
-hy_dir hy_origin() {
+HyDir hy_origin() {
     return QJ;
 }
-eu_dir hy_dir_to_local(hy_dir, hy_dir dir) {
+EuDir hy_dir_to_local(HyDir, HyDir dir) {
     return dir.xyz;
 }
-hy_dir hy_dir_from_local(hy_dir, eu_dir dir) {
-    return q_new(dir, R0);
+HyDir hy_dir_from_local(HyDir, EuDir ldir) {
+    return q_new(ldir, R0);
 }
 
-real hy_length(hy_dir a) {
+real hy_length(HyDir a) {
     return hy_distance(a, hy_origin());
 }
-real hy_distance(hy_dir a, hy_dir b) {
+real hy_distance(HyDir a, HyDir b) {
     real x = 1 + length2(a - b)/(2*a.z*b.z);
     return log(x + sqrt(x*x - 1));
 }
 
-hy_pos hy_apply_pos(HyMap m, hy_pos p) {
+HyPos hy_apply_pos(HyMap m, HyPos p) {
     return mo_apply_q(m, p);
 }
-hy_dir hy_apply_dir(HyMap m, hy_pos p, hy_dir d) {
+HyDir hy_apply_dir(HyMap m, HyPos p, HyDir d) {
     return mo_deriv_q(m, p, d);
 }
 
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
-hy_dir hy_dir_at(hy_dir src_pos, hy_dir src_dir, hy_dir dst_pos) {
+HyDir hy_dir_at(HyDir src_pos, HyDir src_dir, HyDir dst_pos) {
     quat p = src_pos, d = src_dir, h = dst_pos;
     return quat(
         h.z/p.z*d.x,
@@ -73,7 +73,7 @@ HyMap hy_horosphere(comp pos) {
 }
 
 // Turns direction `dir` to *j*.
-HyMap hy_look_to(hy_dir dir) {
+HyMap hy_look_to(HyDir dir) {
     // We look at the top (along the z axis).
 	real phi = -atan2(dir.y, dir.x);
 	real theta = -atan2(length(dir.xy), dir.z);
@@ -81,7 +81,7 @@ HyMap hy_look_to(hy_dir dir) {
 }
 
 // Rotatates point `pos` around the origin to make it lay on the z axis.
-HyMap hy_look_at(hy_dir pos) {
+HyMap hy_look_at(HyDir pos) {
     // The origin is at *j* (z = 1).
 	real phi = -atan2(pos.y, pos.x);
 	real theta = -atan2(2*length(pos.xy), length2(pos) - 1);
@@ -90,12 +90,12 @@ HyMap hy_look_at(hy_dir pos) {
 
 // Translates point `pos` to the origin preserving orientation
 // relative to the line that connects `pos` to the origin.
-HyMap hy_move_at(hy_dir pos) {
+HyMap hy_move_at(HyDir pos) {
     Moebius a = hy_look_at(pos);
     Moebius b = hy_zshift(-hy_length(pos));
     return mo_chain(mo_inverse(a), mo_chain(b, a));
 }
-HyMap hy_move_to(hy_dir dir, real dist) {
+HyMap hy_move_to(HyDir dir, real dist) {
     Moebius a = hy_look_to(dir);
     Moebius b = hy_zshift(-dist);
     return mo_chain(mo_inverse(a), mo_chain(b, a));

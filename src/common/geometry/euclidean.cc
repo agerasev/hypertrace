@@ -2,53 +2,53 @@
 #include <common/algebra/rotation.hh>
 
 
-eu_pos eu_origin() {
+EuPos eu_origin() {
     return real3(0);
 }
 
-real eu_length(eu_pos a) {
+real eu_length(EuPos a) {
     return length(a);
 }
-real eu_distance(eu_pos a, eu_pos b) {
+real eu_distance(EuPos a, EuPos b) {
     return length(a - b);
 }
 
-eu_pos eu_apply_pos(EuMap m, eu_pos p) {
+EuPos eu_apply_pos(EuMap m, EuPos p) {
     return aff3_apply_pos(m, p);
 }
-eu_dir eu_apply_dir(EuMap m, eu_pos, eu_dir d) {
+EuDir eu_apply_dir(EuMap m, EuPos, EuDir d) {
     return aff3_apply_dir(m, d);
 }
 
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
-eu_dir eu_dir_at(eu_pos, eu_dir src_dir, eu_pos) {
+EuDir eu_dir_at(EuPos, EuDir src_dir, EuPos) {
     return src_dir;
 }
 
-EuMap eu_shift(eu_dir pos) {
+EuMap eu_shift(EuDir pos) {
     return aff3_from_ls(lin3_identity(), pos);
 }
-EuMap eu_rotate(eu_dir axis, real phi) {
+EuMap eu_rotate(EuDir axis, real phi) {
     return rot3_to_linear(rot3_from_axis(axis, phi));
 }
 
 // Turns direction `dir` to *z*.
-EuMap eu_look_to(eu_dir dir) {
+EuMap eu_look_to(EuDir dir) {
     return lin3_look_to(dir);
 }
 
 // Rotates point `pos` around the origin to make it lay on the z axis.
-EuMap eu_look_at(eu_pos pos) {
+EuMap eu_look_at(EuPos pos) {
     return eu_look_to(normalize(pos));
 }
 
 // Translates point `pos` to the origin preserving orientation
 // relative to the line that connects `pos` to the origin.
-EuMap eu_move_at(eu_pos pos) {
+EuMap eu_move_at(EuPos pos) {
     return aff3_from_ls(lin3_identity(), -pos);
 }
-EuMap eu_move_to(eu_dir dir, real dist) {
+EuMap eu_move_to(EuDir dir, real dist) {
     return eu_move_at(dir*dist);
 }
 

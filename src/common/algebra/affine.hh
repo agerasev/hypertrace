@@ -19,7 +19,7 @@ real3 aff3_apply_dir(Affine3 m, real3 d);
 Affine3 aff3_chain(Affine3 a, Affine3 b);
 Affine3 aff3_inverse(Affine3 m);
 
-Affine3 aff3_interpolate(Affine3 a, Affine3 b);
+Affine3 aff3_interpolate(Affine3 a, Affine3 b, real t);
 
 
 #ifdef UNIT_TEST

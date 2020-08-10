@@ -31,3 +31,17 @@ Moebius mo_interpolate(Moebius a, Moebius b, real t);
 
 #define mo_norm_l1 c22_norm_l1
 real mo_diff(Moebius a, Moebius b);
+
+#ifdef HOST
+
+#include "traits.hpp"
+
+template <>
+class Group<Moebius> {
+public:
+    Moebius chain(Moebius a, Moebius b) {
+        return mo_chain(a, b);
+    }
+};
+
+#endif // HOST

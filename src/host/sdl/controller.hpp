@@ -5,8 +5,9 @@
 
 #include "base.hpp"
 
-#include <algebra/moebius.hpp>
-#include <view.hpp>
+#include <common/algebra/traits.hpp>
+#include <common/geometry/geometry.hpp>
+#include <common/render/view.hh>
 
 
 class ControllerBase {
@@ -68,7 +69,7 @@ public:
 
         for (auto& p : MOVE_KEYS) {
             if (keys[p.first]) {
-                pos *= p.second(move_speed*dt);
+                pos = chain(pos, p.second(move_speed*dt));
                 still = false;
             }
         }
@@ -80,9 +81,9 @@ public:
         }
 
         if (mouse_x != 0 || mouse_y != 0) {
-            pos *= G::yrotate(mouse_sens*mouse_x);
+            pos = chain(pos, G::yrotate(mouse_sens*mouse_x));
             mouse_x = 0;
-            pos *= G::xrotate(mouse_sens*mouse_y);
+            pos = chain(pos, G::xrotate(mouse_sens*mouse_y));
             mouse_y = 0;
             still = false;
         }
@@ -90,8 +91,8 @@ public:
         view.position = pos;
 
         if (fov || dof) {
-            view.focal_length *= math::exp(wheel_sens*fov);
-            view.field_of_view *= math::exp(wheel_sens*dof);
+            view.focal_length *= exp(wheel_sens*fov);
+            view.field_of_view *= exp(wheel_sens*dof);
             fov = 0;
             dof = 0;
             still = false;

@@ -55,11 +55,9 @@ public:
     inline static real length(Pos a) { return eu_length(a); }
     inline static real distance(Pos a, Pos b) { return eu_distance(a, b); }
 
-    // Returns the direction of the line at point `dst_pos`
-    // when we know that the line at the point `src_pos` has direction of `src_dir`.
     inline static Dir dir_at(Pos src_pos, Dir src_dir, Pos dst_pos) { return eu_dir_at(src_pos, src_dir, dst_pos); }
 
-    inline static Map shift(Dir pos) { return eu_shift(pos); }
+    inline static Map shift(Pos pos) { return eu_shift(pos); }
     inline static Map xshift(real l) { return shift(Dir(l,0,0)); }
     inline static Map yshift(real l) { return shift(Dir(0,l,0)); }
     inline static Map zshift(real l) { return shift(Dir(0,0,l)); }
@@ -69,14 +67,10 @@ public:
     inline static Map yrotate(real angle) { return rotate(Dir(0,1,0), angle); }
     inline static Map zrotate(real angle) { return rotate(Dir(0,0,1), angle); }
 
-    // Turns direction `dir` to *z*.
     inline static Map look_to(Dir dir) { return eu_look_to(dir); }
 
-    // Rotatates point `pos` around the origin to make it lay on the z axis.
     inline static Map look_at(Pos pos) { return eu_look_at(pos); }
 
-    // Translates point `pos` to the origin preserving orientation
-    // relative to the line that connects `pos` to the origin.
     inline static Map move_at(Pos pos) { return eu_move_at(pos); }
     inline static Map move_to(Dir dir, real dist) { return eu_move_to(dir, dist); }
 };

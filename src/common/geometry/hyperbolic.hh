@@ -53,7 +53,6 @@ HyMap hy_move_to(HyDir dir, real dist);
 #ifdef HOST
 
 #include "geometry.hpp"
-#include "euclidean.hh"
 
 class Hyperbolic : public Geometry {
 public:
@@ -68,8 +67,6 @@ public:
     inline static real length(Pos a) { return hy_length(a); }
     inline static real distance(Pos a, Pos b) { return hy_distance(a, b); }
 
-    // Returns the direction of the line at point `dst_pos`
-    // when we know that the line at the point `src_pos` has direction of `src_dir`.
     inline static Dir dir_at(Pos src_pos, Dir src_dir, Pos dst_pos) { return hy_dir_at(src_pos, src_dir, dst_pos); }
 
     inline static Map zshift(real l) { return hy_zshift(l); }
@@ -79,17 +76,12 @@ public:
     inline static Map xrotate(real theta) { return hy_xrotate(theta); }
     inline static Map yrotate(real theta) { return hy_yrotate(theta); }
 
-    // Move to pos at the horosphere.
     inline static Map horosphere(comp pos) { return hy_horosphere(pos); }
 
-    // Turns direction `dir` to *j*.
     inline static Map look_to(Dir dir) { return hy_look_to(dir); }
 
-    // Rotatates point `pos` around the origin to make it lay on the z axis.
     inline static Map look_at(Pos pos) { return hy_look_at(pos); }
 
-    // Translates point `pos` to the origin preserving orientation
-    // relative to the line that connects `pos` to the origin.
     inline static Map move_at(Pos pos) { return hy_move_at(pos); }
     inline static Map move_to(Dir dir, real dist) { return hy_move_to(dir, dist); }
 };

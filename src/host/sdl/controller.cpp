@@ -1,7 +1,5 @@
 #include "controller.hpp"
 
-#include <geometry/hyperbolic.hpp>
-
 
 bool ControllerBase::handle() {
     SDL_Event e;

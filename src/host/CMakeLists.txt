@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.12)
 
-set(COMMON_SRC
-    #"${CMAKE_SOURCE_DIR}/host/builtins/math.cpp"
-    ${COMMON_SRC}
-PARENT_SCOPE)
-
 set(HOST_SRC
-    "${CMAKE_SOURCE_DIR}/host/empty.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/opencl/include.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/opencl/opencl.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/opencl/search.cpp"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/sdl/base.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/sdl/controller.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/sdl/image.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/sdl/viewer.cpp"
 PARENT_SCOPE)

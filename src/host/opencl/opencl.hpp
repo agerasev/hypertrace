@@ -9,6 +9,7 @@
 
 #include <CL/cl.h>
 
+#include "include.hpp"
 
 namespace cl {
     class Context {
@@ -44,11 +45,13 @@ namespace cl {
         cl_program program;
         cl_device_id device;
 
+        std::shared_ptr<c_includer> includer;
+
     public:
         Program(
             cl_context context,
             cl_device_id device,
-            const std::string &source
+            std::shared_ptr<c_includer> includer
         );
         ~Program();
 

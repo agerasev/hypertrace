@@ -8,11 +8,10 @@
 #include <random>
 #include <algorithm>
 
-#include <opencl/opencl.hpp>
+#include <host/opencl/opencl.hpp>
 
-#include <traits.hpp>
-#include <geometry/geometry.hpp>
-#include <view.hpp>
+#include <common/types.hh>
+#include <common/render/view.hh>
 //#include <object.hh>
 
 
@@ -34,6 +33,46 @@ public:
         Blur blur;
         double gamma = 2.2;
     };
+
+    std::unique_ptr<c_includer> make_includer(const Config &config) {
+        std::stringstream ss;
+        
+        ss << 
+            "#pragma once\n" <<
+
+            "#define PATH_MAX_DEPTH " << config.path_max_depth << std::endl <<
+            "#define PATH_MAX_DIFFUSE_DEPTH " <<
+                config.path_max_diffuse_depth << std::endl;
+
+        if (config.blur.lens) {
+            ss << "#define LENS_BLUR" << std::endl;
+        }
+        if (config.blur.motion) {
+            ss << "#define MOTION_BLUR" << std::endl;
+        }
+        if (config.blur.object_motion) {
+            ss << "#define OBJECT_MOTION_BLUR" << std::endl;
+        }
+        if (fabs(config.gamma - 1.0) > EPS) {
+            ss << 
+                "#define GAMMA_CORRECTION" << std::endl <<
+                "#define GAMMA_VALUE " << config.gamma << "f" << std::endl;
+        }
+
+        std::unique_ptr<c_includer> includer = std::make_unique<c_includer>(
+            "render.cl",
+            {"src/device", "src/common"},
+            {std::make_pair("gen/config.cl", ss.str())}
+        );
+
+        bool status = includer->include();
+        if (!status) {
+            std::cout << includer->log() << std::endl;
+            assert(false);
+        }
+
+        return includer;
+    }
 
 private:
     int width, height;
@@ -58,11 +97,11 @@ private:
         cl::Queue &queue, cl::Buffer &buf,
         const std::vector<Obj> &objs
     ) {
-        std::vector<device_type<Obj>> pack(objs.size());
+        std::vector<dev_type<Obj>> pack(objs.size());
         for (size_t i = 0; i < objs.size(); ++i) {
-            pack[i] = to_device(objs[i]);
+            pack[i] = dev_store(objs[i]);
         }
-        buf.store(queue, pack.data(), sizeof(device_type<Obj>)*objs.size());
+        buf.store(queue, pack.data(), sizeof(dev_type<Obj>)*objs.size());
     }
 
     int monte_carlo_counter = 0;
@@ -74,8 +113,8 @@ private:
 public:
     Renderer(
         cl_device_id device,
-        const std::string &src,
-        int width, int height
+        int width, int height,
+        const Config &config
     ) :
         width(width),
         height(height),
@@ -83,8 +122,11 @@ public:
         context(device),
         queue(context, device),
 
-        program(context, device, src),
-        kernel(program, "trace_kernel"),
+        program(
+            context, device,
+            std::make_shared(make_includer(config))
+        ),
+        kernel(program, "render"),
 
         image(queue, width*height*4),
         screen(queue, width*height*3*sizeof(cl_float), true),
@@ -154,8 +196,8 @@ public:
             monte_carlo_counter,
             seeds,
 
-            to_device(view),
-            //to_device(view_prev)
+            dev_store(view),
+            //dev_store(view_prev)
 
             objects,
             //objects_prev,

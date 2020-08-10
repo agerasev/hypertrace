@@ -15,7 +15,8 @@ include_directories(
 add_library(${PROJECT_NAME} OBJECT ${HOST_SRC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC
     "-DCL_TARGET_OPENCL_VERSION=120"
-    "-DOPENCL_INTEROP"
+    "-DHOST"
+    "-DINTEROP"
 )
 
 target_link_libraries(${PROJECT_NAME} OpenCL SDL2 SDL2_image)

@@ -41,12 +41,15 @@ cl::Queue::operator cl_command_queue() const {
 cl::Program::Program(
     cl_context context,
     cl_device_id device,
-    const std::string &source
-) {
+    std::shared_ptr<c_includer> includer
+) : includer(includer) {
     this->device = device;
+
+    std::string src = includer->data();
+    std::fstream("gen_kernel.cl", std::ios::out) << src << std::endl;
     
-    const char *src_data = source.c_str();
-    const size_t src_len = source.size();
+    const char *src_data = src.c_str();
+    const size_t src_len = src.size();
 
     program = clCreateProgramWithSource(context, 1, &src_data, &src_len, nullptr);
     assert(program != nullptr);
@@ -78,7 +81,7 @@ std::string cl::Program::log() {
     ) == CL_SUCCESS);
     assert(buffer[buffer.size() - 1] == '\0');
 
-    return std::string(buffer.data());
+    return includer->convert(std::string(buffer.data()));
 }
 
 void cl::Buffer::init(cl_command_queue queue, size_t size, bool zeroed) {

@@ -9,8 +9,8 @@ struct RayEu {
     EuDir direction;
 };
 
-RayEu rayeu_map(RayEu ray, EuMap map);
-RayEu rayeu_advance(RayEu ray, real l);
+RayEu ray_eu_map(RayEu ray, EuMap map);
+RayEu ray_eu_advance(RayEu ray, real l);
 
 
 struct RayHy {
@@ -18,5 +18,5 @@ struct RayHy {
     HyPos direction;
 };
 
-RayHy rayhy_map(RayHy ray, HyMap map);
-RayHy rayhy_advance(RayHy ray, real l);
+RayHy ray_hy_map(RayHy ray, HyMap map);
+RayHy ray_hy_advance(RayHy ray, real l);

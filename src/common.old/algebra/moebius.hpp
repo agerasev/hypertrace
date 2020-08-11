@@ -120,7 +120,7 @@ struct ToDevice<Moebius<C>> {
 
 #endif
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #include "test.hpp"
 

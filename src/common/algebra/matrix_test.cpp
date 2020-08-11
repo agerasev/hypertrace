@@ -1,4 +1,4 @@
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 
 #include "matrix.hh"
 
@@ -258,4 +258,4 @@ TEST_CASE("Matrix types", "[matrix]") {
     }
 };
 
-#endif // UNIT_TEST
+#endif // TEST_UNIT

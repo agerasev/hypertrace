@@ -5,6 +5,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <functional>
 #include <cassert>
 
 #include <CL/cl.h>
@@ -45,13 +46,20 @@ namespace cl {
         cl_program program;
         cl_device_id device;
 
-        std::shared_ptr<c_includer> includer;
+        std::string log() const;
 
     public:
         Program(
             cl_context context,
             cl_device_id device,
-            std::shared_ptr<c_includer> includer
+            const std::string &source,
+            std::function<std::string(std::string&&)> log_hook =
+                [](std::string &&s) { return std::move(s); }
+        );
+        Program(
+            cl_context context,
+            cl_device_id device,
+            const c_includer &includer
         );
         ~Program();
 
@@ -59,8 +67,6 @@ namespace cl {
         Program &operator=(const Program &other) = delete;
 
         operator cl_program() const;
-
-        std::string log();
     };
 
     class Buffer {

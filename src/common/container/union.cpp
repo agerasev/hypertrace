@@ -1,7 +1,7 @@
 #include "union.hpp"
 
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 
 #include <catch.hpp>
 

@@ -22,7 +22,7 @@ Affine3 aff3_inverse(Affine3 m);
 Affine3 aff3_interpolate(Affine3 a, Affine3 b, real t);
 
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 
 class TestRngAffine3 {
 private:
@@ -38,4 +38,4 @@ public:
     Affine3 invertible();
 };
 
-#endif // UNIT_TEST
+#endif // TEST_UNIT

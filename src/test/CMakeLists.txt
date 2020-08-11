@@ -3,8 +3,8 @@ project(test)
 
 add_executable(${PROJECT_NAME}
     ${COMMON_SRC}
-    "unit_test.cpp"
+    "test_unit.cpp"
 )
 target_compile_definitions(${PROJECT_NAME} PRIVATE
-    "-DUNIT_TEST"
+    "-DTEST_UNIT"
 )

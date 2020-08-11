@@ -1,7 +1,7 @@
 #include "vector.hh"
 
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 
 #include <catch.hpp>
 
@@ -62,4 +62,57 @@ TEST_CASE("Vector types", "[vec]") {
     }
 };
 
-#endif // UNIT_TEST
+#endif // TEST_UNIT
+
+
+#ifdef TEST_DEV
+
+#include <vector>
+
+#include <host/opencl/search.hpp>
+#include <host/opencl/opencl.hpp>
+
+
+REG_TEST_DEV("Vector on device", "[vec_dev]") {
+    std::vector<cl_platform_id> platforms = cl::get_platforms();
+    std::vector<std::vector<cl_device_id>> platform_devices(platforms.size());
+    for (size_t i = 0; i < platforms.size(); ++i) {
+        cl_platform_id platform = platforms[i];
+        std::vector<cl_device_id> devices = cl::get_devices(platform);
+
+        for (size_t j = 0; j < devices.size(); ++j) {
+            cl_device_id device = devices[j];
+
+            cl::Context context(device);
+            cl::Queue queue(context, device);
+
+            cl::Program program(context, device, " \
+                __kernel void square(__global const int *ibuf, __global int *obuf) { \
+                    int i = get_global_id(0); \
+                    int x = ibuf[i]; \
+                    obuf[i] = x*x; \
+                } \
+            ");
+            cl::Kernel kernel(program, "square");
+
+            const int n = 256;
+            cl::Buffer ibuf(queue, n*sizeof(int)), obuf(queue, n*sizeof(int), true);
+            std::vector<int> host_buf(n);
+            for (int k = 0; k < host_buf.size(); ++n) {
+                host_buf[i] = k;
+            }
+            ibuf.store(queue, host_buf.data());
+            kernel.set_arg(0, ibuf);
+            kernel.set_arg(1, obuf);
+            kernel.run(queue, n);
+            obuf.load(queue, host_buf.data());
+            for(int k = 0; k < host_buf.size(); ++n) {
+                REQUIRE(k*k == host_buf[i]);
+            }
+        }
+
+        platform_devices[i] = std::move(devices);
+    }
+};
+
+#endif // TEST_DEV

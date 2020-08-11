@@ -53,7 +53,7 @@ EuMap eu_move_to(EuDir dir, real dist) {
 }
 
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 
 #include <catch.hpp>
 
@@ -101,4 +101,4 @@ TEST_CASE("Euclidean geometry", "[euclidean]") {
     }
 };
 
-#endif // UNIT_TEST
+#endif // TEST_UNIT

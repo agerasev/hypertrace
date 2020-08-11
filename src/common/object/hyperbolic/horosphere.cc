@@ -1,7 +1,7 @@
 #include "horosphere.hpp"
 
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #include <test.hpp>
 

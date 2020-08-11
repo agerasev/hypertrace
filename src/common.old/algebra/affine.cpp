@@ -1,6 +1,6 @@
 #include "affine.hpp"
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #include "test.hpp"
 
@@ -28,4 +28,4 @@ TEST_CASE("Affine transformation", "[affine]") {
         }
     }
 };
-#endif // UNIT_TEST
+#endif // TEST_UNIT

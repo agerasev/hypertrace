@@ -63,7 +63,7 @@ Linear3 rot3_to_linear(Rotation3 m) {
 }
 
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 
 #include <catch.hpp>
 

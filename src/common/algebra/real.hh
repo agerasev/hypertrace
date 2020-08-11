@@ -23,7 +23,7 @@ typedef float real;
 #endif // HOST || DEV_F64
 
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 
 #include <catch.hpp>
 
@@ -56,4 +56,4 @@ inline Approx approx(real v) {
 
 #define TEST_ATTEMPTS 16
 
-#endif // UNIT_TEST
+#endif // TEST_UNIT

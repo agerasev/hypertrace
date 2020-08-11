@@ -95,7 +95,7 @@ struct ToDevice<Affine<T, N>> {
 
 #endif
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #include "test.hpp"
 

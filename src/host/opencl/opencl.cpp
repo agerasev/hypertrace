@@ -41,23 +41,35 @@ cl::Queue::operator cl_command_queue() const {
 cl::Program::Program(
     cl_context context,
     cl_device_id device,
-    std::shared_ptr<c_includer> includer
-) : includer(includer) {
+    const std::string &source,
+    std::function<std::string(std::string&&)> log_hook
+) {
     this->device = device;
 
-    std::string src = includer->data();
-    std::fstream("gen_kernel.cl", std::ios::out) << src << std::endl;
+    //std::fstream("gen_kernel.cl", std::ios::out) << src << std::endl;
     
-    const char *src_data = src.c_str();
-    const size_t src_len = src.size();
+    const char *src_data = source.c_str();
+    const size_t src_len = source.size();
 
     program = clCreateProgramWithSource(context, 1, &src_data, &src_len, nullptr);
     assert(program != nullptr);
 
     cl_uint status = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-    std::cout << log() << std::endl;
+    std::cout << log_hook(log()) << std::endl;
     assert(status == CL_SUCCESS);
 }
+cl::Program::Program(
+    cl_context context,
+    cl_device_id device,
+    const c_includer &includer
+) : Program(
+    context,
+    device,
+    includer.data(),
+    [&includer](std::string &&s) {
+        return includer.convert(std::move(s));
+    }
+) {}
 cl::Program::~Program() {
     assert(clReleaseProgram(program) == CL_SUCCESS);
 }
@@ -66,7 +78,7 @@ cl::Program::operator cl_program() const {
     return program;
 }
 
-std::string cl::Program::log() {
+std::string cl::Program::log() const {
     size_t log_len = 0;
     assert(clGetProgramBuildInfo(
         program, device, CL_PROGRAM_BUILD_LOG,
@@ -81,7 +93,7 @@ std::string cl::Program::log() {
     ) == CL_SUCCESS);
     assert(buffer[buffer.size() - 1] == '\0');
 
-    return includer->convert(std::string(buffer.data()));
+    return std::string(buffer.data());
 }
 
 void cl::Buffer::init(cl_command_queue queue, size_t size, bool zeroed) {

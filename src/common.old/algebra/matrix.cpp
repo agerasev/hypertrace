@@ -1,7 +1,7 @@
 #include "matrix.hpp"
 
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 #include <catch.hpp>
 
 using namespace test;
@@ -160,4 +160,4 @@ TEST_CASE("Matrix types", "[matrix]") {
     }
 };
 
-#endif // UNIT_TEST
+#endif // TEST_UNIT

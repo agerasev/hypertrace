@@ -40,7 +40,7 @@ real mo_diff(Moebius a, Moebius b) {
     return mo_norm_l1(a - b);
 }
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 
 #include <catch.hpp>
 
@@ -98,4 +98,4 @@ TEST_CASE("Moebius transformation", "[moebius]") {
     }
 };
 
-#endif // UNIT_TEST
+#endif // TEST_UNIT

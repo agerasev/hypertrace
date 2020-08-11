@@ -43,7 +43,7 @@ Affine3 aff3_interpolate(Affine3 a, Affine3 b, real t) {
 }
 
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 
 #include <catch.hpp>
 
@@ -86,4 +86,4 @@ TEST_CASE("Affine transformation", "[affine]") {
     }
 };
 
-#endif // UNIT_TEST
+#endif // TEST_UNIT

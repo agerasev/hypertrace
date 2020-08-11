@@ -3,7 +3,7 @@
 #include "vector.hpp"
 #include "matrix_base.hpp"
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #endif
 
@@ -307,7 +307,7 @@ public:
         return m;
     }
 
-#ifdef UNIT_TEST
+#ifdef TEST_UNIT
     bool operator==(Approx a) const {
         if (a != (*this)[0]) {
             return false;

@@ -16,5 +16,9 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/euclidean.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/hyperbolic.cc"
 
+    "${CMAKE_CURRENT_SOURCE_DIR}/container/tuple.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/container/union.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/container/variant.cpp"
+
     "${CMAKE_CURRENT_SOURCE_DIR}/render/view.cc"
 PARENT_SCOPE)

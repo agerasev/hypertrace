@@ -1,7 +1,6 @@
 #pragma once
 
-#include <types.h>
-#include <traits.hpp>
+#include <common/types.hh>
 
 
 template <typename T, int N>

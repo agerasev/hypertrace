@@ -2,14 +2,10 @@
 
 
 #ifdef UNIT_TEST
-#include <catch.hpp>
-#include <test.hpp>
 
-using namespace test;
+#include <catch.hpp>
 
 TEST_CASE("Union", "[union]") {
-    Rng rng(0x807A);
-
     SECTION("Union") {
         Union<bool, int, double> a;
 
@@ -19,7 +15,7 @@ TEST_CASE("Union", "[union]") {
         a.elem<1>() = 1;
         REQUIRE(a.elem<1>() == 1);
         a.elem<2>() = 3.1415;
-        REQUIRE(a.elem<2>() == approx(3.1415));
+        REQUIRE(a.elem<2>() == Approx(3.1415));
     }
 }
 

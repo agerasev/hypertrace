@@ -2,14 +2,10 @@
 
 
 #ifdef UNIT_TEST
-#include <catch.hpp>
-#include <test.hpp>
 
-using namespace test;
+#include <catch.hpp>
 
 TEST_CASE("Tuple", "[tuple]") {
-    Rng rng(0x807A);
-
     SECTION("Union") {
         Tuple<bool, int, double> a;
 
@@ -19,7 +15,7 @@ TEST_CASE("Tuple", "[tuple]") {
         a.elem<2>() = 3.1415;
         REQUIRE(a.elem<0>() == true);
         REQUIRE(a.elem<1>() == 1);
-        REQUIRE(a.elem<2>() == approx(3.1415));
+        REQUIRE(a.elem<2>() == Approx(3.1415));
     }
 }
 

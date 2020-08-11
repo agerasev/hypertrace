@@ -1,7 +1,6 @@
 #pragma once
 
-#include <types.h>
-#include <traits.hpp>
+#include <common/types.hh>
 #include "union.hpp"
 
 
@@ -13,13 +12,13 @@ private:
 
 public:
     template <int P>
-    void set(const nth_arg<P, Elems...> &e) {
+    void set(const helper::nth_arg<P, Elems...> &e) {
         static_assert(P >= 0 && P < sizeof...(Elems), "Index is out of bounds");
         as_union().template elem<P>() = e;
         id_ = P;
     }
     template <int P>
-    static Variant init(const nth_arg<P, Elems...> &e) {
+    static Variant init(const helper::nth_arg<P, Elems...> &e) {
         Variant v;
         v.set<P>(e);
         return v;
@@ -44,14 +43,14 @@ private: \
     struct name##Caller { \
         template <typename ...Args> \
         static decltype(auto) call(E &e, Args &&...args) { \
-            return e.name(forward<Args>(args)...); \
+            return e.name(std::forward<Args>(args)...); \
         } \
     }; \
 public: \
     template <typename ...Args> \
     decltype(auto) name(Args &&...args) { \
         return field.as_union().call<name##Caller, 0>( \
-            field.id(), forward<Args>(args)... \
+            field.id(), std::forward<Args>(args)... \
         ); \
     } \
 
@@ -61,14 +60,14 @@ private: \
     struct name##Caller { \
         template <typename ...Args> \
         static decltype(auto) call(const E &e, Args &&...args) { \
-            return e.name(forward<Args>(args)...); \
+            return e.name(std::forward<Args>(args)...); \
         } \
     }; \
 public: \
     template <typename ...Args> \
     decltype(auto) name(Args &&...args) const { \
         return field.as_union().call<name##Caller, 0>( \
-            field.id(), forward<Args>(args)... \
+            field.id(), std::forward<Args>(args)... \
         ); \
     } \
 

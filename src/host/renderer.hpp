@@ -61,8 +61,8 @@ public:
 
         std::unique_ptr<c_includer> includer = std::make_unique<c_includer>(
             "render.cl",
-            {"src/device", "src/common"},
-            {std::make_pair("gen/config.cl", ss.str())}
+            std::list{"src/device", "src/common"},
+            std::map{std::make_pair("gen/config.cl", ss.str())}
         );
 
         bool status = includer->include();

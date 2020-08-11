@@ -31,7 +31,7 @@ template <typename H>
 struct Interop;
 
 template <typename H>
-using dev_type = typename Interop<H>::dev;
+using dev_type = typename Interop<H>::Dev;
 
 template <typename H>
 void dev_load(H *dst, const dev_type<H> *src) {
@@ -52,7 +52,7 @@ struct Interop<H> { \
         *dst = (Host)(*src); \
     } \
     static void store(Dev *dst, const Host *src) { \
-        *dst = (Dev)(*dst); \
+        *dst = (Dev)(*src); \
     } \
 }
 

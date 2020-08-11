@@ -3,13 +3,10 @@
 
 #ifdef UNIT_TEST
 #include <catch.hpp>
-#include <test.hpp>
-
-using namespace test;
 
 struct A {
     int x;
-    mutable float z;
+    mutable float z = 0.0f;
     void set(float y) {
         x = int(y);
     }
@@ -43,8 +40,6 @@ public:
 };
 
 TEST_CASE("Variant", "[variant]") {
-    Rng rng(0x807A);
-
     SECTION("Union") {
         Variant<A, B> a = Variant<A, B>::init<0>(A{1});
         Variant<A, B> b = Variant<A, B>::init<1>(B{3.1415});

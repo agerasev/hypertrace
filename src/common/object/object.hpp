@@ -1,7 +1,7 @@
 #pragma once
 
-#include <types.h>
-#include <geometry/geometry.hpp>
+#include <common/types.hh>
+#include <common/geometry/geometry.hpp>
 #include <render/light.hpp>
 
 /*

@@ -12,13 +12,16 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/linear.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/affine.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/rotation.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/color.cc"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/euclidean.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/hyperbolic.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/geometry/ray.cc"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/container/tuple.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/container/union.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/container/variant.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/render/view.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/render/light.cc"
 PARENT_SCOPE)

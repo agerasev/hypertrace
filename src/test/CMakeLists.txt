@@ -3,6 +3,7 @@ project(test)
 
 add_executable(test_unit
     ${COMMON_SRC}
+    "${CMAKE_SOURCE_DIR}/host/opencl/include.cpp"
     "test_unit.cpp"
 )
 target_compile_definitions(test_unit PRIVATE

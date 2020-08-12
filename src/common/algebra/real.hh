@@ -57,3 +57,15 @@ inline Approx approx(real v) {
 #define TEST_ATTEMPTS 16
 
 #endif // TEST_UNIT
+
+#ifdef TEST_DEV
+
+#include <host/opencl/opencl.hpp>
+
+void test_dev_real(
+    cl_device_id device,
+    cl_context context,
+    cl_command_queue queue
+);
+
+#endif // TEST_DEV

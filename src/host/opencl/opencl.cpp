@@ -55,7 +55,11 @@ cl::Program::Program(
     assert(program != nullptr);
 
     cl_uint status = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-    std::cout << log_hook(log()) << std::endl;
+    std::string log_ = log_hook(log());
+    // TODO: Trim `log_` string
+    if (log_.size() > 0) {
+        std::cout << log_ << std::endl;
+    }
     assert(status == CL_SUCCESS);
 }
 cl::Program::Program(

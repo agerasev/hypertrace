@@ -18,9 +18,9 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/hyperbolic.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/ray.cc"
 
-    "${CMAKE_CURRENT_SOURCE_DIR}/container/tuple.cpp"
+    #"${CMAKE_CURRENT_SOURCE_DIR}/container/tuple.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/container/union.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/container/variant.cpp"
+    #"${CMAKE_CURRENT_SOURCE_DIR}/container/variant.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/render/view.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/render/light.cc"

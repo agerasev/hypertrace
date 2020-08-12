@@ -12,6 +12,7 @@ include_directories(
 )
 add_library(${PROJECT_NAME} OBJECT ${HOST_SRC})
 add_definitions(
+    "-DDEBUG"
     "-DHOST"
 )
 target_compile_definitions(${PROJECT_NAME} PUBLIC

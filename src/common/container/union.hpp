@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cassert>
+#include <utility>
 
+#include <common/traits.hpp>
 #include "utils.hpp"
 
 
@@ -59,54 +61,54 @@ public:
 #endif // DEBUG
 
     template <size_t P>
-    void put(container::nth_type<P, Elems...> &&x) {
+    void put(nth_type<P, Elems...> &&x) {
 #ifdef DEBUG
         assert(!this->stored_);
         this->stored_ = true;
 #endif // DEBUG
-        new (reinterpret_cast<container::nth_type<P, Elems...> *>(&this->data))
-            container::nth_type<P, Elems...>(std::move(x));
+        new (reinterpret_cast<nth_type<P, Elems...> *>(&this->data))
+            nth_type<P, Elems...>(std::move(x));
     }
     template <size_t P>
-    void put(const container::nth_type<P, Elems...> &x) {
-        container::nth_type<P, Elems...> cx(x);
+    void put(const nth_type<P, Elems...> &x) {
+        nth_type<P, Elems...> cx(x);
         this->put<P>(std::move(cx));
     }
 
     template <size_t P>
-    const container::nth_type<P, Elems...> &get() const {
+    const nth_type<P, Elems...> &get() const {
 #ifdef DEBUG
         assert(this->stored_);
 #endif // DEBUG
-        return *reinterpret_cast<const container::nth_type<P, Elems...> *>(&this->data);
+        return *reinterpret_cast<const nth_type<P, Elems...> *>(&this->data);
     }
     template <size_t P>
-    container::nth_type<P, Elems...> &get() {
+    nth_type<P, Elems...> &get() {
 #ifdef DEBUG
         assert(this->stored_);
 #endif // DEBUG
-        return *reinterpret_cast<container::nth_type<P, Elems...> *>(&this->data);
+        return *reinterpret_cast<nth_type<P, Elems...> *>(&this->data);
     }
 
     template <size_t P>
-    static Union create(container::nth_type<P, Elems...> &&x) {
+    static Union create(nth_type<P, Elems...> &&x) {
         Union u;
         u.put<P>(std::move(x));
         return u;
     }
     template <size_t P>
-    static Union create(const container::nth_type<P, Elems...> &x) {
-        container::nth_type<P, Elems...> cx(x);
+    static Union create(const nth_type<P, Elems...> &x) {
+        nth_type<P, Elems...> cx(x);
         return create<P>(std::move(cx));
     }
 
     template <size_t P>
-    container::nth_type<P, Elems...> take() {
+    nth_type<P, Elems...> take() {
 #ifdef DEBUG
         assert(this->stored_);
         this->stored_ = false;
 #endif // DEBUG
-        typedef container::nth_type<P, Elems...> T;
+        typedef nth_type<P, Elems...> T;
         T *px = reinterpret_cast<T *>(&this->data);
         T x = std::move(*px);
         px->~T();
@@ -115,5 +117,10 @@ public:
     template <size_t P>
     void destroy() {
         this->take<P>();
+    }
+
+    template <template <size_t> typename F, typename ...Args>
+    static decltype(auto) dispatch(size_t i, Args &&...args) {
+        return container::Dispatcher<F, size()>::dispatch(i, std::forward<Args>(args)...);
     }
 };

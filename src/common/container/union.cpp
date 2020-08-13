@@ -6,6 +6,12 @@
 #include <catch.hpp>
 #include <memory>
 
+template <size_t P>
+struct TestDispatch {
+    static void call(bool mask[]) {
+        mask[P] = true;
+    }
+};
 
 TEST_CASE("Union", "[union]") {
     SECTION("Primitive") {
@@ -36,6 +42,15 @@ TEST_CASE("Union", "[union]") {
             REQUIRE(ptr.use_count() == 2);
         }
         REQUIRE(ptr.use_count() == 1);
+    }
+    SECTION("Dispatch") {
+        bool mask[3] = {false, false, false};
+        auto a = Union<bool, int, double>::create<1>(123);
+        a.dispatch<TestDispatch>(1, mask);
+        REQUIRE(mask[0] == false);
+        REQUIRE(mask[1] == true);
+        REQUIRE(mask[2] == false);
+        a.destroy<1>();
     }
 }
 

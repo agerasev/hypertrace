@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdlib>
-#include <algorithm>
 
 namespace container {
 
@@ -82,17 +81,24 @@ constexpr size_t common_align() {
     return CommonAlign<Types...>::value;
 }
 
-template <size_t P, typename ...Types>
-struct NthType {};
-template <size_t P, typename T, typename ...Types>
-struct NthType<P, T, Types...> {
-    typedef typename NthType<P - 1, Types...>::type type;
+template <template <size_t> typename F, size_t S, size_t Q = S - 1>
+struct Dispatcher {
+    static const size_t P = S - Q - 1;
+    template <typename ...Args>
+    static decltype(auto) dispatch(size_t i, Args &&...args) {
+        if (i == P) {
+            return F<P>::call(std::forward<Args>(args)...);
+        } else {
+            return Dispatcher<F, S, Q - 1>::dispatch(i, std::forward<Args>(args)...);
+        }
+    }
 };
-template <typename T, typename ...Types>
-struct NthType<0, T, Types...> {
-    typedef T type;
+template <template <size_t> typename F, size_t S>
+struct Dispatcher<F, S, 0> {
+    template <typename ...Args>
+    static decltype(auto) dispatch(size_t, Args &&...args) {
+        return F<S - 1>::call(std::forward<Args>(args)...);
+    }
 };
-template <size_t P, typename ...Types>
-using nth_type = typename NthType<P, Types...>::type;
 
 } // namespace container

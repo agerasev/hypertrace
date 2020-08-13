@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.hpp"
+#include <common/traits.hpp>
 #include "union.hpp"
 
 
@@ -63,60 +63,58 @@ public:
     }
 
     template <size_t P>
-    void put(container::nth_type<P, Elems...> &&x) {
+    void put(nth_type<P, Elems...> &&x) {
         this->assert_empty();
         this->union_.put<P>(std::move(x));
         this->id_ = P;
     }
     template <size_t P>
-    void put(const container::nth_type<P, Elems...> &x) {
-        container::nth_type<P, Elems...> cx(x);
+    void put(const nth_type<P, Elems...> &x) {
+        nth_type<P, Elems...> cx(x);
         this->put<P>(std::move(cx));
     }
 
     template <size_t P>
-    const container::nth_type<P, Elems...> &get() const {
+    const nth_type<P, Elems...> &get() const {
         this->assert_variant<P>();
         return this->union_.template get<P>();
     }
     template <size_t P>
-    container::nth_type<P, Elems...> &get() {
+    nth_type<P, Elems...> &get() {
         this->assert_variant<P>();
         return this->union_.template get<P>();
     }
 
     template <size_t P>
-    static Variant create(container::nth_type<P, Elems...> &&x) {
+    static Variant create(nth_type<P, Elems...> &&x) {
         Variant v;
         v.put<P>(std::move(x));
         return v;
     }
     template <size_t P>
-    static Variant create(const container::nth_type<P, Elems...> &x) {
-        container::nth_type<P, Elems...> cx(x);
+    static Variant create(const nth_type<P, Elems...> &x) {
+        nth_type<P, Elems...> cx(x);
         return create<P>(std::move(cx));
     }
 
     template <size_t P>
-    container::nth_type<P, Elems...> take() {
+    nth_type<P, Elems...> take() {
         this->assert_variant<P>();
-        this->_id = size();
-        return std::move(this->_union.template take<P>());
+        this->id_ = size();
+        return std::move(this->union_.template take<P>());
     }
 
 private:
-    template <size_t P=0>
-    void destroy_() {
-        if (this->id_ == P) {
-            this->take<P>();
-        } else {
-            this->destroy_<P + 1>();
+    template <size_t P>
+    struct Destroyer{
+        void call(Union<Elems...> &u) {
+            u.template destroy<P>();
         }
-    }
+    };
 
 public:
     void destroy() {
         this->assert_valid();
-        this->destroy_();
+        this->union_.dispatch(this->id_, *this);
     }
 };

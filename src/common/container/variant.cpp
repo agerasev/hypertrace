@@ -8,7 +8,6 @@
 
 
 TEST_CASE("Variant", "[variant]") {
-    /*
     SECTION("Primitive") {
         auto a = Variant<bool, int, double>::create<1>(123);
         REQUIRE(a.size() == 3);
@@ -24,7 +23,7 @@ TEST_CASE("Variant", "[variant]") {
     }
     SECTION("Move") {
         std::unique_ptr<int> ptr = std::make_unique<int>(123);
-        auto a = Union<void, std::unique_ptr<int>>::create<1>(std::move(ptr));
+        auto a = Variant<char, std::unique_ptr<int>>::create<1>(std::move(ptr));
         REQUIRE(*a.get<1>() == 123);
         ptr = a.take<1>();
         REQUIRE(*ptr == 123);
@@ -32,18 +31,13 @@ TEST_CASE("Variant", "[variant]") {
     SECTION("Ctor Dtor") {
         std::shared_ptr<int> ptr = std::make_shared<int>(123);
         REQUIRE(ptr.use_count() == 1);
-        auto a = Union<void, std::shared_ptr<int>>::create<1>(ptr);
+        auto a = Variant<char, std::shared_ptr<int>>::create<1>(ptr);
         REQUIRE(ptr.use_count() == 2);
         REQUIRE(*a.get<1>() == 123);
         REQUIRE(ptr.use_count() == 2);
-        {
-            std::shared_ptr<int> cptr = a.take<1>();
-            REQUIRE(*cptr == 123);
-            REQUIRE(ptr.use_count() == 2);
-        }
+        a.destroy();
         REQUIRE(ptr.use_count() == 1);
     }
-    */
 }
 
 #endif

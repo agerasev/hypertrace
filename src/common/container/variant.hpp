@@ -65,7 +65,7 @@ public:
     template <size_t P>
     void put(nth_type<P, Elems...> &&x) {
         this->assert_empty();
-        this->union_.put<P>(std::move(x));
+        this->union_.template put<P>(std::move(x));
         this->id_ = P;
     }
     template <size_t P>
@@ -107,7 +107,7 @@ public:
 private:
     template <size_t P>
     struct Destroyer{
-        void call(Union<Elems...> &u) {
+        static void call(Union<Elems...> &u) {
             u.template destroy<P>();
         }
     };
@@ -115,6 +115,7 @@ private:
 public:
     void destroy() {
         this->assert_valid();
-        this->union_.dispatch(this->id_, *this);
+        this->union_.template dispatch<Destroyer>(this->id_, this->union_);
+        this->id_ = size();
     }
 };

@@ -22,6 +22,7 @@ public:
     Union(const Union &) = delete;
     Union &operator=(const Union &) = delete;
 
+    // FIXME: Call move constructor of stored object
     Union(Union &&u) :
         data(u.data)
 #ifdef DEBUG
@@ -32,6 +33,7 @@ public:
         u.stored_ = false;
 #endif // DEBUG
     }
+    // FIXME: Call move constructor of stored object
     Union &operator=(Union &&u) {
 #ifdef DEBUG
         assert(!this->stored_);
@@ -68,7 +70,7 @@ public:
     template <size_t P>
     void put(const container::nth_type<P, Elems...> &x) {
         container::nth_type<P, Elems...> cx(x);
-        this->template put<P>(std::move(cx));
+        this->put<P>(std::move(cx));
     }
 
     template <size_t P>
@@ -104,10 +106,14 @@ public:
         assert(this->stored_);
         this->stored_ = false;
 #endif // DEBUG
-        return std::move(*reinterpret_cast<container::nth_type<P, Elems...> *>(&this->data));
+        typedef container::nth_type<P, Elems...> T;
+        T *px = reinterpret_cast<T *>(&this->data);
+        T x = std::move(*px);
+        px->~T();
+        return x;
     }
     template <size_t P>
     void destroy() {
-        this->template take<P>();
+        this->take<P>();
     }
 };

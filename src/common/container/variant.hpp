@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils.hpp"
+#include "union.hpp"
 
 
 // Safe union with id (similar to Rust enum type)
@@ -13,6 +14,13 @@ private:
     void assert_valid() const {
 #ifdef DEBUG
         assert(this->id_ < size());
+#endif // DEBUG
+    }
+    template <size_t P>
+    void assert_variant() const {
+        this->assert_valid();
+#ifdef DEBUG
+        assert(this->id_ == P);
 #endif // DEBUG
     }
     void assert_empty() const {
@@ -29,8 +37,8 @@ public:
 
     Variant(Variant &&v) {
         v.assert_valid();
-        union_(std::move(v.union_)),
-        id_(v.id_)
+        this->union_ = std::move(v.union_);
+        this->id_ = v.id_;
         v.id_ = size();
     }
     Variant &operator=(Variant &&v) {
@@ -41,7 +49,7 @@ public:
         v.id_ = size();
     }
 
-    ~Union() {
+    ~Variant() {
         if (this->id_ < size()) {
             this->destroy();
         }
@@ -57,51 +65,58 @@ public:
     template <size_t P>
     void put(container::nth_type<P, Elems...> &&x) {
         this->assert_empty();
-        this->union_;
+        this->union_.put<P>(std::move(x));
+        this->id_ = P;
     }
     template <size_t P>
     void put(const container::nth_type<P, Elems...> &x) {
         container::nth_type<P, Elems...> cx(x);
-        this->template put<P>(std::move(cx));
+        this->put<P>(std::move(cx));
     }
 
     template <size_t P>
     const container::nth_type<P, Elems...> &get() const {
-#ifdef DEBUG
-        assert(this->stored_);
-#endif // DEBUG
-        return *reinterpret_cast<const container::nth_type<P, Elems...> *>(&this->data);
+        this->assert_variant<P>();
+        return this->union_.template get<P>();
     }
     template <size_t P>
     container::nth_type<P, Elems...> &get() {
-#ifdef DEBUG
-        assert(this->stored_);
-#endif // DEBUG
-        return *reinterpret_cast<container::nth_type<P, Elems...> *>(&this->data);
+        this->assert_variant<P>();
+        return this->union_.template get<P>();
     }
 
     template <size_t P>
-    static Union create(container::nth_type<P, Elems...> &&x) {
-        Union u;
-        u.put<P>(std::move(x));
-        return u;
+    static Variant create(container::nth_type<P, Elems...> &&x) {
+        Variant v;
+        v.put<P>(std::move(x));
+        return v;
     }
     template <size_t P>
-    static Union create(const container::nth_type<P, Elems...> &x) {
+    static Variant create(const container::nth_type<P, Elems...> &x) {
         container::nth_type<P, Elems...> cx(x);
         return create<P>(std::move(cx));
     }
 
     template <size_t P>
     container::nth_type<P, Elems...> take() {
-#ifdef DEBUG
-        assert(this->stored_);
-        this->stored_ = false;
-#endif // DEBUG
-        return std::move(*reinterpret_cast<container::nth_type<P, Elems...> *>(&this->data));
+        this->assert_variant<P>();
+        this->_id = size();
+        return std::move(this->_union.template take<P>());
     }
-    template <size_t P>
+
+private:
+    template <size_t P=0>
+    void destroy_() {
+        if (this->id_ == P) {
+            this->take<P>();
+        } else {
+            this->destroy_<P + 1>();
+        }
+    }
+
+public:
     void destroy() {
-        this->template take<P>();
+        this->assert_valid();
+        this->destroy_();
     }
 };

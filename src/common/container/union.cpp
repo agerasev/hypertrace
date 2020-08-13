@@ -5,6 +5,8 @@
 
 #include <catch.hpp>
 #include <memory>
+#include "tuple.hpp"
+
 
 template <size_t P>
 struct TestDispatch {
@@ -24,7 +26,7 @@ TEST_CASE("Union", "[union]") {
     }
     SECTION("Move") {
         std::unique_ptr<int> ptr = std::make_unique<int>(123);
-        auto a = Union<void, std::unique_ptr<int>>::create<1>(std::move(ptr));
+        auto a = Union<Tuple<>, std::unique_ptr<int>>::create<1>(std::move(ptr));
         REQUIRE(*a.get<1>() == 123);
         ptr = a.take<1>();
         REQUIRE(*ptr == 123);
@@ -32,7 +34,7 @@ TEST_CASE("Union", "[union]") {
     SECTION("Ctor Dtor") {
         std::shared_ptr<int> ptr = std::make_shared<int>(123);
         REQUIRE(ptr.use_count() == 1);
-        auto a = Union<void, std::shared_ptr<int>>::create<1>(ptr);
+        auto a = Union<Tuple<>, std::shared_ptr<int>>::create<1>(ptr);
         REQUIRE(ptr.use_count() == 2);
         REQUIRE(*a.get<1>() == 123);
         REQUIRE(ptr.use_count() == 2);
@@ -46,12 +48,12 @@ TEST_CASE("Union", "[union]") {
     SECTION("Dispatch") {
         bool mask[3] = {false, false, false};
         auto a = Union<bool, int, double>::create<1>(123);
-        a.dispatch<TestDispatch>(1, mask);
+        container::Dispatcher<TestDispatch, a.size()>::dispatch(1, mask);
         REQUIRE(mask[0] == false);
         REQUIRE(mask[1] == true);
         REQUIRE(mask[2] == false);
         a.destroy<1>();
     }
-}
+};
 
 #endif

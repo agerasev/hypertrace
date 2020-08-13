@@ -1,6 +1,7 @@
 #pragma once
 
 #include <common/traits.hpp>
+#include "base.hpp"
 #include "union.hpp"
 
 
@@ -47,6 +48,7 @@ public:
         this->union_ = std::move(v.union_);
         this->id_ = v.id_;
         v.id_ = size();
+        return *this;
     }
 
     ~Variant() {
@@ -115,7 +117,7 @@ private:
 public:
     void destroy() {
         this->assert_valid();
-        this->union_.template dispatch<Destroyer>(this->id_, this->union_);
+        container::Dispatcher<Destroyer, size()>::dispatch(this->id_, this->union_);
         this->id_ = size();
     }
 };

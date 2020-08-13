@@ -1,10 +1,9 @@
 #pragma once
 
 #include <cassert>
-#include <utility>
 
 #include <common/traits.hpp>
-#include "utils.hpp"
+#include "base.hpp"
 
 
 // Union for types with non-trivial ctors/dtors
@@ -43,6 +42,7 @@ public:
         u.stored_ = false;
 #endif // DEBUG
         this->data = u.data;
+        return *this;
     }
 
     ~Union() {
@@ -117,10 +117,5 @@ public:
     template <size_t P>
     void destroy() {
         this->take<P>();
-    }
-
-    template <template <size_t> typename F, typename ...Args>
-    static decltype(auto) dispatch(size_t i, Args &&...args) {
-        return container::Dispatcher<F, size()>::dispatch(i, std::forward<Args>(args)...);
     }
 };

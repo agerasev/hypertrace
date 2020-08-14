@@ -4,6 +4,7 @@ project(hypertrace)
 set(CMAKE_C_FLAGS "-DHOST -Wall -Wextra")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17") #-fno-exceptions
 
+add_subdirectory(core)
 add_subdirectory(common)
 add_subdirectory(host)
 

@@ -1,6 +1,7 @@
 #pragma once
 
-#include <common/traits.hpp>
+#include <type_traits>
+#include <core/traits.hpp>
 #include "base.hpp"
 #include "union.hpp"
 

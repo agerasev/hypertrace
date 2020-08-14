@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cassert>
-#include <common/traits.hpp>
+#include <core/traits.hpp>
 #include "base.hpp"
 
 

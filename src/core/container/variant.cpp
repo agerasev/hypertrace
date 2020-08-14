@@ -25,6 +25,7 @@ TEST_CASE("Variant", "[variant]") {
     SECTION("Move") {
         std::unique_ptr<int> ptr = std::make_unique<int>(123);
         auto a = Variant<Tuple<>, std::unique_ptr<int>>::create<1>(std::move(ptr));
+        //auto b = a;
         REQUIRE(*a.get<1>() == 123);
         ptr = a.take<1>();
         REQUIRE(*ptr == 123);

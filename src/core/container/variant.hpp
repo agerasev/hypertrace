@@ -6,6 +6,18 @@
 #include "union.hpp"
 
 
+template <typename ...Elems>
+struct _VariantCopyable {
+    static const bool value = true;
+};
+
+template <typename T, typename ...Elems>
+struct _VariantCopyable<T, Elems...> {
+    static const bool value = 
+        (std::is_copy_constructible<T>::value && std::is_copy_assignable<T>::value) &&
+        _VariantCopyable<>::value;
+};
+
 // Safe union with id (similar to Rust enum type)
 template <typename ...Elems>
 class Variant final {
@@ -31,11 +43,42 @@ private:
 #endif // DEBUG
     }
 
+    static const bool copyable = _VariantCopyable<Elems...>::value;
+
+    template <size_t P>
+    struct CopyCreator {
+        static void call(Union<Elems...> &dst, const Union<Elems...> &src) {
+            dst.template put<P>(src.template get<P>());
+        }
+    };
+    template <size_t P>
+    struct CopyAssigner {
+        static void call(Union<Elems...> &dst, const Union<Elems...> &src) {
+            dst.template get<P>() = src.template get<P>();
+        }
+    };
+
+    template <size_t P>
+    struct Destroyer{
+        static void call(Union<Elems...> &u) {
+            u.template destroy<P>();
+        }
+    };
+
 public:
     Variant() = default;
 
-    Variant(const Variant &) = delete;
-    Variant &operator=(const Variant &) = delete;
+    Variant(const Variant &var) {
+        var.assert_valid();
+        container::Dispatcher<CopyCreator, size()>::dispatch(var.id_, this->union_, var.union_);
+        this->id_ = var.id_;
+    }
+    Variant &operator=(const Variant &var) {
+        this->assert_valid();
+        var.assert_valid();
+        container::Dispatcher<CopyAssigner, size()>::dispatch(var.id_, this->union_, var.union_);
+        this->id_ = var.id_;
+    }
 
     Variant(Variant &&v) {
         v.assert_valid();
@@ -107,15 +150,6 @@ public:
         return std::move(this->union_.template take<P>());
     }
 
-private:
-    template <size_t P>
-    struct Destroyer{
-        static void call(Union<Elems...> &u) {
-            u.template destroy<P>();
-        }
-    };
-
-public:
     void destroy() {
         this->assert_valid();
         container::Dispatcher<Destroyer, size()>::dispatch(this->id_, this->union_);

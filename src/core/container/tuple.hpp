@@ -38,8 +38,14 @@ public:
         tail(std::forward<Elems>(args)...)
     {}
 
-    Tuple(const Tuple &) = delete;
-    Tuple &operator=(const Tuple &) = delete;
+    Tuple(const Tuple &t) :
+        value(t.value),
+        tail(t.tail)    
+    {}
+    Tuple &operator=(const Tuple &t) {
+        this->value = t.value;
+        this->tail = t.tail;
+    }
 
     Tuple(Tuple &&t) :
         value(std::move(t.value)),

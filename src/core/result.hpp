@@ -1,9 +1,10 @@
 #pragma once
 
+#include "container/tuple.hpp"
 #include "container/variant.hpp"
 
 
-template <typename T, typename E>
+template <typename T = Tuple<>, typename E = Tuple<>>
 class Result final {
 private:
     Variant<T, E> var;

@@ -6,7 +6,7 @@
 #define RUN_TEST_DEV(name) { \
     std::cout << "    " << #name << " "; \
     std::cout.flush(); \
-    test_dev_##name(device, context, queue); \
+    test_dev_##name(device, queue); \
     std::cout << "... ok" << std::endl; \
 }
 
@@ -15,13 +15,16 @@ int main(int, char *[]) {
         cl::print_platform_info(platform);
         for (cl_device_id device : cl::get_devices(platform)) {
             cl::print_device_info(device, "  ");
-            cl::Context context(device);
-            cl::Queue queue(context, device);
+            auto context = Rc<cl::Context>(cl::Context::create(device).unwrap());
+            auto queue = Rc<cl::Queue>(cl::Queue::create(context, device).unwrap());
 
             RUN_TEST_DEV(real);
-            RUN_TEST_DEV(vector);
+            //RUN_TEST_DEV(vector);
 
             std::cout << std::endl;
+
+            queue.try_take().unwrap();
+            context.try_take().unwrap();
         }
     }
     return 0;

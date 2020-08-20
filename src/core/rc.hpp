@@ -28,17 +28,17 @@ public:
     const T &operator*() const {
         return *base;
     }
-    T &operator->() {
-        return *base;
+    T *operator->() {
+        return &*base;
     }
-    const T &operator->() const {
-        return *base;
+    const T *operator->() const {
+        return &*base;
     }
 
     void drop() {
         base = std::shared_ptr<T>();
     }
-    Option<T> try_unwrap() {
+    Option<T> try_take() {
         if (base.use_count() == 1) {
             auto ret = Option<T>::Some(T(std::move(*base)));
             drop();

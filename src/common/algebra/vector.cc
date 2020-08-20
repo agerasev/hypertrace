@@ -65,7 +65,7 @@ TEST_CASE("Vector types", "[vec]") {
 #endif // TEST_UNIT
 
 
-#ifdef TEST_DEV
+#ifdef _TEST_DEV
 
 #include <vector>
 #include <cassert>

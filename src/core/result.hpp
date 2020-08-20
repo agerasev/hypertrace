@@ -63,4 +63,8 @@ public:
         assert(this->is_err());
         return this->var.template take<1>();
     }
+
+    operator bool() const {
+        return bool(var);
+    }
 };

@@ -51,4 +51,8 @@ public:
         assert(this->is_some());
         return this->var.template take<1>();
     }
+
+    operator bool() const {
+        return bool(var);
+    }
 };

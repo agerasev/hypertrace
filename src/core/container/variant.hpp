@@ -155,4 +155,8 @@ public:
         container::Dispatcher<Destroyer, size()>::dispatch(this->id_, this->union_);
         this->id_ = size();
     }
+
+    operator bool() const {
+        return this->id_ < size();
+    }
 };

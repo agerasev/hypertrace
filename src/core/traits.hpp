@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <memory>
 
 
 template <size_t P, typename ...Types>
@@ -25,9 +26,7 @@ struct Any<X, Values...> {
     static const bool value = X || Any<Values...>::value;
 };
 template <bool ...Values>
-constexpr bool any() {
-    return Any<Values...>::value;
-}
+inline constexpr bool any_v = Any<Values...>::value;
 
 template <bool ...Values>
 struct All {
@@ -38,6 +37,13 @@ struct All<X, Values...> {
     static const bool value = X && All<Values...>::value;
 };
 template <bool ...Values>
-constexpr bool all() {
-    return All<Values...>::value;
+inline constexpr bool all_v = All<Values...>::value;
+
+template <typename T>
+T copy(const T &x) {
+    return T(x);
+}
+template <typename T>
+void drop(T &x) {
+    std::move(x);
 }

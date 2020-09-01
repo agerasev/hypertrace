@@ -2,6 +2,7 @@
 
 #ifdef TEST_UNIT
 
+#include "prelude.hpp"
 #include <catch.hpp>
 #include <memory>
 

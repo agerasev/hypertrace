@@ -9,9 +9,12 @@
 // Union for types with non-trivial ctors/dtors
 template <typename ...Elems>
 class Union final {
+public:
+    static const bool copyable = all_v<container::is_copyable_v<Elems>...>;
+
 private:
-    struct __attribute__((aligned(container::common_align<Elems...>()))) {
-        char bytes[container::common_size<Elems...>()];
+    struct __attribute__((aligned(container::common_align<Elems...>))) {
+        char bytes[container::common_size<Elems...>];
     } data;
 #ifdef DEBUG
     bool stored_ = false;

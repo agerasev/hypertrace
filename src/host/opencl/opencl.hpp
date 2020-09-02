@@ -46,6 +46,7 @@ public:
         destroy();
         resource = g.resource;
         g.resource = 0;
+        return *this;
     }
     T &operator*() { return resource; }
     const T &operator*() const { return resource; }
@@ -62,7 +63,8 @@ private:
     Device device_;
     _Guard<cl_context, free_raw> raw;
 
-    Context(cl_context raw, Device device);
+    inline Context(cl_context raw, Device device) :
+        device_(device), raw(raw) {}
 
 public:
     Context() = default;
@@ -88,7 +90,8 @@ private:
     Rc<Context> context_;
     _Guard<cl_command_queue, free_raw> raw;
 
-    Queue(cl_command_queue raw, Rc<Context> context);
+    inline Queue(cl_command_queue raw, Rc<Context> context) :
+        context_(std::move(context)), raw(raw) {}
 
 public:
     Queue() = default;
@@ -119,11 +122,8 @@ private:
     Rc<Context> context_;
     _Guard<cl_program, free_raw> raw;
 
-    Program(
-        cl_program raw,
-        Device device,
-        Rc<Context> context
-    );
+    inline Program(cl_program raw, Device device, Rc<Context> context) :
+        device_(device), context_(std::move(context)), raw(raw) {}
     static std::string log(cl_program program, cl_device_id device);
 
 public:
@@ -163,7 +163,8 @@ private:
     _Guard<cl_mem, free_raw> raw;
     size_t size_ = 0;
 
-    Buffer(cl_mem raw, size_t size);
+    inline Buffer(cl_mem raw, size_t size, Rc<Context> context) :
+        context_(std::move(context)), raw(raw), size_(size) {}
 
 public:
     Buffer() = default;
@@ -197,11 +198,12 @@ private:
     _Guard<cl_kernel, free_raw> raw;
     std::string name_;
 
-    Kernel(cl_kernel raw, Rc<Program> program, const std::string &name);
+    inline Kernel(cl_kernel raw, Rc<Program> program, const std::string &name) :
+        program_(std::move(program)), raw(raw), name_(name) {}
 
 public:
     Kernel() = default;
-    ~Kernel();
+    ~Kernel() = default;
 
     Kernel(const Kernel &other) = delete;
     Kernel &operator=(const Kernel &other) = delete;
@@ -246,4 +248,4 @@ public:
     }
 };
 
-}
+} // namespace cl

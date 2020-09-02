@@ -29,10 +29,6 @@ Option<Context> Context::create(cl_device_id device) {
 void Queue::free_raw(cl_command_queue raw) {
     assert(clReleaseCommandQueue(raw) == CL_SUCCESS);
 }
-Queue::Queue(cl_command_queue raw, Rc<Context> context) :
-    context_(std::move(context)),
-    raw(raw)
-{}
 Option<Queue> Queue::create(Rc<Context> context, cl_device_id device) {
     cl_command_queue raw = clCreateCommandQueue(*context, device, 0, nullptr);
     if (raw != nullptr) {
@@ -55,15 +51,6 @@ void Queue::finish() {
 void Program::free_raw(cl_program raw) {
     assert(clReleaseProgram(raw) == CL_SUCCESS);
 }
-Program::Program(
-    cl_program raw,
-    Device device,
-    Rc<Context> context    
-) :
-    device_(device),
-    context_(std::move(context)),
-    raw(raw)
-{}
 std::string Program::log(cl_program program, cl_device_id device) {
     size_t log_len = 0;
     assert(clGetProgramBuildInfo(
@@ -123,7 +110,7 @@ Tuple<Option<Program>, std::string> Program::create(
 
 // Buffer
 
-void free_raw(cl_mem raw) {
+void Buffer::free_raw(cl_mem raw) {
     assert(clReleaseMemObject(raw) == CL_SUCCESS);
 }
 Option<Buffer> Buffer::create(Queue &queue, size_t size, bool zeroed) {
@@ -146,7 +133,7 @@ Option<Buffer> Buffer::create(Queue &queue, size_t size, bool zeroed) {
                 return Option<Buffer>::None();
             }
         }
-        return Option<Buffer>::Some(Buffer(raw, size));
+        return Option<Buffer>::Some(Buffer(raw, size, queue.context_ref()));
     } else {
         return Option<Buffer>::Some(Buffer());
     }
@@ -195,11 +182,6 @@ Result<> Buffer::store(Queue &queue, const void *data, size_t size) {
 void Kernel::free_raw(cl_kernel raw) {
     assert(clReleaseKernel(raw) == CL_SUCCESS);
 }
-Kernel::Kernel(cl_kernel raw, Rc<Program> program, const std::string &name) :
-    program_(std::move(program)),
-    raw(raw),
-    name_(name)
-{}
 Option<Kernel> Kernel::create(Rc<Program> program, const std::string &name) {
     cl_int errcode;
     cl_kernel raw = clCreateKernel(*program, name.c_str(), &errcode);

@@ -6,6 +6,7 @@
 #include "opencl.hpp"
 
 
+using namespace core;
 using namespace cl;
 
 

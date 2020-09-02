@@ -1,5 +1,7 @@
 #include "option.hpp"
 
+using namespace core;
+
 #ifdef TEST_UNIT
 
 #include "container/tuple.hpp"

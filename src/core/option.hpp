@@ -4,6 +4,8 @@
 #include "container/variant.hpp"
 
 
+namespace core {
+
 template <typename T>
 class Option final {
 private:
@@ -63,3 +65,5 @@ public:
         return bool(var);
     }
 };
+
+} // namespace core

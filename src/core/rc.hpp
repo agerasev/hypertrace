@@ -4,6 +4,8 @@
 #include "prelude.hpp"
 
 
+namespace core {
+
 // Wrapper over std::shared_ptr
 template <typename T>
 class Rc final {
@@ -52,3 +54,5 @@ public:
         return bool(base);
     }
 };
+
+} // namespace core

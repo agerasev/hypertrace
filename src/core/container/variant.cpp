@@ -1,5 +1,6 @@
 #include "variant.hpp"
 
+using namespace core;
 
 #ifdef TEST_UNIT
 

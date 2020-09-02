@@ -6,6 +6,8 @@
 #include "union.hpp"
 
 
+namespace core {
+
 // Safe union with id (similar to Rust enum type)
 
 template <bool C, typename ...Elems>
@@ -83,7 +85,7 @@ public:
         this->union_.template put<P>(std::move(x));
         this->id_ = P;
     }
-    template <size_t P, std::enable_if_t<container::is_copyable_v<nth_type<P, Elems...>>, int> = 0>
+    template <size_t P, std::enable_if_t<core::is_copyable_v<nth_type<P, Elems...>>, int> = 0>
     void put(const nth_type<P, Elems...> &x) {
         nth_type<P, Elems...> cx(x);
         this->put<P>(std::move(cx));
@@ -109,7 +111,7 @@ public:
 
     void destroy() {
         this->assert_valid();
-        container::Dispatcher<Destroyer, size()>::dispatch(this->id_, this->union_);
+        core::Dispatcher<Destroyer, size()>::dispatch(this->id_, this->union_);
         this->id_ = size();
     }
 
@@ -142,13 +144,13 @@ public:
 
     _Variant(const _Variant &var) {
         var.assert_valid();
-        container::Dispatcher<CopyCreator, this->size()>::dispatch(var.id_, this->union_, var.union_);
+        core::Dispatcher<CopyCreator, this->size()>::dispatch(var.id_, this->union_, var.union_);
         this->id_ = var.id_;
     }
     _Variant &operator=(const _Variant &var) {
         this->assert_valid();
         var.assert_valid();
-        container::Dispatcher<CopyAssigner, this->size()>::dispatch(var.id_, this->union_, var.union_);
+        core::Dispatcher<CopyAssigner, this->size()>::dispatch(var.id_, this->union_, var.union_);
         this->id_ = var.id_;
     }
 
@@ -159,7 +161,7 @@ public:
 };
 
 template <typename ...Elems>
-class Variant final : public _Variant<all_v<container::is_copyable_v<Elems>...>, Elems...> {
+class Variant final : public _Variant<all_v<core::is_copyable_v<Elems>...>, Elems...> {
 public:
     Variant() = default;
 
@@ -177,9 +179,11 @@ public:
         v.template put<P>(std::move(x));
         return v;
     }
-    template <size_t P, std::enable_if_t<container::is_copyable_v<nth_type<P, Elems...>>, int> = 0>
+    template <size_t P, std::enable_if_t<core::is_copyable_v<nth_type<P, Elems...>>, int> = 0>
     static Variant create(const nth_type<P, Elems...> &x) {
         nth_type<P, Elems...> cx(x);
         return create<P>(std::move(cx));
     }
 };
+
+} // namespace core

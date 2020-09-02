@@ -4,6 +4,8 @@
 #include "prelude.hpp"
 
 
+namespace core {
+
 // Wrapper over std::unique_ptr
 template <typename T>
 class Box final {
@@ -48,3 +50,5 @@ public:
         return bool(base);
     }
 };
+
+} // namespace core

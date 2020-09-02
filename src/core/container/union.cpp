@@ -1,5 +1,6 @@
 #include "union.hpp"
 
+using namespace core;
 
 #ifdef TEST_UNIT
 
@@ -48,7 +49,7 @@ TEST_CASE("Union", "[union]") {
     SECTION("Dispatch") {
         bool mask[3] = {false, false, false};
         auto a = Union<bool, int, double>::create<1>(123);
-        container::Dispatcher<TestDispatch, a.size()>::dispatch(1, mask);
+        core::Dispatcher<TestDispatch, a.size()>::dispatch(1, mask);
         REQUIRE(mask[0] == false);
         REQUIRE(mask[1] == true);
         REQUIRE(mask[2] == false);

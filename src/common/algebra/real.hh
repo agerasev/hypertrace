@@ -64,7 +64,7 @@ inline Approx approx(real v) {
 
 void test_dev_real(
     cl_device_id device,
-    Rc<cl::Queue> queue
+    core::Rc<cl::Queue> queue
 );
 
 #endif // TEST_DEV

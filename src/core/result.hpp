@@ -4,6 +4,8 @@
 #include "container/variant.hpp"
 
 
+namespace core {
+
 template <typename T = Tuple<>, typename E = Tuple<>>
 class Result final {
 private:
@@ -76,3 +78,5 @@ public:
         return bool(var);
     }
 };
+
+} // namespace core

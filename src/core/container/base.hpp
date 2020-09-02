@@ -5,7 +5,7 @@
 #include <numeric>
 #include <algorithm>
 
-namespace container {
+namespace core {
 
 template <typename ...Types>
 struct CommonSize {
@@ -63,28 +63,5 @@ template <typename T>
 inline constexpr bool is_copyable_v = 
     std::is_copy_constructible_v<T> && std::is_copy_assignable_v<T>;
 
-template <bool C>
-class CopyEnabler {
-public:
-    CopyEnabler() = default;
 
-    CopyEnabler(const CopyEnabler &) = delete;
-    CopyEnabler(CopyEnabler &&) = default;
-
-    CopyEnabler &operator=(const CopyEnabler &) = delete;
-    CopyEnabler &operator=(CopyEnabler &&) = default;
-};
-template <>
-class CopyEnabler<true> {
-public:
-    CopyEnabler() = default;
-
-    CopyEnabler(const CopyEnabler &) = default;
-    CopyEnabler(CopyEnabler &&) = default;
-
-    CopyEnabler &operator=(const CopyEnabler &) = default;
-    CopyEnabler &operator=(CopyEnabler &&) = default;
-};
-
-
-} // namespace container
+} // namespace core

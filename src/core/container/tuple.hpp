@@ -6,6 +6,8 @@
 #include "base.hpp"
 
 
+namespace core {
+
 template <typename ...Elems>
 class Tuple {
 public:
@@ -81,3 +83,5 @@ struct _TupleGetter<0, T, Elems...> {
         return t.value;
     }
 };
+
+} // namespace core

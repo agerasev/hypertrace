@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <memory>
 
-
+namespace core {
 
 template <size_t P, typename ...Types>
 struct NthType {};
@@ -48,3 +48,5 @@ template <typename T>
 void drop(T &x) {
     std::move(x);
 }
+
+} // namespace core

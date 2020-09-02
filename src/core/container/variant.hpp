@@ -6,21 +6,10 @@
 #include "union.hpp"
 
 
-template <typename ...Elems>
-struct _VariantCopyable {
-    static const bool value = true;
-};
-
-template <typename T, typename ...Elems>
-struct _VariantCopyable<T, Elems...> {
-    static const bool value = 
-        (std::is_copy_constructible<T>::value && std::is_copy_assignable<T>::value) &&
-        _VariantCopyable<>::value;
-};
-
 // Safe union with id (similar to Rust enum type)
-template <typename ...Elems>
-class Variant final {
+
+template <bool C, typename ...Elems>
+class _Variant {
 private:
     Union<Elems...> union_;
     size_t id_ = size();
@@ -43,21 +32,10 @@ private:
 #endif // DEBUG
     }
 
-    static const bool copyable = _VariantCopyable<Elems...>::value;
+public:
+    static const bool copyable = false;
 
-    template <size_t P>
-    struct CopyCreator {
-        static void call(Union<Elems...> &dst, const Union<Elems...> &src) {
-            dst.template put<P>(src.template get<P>());
-        }
-    };
-    template <size_t P>
-    struct CopyAssigner {
-        static void call(Union<Elems...> &dst, const Union<Elems...> &src) {
-            dst.template get<P>() = src.template get<P>();
-        }
-    };
-
+private:
     template <size_t P>
     struct Destroyer{
         static void call(Union<Elems...> &u) {
@@ -66,27 +44,15 @@ private:
     };
 
 public:
-    Variant() = default;
+    _Variant() = default;
 
-    Variant(const Variant &var) {
-        var.assert_valid();
-        container::Dispatcher<CopyCreator, size()>::dispatch(var.id_, this->union_, var.union_);
-        this->id_ = var.id_;
-    }
-    Variant &operator=(const Variant &var) {
-        this->assert_valid();
-        var.assert_valid();
-        container::Dispatcher<CopyAssigner, size()>::dispatch(var.id_, this->union_, var.union_);
-        this->id_ = var.id_;
-    }
-
-    Variant(Variant &&v) {
+    _Variant(_Variant &&v) {
         v.assert_valid();
         this->union_ = std::move(v.union_);
         this->id_ = v.id_;
         v.id_ = size();
     }
-    Variant &operator=(Variant &&v) {
+    _Variant &operator=(_Variant &&v) {
         this->assert_empty();
         v.assert_valid();
         this->union_ = std::move(v.union_);
@@ -95,7 +61,10 @@ public:
         return *this;
     }
 
-    ~Variant() {
+    _Variant(const _Variant &var) = delete;
+    _Variant &operator=(const _Variant &var) = delete;
+
+    ~_Variant() {
         if (this->id_ < size()) {
             this->destroy();
         }
@@ -114,7 +83,7 @@ public:
         this->union_.template put<P>(std::move(x));
         this->id_ = P;
     }
-    template <size_t P>
+    template <size_t P, std::enable_if_t<container::is_copyable_v<nth_type<P, Elems...>>, int> = 0>
     void put(const nth_type<P, Elems...> &x) {
         nth_type<P, Elems...> cx(x);
         this->put<P>(std::move(cx));
@@ -132,18 +101,6 @@ public:
     }
 
     template <size_t P>
-    static Variant create(nth_type<P, Elems...> &&x) {
-        Variant v;
-        v.put<P>(std::move(x));
-        return v;
-    }
-    template <size_t P>
-    static Variant create(const nth_type<P, Elems...> &x) {
-        nth_type<P, Elems...> cx(x);
-        return create<P>(std::move(cx));
-    }
-
-    template <size_t P>
     nth_type<P, Elems...> take() {
         this->assert_variant<P>();
         this->id_ = size();
@@ -158,5 +115,71 @@ public:
 
     operator bool() const {
         return this->id_ < size();
+    }
+};
+
+template <typename ...Elems>
+class _Variant<true, Elems...> : public _Variant<false, Elems...> {
+public:
+    static const bool copyable = true;
+
+private:
+    template <size_t P>
+    struct CopyCreator {
+        static void call(Union<Elems...> &dst, const Union<Elems...> &src) {
+            dst.template put<P>(src.template get<P>());
+        }
+    };
+    template <size_t P>
+    struct CopyAssigner {
+        static void call(Union<Elems...> &dst, const Union<Elems...> &src) {
+            dst.template get<P>() = src.template get<P>();
+        }
+    };
+
+public:
+    _Variant() = default;
+
+    _Variant(const _Variant &var) {
+        var.assert_valid();
+        container::Dispatcher<CopyCreator, this->size()>::dispatch(var.id_, this->union_, var.union_);
+        this->id_ = var.id_;
+    }
+    _Variant &operator=(const _Variant &var) {
+        this->assert_valid();
+        var.assert_valid();
+        container::Dispatcher<CopyAssigner, this->size()>::dispatch(var.id_, this->union_, var.union_);
+        this->id_ = var.id_;
+    }
+
+    _Variant(_Variant &&v) = default;
+    _Variant &operator=(_Variant &&v) = default;
+
+    ~_Variant() = default;
+};
+
+template <typename ...Elems>
+class Variant final : public _Variant<all_v<container::is_copyable_v<Elems>...>, Elems...> {
+public:
+    Variant() = default;
+
+    Variant(const Variant &var) = default;
+    Variant &operator=(const Variant &var) = default;
+
+    Variant(Variant &&v) = default;
+    Variant &operator=(Variant &&v) = default;
+
+    ~Variant() = default;
+
+    template <size_t P>
+    static Variant create(nth_type<P, Elems...> &&x) {
+        Variant v;
+        v.template put<P>(std::move(x));
+        return v;
+    }
+    template <size_t P, std::enable_if_t<container::is_copyable_v<nth_type<P, Elems...>>, int> = 0>
+    static Variant create(const nth_type<P, Elems...> &x) {
+        nth_type<P, Elems...> cx(x);
+        return create<P>(std::move(cx));
     }
 };

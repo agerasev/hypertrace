@@ -9,9 +9,6 @@
 // Union for types with non-trivial ctors/dtors
 template <typename ...Elems>
 class Union final {
-public:
-    static const bool copyable = all_v<container::is_copyable_v<Elems>...>;
-
 private:
     struct __attribute__((aligned(container::common_align<Elems...>))) {
         char bytes[container::common_size<Elems...>];
@@ -72,7 +69,7 @@ public:
         new (reinterpret_cast<nth_type<P, Elems...> *>(&this->data))
             nth_type<P, Elems...>(std::move(x));
     }
-    template <size_t P>
+    template <size_t P, std::enable_if_t<container::is_copyable_v<nth_type<P, Elems...>>, int> = 0>
     void put(const nth_type<P, Elems...> &x) {
         nth_type<P, Elems...> cx(x);
         this->put<P>(std::move(cx));
@@ -99,7 +96,7 @@ public:
         u.put<P>(std::move(x));
         return u;
     }
-    template <size_t P>
+    template <size_t P, std::enable_if_t<container::is_copyable_v<nth_type<P, Elems...>>, int> = 0>
     static Union create(const nth_type<P, Elems...> &x) {
         nth_type<P, Elems...> cx(x);
         return create<P>(std::move(cx));

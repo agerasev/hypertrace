@@ -2,7 +2,7 @@
 
 #ifdef TEST_UNIT
 
-#include "prelude.hpp"
+#include "container/tuple.hpp"
 #include <catch.hpp>
 #include <memory>
 
@@ -35,6 +35,17 @@ TEST_CASE("Option", "[option]") {
             REQUIRE(ptr.use_count() == 2);
         }
         REQUIRE(ptr.use_count() == 1);
+    }
+    SECTION("Tuple of non-copy option") {
+        std::unique_ptr<int> ptr = std::make_unique<int>(123);
+        Tuple<Option<std::unique_ptr<int>>, int> a(
+            Option<std::unique_ptr<int>>::Some(std::move(ptr)),
+            321
+        );
+        REQUIRE(*a.get<0>().get() == 123);
+        REQUIRE(a.get<1>() == 321);
+        //ptr = a.get<0>().unwrap();
+        //REQUIRE(*ptr == 123);
     }
 }
 

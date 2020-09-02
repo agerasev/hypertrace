@@ -1,5 +1,6 @@
 #pragma once
 
+#include <tuple>
 #include <cassert>
 #include <core/traits.hpp>
 #include "base.hpp"
@@ -29,33 +30,21 @@ private:
 
 public:
     Tuple() = default;
-    Tuple(const T &v, Elems &&...args) :
+    
+    explicit Tuple(const T &v, Elems &&...args) :
         value(v),
         tail(std::forward<Elems>(args)...)
     {}
-    Tuple(T &&v, Elems &&...args) :
+    explicit Tuple(T &&v, Elems &&...args) :
         value(std::move(v)),
         tail(std::forward<Elems>(args)...)
     {}
 
-    Tuple(const Tuple &t) :
-        value(t.value),
-        tail(t.tail)    
-    {}
-    Tuple &operator=(const Tuple &t) {
-        this->value = t.value;
-        this->tail = t.tail;
-    }
+    Tuple(const Tuple &t) = default;
+    Tuple &operator=(const Tuple &t) = default;
 
-    Tuple(Tuple &&t) :
-        value(std::move(t.value)),
-        tail(std::move(t.tail))
-    {}
-    Tuple &operator=(Tuple &&t) {
-        this->value = std::move(t.value);
-        this->tail = std::move(t.tail);
-        return *this;
-    }
+    Tuple(Tuple &&t) = default;
+    Tuple &operator=(Tuple &&t) = default;
 
     ~Tuple() = default;
 

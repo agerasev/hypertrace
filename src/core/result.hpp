@@ -14,6 +14,13 @@ public:
     Result(Variant<T, E> &&v) :
         var(std::move(v))
     {}
+
+    Result(const Result &) = default;
+    Result &operator=(const Result &) = default;
+
+    Result(Result &&) = default;
+    Result &operator=(Result &&) = default;
+
     ~Result() = default;
 
     const Variant<T, E> &as_variant() const {

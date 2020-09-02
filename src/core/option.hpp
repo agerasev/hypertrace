@@ -14,6 +14,13 @@ public:
     Option(Variant<Tuple<>, T> &&v) :
         var(std::move(v))
     {}
+
+    Option(const Option &) = default;
+    Option &operator=(const Option &) = default;
+
+    Option(Option &&) = default;
+    Option &operator=(Option &&) = default;
+
     ~Option() = default;
 
     const Variant<Tuple<>, T> &as_variant() const {

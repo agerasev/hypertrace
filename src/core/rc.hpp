@@ -16,11 +16,11 @@ public:
     Rc(const T &v) : base(new T(v)) {}
     ~Rc() = default;
 
-    Rc(Rc &&rc) = default;
-    Rc &operator=(Rc &&rc) = default;
+    Rc(Rc &&) = default;
+    Rc &operator=(Rc &&) = default;
 
-    Rc(const Rc &rc) = default;
-    Rc &operator=(const Rc &rc) = default;
+    Rc(const Rc &) = default;
+    Rc &operator=(const Rc &) = default;
 
     T &operator*() {
         return *base;

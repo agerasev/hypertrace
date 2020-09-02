@@ -10,5 +10,4 @@ set(CORE_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/option.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/result.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/prelude.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/compound.cpp"
 PARENT_SCOPE)

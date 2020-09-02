@@ -12,8 +12,7 @@
 
 void test_dev_real(
     cl_device_id device,
-    cl_context context,
-    cl_command_queue queue
+    Rc<cl::Queue> queue
 ) {
     c_includer includer(
         "test.cl", std::list<std::string>{"src"},
@@ -30,21 +29,24 @@ void test_dev_real(
     std::fstream("build/test/real.cl", std::ios::out) << includer.data();
     //std::cout << includer.data() << std::endl;
 
-    cl::Program program(context, device, includer);
-    cl::Kernel kernel(program, "square");
+    auto prog_log = cl::Program::create(queue->context_ref(), device, includer);
+    std::cout << prog_log.get<1>() << std::endl;
+    auto program = Rc<cl::Program>(prog_log.get<0>().unwrap());
+    auto kernel = cl::Kernel::create(program, "square").unwrap();
 
     const int n = 256;
-    cl::Buffer ibuf(queue, n*sizeof(dev_type<real>)), obuf(queue, n*sizeof(dev_type<real>), true);
+    auto ibuf = cl::Buffer::create(*queue, n*sizeof(dev_type<real>)).unwrap();
+    auto obuf = cl::Buffer::create(*queue, n*sizeof(dev_type<real>), true).unwrap();
     std::vector<dev_type<real>> host_buf(n);
     for (int i = 0; i < int(host_buf.size()); ++i) {
         real x = (real)i;
         dev_store(&host_buf[i], &x);
     }
-    ibuf.store(queue, host_buf.data());
+    ibuf.store(*queue, host_buf.data());
     kernel.set_arg(0, ibuf);
     kernel.set_arg(1, obuf);
-    kernel.run(queue, n);
-    obuf.load(queue, host_buf.data());
+    kernel.run(*queue, n);
+    obuf.load(*queue, host_buf.data());
     for(int i = 0; i < int(host_buf.size()); ++i) {
         real x;
         dev_load(&x, &host_buf[i]);

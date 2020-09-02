@@ -8,11 +8,11 @@
 
 TEST_CASE("Traits", "[traits]") {
     SECTION("Any/all") {
-        REQUIRE((any<false, false, true>()) == true);
-        REQUIRE((any<false, false, false>()) == false);
+        REQUIRE((any_v<false, false, true>) == true);
+        REQUIRE((any_v<false, false, false>) == false);
 
-        REQUIRE((all<true, true, true>()) == true);
-        REQUIRE((all<true, false, true>()) == false);
+        REQUIRE((all_v<true, true, true>) == true);
+        REQUIRE((all_v<true, false, true>) == false);
     }
 }
 

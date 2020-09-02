@@ -10,128 +10,240 @@
 
 #include <CL/cl.h>
 
+#include <core/prelude.hpp>
+
+#include "search.hpp"
 #include "include.hpp"
 
+
 namespace cl {
-    class Context {
-    private:
-        cl_context context;
 
-    public:
-        Context(cl_device_id device);
-        ~Context();
-
-        Context(const Context &other) = delete;
-        Context &operator=(const Context &other) = delete;
-
-        operator cl_context() const;
-    };
-
-    class Queue {
-    private:
-        cl_command_queue queue;
-
-    public:
-        Queue(cl_context context, cl_device_id device);
-        ~Queue();
-
-        Queue(const Queue &other) = delete;
-        Queue &operator=(const Queue &other) = delete;
-
-        operator cl_command_queue() const;
-    };
-
-    class Program {
-    private:
-        cl_program program;
-        cl_device_id device;
-
-        std::string log() const;
-
-    public:
-        Program(
-            cl_context context,
-            cl_device_id device,
-            const std::string &source,
-            std::function<std::string(std::string&&)> log_hook =
-                [](std::string &&s) { return std::move(s); }
-        );
-        Program(
-            cl_context context,
-            cl_device_id device,
-            const c_includer &includer
-        );
-        ~Program();
-
-        Program(const Program &other) = delete;
-        Program &operator=(const Program &other) = delete;
-
-        operator cl_program() const;
-    };
-
-    class Buffer {
-    private:
-        cl_mem buffer;
-        size_t _size;
-
-        void init(cl_command_queue queue, size_t size, bool zeroed=false);
-        void release();
-
-    public:
-        Buffer();
-        Buffer(cl_command_queue queue, size_t size, bool zeroed=false);
-        ~Buffer();
-
-        Buffer(const Buffer &other) = delete;
-        Buffer &operator=(const Buffer &other) = delete;
-
-        cl_mem &raw();
-        const cl_mem &raw() const;
-        operator cl_mem() const;
-        size_t size() const;
-
-        void load(cl_command_queue queue, void *data);
-        void load(cl_command_queue queue, void *data, size_t size);
-        void store(cl_command_queue queue, const void *data);
-        void store(cl_command_queue queue, const void *data, size_t size);
-    };
-
-    class Kernel {
-    private:
-        cl_kernel kernel;
-
-    public:
-        Kernel(cl_program program, const char *name);
-        ~Kernel();
-
-        Kernel(const Kernel &other) = delete;
-        Kernel &operator=(const Kernel &other) = delete;
-
-        operator cl_kernel() const;
-    private:
-        template <typename T, typename ... Args>
-        void unwind_args(size_t n, const T &arg, const Args &... args) {
-            set_arg(n, arg);
-            unwind_args(n + 1, args...);
+template <typename T, void D(T)>
+class _Guard {
+private:
+    T resource = 0;
+public:
+    _Guard() = default;
+    _Guard(T r) : resource(r) {}
+    void put(T r) {
+        resource = r;
+    }
+    void destroy() {
+        if (resource) {
+            D(resource);
+            resource = 0;
         }
+    }
+    ~_Guard() {
+        destroy();
+    }
+    _Guard(const _Guard &g) = delete;
+    _Guard &operator=(const _Guard &g) = delete;
+    _Guard(_Guard &&g) : resource(g.resource) {
+        g.resource = 0;
+    }
+    _Guard &operator=(_Guard &&g) {
+        destroy();
+        resource = g.resource;
+        g.resource = 0;
+    }
+    T &operator*() { return resource; }
+    const T &operator*() const { return resource; }
+    T &operator->() { return resource; }
+    const T &operator->() const { return resource; }
+    operator T() const { return resource; }
+    operator bool() const { return resource != 0; }
+};
 
-        template <typename T>
-        void unwind_args(size_t n, const T &arg) {
-            set_arg(n, arg);
-        }
-    public:
-        template <typename T>
-        void set_arg(size_t n, const T &arg) {
-            assert(clSetKernelArg(kernel, n, sizeof(T), (void *)&arg) == CL_SUCCESS);
-        }
-        void set_arg(size_t n, const Buffer &buf);
+class Context {
+private:
+    static void free_raw(cl_context raw);
 
-        void run(cl_command_queue queue, size_t work_size);
+    Device device_;
+    _Guard<cl_context, free_raw> raw;
 
-        template <typename ... Args>
-        void operator()(cl_command_queue queue, size_t work_size, const Args &... args) {
-            unwind_args(0, args...);
-            run(queue, work_size);
-        }
-    };
+    Context(cl_context raw, Device device);
+
+public:
+    Context() = default;
+    ~Context() = default;
+
+    Context(const Context &other) = delete;
+    Context &operator=(const Context &other) = delete;
+    Context(Context &&other) = default;
+    Context &operator=(Context &&other) = default;
+
+    static Option<Context> create(Device device);
+
+    inline operator cl_context() const { return raw; }
+    inline operator bool() const { return raw; }
+
+    inline Device device() const { return device_; }
+};
+
+class Queue {
+private:
+    static void free_raw(cl_command_queue raw);
+
+    Rc<Context> context_;
+    _Guard<cl_command_queue, free_raw> raw;
+
+    Queue(cl_command_queue raw, Rc<Context> context);
+
+public:
+    Queue() = default;
+    ~Queue() = default;
+
+    Queue(const Queue &other) = delete;
+    Queue &operator=(const Queue &other) = delete;
+    Queue(Queue &&other) = default;
+    Queue &operator=(Queue &&other) = default;
+
+    static Option<Queue> create(Rc<Context> context, Device device);
+    void flush();
+    void finish();
+
+    inline operator cl_command_queue() const { return raw; }
+    inline operator bool() const { return raw; }
+
+    inline Context &context() { return *context_; }
+    inline const Context &context() const { return *context_; }
+    inline Rc<Context> context_ref() const { return context_; }
+};
+
+class Program {
+private:
+    static void free_raw(cl_program raw);
+
+    Device device_;
+    Rc<Context> context_;
+    _Guard<cl_program, free_raw> raw;
+
+    Program(
+        cl_program raw,
+        Device device,
+        Rc<Context> context
+    );
+    static std::string log(cl_program program, cl_device_id device);
+
+public:
+    Program() = default;
+    ~Program() = default;
+
+    Program(const Program &other) = delete;
+    Program &operator=(const Program &other) = delete;
+    Program(Program &&other) = default;
+    Program &operator=(Program &&other) = default;
+
+    static Tuple<Option<Program>, std::string> create(
+        Rc<Context> context,
+        Device device,
+        const std::string &source
+    );
+    static Tuple<Option<Program>, std::string> create(
+        Rc<Context> context,
+        Device device,
+        const c_includer &includer
+    );
+
+    inline operator cl_program() const { return raw; }
+    inline operator bool() const { return raw; }
+
+    inline Context &context() { return *context_; }
+    inline const Context &context() const { return *context_; }
+    inline Rc<Context> context_ref() const { return context_; }
+    inline Device device() const { return device_; }
+};
+
+class Buffer {
+private:
+    static void free_raw(cl_mem raw);
+    
+    Rc<Context> context_;
+    _Guard<cl_mem, free_raw> raw;
+    size_t size_ = 0;
+
+    Buffer(cl_mem raw, size_t size);
+
+public:
+    Buffer() = default;
+    ~Buffer() = default;
+
+    Buffer(const Buffer &other) = delete;
+    Buffer &operator=(const Buffer &other) = delete;
+    Buffer(Buffer &&other) = default;
+    Buffer &operator=(Buffer &&other) = default;
+
+    static Option<Buffer> create(Queue &queue, size_t size, bool zeroed=false);
+
+    inline operator cl_mem() const { return raw; }
+    inline operator bool() const { return raw; }
+    inline size_t size() const { return size_; }
+    inline Context &context() { return *context_; }
+    inline const Context &context() const { return *context_; }
+    inline Rc<Context> context_ref() const { return context_; }
+
+    Result<> load(Queue &queue, void *data);
+    Result<> load(Queue &queue, void *data, size_t size);
+    Result<> store(Queue &queue, const void *data);
+    Result<> store(Queue &queue, const void *data, size_t size);
+};
+
+class Kernel {
+private:
+    static void free_raw(cl_kernel raw);
+
+    Rc<Program> program_;
+    _Guard<cl_kernel, free_raw> raw;
+    std::string name_;
+
+    Kernel(cl_kernel raw, Rc<Program> program, const std::string &name);
+
+public:
+    Kernel() = default;
+    ~Kernel();
+
+    Kernel(const Kernel &other) = delete;
+    Kernel &operator=(const Kernel &other) = delete;
+    Kernel(Kernel &&other) = default;
+    Kernel &operator=(Kernel &&other) = default;
+
+    static Option<Kernel> create(Rc<Program> program, const std::string &name);
+
+    inline operator cl_kernel() const { return raw; }
+    inline operator bool() const { return raw; }
+
+    inline Program &program() { return *program_; }
+    inline const Program &program() const { return *program_; }
+    inline const Rc<Program> &program_ref() const { return program_; }
+    inline const std::string &name() const { return name_; }
+
+private:
+    template <typename T, typename ... Args>
+    void unwind_args(size_t n, const T &arg, Args &&...args) {
+        set_arg(n, arg);
+        unwind_args(n + 1, std::forward(args)...);
+    }
+    template <typename T>
+    void unwind_args(size_t n, const T &arg) {
+        set_arg(n, arg);
+    }
+
+public:
+    template <typename T>
+    void set_arg(size_t n, const T &arg) {
+        assert(clSetKernelArg(raw, n, sizeof(T), (void *)&arg) == CL_SUCCESS);
+    }
+    inline void set_arg(size_t n, const Buffer &buf) {
+        set_arg(n, cl_mem(buf));
+    }
+    Result<> run(Queue &queue, size_t work_size);
+
+    template <typename ... Args>
+    Result<> operator()(Queue &queue, size_t work_size, Args &&...args) {
+        unwind_args(0, std::forward(args)...);
+        return run(queue, work_size);
+    }
+};
+
 }

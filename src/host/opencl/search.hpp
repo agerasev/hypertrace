@@ -7,6 +7,9 @@
 
 
 namespace cl {
+    typedef cl_device_id Device;
+    typedef cl_platform_id Platform;
+
     std::vector<cl_platform_id> get_platforms();
     std::vector<cl_device_id> get_devices(cl_platform_id platform);
 

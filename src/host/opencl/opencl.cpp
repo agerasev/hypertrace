@@ -6,83 +6,65 @@
 #include "opencl.hpp"
 
 
-static cl_context get_context(cl_command_queue queue) {
-    cl_context context;
-    assert(clGetCommandQueueInfo(
-        queue, CL_QUEUE_CONTEXT,
-        sizeof(cl_context), &context, nullptr
-    ) == CL_SUCCESS);
-    return context;
-}
+using namespace cl;
 
-cl::Context::Context(cl_device_id device) {
-    context = clCreateContext(nullptr, 1, &device, nullptr, nullptr, nullptr);
-    assert(context != nullptr);
-}
-cl::Context::~Context() {
-    assert(clReleaseContext(context) == CL_SUCCESS);
-}
 
-cl::Context::operator cl_context() const {
-    return context;
+// Context
+
+void Context::free_raw(cl_context raw) {
+    assert(clReleaseContext(raw) == CL_SUCCESS);
 }
-
-cl::Queue::Queue(cl_context context, cl_device_id device) {
-    queue = clCreateCommandQueue(context, device, 0, nullptr);
-    assert(queue != nullptr);
-}
-cl::Queue::~Queue() {
-    assert(clReleaseCommandQueue(queue) == CL_SUCCESS);
-}
-cl::Queue::operator cl_command_queue() const {
-    return queue;
-}
-
-cl::Program::Program(
-    cl_context context,
-    cl_device_id device,
-    const std::string &source,
-    std::function<std::string(std::string&&)> log_hook
-) {
-    this->device = device;
-
-    //std::fstream("gen_kernel.cl", std::ios::out) << src << std::endl;
-    
-    const char *src_data = source.c_str();
-    const size_t src_len = source.size();
-
-    program = clCreateProgramWithSource(context, 1, &src_data, &src_len, nullptr);
-    assert(program != nullptr);
-
-    cl_uint status = clBuildProgram(program, 1, &device, nullptr, nullptr, nullptr);
-    std::string log_ = log_hook(log());
-    // TODO: Trim `log_` string
-    if (log_.size() > 0) {
-        std::cout << log_ << std::endl;
+Option<Context> Context::create(cl_device_id device) {
+    cl_context raw = clCreateContext(nullptr, 1, &device, nullptr, nullptr, nullptr);
+    if (raw != nullptr) {
+        return Option<Context>::Some(Context(raw, device));
+    } else {
+        return Option<Context>::None();
     }
-    assert(status == CL_SUCCESS);
 }
-cl::Program::Program(
-    cl_context context,
-    cl_device_id device,
-    const c_includer &includer
-) : Program(
-    context,
-    device,
-    includer.data(),
-    [&includer](std::string &&s) {
-        return includer.convert(std::move(s));
+
+
+// Queue
+
+void Queue::free_raw(cl_command_queue raw) {
+    assert(clReleaseCommandQueue(raw) == CL_SUCCESS);
+}
+Queue::Queue(cl_command_queue raw, Rc<Context> context) :
+    context_(std::move(context)),
+    raw(raw)
+{}
+Option<Queue> Queue::create(Rc<Context> context, cl_device_id device) {
+    cl_command_queue raw = clCreateCommandQueue(*context, device, 0, nullptr);
+    if (raw != nullptr) {
+        return Option<Queue>::Some(Queue(raw, std::move(context)));
+    } else {
+        return Option<Queue>::None();
     }
-) {}
-cl::Program::~Program() {
-    assert(clReleaseProgram(program) == CL_SUCCESS);
+}
+void Queue::flush() {
+    assert(clFlush(raw) == CL_SUCCESS);
+}
+void Queue::finish() {
+    flush();
+    assert(clFinish(raw) == CL_SUCCESS);
 }
 
-cl::Program::operator cl_program() const {
-    return program;
-}
 
-std::string cl::Program::log() const {
+// Program
+
+void Program::free_raw(cl_program raw) {
+    assert(clReleaseProgram(raw) == CL_SUCCESS);
+}
+Program::Program(
+    cl_program raw,
+    Device device,
+    Rc<Context> context    
+) :
+    device_(device),
+    context_(std::move(context)),
+    raw(raw)
+{}
+std::string Program::log(cl_program program, cl_device_id device) {
     size_t log_len = 0;
     assert(clGetProgramBuildInfo(
         program, device, CL_PROGRAM_BUILD_LOG,
@@ -99,115 +81,144 @@ std::string cl::Program::log() const {
 
     return std::string(buffer.data());
 }
+Tuple<Option<Program>, std::string> Program::create(
+    Rc<Context> context,
+    Device device,
+    const std::string &source
+) {
+    //std::fstream("gen_kernel.cl", std::ios::out) << src << std::endl;
+    
+    const char *src_data = source.c_str();
+    const size_t src_len = source.size();
 
-void cl::Buffer::init(cl_command_queue queue, size_t size, bool zeroed) {
-    _size = size;
+    cl_program raw = clCreateProgramWithSource(
+        *context, 1, &src_data, &src_len, nullptr
+    );
+    if (raw == nullptr) {
+        return Tuple<Option<Program>, std::string>(Option<Program>::None(), "");
+    }
+
+    cl_uint status = clBuildProgram(raw, 1, &device, nullptr, nullptr, nullptr);
+    std::string log_ = log(raw, device);
+    Option<Program> program;
+    if (status != CL_SUCCESS) {
+        program = Option<Program>::Some(Program(
+            raw, device, std::move(context)
+        ));
+    } else {
+        program = Option<Program>::None();
+    }
+    return Tuple<Option<Program>, std::string>(std::move(program), std::move(log_));
+}
+Tuple<Option<Program>, std::string> Program::create(
+    Rc<Context> context,
+    Device device,
+    const c_includer &includer
+) {
+    auto ret = create(std::move(context), device, includer.data());
+    ret.get<1>() = includer.convert(ret.get<1>());
+    return ret;
+}
+
+
+// Buffer
+
+void free_raw(cl_mem raw) {
+    assert(clReleaseMemObject(raw) == CL_SUCCESS);
+}
+Option<Buffer> Buffer::create(Queue &queue, size_t size, bool zeroed) {
+    assert(bool(queue));
     if (size > 0) {
-        assert(queue != nullptr);
-        buffer = clCreateBuffer(
-            get_context(queue), CL_MEM_READ_WRITE,
+        cl_mem raw = clCreateBuffer(
+            queue.context(), CL_MEM_READ_WRITE,
             size, nullptr, nullptr
         );
-        assert(buffer != nullptr);
+        if (raw == nullptr) {
+            return Option<Buffer>::None();
+        }
         if (zeroed) {
             uint8_t z = 0;
-            assert(CL_SUCCESS == clEnqueueFillBuffer(
-                queue, buffer,
+            if (clEnqueueFillBuffer(
+                queue, raw,
                 &z, 1, 0, size,
                 0, nullptr, nullptr
-            ));
+            ) != CL_SUCCESS) {
+                return Option<Buffer>::None();
+            }
         }
+        return Option<Buffer>::Some(Buffer(raw, size));
     } else {
-        buffer = nullptr;
+        return Option<Buffer>::Some(Buffer());
     }
 }
-void cl::Buffer::release() {
-    if (buffer != nullptr) {
-        assert(clReleaseMemObject(buffer) == CL_SUCCESS);
-        buffer = nullptr;
-        _size = 0;
+Result<> Buffer::load(Queue &queue, void *data) {
+    return load(queue, data, size_);
+}
+Result<> Buffer::load(Queue &queue, void *data, size_t size) {
+    if (size <= size_) {
+        return Result<>::Err(Tuple<>());
     }
-}
-cl::Buffer::Buffer() {
-    init(nullptr, 0);
-}
-cl::Buffer::Buffer(cl_command_queue queue, size_t size, bool zeroed) {
-    init(queue, size, zeroed);
-}
-cl::Buffer::~Buffer() {
-    release();
-}
-
-cl_mem &cl::Buffer::raw() {
-    return buffer;
-}
-const cl_mem &cl::Buffer::raw() const {
-    return buffer;
-}
-cl::Buffer::operator cl_mem() const {
-    return raw();
-}
-size_t cl::Buffer::size() const {
-    return _size;
-}
-
-void cl::Buffer::load(cl_command_queue queue, void *data) {
-    load(queue, data, _size);
-}
-void cl::Buffer::load(cl_command_queue queue, void *data, size_t size) {
-    assert(size <= _size);
-    if (size <= 0) {
-        return;
-    }
-    assert(clEnqueueReadBuffer(
-        queue, buffer, CL_TRUE,
+    if (size != 0 && clEnqueueReadBuffer(
+        queue, raw, CL_TRUE,
         0, size, data,
         0, nullptr, nullptr
-    ) == CL_SUCCESS);
-}
-void cl::Buffer::store(cl_command_queue queue, const void *data) {
-    store(queue, data, _size);
-}
-void cl::Buffer::store(cl_command_queue queue, const void *data, size_t size) {
-    if (size > _size) {
-        release();
-        
-        init(queue, size);
+    ) != CL_SUCCESS) {
+        return Result<>::Err(Tuple<>());
     }
-    if (size <= 0) {
-        return;
+    return Result<>::Ok(Tuple<>());
+}
+Result<> Buffer::store(Queue &queue, const void *data) {
+    return store(queue, data, size_);
+}
+Result<> Buffer::store(Queue &queue, const void *data, size_t size) {
+    if (size > size_) {
+        auto new_this = create(queue, size, false);
+        if (new_this.is_some()) {
+            *this = new_this.unwrap();
+        } else {
+            return Result<>::Err(Tuple<>());
+        }
     }
-    assert(clEnqueueWriteBuffer(
-        queue, buffer, CL_TRUE,
+    if (size != 0 && clEnqueueWriteBuffer(
+        queue, raw, CL_TRUE,
         0, size, data,
         0, nullptr, nullptr
-    ) == CL_SUCCESS);
+    ) != CL_SUCCESS) {
+        return Result<>::Err(Tuple<>());
+    }
+    return Result<>::Ok(Tuple<>());
 }
 
-cl::Kernel::Kernel(cl_program program, const char *name) {
+
+// Kernel
+
+void Kernel::free_raw(cl_kernel raw) {
+    assert(clReleaseKernel(raw) == CL_SUCCESS);
+}
+Kernel::Kernel(cl_kernel raw, Rc<Program> program, const std::string &name) :
+    program_(std::move(program)),
+    raw(raw),
+    name_(name)
+{}
+Option<Kernel> Kernel::create(Rc<Program> program, const std::string &name) {
     cl_int errcode;
-    kernel = clCreateKernel(program, name, &errcode);
-    assert(kernel != nullptr);
-}
-cl::Kernel::~Kernel() {
-    assert(clReleaseKernel(kernel) == CL_SUCCESS);
-}
-
-cl::Kernel::operator cl_kernel() const {
-    return kernel;
+    cl_kernel raw = clCreateKernel(*program, name.c_str(), &errcode);
+    if (raw != nullptr) {
+        return Option<Kernel>::Some(Kernel(raw, program, name));
+    } else {
+        return Option<Kernel>::None();
+    }
 }
 
-void cl::Kernel::set_arg(size_t n, const cl::Buffer &buf) {
-    set_arg(n, buf.raw());
-};
-
-void cl::Kernel::run(cl_command_queue queue, size_t work_size) {
+Result<> Kernel::run(Queue &queue, size_t work_size) {
     size_t global_work_size[1] = {work_size};
-    assert(clEnqueueNDRangeKernel(
-        queue, kernel,
+    if (clEnqueueNDRangeKernel(
+        queue, raw,
         1, NULL, global_work_size, NULL,
         0, NULL, NULL
-    ) == CL_SUCCESS);
-    assert(clFlush(queue) == CL_SUCCESS);
-    assert(clFinish(queue) == CL_SUCCESS);
+    ) != CL_SUCCESS) {
+        return Result<>::Err(Tuple<>());
+    }
+    queue.flush();
+    return Result<>::Ok(Tuple<>());
 }

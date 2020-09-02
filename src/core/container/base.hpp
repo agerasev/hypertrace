@@ -2,50 +2,10 @@
 
 #include <cstdlib>
 #include <utility>
+#include <numeric>
+#include <algorithm>
 
 namespace container {
-
-constexpr size_t max(const size_t a, const size_t b) {
-    if (a > b) {
-        return a;
-    } else {
-        return b;
-    }
-}
-
-constexpr size_t gcd(const size_t a, const size_t b) {
-    if (a == 0) {
-        return b;
-    }
-    if (b == 0 || a == b) {
-        return a;
-    }
-
-    if (a == 1 || b == 1) {
-        return 1;
-    }
-
-    bool ao = a & 1, bo = b & 1;
-    if (!ao && !bo) {
-        return 2 * gcd(a >> 1, b >> 1);
-    }
-    if (ao && !bo) {
-        return gcd(a, b >> 1);
-    }
-    if (!ao && bo) {
-        return gcd(a >> 1, b);
-    }
-    
-    if (a > b) {
-        return gcd((a - b) >> 1, b);
-    } else {
-        return gcd(a, (b - a) >> 1);
-    }
-}
-
-constexpr size_t lcm(size_t a, size_t b) {
-    return (a*b)/gcd(a, b);
-}
 
 template <typename ...Types>
 struct CommonSize {
@@ -53,16 +13,14 @@ struct CommonSize {
 };
 template <typename T, typename ...Types>
 struct CommonSize<T, Types...> {
-    static const size_t value = max(sizeof(T), CommonSize<Types...>::value);
+    static const size_t value = std::max(sizeof(T), CommonSize<Types...>::value);
 };
 template <typename ...Types>
 struct CommonSize<void, Types...> {
-    static const size_t value = max(0, CommonSize<Types...>::value);
+    static const size_t value = std::max(0, CommonSize<Types...>::value);
 };
 template <typename ...Types>
-constexpr size_t common_size() {
-    return CommonSize<Types...>::value;
-}
+inline constexpr size_t common_size = CommonSize<Types...>::value;
 
 
 template <typename ...Types>
@@ -71,16 +29,15 @@ struct CommonAlign {
 };
 template <typename T, typename ...Types>
 struct CommonAlign<T, Types...> {
-    static const size_t value = lcm(alignof(T), CommonAlign<Types...>::value);
+    static const size_t value = std::lcm(alignof(T), CommonAlign<Types...>::value);
 };
 template <typename ...Types>
 struct CommonAlign<void, Types...> {
-    static const size_t value = lcm(1, CommonAlign<Types...>::value);
+    static const size_t value = std::lcm(1, CommonAlign<Types...>::value);
 };
 template <typename ...Types>
-constexpr size_t common_align() {
-    return CommonAlign<Types...>::value;
-}
+inline constexpr size_t common_align = CommonAlign<Types...>::value;
+
 
 template <template <size_t> typename F, size_t S, size_t Q = S - 1>
 struct Dispatcher {
@@ -101,5 +58,33 @@ struct Dispatcher<F, S, 0> {
         return F<S - 1>::call(std::forward<Args>(args)...);
     }
 };
+
+template <typename T>
+inline constexpr bool is_copyable_v = 
+    std::is_copy_constructible_v<T> && std::is_copy_assignable_v<T>;
+
+template <bool C>
+class CopyEnabler {
+public:
+    CopyEnabler() = default;
+
+    CopyEnabler(const CopyEnabler &) = delete;
+    CopyEnabler(CopyEnabler &&) = default;
+
+    CopyEnabler &operator=(const CopyEnabler &) = delete;
+    CopyEnabler &operator=(CopyEnabler &&) = default;
+};
+template <>
+class CopyEnabler<true> {
+public:
+    CopyEnabler() = default;
+
+    CopyEnabler(const CopyEnabler &) = default;
+    CopyEnabler(CopyEnabler &&) = default;
+
+    CopyEnabler &operator=(const CopyEnabler &) = default;
+    CopyEnabler &operator=(CopyEnabler &&) = default;
+};
+
 
 } // namespace container

@@ -4,6 +4,7 @@
 #ifdef TEST_DEV
 
 #include <vector>
+#include <fstream>
 #include <cassert>
 
 #include <host/opencl/search.hpp>
@@ -14,15 +15,15 @@ void test_dev_real(
     cl_device_id device,
     core::Rc<cl::Queue> queue
 ) {
-    c_includer includer(
+    includer includer(
         "test.cl", std::list<std::string>{"src"},
-        std::map<std::string, std::string>{std::make_pair("test.cl", std::string(" \n\
-            #include <common/algebra/real.hh> \n\
-            __kernel void square(__global const real *ibuf, __global real *obuf) { \n\
-                int i = get_global_id(0); \n\
-                real x = ibuf[i]; \n\
-                obuf[i] = x*x; \n\
-            } \n\
+        std::map<std::string, std::string>{std::make_pair("test.cl", std::string("\n\
+            #include <common/algebra/real.hh>\n\
+            __kernel void square(__global const real *ibuf, __global real *obuf) {\n\
+                int i = get_global_id(0);\n\
+                real x = ibuf[i];\n\
+                obuf[i] = x*x;\n\
+            }\n\
         "))}
     );
     assert(includer.include());

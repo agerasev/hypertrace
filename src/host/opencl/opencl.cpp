@@ -101,7 +101,7 @@ Tuple<Option<Program>, std::string> Program::create(
 Tuple<Option<Program>, std::string> Program::create(
     Rc<Context> context,
     Device device,
-    const c_includer &includer
+    const includer &includer
 ) {
     auto ret = create(std::move(context), device, includer.data());
     ret.get<1>() = includer.convert(ret.get<1>());

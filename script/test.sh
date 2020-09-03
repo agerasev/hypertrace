@@ -6,4 +6,4 @@ else
     TEST=$1
 fi && \
 ./script/build.sh test_${TEST} && \
-./build/test/test_${TEST} ${@:2}
+./build/src/test/test_${TEST} ${@:2}

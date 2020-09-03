@@ -13,7 +13,7 @@
 #include <core/prelude.hpp>
 
 #include "search.hpp"
-#include "include.hpp"
+#include <includer.hpp>
 
 
 namespace cl {
@@ -143,7 +143,7 @@ public:
     static core::Tuple<core::Option<Program>, std::string> create(
         core::Rc<Context> context,
         Device device,
-        const c_includer &includer
+        const includer &includer
     );
 
     inline operator cl_program() const { return raw; }

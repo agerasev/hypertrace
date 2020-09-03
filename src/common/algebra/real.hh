@@ -11,7 +11,7 @@ typedef double real;
 #define R0 0.0
 #define R1 1.0
 
-#else // HOST || DEV_F64
+#else // !(HOST || DEV_F64)
 
 typedef float real;
 

@@ -24,11 +24,16 @@ void test_dev_real(
                 real x = ibuf[i];\n\
                 obuf[i] = x*x;\n\
             }\n\
-        "))}
+        "))},
+        std::map<std::string, bool>{
+            std::make_pair("HOST", false),
+            std::make_pair("TEST_UNIT", false),
+            std::make_pair("TEST_DEV", false)
+        }
     );
     assert(includer.include());
-    std::fstream("build/test/real.cl", std::ios::out) << includer.data();
-    //std::cout << includer.data() << std::endl;
+    std::cout << includer.log() << std::endl;
+    std::fstream("build/real.cl", std::ios::out) << includer.data();
 
     auto prog_log = cl::Program::create(queue->context_ref(), device, includer);
     std::cout << prog_log.get<1>() << std::endl;

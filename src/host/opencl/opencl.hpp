@@ -6,7 +6,6 @@
 #include <list>
 #include <map>
 #include <functional>
-#include <cassert>
 
 #include <CL/cl.h>
 
@@ -184,10 +183,10 @@ public:
     inline const Context &context() const { return *context_; }
     inline core::Rc<Context> context_ref() const { return context_; }
 
-    core::Result<> load(Queue &queue, void *data);
-    core::Result<> load(Queue &queue, void *data, size_t size);
-    core::Result<> store(Queue &queue, const void *data);
-    core::Result<> store(Queue &queue, const void *data, size_t size);
+    core::Result<core::Tuple<>, std::string> load(Queue &queue, void *data);
+    core::Result<core::Tuple<>, std::string> load(Queue &queue, void *data, size_t size);
+    core::Result<core::Tuple<>, std::string> store(Queue &queue, const void *data);
+    core::Result<core::Tuple<>, std::string> store(Queue &queue, const void *data, size_t size);
 };
 
 class Kernel {
@@ -224,7 +223,7 @@ private:
     template <typename T, typename ... Args>
     void unwind_args(size_t n, const T &arg, Args &&...args) {
         set_arg(n, arg);
-        unwind_args(n + 1, std::forward(args)...);
+        unwind_args(n + 1, std::forward<Args>(args)...);
     }
     template <typename T>
     void unwind_args(size_t n, const T &arg) {
@@ -243,7 +242,7 @@ public:
 
     template <typename ... Args>
     core::Result<> operator()(Queue &queue, size_t work_size, Args &&...args) {
-        unwind_args(0, std::forward(args)...);
+        unwind_args(0, std::forward<Args>(args)...);
         return run(queue, work_size);
     }
 };

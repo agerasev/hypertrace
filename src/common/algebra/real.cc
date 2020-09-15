@@ -5,7 +5,6 @@
 
 #include <vector>
 #include <fstream>
-#include <cassert>
 
 #include <host/opencl/search.hpp>
 #include <host/opencl/opencl.hpp>
@@ -37,8 +36,8 @@ void test_dev_real(
 
     auto prog_log = cl::Program::create(queue->context_ref(), device, includer);
     std::cout << prog_log.get<1>() << std::endl;
-    auto program = core::Rc<cl::Program>(prog_log.get<0>().unwrap());
-    auto kernel = cl::Kernel::create(program, "square").unwrap();
+    auto program = core::Rc<cl::Program>(prog_log.get<0>().expect("Program build error"));
+    auto kernel = cl::Kernel::create(program, "square").expect("Kernel create error");
 
     const int n = 256;
     auto ibuf = cl::Buffer::create(*queue, n*sizeof(dev_type<real>)).unwrap();
@@ -48,15 +47,13 @@ void test_dev_real(
         real x = (real)i;
         dev_store(&host_buf[i], &x);
     }
-    ibuf.store(*queue, host_buf.data());
-    kernel.set_arg(0, ibuf);
-    kernel.set_arg(1, obuf);
-    kernel.run(*queue, n);
-    obuf.load(*queue, host_buf.data());
+    ibuf.store(*queue, host_buf.data()).expect("Buffer store error");
+    kernel(*queue, n, ibuf, obuf).expect("Kernel run error");
+    obuf.load(*queue, host_buf.data()).expect("Buffer load error");
     for(int i = 0; i < int(host_buf.size()); ++i) {
         real x;
         dev_load(&x, &host_buf[i]);
-        assert(i*i == (int)x);
+        assert_eq_(i*i, (int)x);
     }
 }
 

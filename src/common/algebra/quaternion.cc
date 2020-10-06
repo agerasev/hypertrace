@@ -56,7 +56,7 @@ quat cq_div(comp a, quat b) {
 }
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 
 #include <catch.hpp>
 
@@ -135,4 +135,4 @@ TEST_CASE("Quaternions", "[quat]") {
     }
 };
 
-#endif // TEST_UNIT
+#endif // TEST_CATCH

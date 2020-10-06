@@ -102,7 +102,7 @@ HyMap hy_move_to(HyDir dir, real dist) {
 }
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 
 #include <catch.hpp>
 #include <functional>
@@ -195,4 +195,4 @@ TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
         }
     }
 };
-#endif // TEST_UNIT
+#endif // TEST_CATCH

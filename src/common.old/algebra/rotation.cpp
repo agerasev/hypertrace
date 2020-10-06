@@ -1,7 +1,7 @@
 #include "rotation.hpp"
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 #include <catch.hpp>
 
 using namespace test;

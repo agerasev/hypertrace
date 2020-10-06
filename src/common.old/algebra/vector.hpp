@@ -163,7 +163,7 @@ std::ostream &operator<<(std::ostream &s, vector<T, N> v) {
 #endif
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 #include <catch.hpp>
 #include "test.hpp"
 

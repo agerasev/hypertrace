@@ -122,7 +122,7 @@ VECTOR_INTEROP_N(real,   cl_float)
 #define length2(x) dot((x), (x))
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 
 #include <catch.hpp>
 
@@ -198,7 +198,7 @@ VecApprox<T, N> approx(vec<T, N> v) {
     return VecApprox<T, N>(v);
 }
 
-#endif // TEST_UNIT
+#endif // TEST_CATCH
 
 #ifdef TEST_DEV
 

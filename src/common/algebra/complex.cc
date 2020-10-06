@@ -44,7 +44,7 @@ comp c_sqrt(comp a) {
 }
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 #include <catch.hpp>
 
 #include <iostream>
@@ -89,4 +89,4 @@ TEST_CASE("Complex numbers", "[comp]") {
     }
 };
 
-#endif // TEST_UNIT
+#endif // TEST_CATCH

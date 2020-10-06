@@ -220,7 +220,7 @@ std::ostream &operator<<(std::ostream &s, matrix<T, M, N> v) {
 #endif
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 #include <catch.hpp>
 #include "test.hpp"
 

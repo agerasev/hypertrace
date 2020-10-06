@@ -1,7 +1,7 @@
 #include "vector.hh"
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 
 #include <catch.hpp>
 
@@ -62,7 +62,7 @@ TEST_CASE("Vector types", "[vec]") {
     }
 };
 
-#endif // TEST_UNIT
+#endif // TEST_CATCH
 
 
 #ifdef _TEST_DEV

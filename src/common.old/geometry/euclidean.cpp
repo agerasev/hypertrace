@@ -50,7 +50,7 @@ Affine<real, 3> Eu::move_to(real3 dir, real dist) {
 }
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 #include <catch.hpp>
 #include <functional>
 #include <test.hpp>
@@ -99,4 +99,4 @@ TEST_CASE("Euclidean geometry", "[euclidean]") {
         }
     }
 };
-#endif // TEST_UNIT
+#endif // TEST_CATCH

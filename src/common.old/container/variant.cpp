@@ -1,7 +1,7 @@
 #include "variant.hpp"
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 #include <catch.hpp>
 
 struct A {

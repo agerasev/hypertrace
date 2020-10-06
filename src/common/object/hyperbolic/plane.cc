@@ -130,7 +130,7 @@ bool tiled_plane_hy_interact(
     return bounce;
 }
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 
 #include <catch.hpp>
 

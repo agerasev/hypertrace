@@ -54,7 +54,7 @@ Linear3 lin3_inverse(Linear3 m) {
 }
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 
 #include <catch.hpp>
 
@@ -106,4 +106,4 @@ TEST_CASE("Linear transformation", "[linear]") {
     }
 };
 
-#endif // TEST_UNIT
+#endif // TEST_CATCH

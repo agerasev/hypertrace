@@ -89,7 +89,7 @@ comp2x2 c22_pow(comp2x2 m, real p);
 comp2x2 c22_pow_n(comp2x2 m, real p);
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 
 class TestRngComp2x2 {
 private:
@@ -130,4 +130,4 @@ public:
     real4x4 uniform();
 };
 
-#endif // TEST_UNIT
+#endif // TEST_CATCH

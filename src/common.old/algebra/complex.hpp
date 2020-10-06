@@ -83,7 +83,7 @@ inline quat operator ""_k(long double x) {
 }
 
 
-#ifdef TEST_UNIT
+#ifdef TEST_CATCH
 
 #include "test.hpp"
 

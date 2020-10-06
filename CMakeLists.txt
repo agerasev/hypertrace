@@ -4,8 +4,8 @@ project(hypertrace)
 set(CMAKE_C_FLAGS "-DHOST -Wall -Wextra")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17") #-fno-exceptions
 
-add_subdirectory("submodules/core")
-include_directories("submodules/core/src")
+add_subdirectory("submodules/rstd")
+include_directories("submodules/rstd/src")
 
 add_subdirectory("submodules/includer")
 include_directories("submodules/includer/src")

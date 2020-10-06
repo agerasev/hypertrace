@@ -1,6 +1,6 @@
-[submodule "submodules/core"]
-	path = submodules/core
-	url = git@github.com:agerasev/cpp-core.git
 [submodule "submodules/includer"]
 	path = submodules/includer
 	url = git@github.com:agerasev/c-includer.git
+[submodule "submodules/rstd"]
+	path = submodules/rstd
+	url = git@github.com:agerasev/cpp-rstd.git

@@ -40,9 +40,12 @@ real mo_diff(Moebius a, Moebius b) {
     return mo_norm_l1(a - b);
 }
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 
-#include <catch.hpp>
+#include <rtest.hpp>
+
+#include <lazy_static.hpp>
+
 
 class TestRngMoebius {
 private:
@@ -56,46 +59,53 @@ public:
     }
 };
 
-TEST_CASE("Moebius transformation", "[moebius]") {
-    TestRng<comp> crng;
-    TestRng<quat> qrng;
-    TestRngMoebius trng;
+rtest_module_(moebius) {
+    lazy_static_(rstd::Mutex<TestRng<comp>>, crng) {
+        return rstd::Mutex(TestRng<comp>());
+    }
+    lazy_static_(rstd::Mutex<TestRng<quat>>, qrng) {
+        return rstd::Mutex(TestRng<quat>());
+    }
+    lazy_static_(rstd::Mutex<TestRngMoebius>, trng) {
+        return rstd::Mutex(TestRngMoebius());
+    }
 
-    SECTION("Chaining") {
+    rtest_(chaining) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng.normal(), b = trng.normal();
-            quat c = qrng.normal();
-            REQUIRE(
-                mo_apply_q(mo_chain(a, b), c) == 
+            Moebius a = trng->lock()->normal(), b = trng->lock()->normal();
+            quat c = qrng->lock()->normal();
+            assert_eq_(
+                mo_apply_q(mo_chain(a, b), c), 
                 approx(mo_apply_q(a, mo_apply_q(b, c)))
             );
         }
     }
 
-    SECTION("Complex derivation") {
+    rtest_(complex_derivation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng.normal();
-            comp p = crng.normal();
-            comp v = crng.nonzero();
+            Moebius a = trng->lock()->normal();
+            comp p = crng->lock()->normal();
+            comp v = crng->lock()->nonzero();
             
-            REQUIRE(
-                approx(mo_deriv_c(a, p)) ==
+            // FIXME: Use rng in reproducible way
+            assert_eq_(
+                approx(mo_deriv_c(a, p)),
                 c_div(mo_apply_c(a, p + EPS*v) - mo_apply_c(a, p), EPS*v)
             );
         }
     }
-    SECTION("Quaternion directional derivation") {
+    rtest_(quaternion_directional_derivation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng.normal();
-            quat p = qrng.normal();
-            quat v = qrng.nonzero();
+            Moebius a = trng->lock()->normal();
+            quat p = qrng->lock()->normal();
+            quat v = qrng->lock()->nonzero();
             
-            REQUIRE(
-                approx(mo_deriv_q(a, p, v)) ==
+            assert_eq_(
+                approx(mo_deriv_q(a, p, v)),
                 (mo_apply_q(a, p + EPS*v) - mo_apply_q(a, p))/EPS
             );
         }
     }
 };
 
-#endif // TEST_CATCH
+#endif // TEST_UNIT

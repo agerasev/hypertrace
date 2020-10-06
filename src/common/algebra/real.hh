@@ -58,7 +58,8 @@ public:
 
 class Approx {
 private:
-    real epsilon_ = EPS;
+    // FIXME: Use standard epsilon value
+    real epsilon_ = 100*EPS;
     real value_ = R0;
 public:
     inline explicit Approx(real value) :

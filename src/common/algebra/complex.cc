@@ -47,7 +47,7 @@ comp c_sqrt(comp a) {
 #ifdef TEST_UNIT
 
 #include <rtest.hpp>
-#include <rstd/prelude.hpp>
+
 #include <lazy_static.hpp>
 
 rtest_module_(complex) {

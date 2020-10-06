@@ -1,6 +1,18 @@
 #include "real.hh"
 
 
+#ifdef TEST_UNIT
+
+#include <rtest.hpp>
+
+rtest_module_(real) {
+    rtest_(approx) {
+        assert_eq_(R1 + EPS/2, approx(R1));
+    }
+}
+
+#endif // TEST_UNIT
+
 #ifdef TEST_DEV
 
 #include <vector>

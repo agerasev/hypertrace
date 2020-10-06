@@ -44,49 +44,54 @@ comp c_sqrt(comp a) {
 }
 
 
-#ifdef TEST_CATCH
-#include <catch.hpp>
+#ifdef TEST_UNIT
 
-#include <iostream>
+#include <rtest.hpp>
+#include <rstd/prelude.hpp>
+#include <lazy_static.hpp>
 
-TEST_CASE("Complex numbers", "[comp]") {
-    TestRng<real> rng(0xbeef);
-    TestRng<comp> crng(0xbeef);
+rtest_module_(complex) {
+    lazy_static_(rstd::Mutex<TestRng<real>>, rng) {
+        return rstd::Mutex(TestRng<real>(0xbeef));
+    }
+    lazy_static_(rstd::Mutex<TestRng<comp>>, crng) {
+        return rstd::Mutex(TestRng<comp>(0xbeef));
+    }
 
-    SECTION("Constructor") {
+    rtest_(constructor) {
         comp a = c_new(0.0, 1.0);
-        REQUIRE(a.x == Approx(0.0));
-        REQUIRE(a.y == Approx(1.0));
+        assert_eq_(a.x, Approx(0.0));
+        assert_eq_(a.y, Approx(1.0));
     }
-    SECTION("Inversion") {
+    rtest_(inversion) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = crng.nonzero();
-            REQUIRE(c_div(a, a) == approx(C1));
+            comp a = crng->lock()->nonzero();
+            assert_eq_(c_div(a, a), approx(C1));
         }
     }
-    SECTION("Square root") {
+    rtest_(square_root) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = crng.normal();
+            comp a = crng->lock()->normal();
             comp b = c_sqrt(a);
-            REQUIRE(c_mul(b, b) == approx(a));
+            assert_eq_(c_mul(b, b), approx(a));
         }
     }
-    SECTION("Power") {
+    rtest_(power) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = crng.normal();
-            int n = int(floor(2 + 10*rng.uniform()));
+            comp a = crng->lock()->normal();
+            int n = int(floor(2 + 10*rng->lock()->uniform()));
             comp b = c_pow_r(a, 1.0/n);
             comp c = C1;
             for (int i = 0; i < n; ++i) {
                 c = c_mul(c, b);
             }
-            REQUIRE(c == approx(a));
+            assert_eq_(c, approx(a));
         }
     }
-    SECTION("Norm") {
-        REQUIRE(c_norm_l1(c_new(-1, 2)) == approx(3));
-        REQUIRE(length(c_new(3, -4)) == approx(5));
+    rtest_(norm) {
+        assert_eq_(c_norm_l1(c_new(-1, 2)), approx(3));
+        assert_eq_(length(c_new(3, -4)), approx(5));
     }
 };
 
-#endif // TEST_CATCH
+#endif // TEST_UNIT

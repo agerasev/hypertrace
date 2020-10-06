@@ -15,8 +15,8 @@ int main(int, char *[]) {
         cl::print_platform_info(platform);
         for (cl_device_id device : cl::get_devices(platform)) {
             cl::print_device_info(device, "  ");
-            auto context = core::Rc<cl::Context>(cl::Context::create(device).unwrap());
-            auto queue = core::Rc<cl::Queue>(cl::Queue::create(context, device).unwrap());
+            auto context = rstd::Rc<cl::Context>(cl::Context::create(device).unwrap());
+            auto queue = rstd::Rc<cl::Queue>(cl::Queue::create(context, device).unwrap());
 
             RUN_TEST_DEV(real);
             //RUN_TEST_DEV(vector);

@@ -5,7 +5,7 @@
 #include "opencl.hpp"
 
 
-using namespace core;
+using namespace rstd;
 using namespace cl;
 
 
@@ -142,7 +142,7 @@ Option<Buffer> Buffer::create(Queue &queue, size_t size, bool zeroed) {
         return Option<Buffer>::Some(Buffer());
     }
 }
-typedef Result<core::Tuple<>, std::string> LsResult;
+typedef Result<rstd::Tuple<>, std::string> LsResult;
 LsResult Buffer::load(Queue &queue, void *data) {
     return load(queue, data, size_);
 }

@@ -25,7 +25,7 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
     "-DCL_TARGET_OPENCL_VERSION=120"
     "-DINTEROP"
 )
-target_link_libraries(${PROJECT_NAME} OpenCL SDL2 SDL2_image)
+target_link_libraries(${PROJECT_NAME} pthread rstd OpenCL SDL2 SDL2_image)
 
 add_subdirectory("src/examples")
 add_subdirectory("src/test")

@@ -12,7 +12,7 @@
 
 void test_dev_real(
     cl_device_id device,
-    core::Rc<cl::Queue> queue
+    rstd::Rc<cl::Queue> queue
 ) {
     includer includer(
         "test.cl", std::list<std::string>{"src"},
@@ -36,7 +36,7 @@ void test_dev_real(
 
     auto prog_log = cl::Program::create(queue->context_ref(), device, includer);
     std::cout << prog_log.get<1>() << std::endl;
-    auto program = core::Rc<cl::Program>(prog_log.get<0>().expect("Program build error"));
+    auto program = rstd::Rc<cl::Program>(prog_log.get<0>().expect("Program build error"));
     auto kernel = cl::Kernel::create(program, "square").expect("Kernel create error");
 
     const int n = 256;

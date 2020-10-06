@@ -19,4 +19,4 @@ target_compile_definitions(test_dev PRIVATE
     "-DINTEROP"
     "-DTEST_DEV"
 )
-target_link_libraries(test_dev includer OpenCL)
+target_link_libraries(test_dev pthread rstd includer OpenCL)

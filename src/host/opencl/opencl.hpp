@@ -9,7 +9,7 @@
 
 #include <CL/cl.h>
 
-#include <core/prelude.hpp>
+#include <rstd/prelude.hpp>
 
 #include "search.hpp"
 #include <includer.hpp>
@@ -74,7 +74,7 @@ public:
     Context(Context &&other) = default;
     Context &operator=(Context &&other) = default;
 
-    static core::Option<Context> create(Device device);
+    static rstd::Option<Context> create(Device device);
 
     inline operator cl_context() const { return raw; }
     inline operator bool() const { return raw; }
@@ -86,10 +86,10 @@ class Queue {
 private:
     static void free_raw(cl_command_queue raw);
 
-    core::Rc<Context> context_;
+    rstd::Rc<Context> context_;
     _Guard<cl_command_queue, free_raw> raw;
 
-    inline Queue(cl_command_queue raw, core::Rc<Context> context) :
+    inline Queue(cl_command_queue raw, rstd::Rc<Context> context) :
         context_(std::move(context)), raw(raw) {}
 
 public:
@@ -101,7 +101,7 @@ public:
     Queue(Queue &&other) = default;
     Queue &operator=(Queue &&other) = default;
 
-    static core::Option<Queue> create(core::Rc<Context> context, Device device);
+    static rstd::Option<Queue> create(rstd::Rc<Context> context, Device device);
     void flush();
     void finish();
 
@@ -110,7 +110,7 @@ public:
 
     inline Context &context() { return *context_; }
     inline const Context &context() const { return *context_; }
-    inline core::Rc<Context> context_ref() const { return context_; }
+    inline rstd::Rc<Context> context_ref() const { return context_; }
 };
 
 class Program {
@@ -118,10 +118,10 @@ private:
     static void free_raw(cl_program raw);
 
     Device device_;
-    core::Rc<Context> context_;
+    rstd::Rc<Context> context_;
     _Guard<cl_program, free_raw> raw;
 
-    inline Program(cl_program raw, Device device, core::Rc<Context> context) :
+    inline Program(cl_program raw, Device device, rstd::Rc<Context> context) :
         device_(device), context_(std::move(context)), raw(raw) {}
     static std::string log(cl_program program, cl_device_id device);
 
@@ -134,13 +134,13 @@ public:
     Program(Program &&other) = default;
     Program &operator=(Program &&other) = default;
 
-    static core::Tuple<core::Option<Program>, std::string> create(
-        core::Rc<Context> context,
+    static rstd::Tuple<rstd::Option<Program>, std::string> create(
+        rstd::Rc<Context> context,
         Device device,
         const std::string &source
     );
-    static core::Tuple<core::Option<Program>, std::string> create(
-        core::Rc<Context> context,
+    static rstd::Tuple<rstd::Option<Program>, std::string> create(
+        rstd::Rc<Context> context,
         Device device,
         const includer &includer
     );
@@ -150,7 +150,7 @@ public:
 
     inline Context &context() { return *context_; }
     inline const Context &context() const { return *context_; }
-    inline core::Rc<Context> context_ref() const { return context_; }
+    inline rstd::Rc<Context> context_ref() const { return context_; }
     inline Device device() const { return device_; }
 };
 
@@ -158,11 +158,11 @@ class Buffer {
 private:
     static void free_raw(cl_mem raw);
     
-    core::Rc<Context> context_;
+    rstd::Rc<Context> context_;
     _Guard<cl_mem, free_raw> raw;
     size_t size_ = 0;
 
-    inline Buffer(cl_mem raw, size_t size, core::Rc<Context> context) :
+    inline Buffer(cl_mem raw, size_t size, rstd::Rc<Context> context) :
         context_(std::move(context)), raw(raw), size_(size) {}
 
 public:
@@ -174,30 +174,30 @@ public:
     Buffer(Buffer &&other) = default;
     Buffer &operator=(Buffer &&other) = default;
 
-    static core::Option<Buffer> create(Queue &queue, size_t size, bool zeroed=false);
+    static rstd::Option<Buffer> create(Queue &queue, size_t size, bool zeroed=false);
 
     inline operator cl_mem() const { return raw; }
     inline operator bool() const { return raw; }
     inline size_t size() const { return size_; }
     inline Context &context() { return *context_; }
     inline const Context &context() const { return *context_; }
-    inline core::Rc<Context> context_ref() const { return context_; }
+    inline rstd::Rc<Context> context_ref() const { return context_; }
 
-    core::Result<core::Tuple<>, std::string> load(Queue &queue, void *data);
-    core::Result<core::Tuple<>, std::string> load(Queue &queue, void *data, size_t size);
-    core::Result<core::Tuple<>, std::string> store(Queue &queue, const void *data);
-    core::Result<core::Tuple<>, std::string> store(Queue &queue, const void *data, size_t size);
+    rstd::Result<rstd::Tuple<>, std::string> load(Queue &queue, void *data);
+    rstd::Result<rstd::Tuple<>, std::string> load(Queue &queue, void *data, size_t size);
+    rstd::Result<rstd::Tuple<>, std::string> store(Queue &queue, const void *data);
+    rstd::Result<rstd::Tuple<>, std::string> store(Queue &queue, const void *data, size_t size);
 };
 
 class Kernel {
 private:
     static void free_raw(cl_kernel raw);
 
-    core::Rc<Program> program_;
+    rstd::Rc<Program> program_;
     _Guard<cl_kernel, free_raw> raw;
     std::string name_;
 
-    inline Kernel(cl_kernel raw, core::Rc<Program> program, const std::string &name) :
+    inline Kernel(cl_kernel raw, rstd::Rc<Program> program, const std::string &name) :
         program_(std::move(program)), raw(raw), name_(name) {}
 
 public:
@@ -209,14 +209,14 @@ public:
     Kernel(Kernel &&other) = default;
     Kernel &operator=(Kernel &&other) = default;
 
-    static core::Option<Kernel> create(core::Rc<Program> program, const std::string &name);
+    static rstd::Option<Kernel> create(rstd::Rc<Program> program, const std::string &name);
 
     inline operator cl_kernel() const { return raw; }
     inline operator bool() const { return raw; }
 
     inline Program &program() { return *program_; }
     inline const Program &program() const { return *program_; }
-    inline const core::Rc<Program> &program_ref() const { return program_; }
+    inline const rstd::Rc<Program> &program_ref() const { return program_; }
     inline const std::string &name() const { return name_; }
 
 private:
@@ -238,10 +238,10 @@ public:
     inline void set_arg(size_t n, const Buffer &buf) {
         set_arg(n, cl_mem(buf));
     }
-    core::Result<> run(Queue &queue, size_t work_size);
+    rstd::Result<> run(Queue &queue, size_t work_size);
 
     template <typename ... Args>
-    core::Result<> operator()(Queue &queue, size_t work_size, Args &&...args) {
+    rstd::Result<> operator()(Queue &queue, size_t work_size, Args &&...args) {
         unwind_args(0, std::forward<Args>(args)...);
         return run(queue, work_size);
     }

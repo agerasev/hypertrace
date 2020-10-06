@@ -22,6 +22,7 @@ addons:
 
 script:
   - ./script/test.sh
+  - ./script/test.sh catch
 
 #after_success:
 #  - ./script/cov.sh

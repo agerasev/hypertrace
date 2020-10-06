@@ -121,10 +121,11 @@ VECTOR_INTEROP_N(real,   cl_float)
 
 #define length2(x) dot((x), (x))
 
-
 #ifdef TEST_CATCH
-
 #include <catch.hpp>
+#endif // TEST_CATCH
+
+#ifdef TEST
 
 template <int N>
 class TestRng<vec<real, N>> {
@@ -179,17 +180,21 @@ public:
         }
         return true;
     }
-    friend bool operator==(VecApprox a, vtype b){
+    friend bool operator==(VecApprox a, vtype b) {
         return b == a;
     }
-    friend bool operator!=(vtype a, VecApprox b){
+    friend bool operator!=(vtype a, VecApprox b) {
         return !(a == b);
     }
-    friend bool operator!=(VecApprox a, vtype b){
-        return a != b;
+    friend bool operator!=(VecApprox a, vtype b) {
+        return b != a;
     }
-    friend std::ostream &operator<<(std::ostream &s, VecApprox a) {
-        return s << a.v;
+    inline friend std::ostream &operator<<(std::ostream &s, VecApprox a) {
+        s << "approx(" << a.v;
+        if (a.eps != -1) {
+            s << ", eps=" << a.eps;
+        }
+        return s << ")";
     }
 };
 
@@ -198,7 +203,7 @@ VecApprox<T, N> approx(vec<T, N> v) {
     return VecApprox<T, N>(v);
 }
 
-#endif // TEST_CATCH
+#endif // TEST
 
 #ifdef TEST_DEV
 

@@ -64,12 +64,10 @@ quat cq_div(comp a, quat b) {
 #include <utility>
 #include <functional>
 
-#include <lazy_static.hpp>
-
 
 rtest_module_(quaternion) {
-    lazy_static_(rstd::Mutex<TestRng<quat>>, qrng) {
-        return rstd::Mutex(TestRng<quat>(0xfeed));
+    static_thread_local_(TestRng<quat>, qrng) {
+        return TestRng<quat>(0xfeed);
     }
 
     rtest_(imaginary_units) {
@@ -88,19 +86,19 @@ rtest_module_(quaternion) {
     }
     rtest_(inversion) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = qrng->lock()->nonzero();
+            quat a = qrng->nonzero();
             assert_eq_(q_div(a, a), approx(Q1));
         }
     }
     rtest_(law_of_cosines) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = qrng->lock()->normal(), b = qrng->lock()->normal();
+            quat a = qrng->normal(), b = qrng->normal();
             assert_eq_(q_abs2(a) + q_abs2(b) + 2*dot(a, b), Approx(q_abs2(a + b)));
         }
     }
     rtest_(conjugation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = qrng->lock()->normal();
+            quat a = qrng->normal();
             assert_eq_(q_mul(a, q_conj(a)), approx(q_abs2(a)*Q1));
             assert_eq_(q_mul(q_conj(a), a), approx(q_abs2(a)*Q1));
         }
@@ -131,8 +129,8 @@ rtest_module_(quaternion) {
             auto f = p.first;
             auto dfdv = p.second;
             for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-                quat p = qrng->lock()->normal();
-                quat v = qrng->lock()->unit();
+                quat p = qrng->normal();
+                quat v = qrng->unit();
                 assert_eq_((f(p + EPS*v) - f(p))/EPS, approx(dfdv(p, v)));
             }
         }

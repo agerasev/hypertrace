@@ -45,15 +45,13 @@ real4x4 TestRngReal4x4::uniform() {
 
 #include <rtest.hpp>
 
-#include <lazy_static.hpp>
-
 namespace test_matrix {
 
-lazy_static_(rstd::Mutex<TestRng<real>>, rng) {
-    return rstd::Mutex(TestRng<real>(0xAA));
+static_thread_local_(TestRng<real>, rng) {
+    return TestRng<real>(0xAA);
 }
-lazy_static_(rstd::Mutex<TestRng<comp>>, crng) {
-    return rstd::Mutex(TestRng<comp>(0xBB));
+static_thread_local_(TestRng<comp>, crng) {
+    return TestRng<comp>(0xBB);
 }
 
 } // namespace matrix
@@ -62,8 +60,8 @@ lazy_static_(rstd::Mutex<TestRng<comp>>, crng) {
 rtest_module_(matrix_complex) {
     using namespace test_matrix;
 
-    lazy_static_(rstd::Mutex<TestRngComp2x2>, mrng) {
-        return rstd::Mutex(TestRngComp2x2(0xCAFE));
+    static_thread_local_(TestRngComp2x2, mrng) {
+        return TestRngComp2x2(0xCAFE);
     }
     
     rtest_(one) {
@@ -74,7 +72,7 @@ rtest_module_(matrix_complex) {
     }
     rtest_(inversion) {
         for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-            comp2x2 m = mrng->lock()->invertible();
+            comp2x2 m = mrng->invertible();
             assert_eq_(c22_dot(m, c22_inverse(m)), approx(c22_one()));
             assert_eq_(c22_dot(c22_inverse(m), m), approx(c22_one()));
         }
@@ -91,7 +89,7 @@ rtest_module_(matrix_complex) {
     }
     rtest_(eigenvalues_and_eigenvectors) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp2x2 m = mrng->lock()->normal();
+            comp2x2 m = mrng->normal();
             comp2x2 l, v;
             c22_eigen(m, &l, &v);
 
@@ -106,10 +104,10 @@ rtest_module_(matrix_complex) {
     rtest_(non_diagonalizable_matrix) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             comp2x2 m(C1, C0, C0, C1);
-            if (rng->lock()->uniform() > 0.5) {
-                m.s23 = crng->lock()->normal();
+            if (rng->uniform() > 0.5) {
+                m.s23 = crng->normal();
             } else {
-                m.s45 = crng->lock()->normal();
+                m.s45 = crng->normal();
             }
             comp2x2 l, v;
             c22_eigen(m, &l, &v);
@@ -120,8 +118,8 @@ rtest_module_(matrix_complex) {
     }
     rtest_(power) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp2x2 m = mrng->lock()->normalized();
-            int n = int(floor(8*rng->lock()->uniform())) + 2;
+            comp2x2 m = mrng->normalized();
+            int n = int(floor(8*rng->uniform())) + 2;
 
             comp2x2 p = c22_pow(m, R1/n);
             comp2x2 o = c22_one();
@@ -136,13 +134,13 @@ rtest_module_(matrix_complex) {
     rtest_(non_diagonalizable_power) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             comp2x2 m(C1, C0, C0, C1);
-            if (rng->lock()->uniform() > 0.5) {
-                m.s23 = crng->lock()->normal();
+            if (rng->uniform() > 0.5) {
+                m.s23 = crng->normal();
             } else {
-                m.s45 = crng->lock()->normal();
+                m.s45 = crng->normal();
             }
-            int p = int(floor(8*rng->lock()->uniform())) + 2;
-            int q = int(floor(8*rng->lock()->uniform())) + 2;
+            int p = int(floor(8*rng->uniform())) + 2;
+            int q = int(floor(8*rng->uniform())) + 2;
 
             comp2x2 n = c22_one();
             for (int i = 0; i < p; ++i) {
@@ -166,7 +164,7 @@ rtest_module_(matrix_complex) {
         );
 
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            int n = int(floor(8*rng->lock()->uniform())) + 2;
+            int n = int(floor(8*rng->uniform())) + 2;
 
             comp2x2 p = c22_pow(m, R1/n);
             comp2x2 o = c22_one();
@@ -182,19 +180,19 @@ rtest_module_(matrix_complex) {
 rtest_module_(matrix_real) {
     using namespace test_matrix;
 
-    lazy_static_(rstd::Mutex<TestRngReal3x3>, r3rng) {
-        return rstd::Mutex(TestRngReal3x3(0xABC3));
+    static_thread_local_(TestRngReal3x3, r3rng) {
+        return TestRngReal3x3(0xABC3);
     }
-    lazy_static_(rstd::Mutex<TestRngReal4x4>, r4rng) {
-        return rstd::Mutex(TestRngReal4x4(0xABC4));
+    static_thread_local_(TestRngReal4x4, r4rng) {
+        return TestRngReal4x4(0xABC4);
     }
-    lazy_static_(rstd::Mutex<TestRng<quat>>, qrng) {
-        return rstd::Mutex(TestRng<quat>(0xABC5));
+    static_thread_local_(TestRng<quat>, qrng) {
+        return TestRng<quat>(0xABC5);
     }
 
     rtest_(transpose) {
         for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-            real4x4 m = r4rng->lock()->normal();
+            real4x4 m = r4rng->normal();
             assert_eq_(r44_transpose(r44_transpose(m)), approx(m));
         }
     }
@@ -207,7 +205,7 @@ rtest_module_(matrix_real) {
         ), approx(r44_one()));
 
         for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-            real4x4 a = r4rng->lock()->normal(), b = r4rng->lock()->normal();
+            real4x4 a = r4rng->normal(), b = r4rng->normal();
 
             assert_eq_(r44_dot(a, r44_one()), approx(a));
             assert_eq_(r44_dot(r44_one(), b), approx(b));
@@ -225,7 +223,7 @@ rtest_module_(matrix_real) {
         assert_eq_(r33_det(r2), approx(-2));
 
         for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-            real3x3 a = r3rng->lock()->normal(), b = r3rng->lock()->normal();
+            real3x3 a = r3rng->normal(), b = r3rng->normal();
             assert_eq_(r33_det(a)*r33_det(b), approx(r33_det(r33_dot(a, b))));
         }
     }
@@ -242,7 +240,7 @@ rtest_module_(matrix_real) {
         );
 
         for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-            real4x4 m = r3rng->lock()->invertible();
+            real4x4 m = r3rng->invertible();
 
             assert_eq_(r33_dot(m, r33_inverse(m)), approx(r33_one()));
             assert_eq_(r33_dot(r33_inverse(m), m), approx(r33_one()));
@@ -261,8 +259,8 @@ rtest_module_(matrix_real) {
     }
     rtest_(complex_representation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = crng->lock()->normal();
-            comp b = crng->lock()->normal();
+            comp a = crng->normal();
+            comp b = crng->normal();
             assert_eq_(r22_from_comp(a) + r22_from_comp(b), approx(r22_from_comp(a + b)));
             assert_eq_(r22_dot(r22_from_comp(a), r22_from_comp(b)), approx(r22_from_comp(c_mul(a, b))));
             assert_eq_(r22_transpose(r22_from_comp(a)), approx(r22_from_comp(c_conj(a))));
@@ -271,8 +269,8 @@ rtest_module_(matrix_real) {
     }
     rtest_(quaternion_representation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = qrng->lock()->normal();
-            quat b = qrng->lock()->normal();
+            quat a = qrng->normal();
+            quat b = qrng->normal();
             assert_eq_(r44_from_quat(a) + r44_from_quat(b), approx(r44_from_quat(a + b)));
             assert_eq_(r44_dot(r44_from_quat(a), r44_from_quat(b)), approx(r44_from_quat(q_mul(a, b))));
             assert_eq_(r44_transpose(r44_from_quat(a)), approx(r44_from_quat(q_conj(a))));

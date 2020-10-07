@@ -44,8 +44,6 @@ real mo_diff(Moebius a, Moebius b) {
 
 #include <rtest.hpp>
 
-#include <lazy_static.hpp>
-
 
 class TestRngMoebius {
 private:
@@ -60,20 +58,20 @@ public:
 };
 
 rtest_module_(moebius) {
-    lazy_static_(rstd::Mutex<TestRng<comp>>, crng) {
-        return rstd::Mutex(TestRng<comp>());
+    static_thread_local_(TestRng<comp>, crng) {
+        return TestRng<comp>();
     }
-    lazy_static_(rstd::Mutex<TestRng<quat>>, qrng) {
-        return rstd::Mutex(TestRng<quat>());
+    static_thread_local_(TestRng<quat>, qrng) {
+        return TestRng<quat>();
     }
-    lazy_static_(rstd::Mutex<TestRngMoebius>, trng) {
-        return rstd::Mutex(TestRngMoebius());
+    static_thread_local_(TestRngMoebius, trng) {
+        return TestRngMoebius();
     }
 
     rtest_(chaining) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng->lock()->normal(), b = trng->lock()->normal();
-            quat c = qrng->lock()->normal();
+            Moebius a = trng->normal(), b = trng->normal();
+            quat c = qrng->normal();
             assert_eq_(
                 mo_apply_q(mo_chain(a, b), c), 
                 approx(mo_apply_q(a, mo_apply_q(b, c)))
@@ -83,9 +81,9 @@ rtest_module_(moebius) {
 
     rtest_(complex_derivation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng->lock()->normal();
-            comp p = crng->lock()->normal();
-            comp v = crng->lock()->nonzero();
+            Moebius a = trng->normal();
+            comp p = crng->normal();
+            comp v = crng->nonzero();
             
             // FIXME: Use rng in reproducible way
             assert_eq_(
@@ -96,9 +94,9 @@ rtest_module_(moebius) {
     }
     rtest_(quaternion_directional_derivation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng->lock()->normal();
-            quat p = qrng->lock()->normal();
-            quat v = qrng->lock()->nonzero();
+            Moebius a = trng->normal();
+            quat p = qrng->normal();
+            quat v = qrng->nonzero();
             
             assert_eq_(
                 approx(mo_deriv_q(a, p, v)),

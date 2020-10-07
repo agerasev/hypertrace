@@ -60,21 +60,21 @@ Linear3 lin3_inverse(Linear3 m) {
 
 
 rtest_module_(linear) {
-    lazy_static_(rstd::Mutex<TestRng<real>>, rng) {
-        return rstd::Mutex(TestRng<real>(0xABBA));
+    static_thread_local_(TestRng<real>, rng) {
+        return TestRng<real>(0xABBA);
     }
-    lazy_static_(rstd::Mutex<TestRng<real3>>, vrng) {
-        return rstd::Mutex(TestRng<real3>(0xBAAB));
+    static_thread_local_(TestRng<real3>, vrng) {
+        return TestRng<real3>(0xBAAB);
     }
-    lazy_static_(rstd::Mutex<TestRngReal3x3>, mrng) {
-        return rstd::Mutex(TestRngReal3x3(0xBEEB));
+    static_thread_local_(TestRngReal3x3, mrng) {
+        return TestRngReal3x3(0xBEEB);
     }
 
     rtest_(linearity) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Linear3 m = mrng->lock()->normal();
-            real a = rng->lock()->normal();
-            real3 x = vrng->lock()->normal();
+            Linear3 m = mrng->normal();
+            real a = rng->normal();
+            real3 x = vrng->normal();
 
             assert_eq_(lin3_apply(a*m, x), approx(lin3_apply(m, a*x)));
             assert_eq_(lin3_apply(a*m, x), approx(a*lin3_apply(m, x)));
@@ -82,9 +82,9 @@ rtest_module_(linear) {
     }
     rtest_(chaining) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Linear3 a = mrng->lock()->normal();
-            Linear3 b = mrng->lock()->normal();
-            real3 c = vrng->lock()->normal();
+            Linear3 a = mrng->normal();
+            Linear3 b = mrng->normal();
+            real3 c = vrng->normal();
 
             assert_eq_(lin3_chain(a, lin3_identity()), approx(a));
             assert_eq_(lin3_chain(lin3_identity(), b), approx(b));
@@ -93,8 +93,8 @@ rtest_module_(linear) {
     }
     rtest_(inversion) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Linear3 a = mrng->lock()->invertible();
-            real3 x = vrng->lock()->normal();
+            Linear3 a = mrng->invertible();
+            real3 x = vrng->normal();
 
             assert_eq_(lin3_chain(a, lin3_inverse(a)), approx(lin3_identity()));
             assert_eq_(lin3_chain(lin3_inverse(a), a), approx(lin3_identity()));
@@ -104,7 +104,7 @@ rtest_module_(linear) {
     }
     rtest_(look_to_the_direction) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            real3 d = vrng->lock()->unit();
+            real3 d = vrng->unit();
             Linear3 m = lin3_look_to(d);
 
             assert_eq_(lin3_apply(m, d), approx(r3_new(R0, R0, R1)));

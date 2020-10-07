@@ -48,14 +48,12 @@ comp c_sqrt(comp a) {
 
 #include <rtest.hpp>
 
-#include <lazy_static.hpp>
-
 rtest_module_(complex) {
-    lazy_static_(rstd::Mutex<TestRng<real>>, rng) {
-        return rstd::Mutex(TestRng<real>(0xbeef));
+    static_thread_local_(TestRng<real>, rng) {
+        return TestRng<real>(0xbeef);
     }
-    lazy_static_(rstd::Mutex<TestRng<comp>>, crng) {
-        return rstd::Mutex(TestRng<comp>(0xbeef));
+    static_thread_local_(TestRng<comp>, crng) {
+        return TestRng<comp>(0xbeef);
     }
 
     rtest_(constructor) {
@@ -65,21 +63,21 @@ rtest_module_(complex) {
     }
     rtest_(inversion) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = crng->lock()->nonzero();
+            comp a = crng->nonzero();
             assert_eq_(c_div(a, a), approx(C1));
         }
     }
     rtest_(square_root) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = crng->lock()->normal();
+            comp a = crng->normal();
             comp b = c_sqrt(a);
             assert_eq_(c_mul(b, b), approx(a));
         }
     }
     rtest_(power) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            comp a = crng->lock()->normal();
-            int n = int(floor(2 + 10*rng->lock()->uniform()));
+            comp a = crng->normal();
+            int n = int(floor(2 + 10*rng->uniform()));
             comp b = c_pow_r(a, 1.0/n);
             comp c = C1;
             for (int i = 0; i < n; ++i) {

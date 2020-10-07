@@ -83,12 +83,13 @@ rtest_module_(moebius) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             Moebius a = trng->normal();
             comp p = crng->normal();
-            comp v = crng->nonzero();
+            comp v = crng->unit();
             
-            // FIXME: Use rng in reproducible way
+            comp deriv = mo_deriv_c(a, p);
+            real dabs = c_abs(deriv);
             assert_eq_(
-                approx(mo_deriv_c(a, p)),
-                c_div(mo_apply_c(a, p + EPS*v) - mo_apply_c(a, p), EPS*v)
+                c_div(mo_apply_c(a, p + EPS*v) - mo_apply_c(a, p), EPS*v),
+                approx(deriv).epsilon(1e4*EPS*dabs)
             );
         }
     }
@@ -96,10 +97,12 @@ rtest_module_(moebius) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             Moebius a = trng->normal();
             quat p = qrng->normal();
-            quat v = qrng->nonzero();
+            quat v = qrng->unit();
             
+            quat deriv = mo_deriv_q(a, p, v);
+            real dabs = q_abs(deriv);
             assert_eq_(
-                approx(mo_deriv_q(a, p, v)),
+                approx(deriv).epsilon(1e4*EPS*dabs),
                 (mo_apply_q(a, p + EPS*v) - mo_apply_q(a, p))/EPS
             );
         }

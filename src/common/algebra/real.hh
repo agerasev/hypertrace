@@ -25,6 +25,8 @@ typedef float real;
 
 #ifdef TEST_UNIT
 
+#define TEST_ATTEMPTS 1024
+
 #include <random>
 
 template <typename T>
@@ -48,49 +50,59 @@ public:
     }
 };
 
-#define TEST_ATTEMPTS 16
-
 
 #include <iostream>
+#include <type_traits>
 
+#define APPROX_EPS 100*EPS
+
+template <typename T>
 class Approx {
-private:
-    // FIXME: Use standard epsilon value
-    real epsilon_ = 100*EPS;
-    real value_ = R0;
 public:
-    inline explicit Approx(real value) :
-        value_(value)    
+    real _epsilon = APPROX_EPS;
+    T _value = R0;
+
+    explicit Approx(T value) :
+        _value(value)    
     {}
-    inline Approx epsilon(real eps) const {
+    Approx epsilon(real eps) const {
         Approx copy_ = *this;
-        copy_.epsilon_ = eps;
+        copy_._epsilon = eps;
         return copy_;
     }
-
-    inline friend bool operator==(real a, Approx b) {
-        return std::abs(a - b.value_) <= b.epsilon_;
-    }
-    inline friend bool operator==(Approx a, real b) {
-        return b == a;
-    }
-    inline friend bool operator!=(real a, Approx b) {
-        return !(a == b);
-    }
-    inline friend bool operator!=(Approx a, real b) {
-        return b != a;
-    }
-    inline friend std::ostream &operator<<(std::ostream &s, Approx a) {
-        s << "approx(" << a.value_;
-        if (a.epsilon_ != EPS) {
-            s << ", eps=" << a.epsilon_;
-        }
-        return s << ")";
+    bool operator==(T x) const {
+        return std::abs(_value - x) <= _epsilon;
     }
 };
 
-inline Approx approx(real v) {
-    return Approx(v);
+template <typename T>
+bool operator==(T a, Approx<T> b) {
+    return b == a;
+}
+template <typename T>
+bool operator!=(Approx<T> a, T b) {
+    return !(a == b);
+}
+template <typename T>
+bool operator!=(T a, Approx<T> b) {
+    return b != a;
+}
+template <typename T>
+std::ostream &operator<<(std::ostream &s, const Approx<T> &a) {
+    s << "approx(" << a._value;
+    if (a._epsilon != APPROX_EPS) {
+        s << ", eps=" << a._epsilon;
+    }
+    return s << ")";
+}
+
+template <typename T, typename X=std::enable_if_t<!std::is_integral_v<T>, void>>
+Approx<T> approx(T v) {
+    return Approx<T>(v);
+}
+template <typename T, typename X=std::enable_if_t<std::is_integral_v<T>, void>>
+Approx<real> approx(T v) {
+    return Approx<real>(real(v));
 }
 
 #endif // TEST_UNIT

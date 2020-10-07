@@ -151,54 +151,31 @@ public:
     }
 };
 
+
 template <typename T, int N>
-class VecApprox {
-private:
-    typedef vec<T, N> vtype;
-    vtype v;
-    T eps = -1;
-
+class Approx<vec<T, N>> {
 public:
-    VecApprox(vtype c) : v(c) {}
-    VecApprox &epsilon(T e) {
-        eps = e;
-        return *this;
-    }
+    typedef vec<T, N> V;
+    real _epsilon = APPROX_EPS;
+    V _value = V(R0);
 
-    friend bool operator==(vtype a, VecApprox b) {
+    explicit Approx(V value) :
+        _value(value)    
+    {}
+    Approx epsilon(real eps) const {
+        Approx copy_ = *this;
+        copy_._epsilon = eps;
+        return copy_;
+    }
+    bool operator==(V x) const {
         for (int i = 0; i < N; ++i) {
-            auto ap = Approx(b.v[i]);
-            if (b.eps > 0) {
-                ap.epsilon(b.eps);
-            } 
-            if (a[i] != ap) {
+            if (std::abs(_value[i] - x[i]) > _epsilon) {
                 return false;
             }
         }
         return true;
     }
-    friend bool operator==(VecApprox a, vtype b) {
-        return b == a;
-    }
-    friend bool operator!=(vtype a, VecApprox b) {
-        return !(a == b);
-    }
-    friend bool operator!=(VecApprox a, vtype b) {
-        return b != a;
-    }
-    inline friend std::ostream &operator<<(std::ostream &s, VecApprox a) {
-        s << "approx(" << a.v;
-        if (a.eps != -1) {
-            s << ", eps=" << a.eps;
-        }
-        return s << ")";
-    }
 };
-
-template <typename T, int N>
-VecApprox<T, N> approx(vec<T, N> v) {
-    return VecApprox<T, N>(v);
-}
 
 #endif // TEST_UNIT
 

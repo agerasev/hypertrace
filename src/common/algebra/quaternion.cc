@@ -124,14 +124,19 @@ rtest_module_(quaternion) {
                 }
             )
         };
-
+        
         for (auto p : cases) {
             auto f = p.first;
             auto dfdv = p.second;
             for (int i = 0; i < TEST_ATTEMPTS; ++i) {
                 quat p = qrng->normal();
                 quat v = qrng->unit();
-                assert_eq_((f(p + EPS*v) - f(p))/EPS, approx(dfdv(p, v)));
+                quat deriv = dfdv(p, v);
+                real dabs = q_abs(deriv);
+                assert_eq_(
+                    approx(deriv).epsilon(1e3*EPS*dabs),
+                    (f(p + EPS*v) - f(p))/EPS
+                );
             }
         }
     }

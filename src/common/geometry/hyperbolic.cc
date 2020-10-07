@@ -104,84 +104,90 @@ HyMap hy_move_to(HyDir dir, real dist) {
 
 #ifdef TEST_UNIT
 
-#include <catch.hpp>
+#include <rtest.hpp>
 #include <functional>
 
 quat TestRngHyPos::normal() {
     return q_new(rng2.normal(), exp(rng.normal()), R0);
 }
 
-TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
-    TestRng<real> rng;
-    TestRng<comp> crng;
-    TestRngHyPos hyrng;
+rtest_module_(hyperbolic) {
+    static_thread_local_(TestRng<real>, rng) {
+        return TestRng<real>();
+    }
+    static_thread_local_(TestRng<comp>, crng) {
+        return TestRng<comp>();
+    }
+    static_thread_local_(TestRngHyPos, hyrng) {
+        return TestRngHyPos();
+    }
 
-    SECTION("Distance invariance") {
+    rtest_(distance_invariance) {
         std::vector<std::function<Moebius()>> elem = {
-            [&]() { return hy_yrotate(2*PI*rng.uniform()); },
-            [&]() { return hy_zrotate(2*PI*rng.uniform()); },
-            [&]() { return hy_zshift(rng.normal()); }
+            [&]() { return hy_yrotate(2*PI*rng->uniform()); },
+            [&]() { return hy_zrotate(2*PI*rng->uniform()); },
+            [&]() { return hy_zshift(rng->normal()); }
         };
 
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = hyrng.normal(), b = hyrng.normal();
+            quat a = hyrng->normal(), b = hyrng->normal();
 
             Moebius m = mo_identity();
             for (int j = 0; j < 8; ++j) {
-                m = hy_chain(m, elem[floor(3*rng.uniform())]());
+                m = hy_chain(m, elem[floor(3*rng->uniform())]());
             }
 
             real dist_before = hy_distance(a, b);
             real dist_after = hy_distance(hy_apply_pos(m, a), hy_apply_pos(m, b));
 
-            REQUIRE(dist_before == approx(dist_after));
+            assert_eq_(dist_before, approx(dist_after));
         }
     }
-    SECTION("Rotation of derivative") {
+    rtest_(rotation_of_derivative) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat q = normalize(q_new(crng.normal(), R1, R0));
+            quat q = normalize(q_new(crng->normal(), R1, R0));
             real phi = -atan2(q.y, q.x);
             real theta = -atan2(length(q.xy), q.z);
 
             Moebius c = hy_chain(hy_yrotate(theta), hy_zrotate(phi));
 
-            REQUIRE(hy_apply_dir(c, QJ, q) == approx(QJ));
+            assert_eq_(hy_apply_dir(c, QJ, q), approx(QJ));
         }
     }
-    SECTION("Look at the point") {
+    rtest_(look_at_the_point) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat q = hyrng.normal();
+            quat q = hyrng->normal();
             quat p = hy_apply_pos(hy_look_at(q), q);
 
-            REQUIRE(p.xy == approx(C0));
+            assert_eq_(p.xy, approx(C0));
         }
     }
-    SECTION("Move at the point") {
+    rtest_(move_at_the_point) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat p = hyrng.normal(), q = hyrng.normal();
+            quat p = hyrng->normal(), q = hyrng->normal();
 
             Moebius a = hy_move_at(p);
-            REQUIRE(hy_apply_pos(a, p) == approx(QJ));
+            assert_eq_(hy_apply_pos(a, p), approx(QJ));
 
             Moebius b = hy_chain(hy_inverse(hy_move_at(q)), a);
-            REQUIRE(hy_apply_pos(b, p) == approx(q));
+            assert_eq_(hy_apply_pos(b, p), approx(q));
         }
     }
-    SECTION("Rotation interpolation at small angles") {
+    rtest_(rotation_interpolation_at_small_angles) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius m = hy_yrotate(1e-3*PI*rng.uniform());
-            int q = (int)floor(8*rng.uniform()) + 2;
+            Moebius m = hy_yrotate(1e-3*PI*rng->uniform());
+            int q = (int)floor(8*rng->uniform()) + 2;
 
             Moebius l = mo_identity();
             for (int i = 0; i < q; ++i) {
                 l = mo_chain(l, m);
             }
             Moebius o = mo_pow(l, R1/q);
-            REQUIRE(c22_det(o) == approx(C1));
-            REQUIRE(o == approx(m));
+            assert_eq_(c22_det(o), approx(C1));
+            assert_eq_(o, approx(m));
         }
     }
-    SECTION("Interpolation") {
+    rtest_(interpolation) {
         Moebius a = hy_xshift(R1);
         Moebius b = hy_yshift(R1);
         quat aq = hy_apply_pos(a, QJ), bq = hy_apply_pos(b, QJ);
@@ -191,7 +197,7 @@ TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
             real t = real(i)/(n - 1);
             Moebius c = mo_chain(a, mo_pow(mo_chain(mo_inverse(a), b), t));
             quat cq = hy_apply_pos(c, QJ);
-            REQUIRE(hy_distance(aq, cq)/d == approx(t).epsilon(0.01));
+            assert_eq_(hy_distance(aq, cq)/d, approx(t).epsilon(0.01));
         }
     }
 };

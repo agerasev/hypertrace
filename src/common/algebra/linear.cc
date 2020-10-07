@@ -56,52 +56,58 @@ Linear3 lin3_inverse(Linear3 m) {
 
 #ifdef TEST_UNIT
 
-#include <catch.hpp>
+#include <rtest.hpp>
 
 
-TEST_CASE("Linear transformation", "[linear]") {
-    TestRng<real> rng(0xABBA);
-    TestRng<real3> vrng(0xBAAB);
-    TestRngReal3x3 mrng(0xBEEB);
+rtest_module_(linear) {
+    static_thread_local_(TestRng<real>, rng) {
+        return TestRng<real>(0xABBA);
+    }
+    static_thread_local_(TestRng<real3>, vrng) {
+        return TestRng<real3>(0xBAAB);
+    }
+    static_thread_local_(TestRngReal3x3, mrng) {
+        return TestRngReal3x3(0xBEEB);
+    }
 
-    SECTION("Linearity") {
+    rtest_(linearity) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Linear3 m = mrng.normal();
-            real a = rng.normal();
-            real3 x = vrng.normal();
+            Linear3 m = mrng->normal();
+            real a = rng->normal();
+            real3 x = vrng->normal();
 
-            REQUIRE(lin3_apply(a*m, x) == approx(lin3_apply(m, a*x)));
-            REQUIRE(lin3_apply(a*m, x) == approx(a*lin3_apply(m, x)));
+            assert_eq_(lin3_apply(a*m, x), approx(lin3_apply(m, a*x)));
+            assert_eq_(lin3_apply(a*m, x), approx(a*lin3_apply(m, x)));
         }
     }
-    SECTION("Chaining") {
+    rtest_(chaining) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Linear3 a = mrng.normal();
-            Linear3 b = mrng.normal();
-            real3 c = vrng.normal();
+            Linear3 a = mrng->normal();
+            Linear3 b = mrng->normal();
+            real3 c = vrng->normal();
 
-            REQUIRE(lin3_chain(a, lin3_identity()) == approx(a));
-            REQUIRE(lin3_chain(lin3_identity(), b) == approx(b));
-            REQUIRE(lin3_apply(lin3_chain(a, b), c) == approx(lin3_apply(a, lin3_apply(b, c))));
+            assert_eq_(lin3_chain(a, lin3_identity()), approx(a));
+            assert_eq_(lin3_chain(lin3_identity(), b), approx(b));
+            assert_eq_(lin3_apply(lin3_chain(a, b), c), approx(lin3_apply(a, lin3_apply(b, c))));
         }
     }
-    SECTION("Inversion") {
+    rtest_(inversion) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Linear3 a = mrng.invertible();
-            real3 x = vrng.normal();
+            Linear3 a = mrng->invertible();
+            real3 x = vrng->normal();
 
-            REQUIRE(lin3_chain(a, lin3_inverse(a)) == approx(lin3_identity()));
-            REQUIRE(lin3_chain(lin3_inverse(a), a) == approx(lin3_identity()));
-            REQUIRE(lin3_apply(lin3_inverse(a), lin3_apply(a, x)) == approx(x));
-            REQUIRE(lin3_apply(a, lin3_apply(lin3_inverse(a), x)) == approx(x));
+            assert_eq_(lin3_chain(a, lin3_inverse(a)), approx(lin3_identity()));
+            assert_eq_(lin3_chain(lin3_inverse(a), a), approx(lin3_identity()));
+            assert_eq_(lin3_apply(lin3_inverse(a), lin3_apply(a, x)), approx(x));
+            assert_eq_(lin3_apply(a, lin3_apply(lin3_inverse(a), x)), approx(x));
         }
     }
-    SECTION("Look to the direction") {
+    rtest_(look_to_the_direction) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            real3 d = vrng.unit();
+            real3 d = vrng->unit();
             Linear3 m = lin3_look_to(d);
 
-            REQUIRE(lin3_apply(m, d) == approx(r3_new(R0, R0, R1)));
+            assert_eq_(lin3_apply(m, d), approx(r3_new(R0, R0, R1)));
         }
     }
 };

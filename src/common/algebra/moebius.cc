@@ -42,7 +42,8 @@ real mo_diff(Moebius a, Moebius b) {
 
 #ifdef TEST_UNIT
 
-#include <catch.hpp>
+#include <rtest.hpp>
+
 
 class TestRngMoebius {
 private:
@@ -56,42 +57,52 @@ public:
     }
 };
 
-TEST_CASE("Moebius transformation", "[moebius]") {
-    TestRng<comp> crng;
-    TestRng<quat> qrng;
-    TestRngMoebius trng;
+rtest_module_(moebius) {
+    static_thread_local_(TestRng<comp>, crng) {
+        return TestRng<comp>();
+    }
+    static_thread_local_(TestRng<quat>, qrng) {
+        return TestRng<quat>();
+    }
+    static_thread_local_(TestRngMoebius, trng) {
+        return TestRngMoebius();
+    }
 
-    SECTION("Chaining") {
+    rtest_(chaining) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng.normal(), b = trng.normal();
-            quat c = qrng.normal();
-            REQUIRE(
-                mo_apply_q(mo_chain(a, b), c) == 
+            Moebius a = trng->normal(), b = trng->normal();
+            quat c = qrng->normal();
+            assert_eq_(
+                mo_apply_q(mo_chain(a, b), c), 
                 approx(mo_apply_q(a, mo_apply_q(b, c)))
             );
         }
     }
 
-    SECTION("Complex derivation") {
+    rtest_(complex_derivation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng.normal();
-            comp p = crng.normal();
-            comp v = crng.nonzero();
+            Moebius a = trng->normal();
+            comp p = crng->normal();
+            comp v = crng->unit();
             
-            REQUIRE(
-                approx(mo_deriv_c(a, p)) ==
-                c_div(mo_apply_c(a, p + EPS*v) - mo_apply_c(a, p), EPS*v)
+            comp deriv = mo_deriv_c(a, p);
+            real dabs = c_abs(deriv);
+            assert_eq_(
+                c_div(mo_apply_c(a, p + EPS*v) - mo_apply_c(a, p), EPS*v),
+                approx(deriv).epsilon(1e4*EPS*dabs)
             );
         }
     }
-    SECTION("Quaternion directional derivation") {
+    rtest_(quaternion_directional_derivation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng.normal();
-            quat p = qrng.normal();
-            quat v = qrng.nonzero();
+            Moebius a = trng->normal();
+            quat p = qrng->normal();
+            quat v = qrng->unit();
             
-            REQUIRE(
-                approx(mo_deriv_q(a, p, v)) ==
+            quat deriv = mo_deriv_q(a, p, v);
+            real dabs = q_abs(deriv);
+            assert_eq_(
+                approx(deriv).epsilon(1e4*EPS*dabs),
                 (mo_apply_q(a, p + EPS*v) - mo_apply_q(a, p))/EPS
             );
         }

@@ -16,9 +16,8 @@ addons:
   apt:
     packages:
       - cmake
-      - catch
-      - lcov
-      - curl
+      #- lcov
+      #- curl
 
 script:
   - ./script/test.sh

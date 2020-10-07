@@ -58,50 +58,52 @@ quat cq_div(comp a, quat b) {
 
 #ifdef TEST_UNIT
 
-#include <catch.hpp>
+#include <rtest.hpp>
 
 #include <vector>
 #include <utility>
 #include <functional>
 
 
-TEST_CASE("Quaternions", "[quat]") {
-    TestRng<quat> qrng(0xfeed);
+rtest_module_(quaternion) {
+    static_thread_local_(TestRng<quat>, qrng) {
+        return TestRng<quat>(0xfeed);
+    }
 
-    SECTION("Imaginary units") {
-        REQUIRE(q_mul(QI, QI) == approx(-Q1));
-        REQUIRE(q_mul(QJ, QJ) == approx(-Q1));
-        REQUIRE(q_mul(QK, QK) == approx(-Q1));
-        REQUIRE(q_mul(q_mul(QI, QJ), QK) == approx(-Q1));
+    rtest_(imaginary_units) {
+        assert_eq_(q_mul(QI, QI), approx(-Q1));
+        assert_eq_(q_mul(QJ, QJ), approx(-Q1));
+        assert_eq_(q_mul(QK, QK), approx(-Q1));
+        assert_eq_(q_mul(q_mul(QI, QJ), QK), approx(-Q1));
 
-        REQUIRE(q_mul(QI, QJ) == approx(QK));
-        REQUIRE(q_mul(QJ, QK) == approx(QI));
-        REQUIRE(q_mul(QK, QI) == approx(QJ));
+        assert_eq_(q_mul(QI, QJ), approx(QK));
+        assert_eq_(q_mul(QJ, QK), approx(QI));
+        assert_eq_(q_mul(QK, QI), approx(QJ));
         
-        REQUIRE(q_mul(QJ, QI) == approx(-QK));
-        REQUIRE(q_mul(QK, QJ) == approx(-QI));
-        REQUIRE(q_mul(QI, QK) == approx(-QJ));
+        assert_eq_(q_mul(QJ, QI), approx(-QK));
+        assert_eq_(q_mul(QK, QJ), approx(-QI));
+        assert_eq_(q_mul(QI, QK), approx(-QJ));
     }
-    SECTION("Inversion") {
+    rtest_(inversion) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = qrng.nonzero();
-            REQUIRE(q_div(a, a) == approx(Q1));
+            quat a = qrng->nonzero();
+            assert_eq_(q_div(a, a), approx(Q1));
         }
     }
-    SECTION("Law of cosines") {
+    rtest_(law_of_cosines) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = qrng.normal(), b = qrng.normal();
-            REQUIRE(q_abs2(a) + q_abs2(b) + 2*dot(a, b) == Approx(q_abs2(a + b)));
+            quat a = qrng->normal(), b = qrng->normal();
+            assert_eq_(q_abs2(a) + q_abs2(b) + 2*dot(a, b), Approx(q_abs2(a + b)));
         }
     }
-    SECTION("Conjugation") {
+    rtest_(conjugation) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            quat a = qrng.normal();
-            REQUIRE(q_mul(a, q_conj(a)) == approx(q_abs2(a)*Q1));
-            REQUIRE(q_mul(q_conj(a), a) == approx(q_abs2(a)*Q1));
+            quat a = qrng->normal();
+            assert_eq_(q_mul(a, q_conj(a)), approx(q_abs2(a)*Q1));
+            assert_eq_(q_mul(q_conj(a), a), approx(q_abs2(a)*Q1));
         }
     }
-    SECTION("Derivation") {
+    rtest_(derivation) {
         std::vector<std::pair<
             std::function<quat(quat)>,
             std::function<quat(quat, quat)>
@@ -122,14 +124,19 @@ TEST_CASE("Quaternions", "[quat]") {
                 }
             )
         };
-
+        
         for (auto p : cases) {
             auto f = p.first;
             auto dfdv = p.second;
             for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-                quat p = qrng.normal();
-                quat v = qrng.unit();
-                REQUIRE((f(p + EPS*v) - f(p))/EPS == approx(dfdv(p, v)));
+                quat p = qrng->normal();
+                quat v = qrng->unit();
+                quat deriv = dfdv(p, v);
+                real dabs = q_abs(deriv);
+                assert_eq_(
+                    approx(deriv).epsilon(1e3*EPS*dabs),
+                    (f(p + EPS*v) - f(p))/EPS
+                );
             }
         }
     }

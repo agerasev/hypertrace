@@ -1,2 +1,5 @@
-#define CATCH_CONFIG_MAIN
-#include <catch.hpp>
+#include <rtest/main.hpp>
+
+int main(int argc, char *argv[]) {
+    return rtest::main(argc, argv);
+}

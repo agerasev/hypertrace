@@ -124,8 +124,6 @@ VECTOR_INTEROP_N(real,   cl_float)
 
 #ifdef TEST_UNIT
 
-#include <catch.hpp>
-
 template <int N>
 class TestRng<vec<real, N>> {
 private:
@@ -153,61 +151,30 @@ public:
     }
 };
 
+
 template <typename T, int N>
-class VecApprox {
-private:
-    typedef vec<T, N> vtype;
-    vtype v;
-    T eps = -1;
-
+class Approx<vec<T, N>> {
 public:
-    VecApprox(vtype c) : v(c) {}
-    VecApprox &epsilon(T e) {
-        eps = e;
-        return *this;
-    }
+    typedef vec<T, N> V;
+    real _epsilon = APPROX_EPS;
+    V _value = V(R0);
 
-    friend bool operator==(vtype a, VecApprox b) {
+    explicit Approx(V value) :
+        _value(value)    
+    {}
+    Approx epsilon(real eps) const {
+        Approx copy_ = *this;
+        copy_._epsilon = eps;
+        return copy_;
+    }
+    bool operator==(V x) const {
         for (int i = 0; i < N; ++i) {
-            auto ap = Approx(b.v[i]);
-            if (b.eps > 0) {
-                ap.epsilon(b.eps);
-            } 
-            if (a[i] != ap) {
+            if (std::abs(_value[i] - x[i]) > _epsilon) {
                 return false;
             }
         }
         return true;
     }
-    friend bool operator==(VecApprox a, vtype b){
-        return b == a;
-    }
-    friend bool operator!=(vtype a, VecApprox b){
-        return !(a == b);
-    }
-    friend bool operator!=(VecApprox a, vtype b){
-        return a != b;
-    }
-    friend std::ostream &operator<<(std::ostream &s, VecApprox a) {
-        return s << a.v;
-    }
 };
 
-template <typename T, int N>
-VecApprox<T, N> approx(vec<T, N> v) {
-    return VecApprox<T, N>(v);
-}
-
 #endif // TEST_UNIT
-
-#ifdef TEST_DEV
-
-#include <host/opencl/opencl.hpp>
-
-void test_dev_vector(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue queue
-);
-
-#endif // TEST_DEV

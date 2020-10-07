@@ -25,7 +25,7 @@ typedef float real;
 
 #ifdef TEST_UNIT
 
-#include <catch.hpp>
+#define TEST_ATTEMPTS 1024
 
 #include <random>
 
@@ -50,21 +50,59 @@ public:
     }
 };
 
-inline Approx approx(real v) {
-    return Approx(v);
+
+#include <iostream>
+#include <type_traits>
+
+#define APPROX_EPS 100*EPS
+
+template <typename T>
+class Approx {
+public:
+    real _epsilon = APPROX_EPS;
+    T _value = R0;
+
+    explicit Approx(T value) :
+        _value(value)    
+    {}
+    Approx epsilon(real eps) const {
+        Approx copy_ = *this;
+        copy_._epsilon = eps;
+        return copy_;
+    }
+    bool operator==(T x) const {
+        return std::abs(_value - x) <= _epsilon;
+    }
+};
+
+template <typename T>
+bool operator==(T a, Approx<T> b) {
+    return b == a;
+}
+template <typename T>
+bool operator!=(Approx<T> a, T b) {
+    return !(a == b);
+}
+template <typename T>
+bool operator!=(T a, Approx<T> b) {
+    return b != a;
+}
+template <typename T>
+std::ostream &operator<<(std::ostream &s, const Approx<T> &a) {
+    s << "approx(" << a._value;
+    if (a._epsilon != APPROX_EPS) {
+        s << ", eps=" << a._epsilon;
+    }
+    return s << ")";
 }
 
-#define TEST_ATTEMPTS 16
+template <typename T, typename X=std::enable_if_t<!std::is_integral_v<T>, void>>
+Approx<T> approx(T v) {
+    return Approx<T>(v);
+}
+template <typename T, typename X=std::enable_if_t<std::is_integral_v<T>, void>>
+Approx<real> approx(T v) {
+    return Approx<real>(real(v));
+}
 
 #endif // TEST_UNIT
-
-#ifdef TEST_DEV
-
-#include <host/opencl/opencl.hpp>
-
-void test_dev_real(
-    cl_device_id device,
-    core::Rc<cl::Queue> queue
-);
-
-#endif // TEST_DEV

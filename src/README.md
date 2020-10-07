@@ -17,6 +17,6 @@ The directory contains source code for both host and device.
 |------|----------|-------------|
 | `HOST` | Only host C++ | Code is building for the host |
 | `INTEROP` | Only host C++ | Interoperability with OpenCL device enabled |
-| `TEST_CATCH` | Only host C++ | Code is building for unit tests |
+| `TEST_UNIT` | Only host C++ | Code is building for unit tests |
 | `TEST_DEV` | Only host C++ with OpenCL installed | Unit testing device code |
 | `DEV_F64` | Host and device OpenCL | Device supports and will use double-precision FP |

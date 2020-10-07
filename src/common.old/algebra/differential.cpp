@@ -2,7 +2,7 @@
 
 
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 #include <catch.hpp>
 
 using namespace test;

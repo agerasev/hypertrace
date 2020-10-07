@@ -23,7 +23,7 @@ typedef float real;
 #endif // HOST || DEV_F64
 
 
-#ifdef TEST
+#ifdef TEST_UNIT
 
 #include <random>
 
@@ -50,9 +50,6 @@ public:
 
 #define TEST_ATTEMPTS 16
 
-#endif // TEST
-
-#ifdef TEST_UNIT
 
 #include <iostream>
 
@@ -98,15 +95,6 @@ inline Approx approx(real v) {
 
 #endif // TEST_UNIT
 
-#ifdef TEST_CATCH
-
-#include <catch.hpp>
-
-inline Approx approx(real v) {
-    return Approx(v);
-}
-
-#endif // TEST_CATCH
 
 #ifdef TEST_DEV
 

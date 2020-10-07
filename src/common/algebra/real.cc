@@ -38,7 +38,7 @@ void test_dev_real(
         "))},
         std::map<std::string, bool>{
             std::make_pair("HOST", false),
-            std::make_pair("TEST_CATCH", false),
+            std::make_pair("TEST_UNIT", false),
             std::make_pair("TEST_DEV", false)
         }
     );

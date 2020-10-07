@@ -6,19 +6,9 @@ add_executable(test_unit
     "test_unit.cpp"
 )
 target_compile_definitions(test_unit PRIVATE
-    "-DTEST"
     "-DTEST_UNIT"
 )
 target_link_libraries(test_unit pthread rstd)
-
-add_executable(test_catch
-    ${COMMON_SRC}
-    "test_catch.cpp"
-)
-target_compile_definitions(test_catch PRIVATE
-    "-DTEST"
-    "-DTEST_CATCH"
-)
 
 add_executable(test_dev
     ${COMMON_SRC}

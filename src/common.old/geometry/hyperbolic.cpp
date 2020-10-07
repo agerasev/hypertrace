@@ -95,7 +95,7 @@ Moebius<comp> Hy::move_to(quat dir, real dist) {
 }
 
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #include <functional>
 #include <test.hpp>
@@ -188,4 +188,4 @@ TEST_CASE("Hyperbolic geometry", "[hyperbolic]") {
         }
     }
 };
-#endif // TEST_CATCH
+#endif // TEST_UNIT

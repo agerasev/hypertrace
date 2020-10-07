@@ -113,7 +113,7 @@ typedef Rotation<real, 2> Rotation2;
 typedef Rotation<real, 3> Rotation3;
 
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #include "test.hpp"
 

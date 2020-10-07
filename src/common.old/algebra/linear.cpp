@@ -1,6 +1,6 @@
 #include "linear.hpp"
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #include "test.hpp"
 
@@ -47,4 +47,4 @@ TEST_CASE("Linear transformation", "[linear]") {
         }
     }
 };
-#endif // TEST_CATCH
+#endif // TEST_UNIT

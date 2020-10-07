@@ -1,7 +1,7 @@
 #include "vector.hpp"
 
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 #include <catch.hpp>
 
 using namespace test;
@@ -41,4 +41,4 @@ TEST_CASE("Vector types", "[vector]") {
     }
 };
 
-#endif // TEST_CATCH
+#endif // TEST_UNIT

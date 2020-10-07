@@ -2,7 +2,7 @@
 #include "matrix.hpp"
 
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 #include <catch.hpp>
 
 #include <iostream>
@@ -150,4 +150,4 @@ TEST_CASE("Quaternions", "[quaternion]") {
     }
 };
 
-#endif // TEST_CATCH
+#endif // TEST_UNIT

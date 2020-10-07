@@ -85,7 +85,7 @@ struct ToDevice<Linear<T, N>> {
 
 #endif
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #include "test.hpp"
 

@@ -1,6 +1,6 @@
 #include "moebius.hpp"
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 #include <catch.hpp>
 #include "test.hpp"
 
@@ -50,4 +50,4 @@ TEST_CASE("Moebius transformation", "[moebius]") {
         }
     }
 };
-#endif // TEST_CATCH
+#endif // TEST_UNIT

@@ -1,4 +1,4 @@
-#ifdef TEST
+#ifdef TEST_UNIT
 
 #include "matrix.hh"
 
@@ -41,7 +41,6 @@ real4x4 TestRngReal4x4::uniform() {
     return rng.normal();
 }
 
-#ifdef TEST_UNIT
 
 #include <rtest.hpp>
 
@@ -280,5 +279,3 @@ rtest_module_(matrix_real) {
 }
 
 #endif // TEST_UNIT
-
-#endif // TEST

@@ -16,13 +16,11 @@ addons:
   apt:
     packages:
       - cmake
-      - catch
-      - lcov
-      - curl
+      #- lcov
+      #- curl
 
 script:
   - ./script/test.sh
-  - ./script/test.sh catch
 
 #after_success:
 #  - ./script/cov.sh

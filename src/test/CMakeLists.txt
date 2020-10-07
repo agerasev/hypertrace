@@ -13,6 +13,7 @@ target_link_libraries(test_unit pthread rstd)
 add_executable(test_dev
     ${COMMON_SRC}
     ${HOST_OPENCL_SRC}
+    "devtest.cpp"
     "test_dev.cpp"
 )
 target_compile_definitions(test_dev PRIVATE

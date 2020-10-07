@@ -69,8 +69,8 @@ rtest_module_(vector) {
 
 #endif // TEST_UNIT
 
-
-#ifdef _TEST_DEV
+/*
+#ifdef TEST_DEV
 
 #include <vector>
 #include <cassert>
@@ -110,3 +110,4 @@ void test_dev_vector(
 }
 
 #endif // TEST_DEV
+*/

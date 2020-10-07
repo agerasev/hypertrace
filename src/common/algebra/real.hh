@@ -106,15 +106,3 @@ Approx<real> approx(T v) {
 }
 
 #endif // TEST_UNIT
-
-
-#ifdef TEST_DEV
-
-#include <host/opencl/opencl.hpp>
-
-void test_dev_real(
-    cl_device_id device,
-    rstd::Rc<cl::Queue> queue
-);
-
-#endif // TEST_DEV

@@ -178,15 +178,3 @@ public:
 };
 
 #endif // TEST_UNIT
-
-#ifdef TEST_DEV
-
-#include <host/opencl/opencl.hpp>
-
-void test_dev_vector(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue queue
-);
-
-#endif // TEST_DEV

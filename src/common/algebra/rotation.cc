@@ -63,9 +63,9 @@ Linear3 rot3_to_linear(Rotation3 m) {
 }
 
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 
-#include <catch.hpp>
+#include <rtest.hpp>
 
 
 Rotation2 TestRngRotation2::uniform() {
@@ -79,101 +79,114 @@ Rotation3 TestRngRotation3::uniform() {
     );
 }
 
-TEST_CASE("Rotation transformation", "[rotation]") {
-    TestRng<real> rng(0x807A);
-    TestRng<real2> r2rng(0x807A);
-    TestRng<real3> r3rng(0x807A);
-    TestRngRotation2 rot2rng(0x807A);
-    TestRngRotation3 rot3rng(0x807A);
+rtest_module_(rotation_2d) {
+    static_thread_local_(TestRng<real>, rng) {
+        return TestRng<real>(0x807A);
+    }
+    static_thread_local_(TestRng<real2>, r2rng) {
+        return TestRng<real2>(0x807A);
+    }
+    static_thread_local_(TestRngRotation2, rot2rng) {
+        return TestRngRotation2(0x807A);
+    }
 
-    SECTION("Rotation 2D") {
-        SECTION("Mapping") {
-            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                real angle = 2*PI*rng.uniform();
-                Rotation2 r = rot2_from_angle(angle);
-                real2 a = r2rng.normal();
-                real2 b = rot2_apply(r, a);
-                REQUIRE(length(a) == approx(length(b)));
-                REQUIRE(dot(a, b)/length2(a) == approx(cos(angle)));
-            }
-        }
-        SECTION("Chaining") {
-            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation2 a = rot2rng.uniform();
-                Rotation2 b = rot2rng.uniform();
-                real2 v = r2rng.normal();
-                REQUIRE(
-                    rot2_apply(rot2_chain(a, b), v) == 
-                    approx(rot2_apply(a, rot2_apply(b, v)))
-                );
-            }
-        }
-        SECTION("Inversion") {
-            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation2 r = rot2rng.uniform();
-                REQUIRE(rot2_chain(r, rot2_inverse(r)) == approx(rot2_identity()));
-            }
-        }
-        SECTION("To linear") {
-            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation2 a = rot2rng.uniform();
-                Rotation2 b = rot2rng.uniform();
-                real2 x = r2rng.normal();
-                REQUIRE(lin2_apply(rot2_to_linear(a), x) == approx(rot2_apply(a, x)));
-                REQUIRE(
-                    lin2_chain(rot2_to_linear(a), rot2_to_linear(b)) ==
-                    approx(rot2_to_linear(rot2_chain(a, b)))
-                );
-            }
+    rtest_(mapping) {
+        for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+            real angle = 2*PI*rng->uniform();
+            Rotation2 r = rot2_from_angle(angle);
+            real2 a = r2rng->normal();
+            real2 b = rot2_apply(r, a);
+            assert_eq_(length(a), approx(length(b)));
+            assert_eq_(dot(a, b)/length2(a), approx(cos(angle)));
         }
     }
-    SECTION("Rotation 3D") {
-        SECTION("Mapping") {
-            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                real3 axis = r3rng.unit();
-                real angle = 2*PI*rng.uniform();
-                Rotation3 r = rot3_from_axis(axis, angle);
-                real3 a = r3rng.normal();
-                real3 b = rot3_apply(r, a);
-                REQUIRE(length(a) == approx(length(b)));
-                a -= dot(a, axis)*axis;
-                b -= dot(b, axis)*axis;
-                real aa = length2(a);
-                REQUIRE(dot(a, b)/aa == approx(cos(angle)));
-                REQUIRE(cross(a, b)/aa == approx(axis*sin(angle)));
-            }
+    rtest_(chaining) {
+        for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+            Rotation2 a = rot2rng->uniform();
+            Rotation2 b = rot2rng->uniform();
+            real2 v = r2rng->normal();
+            assert_eq_(
+                rot2_apply(rot2_chain(a, b), v), 
+                approx(rot2_apply(a, rot2_apply(b, v)))
+            );
         }
-        SECTION("Chaining") {
-            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation3 a = rot3rng.uniform();
-                Rotation3 b = rot3rng.uniform();
-                real3 v = r3rng.normal();
-                REQUIRE(
-                    rot3_apply(rot3_chain(a, b), v) ==
-                    approx(rot3_apply(a, rot3_apply(b, v)))
-                );
-            }
+    }
+    rtest_(inversion) {
+        for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+            Rotation2 r = rot2rng->uniform();
+            assert_eq_(rot2_chain(r, rot2_inverse(r)), approx(rot2_identity()));
         }
-        SECTION("Inversion") {
-            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation3 r = rot3rng.uniform();
-                REQUIRE(rot3_chain(r, rot3_inverse(r)) == approx(rot3_identity()));
-            }
-        }
-        SECTION("To linear") {
-            for (int k = 0; k < TEST_ATTEMPTS; ++k) {
-                Rotation3 a = rot3rng.uniform();
-                Rotation3 b = rot3rng.uniform();
-                real3 x = r3rng.normal();
-                REQUIRE(lin3_apply(rot3_to_linear(a), x) == approx(rot3_apply(a, x)));
-                REQUIRE(
-                    lin3_chain(rot3_to_linear(a), rot3_to_linear(b)) ==
-                    approx(rot3_to_linear(rot3_chain(a, b)))
-                );
-            }
+    }
+    rtest_(to_linear) {
+        for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+            Rotation2 a = rot2rng->uniform();
+            Rotation2 b = rot2rng->uniform();
+            real2 x = r2rng->normal();
+            assert_eq_(lin2_apply(rot2_to_linear(a), x), approx(rot2_apply(a, x)));
+            assert_eq_(
+                lin2_chain(rot2_to_linear(a), rot2_to_linear(b)),
+                approx(rot2_to_linear(rot2_chain(a, b)))
+            );
         }
     }
 }
 
-#endif
+rtest_module_(rotation_3d) {
+    static_thread_local_(TestRng<real>, rng) {
+        return TestRng<real>(0x807A);
+    }
+    static_thread_local_(TestRng<real3>, r3rng) {
+        return TestRng<real3>(0x807A);
+    }
+    static_thread_local_(TestRngRotation3, rot3rng) {
+        return TestRngRotation3(0x807A);
+    }
+
+    rtest_(mapping) {
+        for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+            real3 axis = r3rng->unit();
+            real angle = 2*PI*rng->uniform();
+            Rotation3 r = rot3_from_axis(axis, angle);
+            real3 a = r3rng->normal();
+            real3 b = rot3_apply(r, a);
+            assert_eq_(length(a), approx(length(b)));
+            a -= dot(a, axis)*axis;
+            b -= dot(b, axis)*axis;
+            real aa = length2(a);
+            assert_eq_(dot(a, b)/aa, approx(cos(angle)));
+            assert_eq_(cross(a, b)/aa, approx(axis*sin(angle)));
+        }
+    }
+    rtest_(chaining) {
+        for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+            Rotation3 a = rot3rng->uniform();
+            Rotation3 b = rot3rng->uniform();
+            real3 v = r3rng->normal();
+            assert_eq_(
+                rot3_apply(rot3_chain(a, b), v),
+                approx(rot3_apply(a, rot3_apply(b, v)))
+            );
+        }
+    }
+    rtest_(inversion) {
+        for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+            Rotation3 r = rot3rng->uniform();
+            assert_eq_(rot3_chain(r, rot3_inverse(r)), approx(rot3_identity()));
+        }
+    }
+    rtest_(to_linear) {
+        for (int k = 0; k < TEST_ATTEMPTS; ++k) {
+            Rotation3 a = rot3rng->uniform();
+            Rotation3 b = rot3rng->uniform();
+            real3 x = r3rng->normal();
+            assert_eq_(lin3_apply(rot3_to_linear(a), x), approx(rot3_apply(a, x)));
+            assert_eq_(
+                lin3_chain(rot3_to_linear(a), rot3_to_linear(b)),
+                approx(rot3_to_linear(rot3_chain(a, b)))
+            );
+        }
+    }
+}
+
+#endif // TEST_UNIT
 

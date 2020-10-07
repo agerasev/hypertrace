@@ -90,7 +90,7 @@ typedef Hyperbolic Hy;
 
 #endif // HOST
 
-#ifdef TEST_CATCH
+#ifdef TEST
 
 class TestRngHyPos {
 private:
@@ -103,4 +103,4 @@ public:
     quat normal();
 };
 
-#endif // TEST_CATCH
+#endif // TEST

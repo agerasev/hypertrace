@@ -43,9 +43,9 @@ Affine3 aff3_interpolate(Affine3 a, Affine3 b, real t) {
 }
 
 
-#ifdef TEST_CATCH
+#ifdef TEST_UNIT
 
-#include <catch.hpp>
+#include <rtest.hpp>
 
 
 Affine3 TestRngAffine3::normal() {
@@ -59,31 +59,35 @@ Affine3 TestRngAffine3::invertible() {
 }
 
 
-TEST_CASE("Affine transformation", "[affine]") {
-    TestRngAffine3 arng(0xAFFE);
-    TestRng<real3> vrng(0xAFFE);
+rtest_module_(affine) {
+    static_thread_local_(TestRngAffine3, arng) {
+        return TestRngAffine3(0xAFFE);
+    }
+    static_thread_local_(TestRng<real3>, vrng) {
+        return TestRng<real3>(0xAFFE);
+    }
 
-    SECTION("Chaining") {
+    rtest_(chaining) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Affine3 a = arng.normal();
-            Affine3 b = arng.normal();
-            real3 c = vrng.normal();
+            Affine3 a = arng->normal();
+            Affine3 b = arng->normal();
+            real3 c = vrng->normal();
 
-            REQUIRE(aff3_apply_pos(aff3_chain(a, b), c) == approx(aff3_apply_pos(a, aff3_apply_pos(b, c))));
-            REQUIRE(aff3_apply_dir(aff3_chain(a, b), c) == approx(aff3_apply_dir(a, aff3_apply_dir(b, c))));
+            assert_eq_(aff3_apply_pos(aff3_chain(a, b), c), approx(aff3_apply_pos(a, aff3_apply_pos(b, c))));
+            assert_eq_(aff3_apply_dir(aff3_chain(a, b), c), approx(aff3_apply_dir(a, aff3_apply_dir(b, c))));
         }
     }
-    SECTION("Inversion") {
+    rtest_(inversion) {
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Affine3 a = arng.invertible();
-            real3 x = vrng.normal();
+            Affine3 a = arng->invertible();
+            real3 x = vrng->normal();
             
-            REQUIRE(aff3_apply_pos(aff3_inverse(a), aff3_apply_pos(a, x)) == approx(x));
-            REQUIRE(aff3_apply_pos(a, aff3_apply_pos(aff3_inverse(a), x)) == approx(x));
-            REQUIRE(aff3_apply_dir(aff3_inverse(a), aff3_apply_dir(a, x)) == approx(x));
-            REQUIRE(aff3_apply_dir(a, aff3_apply_dir(aff3_inverse(a), x)) == approx(x));
+            assert_eq_(aff3_apply_pos(aff3_inverse(a), aff3_apply_pos(a, x)), approx(x));
+            assert_eq_(aff3_apply_pos(a, aff3_apply_pos(aff3_inverse(a), x)), approx(x));
+            assert_eq_(aff3_apply_dir(aff3_inverse(a), aff3_apply_dir(a, x)), approx(x));
+            assert_eq_(aff3_apply_dir(a, aff3_apply_dir(aff3_inverse(a), x)), approx(x));
         }
     }
 };
 
-#endif // TEST_CATCH
+#endif // TEST_UNIT

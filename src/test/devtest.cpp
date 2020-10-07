@@ -6,17 +6,10 @@ using namespace devtest;
 
 Device::Device(cl_device_id id) {
     id_ = id;
-    context_ = Rc(cl::Context::create(id_).unwrap());
-}
-Device::~Device() {
-    context_.try_take().expect("Context is referenced somewhere else");
 }
 
 cl_device_id Device::id() const {
     return id_;
-}
-const Rc<cl::Context> &Device::context() const {
-    return context_;
 }
 
 void Device::print_info() const {
@@ -50,11 +43,13 @@ void Platform::print_info() const {
 
 Target::Target(const Device &device) :
     device_(device)
-{}
+{
+    context_ = Rc(cl::Context::create(device_id()).unwrap());
+    queue_ = Rc(cl::Queue::create(context_, device_id()).unwrap());
+}
 Target::~Target() {
-    if (queue_) {
-        queue_.try_take().expect("Queue is referenced somewhere else");
-    }
+    queue_.try_take().expect("Queue is referenced somewhere else");
+    context_.try_take().expect("Context is referenced somewhere else");
 }
 
 //const Device &Target::device() const {
@@ -64,10 +59,10 @@ cl_device_id Target::device_id() const {
     return device_.id();
 }
 const Rc<cl::Context> &Target::context() const {
-    return device_.context();
+    return context_;
 }
 const Rc<cl::Queue> &Target::make_queue() {
-    queue_ = Rc(cl::Queue::create(device_.context(), device_.id()).unwrap());
+    
     return queue_;
 }
 

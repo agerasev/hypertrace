@@ -11,7 +11,6 @@ namespace devtest {
 class Device {
 private:
     cl_device_id id_;
-    rstd::Rc<cl::Context> context_;
 
 public:
     Device() = delete;
@@ -22,10 +21,8 @@ public:
     Device &operator=(Device &&) = default;
 
     explicit Device(cl_device_id id);
-    ~Device();
 
     cl_device_id id() const;
-    const rstd::Rc<cl::Context> &context() const;
 
     void print_info() const;
 };
@@ -54,6 +51,7 @@ public:
 class Target {
 private:
     const Device &device_;
+    rstd::Rc<cl::Context> context_;
     rstd::Rc<cl::Queue> queue_;
 public:
     Target() = delete;

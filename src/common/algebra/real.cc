@@ -48,11 +48,11 @@ rtest_module_(real) {
                 }
             );
             assert(includer.include());
-            std::cout << includer.log() << std::endl;
+            println_(includer.log());
             std::fstream("build/real.cl", std::ios::out) << includer.data();
 
             auto prog_log = cl::Program::create(queue->context_ref(), target.device_id(), includer);
-            std::cout << prog_log.get<1>() << std::endl;
+            println_(prog_log.get<1>());
             auto program = rstd::Rc<cl::Program>(prog_log.get<0>().expect("Program build error"));
             auto kernel = cl::Kernel::create(program, "square").expect("Kernel create error");
 

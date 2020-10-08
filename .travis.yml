@@ -7,10 +7,10 @@ compiler:
 os: linux
 dist: bionic
 
-#before_install:
-#  - sudo apt-get update
-#install:
-#  - sudo apt-get install -y ocl-icd-opencl-dev pocl-opencl-icd libpocl-dev
+before_install:
+  - sudo apt-get update
+install:
+  - sudo apt-get install -y ocl-icd-opencl-dev pocl-opencl-icd libpocl-dev
 
 addons:
   apt:
@@ -20,7 +20,13 @@ addons:
       #- curl
 
 script:
-  - ./script/test.sh
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make test_unit
+  - ./test_unit
+  - make test_dev
+  - ./test_dev
 
 #after_success:
 #  - ./script/cov.sh

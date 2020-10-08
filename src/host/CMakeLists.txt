@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.12)
-
 set(HOST_OPENCL_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/opencl/opencl.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/opencl/search.cpp"

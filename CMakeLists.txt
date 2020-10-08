@@ -1,4 +1,9 @@
-cmake_minimum_required(VERSION 3.0)
+if(USE_PCH)
+    cmake_minimum_required(VERSION 3.16)
+else()
+    cmake_minimum_required(VERSION 3.0)
+endif()
+
 project(hypertrace)
 
 set(CMAKE_C_FLAGS "-DHOST -Wall -Wextra")
@@ -25,6 +30,11 @@ target_compile_definitions(${PROJECT_NAME} PUBLIC
     "-DCL_TARGET_OPENCL_VERSION=120"
     "-DINTEROP"
 )
+if(USE_PCH)
+    target_precompile_headers(${PROJECT_NAME} PUBLIC
+        ${COMMON_PCH}
+    )
+endif()
 target_link_libraries(${PROJECT_NAME} pthread rstd OpenCL SDL2 SDL2_image)
 
 add_subdirectory("src/examples")

@@ -1,4 +1,8 @@
-cmake_minimum_required(VERSION 3.0)
+set(COMMON_PCH
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector_base.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector_math.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector_struct.hpp"
+PARENT_SCOPE)
 
 set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/real.cc"

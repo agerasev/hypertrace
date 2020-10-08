@@ -41,14 +41,12 @@ void Platform::print_info() const {
 
 // Target
 
-Target::Target(const Device &device) :
-    device_(device)
+Target::Target(cl_device_id device_id) :
+    device_id_(device_id)
 {
-    context_ = Rc(cl::Context::create(device_id()).unwrap());
-    queue_ = Rc(cl::Queue::create(context_, device_id()).unwrap());
+    context_ = Rc(cl::Context::create(device_id_).unwrap());
 }
 Target::~Target() {
-    queue_.try_take().expect("Queue is referenced somewhere else");
     context_.try_take().expect("Context is referenced somewhere else");
 }
 
@@ -56,14 +54,13 @@ Target::~Target() {
 //    return device_;
 //}
 cl_device_id Target::device_id() const {
-    return device_.id();
+    return device_id_;
 }
 const Rc<cl::Context> &Target::context() const {
     return context_;
 }
-const Rc<cl::Queue> &Target::make_queue() {
-    
-    return queue_;
+Rc<cl::Queue> Target::make_queue() const {
+    return Rc(cl::Queue::create(context_, device_id_).unwrap());
 }
 
 // Selector::TargetIter
@@ -90,7 +87,7 @@ void Selector::TargetIter::operator++() {
     }
 }
 Target Selector::TargetIter::operator*() const {
-    return Target(parent.platforms()[plpos].devices()[devpos]);
+    return Target(parent.platforms()[plpos].devices()[devpos].id());
 }
 
 // Selector

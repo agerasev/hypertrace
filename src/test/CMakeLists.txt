@@ -1,10 +1,14 @@
-cmake_minimum_required(VERSION 3.0)
 project(test)
 
 add_executable(test_unit
     ${COMMON_SRC}
     "test_unit.cpp"
 )
+if(USE_PCH)
+    target_precompile_headers(test_unit PRIVATE
+        ${COMMON_PCH}
+    )
+endif()
 target_compile_definitions(test_unit PRIVATE
     "-DTEST_UNIT"
 )
@@ -21,4 +25,9 @@ target_compile_definitions(test_dev PRIVATE
     "-DINTEROP"
     "-DTEST_DEV"
 )
+if(USE_PCH)
+    target_precompile_headers(test_unit PRIVATE
+        ${COMMON_PCH}
+    )
+endif()
 target_link_libraries(test_dev pthread rstd includer OpenCL)

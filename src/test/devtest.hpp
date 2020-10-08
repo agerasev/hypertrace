@@ -50,9 +50,8 @@ public:
 
 class Target {
 private:
-    const Device &device_;
+    cl_device_id device_id_;
     rstd::Rc<cl::Context> context_;
-    rstd::Rc<cl::Queue> queue_;
 public:
     Target() = delete;
     Target(const Target &) = delete;
@@ -61,13 +60,13 @@ public:
     Target(Target &&) = default;
     Target &operator=(Target &&) = default;
 
-    explicit Target(const Device &device);
+    explicit Target(cl_device_id device_id);
     ~Target();
 
     //const Device &device() const;
     cl_device_id device_id() const;
     const rstd::Rc<cl::Context> &context() const;
-    const rstd::Rc<cl::Queue> &make_queue();
+    rstd::Rc<cl::Queue> make_queue() const;
 };
 
 class Selector {

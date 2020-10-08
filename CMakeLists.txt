@@ -27,8 +27,9 @@ add_definitions(
     "-DHOST"
 )
 target_compile_definitions(${PROJECT_NAME} PUBLIC
-    "-DCL_TARGET_OPENCL_VERSION=120"
     "-DINTEROP"
+    "-DCL_TARGET_OPENCL_VERSION=120"
+    "-DCL_USE_DEPRECATED_OPENCL_1_2_APIS"
 )
 if(USE_PCH)
     target_precompile_headers(${PROJECT_NAME} PUBLIC

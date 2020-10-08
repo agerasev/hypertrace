@@ -9,6 +9,7 @@ lazy_static_(devtest::Selector, devtest_selector) {
 }
 
 int main(int argc, char *argv[]) {
+    println_();
     devtest_selector->print_info();
     return rtest::main(argc, argv);
 }

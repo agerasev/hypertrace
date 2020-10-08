@@ -23,10 +23,10 @@ script:
   - mkdir build
   - cd build
   - cmake ..
-  - make test_unit
-  - ./test_unit
-  - make test_dev
-  - ./test_dev
+  - make test_unit test_dev
+  - cd ..
+  - ./build/src/test/test_unit
+  - ./build/src/test/test_dev
 
 #after_success:
 #  - ./script/cov.sh

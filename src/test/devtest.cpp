@@ -13,7 +13,8 @@ cl_device_id Device::id() const {
 }
 
 void Device::print_info() const {
-    cl::print_device_info(id(), "  ");
+    cl::print_device_info(id(), "    ");
+    println_();
 }
 
 // Platform
@@ -34,6 +35,7 @@ const std::vector<Device> &Platform::devices() const {
 
 void Platform::print_info() const {
     cl::print_platform_info(id());
+    println_();
     for (const Device &device : devices()) {
         device.print_info();
     }

@@ -21,9 +21,10 @@ add_executable(test_dev
     "test_dev.cpp"
 )
 target_compile_definitions(test_dev PRIVATE
-    "-DCL_TARGET_OPENCL_VERSION=120"
-    "-DINTEROP"
     "-DTEST_DEV"
+    "-DINTEROP"
+    "-DCL_TARGET_OPENCL_VERSION=120"
+    "-DCL_USE_DEPRECATED_OPENCL_1_2_APIS"
 )
 if(USE_PCH)
     target_precompile_headers(test_unit PRIVATE

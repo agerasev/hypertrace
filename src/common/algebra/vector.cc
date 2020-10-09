@@ -69,45 +69,47 @@ rtest_module_(vector) {
 
 #endif // TEST_UNIT
 
-/*
+
 #ifdef TEST_DEV
 
+#include <rtest.hpp>
+
 #include <vector>
-#include <cassert>
 
-#include <host/opencl/search.hpp>
-#include <host/opencl/opencl.hpp>
+#include <test/devtest.hpp>
 
+extern_lazy_static_(devtest::Selector, devtest_selector);
 
-void test_dev_vector(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue queue
-) {
-    cl::Program program(context, device, " \
-        __kernel void square(__global const int *ibuf, __global int *obuf) { \
-            int i = get_global_id(0); \
-            int x = ibuf[i]; \
-            obuf[i] = x*x; \
-        } \
-    ");
-    cl::Kernel kernel(program, "square");
+rtest_module_(vector) {
+    rtest_(square) {
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("vector.cl", std::string(
+                "#include <common/algebra/vector.hh>\n"
+                "__kernel void square(__global const real4 *ibuf, __global real4 *obuf) {\n"
+                "    int i = get_global_id(0);\n"
+                "    real4 x = ibuf[i];\n"
+                "    obuf[i] = x*x;\n"
+                "}\n"
+            ))
+            .build("square").unwrap();
 
-    const int n = 256;
-    cl::Buffer ibuf(queue, n*sizeof(int)), obuf(queue, n*sizeof(int), true);
-    std::vector<int> host_buf(n);
-    for (int i = 0; i < int(host_buf.size()); ++i) {
-        host_buf[i] = i;
-    }
-    ibuf.store(queue, host_buf.data());
-    kernel.set_arg(0, ibuf);
-    kernel.set_arg(1, obuf);
-    kernel.run(queue, n);
-    obuf.load(queue, host_buf.data());
-    for(int i = 0; i < int(host_buf.size()); ++i) {
-        assert_eq_(i*i, host_buf[i]);
+            const int n = 256;
+            std::vector<real4> ibuf(n), obuf(n);
+            for (size_t i = 0; i < ibuf.size(); ++i) {
+                ibuf[i] = real4(i, 2*i, 2*i + 1, 3*i);
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(n, ibuf, obuf).expect("Kernel run error");
+
+            for(size_t i = 0; i < obuf.size(); ++i) {
+                ulong4 x = ulong4(i, 2*i, 2*i + 1, 3*i);
+                assert_eq_(x*x, obuf[i].convert<ulong>());
+            }
+        }
     }
 }
 
 #endif // TEST_DEV
-*/

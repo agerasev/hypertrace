@@ -106,9 +106,23 @@ VECTOR_INTEROP_N(real,   cl_float)
 
 #endif // INTEROP
 
-#else // HOST
+#else // !HOST
 
 #define MAKE(x) (x)
+
+#ifdef DEV_F64
+typedef double2  real2;
+typedef double3  real3;
+typedef double4  real4;
+typedef double8  real8;
+typedef double16 real16;
+#else // !DEV_F64
+typedef float2  real2;
+typedef float3  real3;
+typedef float4  real4;
+typedef float8  real8;
+typedef float16 real16;
+#endif // DEV_F64
 
 #endif // HOST
 

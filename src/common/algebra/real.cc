@@ -13,15 +13,12 @@ rtest_module_(real) {
 
 #endif // TEST_UNIT
 
+
 #ifdef TEST_DEV
 
 #include <rtest.hpp>
 
 #include <vector>
-#include <fstream>
-
-#include <host/opencl/search.hpp>
-#include <host/opencl/opencl.hpp>
 
 #include <test/devtest.hpp>
 

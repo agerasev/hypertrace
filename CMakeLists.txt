@@ -7,7 +7,7 @@ endif()
 project(hypertrace)
 
 set(CMAKE_C_FLAGS "-DHOST -Wall -Wextra")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17") #-fno-exceptions
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17 -fno-exceptions")
 
 add_subdirectory("submodules/rstd")
 include_directories("submodules/rstd/src")

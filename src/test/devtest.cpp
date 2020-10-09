@@ -1,5 +1,7 @@
 #include "devtest.hpp"
 
+#include <regex>
+
 using namespace rstd;
 using namespace devtest;
 
@@ -146,18 +148,19 @@ Result<cl::Kernel, std::string> KernelBuilder::build(const std::string &kernel_n
     std::fstream log(format_("build/src/test/{}.log", name), std::ios::out);
     log << includer.log() << std::endl;
     if (!ires) {
-        return Result<cl::Kernel, std::string>::Err("Include error:\n" + includer.log());
+        return Err("Include error:\n" + includer.log());
     }
-    std::fstream(format_("build/src/test/{}", name), std::ios::out) << includer.data();
+    std::fstream(format_("build/src/test/{}", name), std::ios::out)
+    << std::regex_replace(includer.data(), std::regex("\n\n[\n]+"), "\n\n\n");
 
     auto prog_and_log = cl::Program::create(queue->context_ref(), device_id, includer);
     log << prog_and_log.get<1>() << std::endl;
     
-    return prog_and_log.get<0>().map_err([&](auto) {
+    cl::Program program;
+    try_assign_(program, prog_and_log.get<0>().map_err([&](auto) {
         return prog_and_log.get<1>();
-    }).and_then([&](auto program) {
-        return cl::Kernel::create(Rc(std::move(program)), kernel_name).map_err([&](auto) {
-            return format_("Kernel '{}' create error", kernel_name);
-        });
+    }));
+    return cl::Kernel::create(Rc(std::move(program)), kernel_name).map_err([&](auto) {
+        return format_("Kernel '{}' create error", kernel_name);
     });
 }

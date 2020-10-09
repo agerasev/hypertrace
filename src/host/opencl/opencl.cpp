@@ -14,12 +14,12 @@ using namespace cl;
 void Context::free_raw(cl_context raw) {
     assert_eq_(clReleaseContext(raw), CL_SUCCESS);
 }
-Option<Context> Context::create(cl_device_id device) {
+Result<Context> Context::create(cl_device_id device) {
     cl_context raw = clCreateContext(nullptr, 1, &device, nullptr, nullptr, nullptr);
     if (raw != nullptr) {
-        return Option<Context>::Some(Context(raw, device));
+        return Result<Context>::Ok(Context(raw, device));
     } else {
-        return Option<Context>::None();
+        return Result<Context>::Err(Tuple<>());
     }
 }
 
@@ -29,12 +29,12 @@ Option<Context> Context::create(cl_device_id device) {
 void Queue::free_raw(cl_command_queue raw) {
     assert_eq_(clReleaseCommandQueue(raw), CL_SUCCESS);
 }
-Option<Queue> Queue::create(Rc<Context> context, cl_device_id device) {
+Result<Queue> Queue::create(Rc<Context> context, cl_device_id device) {
     cl_command_queue raw = clCreateCommandQueue(*context, device, 0, nullptr);
     if (raw != nullptr) {
-        return Option<Queue>::Some(Queue(raw, std::move(context)));
+        return Result<Queue>::Ok(Queue(raw, std::move(context)));
     } else {
-        return Option<Queue>::None();
+        return Result<Queue>::Err(Tuple<>());
     }
 }
 void Queue::flush() {
@@ -68,7 +68,7 @@ std::string Program::log(cl_program program, cl_device_id device) {
 
     return std::string(buffer.data());
 }
-Tuple<Option<Program>, std::string> Program::create(
+Tuple<Result<Program>, std::string> Program::create(
     Rc<Context> context,
     Device device,
     const std::string &source
@@ -82,25 +82,25 @@ Tuple<Option<Program>, std::string> Program::create(
         *context, 1, &src_data, &src_len, nullptr
     );
     if (raw == nullptr) {
-        return Tuple<Option<Program>, std::string>(
-            Option<Program>::None(),
+        return Tuple<Result<Program>, std::string>(
+            Result<Program>::Err(Tuple<>()),
             "clCreateProgramWithSource returned NULL"
         );
     }
 
     cl_uint status = clBuildProgram(raw, 1, &device, nullptr, nullptr, nullptr);
     std::string log_ = log(raw, device);
-    Option<Program> program;
+    Result<Program> program;
     if (status == CL_SUCCESS) {
-        program = Option<Program>::Some(Program(
+        program = Result<Program>::Ok(Program(
             raw, device, std::move(context)
         ));
     } else {
-        program = Option<Program>::None();
+        program = Result<Program>::Err(Tuple<>());
     }
-    return Tuple<Option<Program>, std::string>(std::move(program), std::move(log_));
+    return Tuple<Result<Program>, std::string>(std::move(program), std::move(log_));
 }
-Tuple<Option<Program>, std::string> Program::create(
+Tuple<Result<Program>, std::string> Program::create(
     Rc<Context> context,
     Device device,
     const includer &includer
@@ -116,7 +116,7 @@ Tuple<Option<Program>, std::string> Program::create(
 void Buffer::free_raw(cl_mem raw) {
     assert_eq_(clReleaseMemObject(raw), CL_SUCCESS);
 }
-Option<Buffer> Buffer::create(Queue &queue, size_t size, bool zeroed) {
+Result<Buffer> Buffer::create(Queue &queue, size_t size, bool zeroed) {
     assert_(bool(queue));
     if (size > 0) {
         cl_mem raw = clCreateBuffer(
@@ -124,7 +124,7 @@ Option<Buffer> Buffer::create(Queue &queue, size_t size, bool zeroed) {
             size, nullptr, nullptr
         );
         if (raw == nullptr) {
-            return Option<Buffer>::None();
+            return Result<Buffer>::Err(Tuple<>());
         }
         if (zeroed) {
             uint8_t z = 0;
@@ -133,13 +133,13 @@ Option<Buffer> Buffer::create(Queue &queue, size_t size, bool zeroed) {
                 &z, 1, 0, size,
                 0, nullptr, nullptr
             ) != CL_SUCCESS) {
-                return Option<Buffer>::None();
+                return Result<Buffer>::Err(Tuple<>());
             }
             queue.finish();
         }
-        return Option<Buffer>::Some(Buffer(raw, size, queue.context_ref()));
+        return Result<Buffer>::Ok(Buffer(raw, size, queue.context_ref()));
     } else {
-        return Option<Buffer>::Some(Buffer());
+        return Result<Buffer>::Ok(Buffer());
     }
 }
 typedef Result<rstd::Tuple<>, std::string> LsResult;
@@ -189,13 +189,13 @@ LsResult Buffer::store(Queue &queue, const void *data, size_t size) {
 void Kernel::free_raw(cl_kernel raw) {
     assert_eq_(clReleaseKernel(raw), CL_SUCCESS);
 }
-Option<Kernel> Kernel::create(Rc<Program> program, const std::string &name) {
+Result<Kernel> Kernel::create(Rc<Program> program, const std::string &name) {
     cl_int errcode;
     cl_kernel raw = clCreateKernel(*program, name.c_str(), &errcode);
     if (raw != nullptr) {
-        return Option<Kernel>::Some(Kernel(raw, program, name));
+        return Result<Kernel>::Ok(Kernel(raw, program, name));
     } else {
-        return Option<Kernel>::None();
+        return Result<Kernel>::Err(Tuple<>());
     }
 }
 

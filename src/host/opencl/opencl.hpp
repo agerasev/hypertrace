@@ -74,7 +74,7 @@ public:
     Context(Context &&other) = default;
     Context &operator=(Context &&other) = default;
 
-    static rstd::Option<Context> create(Device device);
+    static rstd::Result<Context> create(Device device);
 
     inline operator cl_context() const { return raw; }
     inline operator bool() const { return raw; }
@@ -101,7 +101,7 @@ public:
     Queue(Queue &&other) = default;
     Queue &operator=(Queue &&other) = default;
 
-    static rstd::Option<Queue> create(rstd::Rc<Context> context, Device device);
+    static rstd::Result<Queue> create(rstd::Rc<Context> context, Device device);
     void flush();
     void finish();
 
@@ -134,12 +134,12 @@ public:
     Program(Program &&other) = default;
     Program &operator=(Program &&other) = default;
 
-    static rstd::Tuple<rstd::Option<Program>, std::string> create(
+    static rstd::Tuple<rstd::Result<Program>, std::string> create(
         rstd::Rc<Context> context,
         Device device,
         const std::string &source
     );
-    static rstd::Tuple<rstd::Option<Program>, std::string> create(
+    static rstd::Tuple<rstd::Result<Program>, std::string> create(
         rstd::Rc<Context> context,
         Device device,
         const includer &includer
@@ -174,7 +174,7 @@ public:
     Buffer(Buffer &&other) = default;
     Buffer &operator=(Buffer &&other) = default;
 
-    static rstd::Option<Buffer> create(Queue &queue, size_t size, bool zeroed=false);
+    static rstd::Result<Buffer> create(Queue &queue, size_t size, bool zeroed=false);
 
     inline operator cl_mem() const { return raw; }
     inline operator bool() const { return raw; }
@@ -209,7 +209,7 @@ public:
     Kernel(Kernel &&other) = default;
     Kernel &operator=(Kernel &&other) = default;
 
-    static rstd::Option<Kernel> create(rstd::Rc<Program> program, const std::string &name);
+    static rstd::Result<Kernel> create(rstd::Rc<Program> program, const std::string &name);
 
     inline operator cl_kernel() const { return raw; }
     inline operator bool() const { return raw; }
@@ -233,7 +233,7 @@ private:
 public:
     template <typename T>
     void set_arg(size_t n, const T &arg) {
-        assert(clSetKernelArg(raw, n, sizeof(T), (void *)&arg) == CL_SUCCESS);
+        assert_eq_(clSetKernelArg(raw, n, sizeof(T), (void *)&arg), CL_SUCCESS);
     }
     inline void set_arg(size_t n, const Buffer &buf) {
         set_arg(n, cl_mem(buf));

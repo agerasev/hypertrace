@@ -2,27 +2,28 @@
 #include <sstream>
 #include <cassert>
 
+#include <rstd/prelude.hpp>
 #include "search.hpp"
 
 
 std::vector<cl_platform_id> cl::get_platforms() {
     cl_uint platform_count;
-    assert(clGetPlatformIDs(0, nullptr, &platform_count) == CL_SUCCESS);
-    assert(platform_count > 0);
+    assert_(clGetPlatformIDs(0, nullptr, &platform_count) == CL_SUCCESS);
+    assert_(platform_count > 0);
 
     std::vector<cl_platform_id> platforms(platform_count, 0);
-    assert(clGetPlatformIDs(platforms.size(), platforms.data(), nullptr) == CL_SUCCESS);
+    assert_(clGetPlatformIDs(platforms.size(), platforms.data(), nullptr) == CL_SUCCESS);
 
     return platforms;
 }
 
 std::vector<cl_device_id> cl::get_devices(cl_platform_id platform) {
     cl_uint device_count = 0;
-    assert(clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, nullptr, &device_count) == CL_SUCCESS);
-    assert(device_count > 0);
+    assert_(clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, nullptr, &device_count) == CL_SUCCESS);
+    assert_(device_count > 0);
 
     std::vector<cl_device_id> devices(device_count, 0);
-    assert(clGetDeviceIDs(
+    assert_(clGetDeviceIDs(
         platform, CL_DEVICE_TYPE_ALL,
         devices.size(), devices.data(), nullptr
     ) == CL_SUCCESS);
@@ -39,13 +40,13 @@ void cl::print_platform_info(
     for (size_t i = 0; i < sizeof(params)/sizeof(cl_platform_info); ++i) {
         const cl_platform_info &p = params[i];
         size_t ret_size = 0;
-        assert(clGetPlatformInfo(platform, p, 0, nullptr, &ret_size) == CL_SUCCESS);
-        assert(ret_size > 0);
+        assert_(clGetPlatformInfo(platform, p, 0, nullptr, &ret_size) == CL_SUCCESS);
+        assert_(ret_size > 0);
 
         std::vector<char> text(ret_size, '\0');
-        assert(clGetPlatformInfo(platform, p, text.size(), text.data(), nullptr) == CL_SUCCESS);
+        assert_(clGetPlatformInfo(platform, p, text.size(), text.data(), nullptr) == CL_SUCCESS);
 
-        assert(text[text.size() - 1] == '\0');
+        assert_(text[text.size() - 1] == '\0');
         ostream << prefix << text.data() << std::endl;
     }
 }
@@ -59,13 +60,13 @@ void cl::print_device_info(
     for (size_t i = 0; i < sizeof(params)/sizeof(cl_device_info); ++i) {
         const cl_device_info &p = params[i];
         size_t ret_size = 0;
-        assert(clGetDeviceInfo(device, p, 0, nullptr, &ret_size) == CL_SUCCESS);
-        assert(ret_size > 0);
+        assert_(clGetDeviceInfo(device, p, 0, nullptr, &ret_size) == CL_SUCCESS);
+        assert_(ret_size > 0);
 
         std::vector<char> text(ret_size, '\0');
-        assert(clGetDeviceInfo(device, p, text.size(), text.data(), nullptr) == CL_SUCCESS);
+        assert_(clGetDeviceInfo(device, p, text.size(), text.data(), nullptr) == CL_SUCCESS);
 
-        assert(text[text.size() - 1] == '\0');
+        assert_(text[text.size() - 1] == '\0');
         ostream << prefix << text.data() << std::endl;
     }
 }

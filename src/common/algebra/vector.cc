@@ -105,7 +105,7 @@ void test_dev_vector(
     kernel.run(queue, n);
     obuf.load(queue, host_buf.data());
     for(int i = 0; i < int(host_buf.size()); ++i) {
-        assert(i*i == host_buf[i]);
+        assert_eq_(i*i, host_buf[i]);
     }
 }
 

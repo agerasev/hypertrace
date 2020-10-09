@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fstream>
 #include <rstd/prelude.hpp>
 
 #include <host/opencl/search.hpp>
@@ -98,6 +99,23 @@ public:
 
     TargetIter begin() const;
     TargetIter end() const;
+};
+
+class KernelBuilder {
+private:
+    cl_device_id device_id;
+    rstd::Rc<cl::Queue> queue;
+    rstd::Option<std::pair<std::string, std::string>> source_;
+public:
+    KernelBuilder() = default;
+    KernelBuilder(const KernelBuilder &) = delete;
+    KernelBuilder &operator=(const KernelBuilder &) = delete;
+    KernelBuilder(KernelBuilder &&) = default;
+    KernelBuilder &operator=(KernelBuilder &&) = default;
+
+    KernelBuilder(cl_device_id device_id, rstd::Rc<cl::Queue> queue);
+    KernelBuilder source(const std::string &filename, const std::string content);
+    rstd::Result<cl::Kernel, std::string> build(const std::string &kernel_name);
 };
 
 } // namespace devtest

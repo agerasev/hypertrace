@@ -55,10 +55,7 @@ private:
 public:
     inline TestRngMoebius() = default;
     inline explicit TestRngMoebius(uint32_t seed) : rng(seed) {}
-
-    inline Moebius normal() {
-        return c22_normalize(rng.normal());
-    }
+    Moebius normal();
 };
 
 #endif // TEST

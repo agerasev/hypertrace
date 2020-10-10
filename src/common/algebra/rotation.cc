@@ -63,10 +63,7 @@ Linear3 rot3_to_linear(Rotation3 m) {
 }
 
 
-#ifdef TEST_UNIT
-
-#include <rtest.hpp>
-
+#ifdef TEST
 
 Rotation2 TestRngRotation2::uniform() {
     return rot2_from_angle(2*PI*rng.uniform());
@@ -78,6 +75,10 @@ Rotation3 TestRngRotation3::uniform() {
         2*PI*rng.uniform()
     );
 }
+
+#include <rtest.hpp>
+
+#ifdef TEST_UNIT
 
 rtest_module_(rotation_2d) {
     static_thread_local_(TestRng<real>, rng) {
@@ -190,3 +191,51 @@ rtest_module_(rotation_3d) {
 
 #endif // TEST_UNIT
 
+#ifdef TEST_DEV
+
+#include <rtest.hpp>
+
+#include <vector>
+
+#include <test/devtest.hpp>
+
+extern_lazy_static_(devtest::Selector, devtest_selector);
+
+rtest_module_(rotation) {
+    rtest_(chain) {
+        TestRngRotation3 rrng(0xcafe);
+
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("moebius.cl", std::string(
+                "#include <common/algebra/rotation.hh>\n"
+                "__kernel void chain(__global const Rotation3 *x, __global const Rotation3 *y, __global Rotation3 *z) {\n"
+                "    int i = get_global_id(0);\n"
+                "    z[i] = rot3_chain(x[i], y[i]);\n"
+                "}\n"
+                "#include <device/source.cl>\n"
+            ))
+            .build("chain").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<Rotation3> xbuf(n), ybuf(n), zbuf(n);
+            for (size_t i = 0; i < n; ++i) {
+                xbuf[i] = rrng.uniform();
+                ybuf[i] = rrng.uniform();
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
+
+            for(size_t i = 0; i < n; ++i) {
+                Rotation3 z = rot3_chain(xbuf[i], ybuf[i]);
+                assert_eq_(approx(z).epsilon(1e-4), zbuf[i]);
+            }
+        }
+    }
+}
+
+#endif // TEST_DEV
+
+#endif // TEST

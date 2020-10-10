@@ -33,7 +33,7 @@ Linear3 lin3_look_to(real3 dir) {
 Linear3 lin3_look_to_up(real3 dir, real3 up) {
     real3 right = normalize(cross(dir, up));
     real3 down = cross(dir, right);
-    return Linear3(
+    return MAKE(Linear3)(
         r4_new(right, R0),
         r4_new(down, R0),
         r4_new(dir, R0),
@@ -54,10 +54,11 @@ Linear3 lin3_inverse(Linear3 m) {
 }
 
 
-#ifdef TEST_UNIT
+#ifdef TEST
 
 #include <rtest.hpp>
 
+#ifdef TEST_UNIT
 
 rtest_module_(linear) {
     static_thread_local_(TestRng<real>, rng) {
@@ -113,3 +114,52 @@ rtest_module_(linear) {
 };
 
 #endif // TEST_UNIT
+
+#ifdef TEST_DEV
+
+#include <rtest.hpp>
+
+#include <vector>
+
+#include <test/devtest.hpp>
+
+extern_lazy_static_(devtest::Selector, devtest_selector);
+
+rtest_module_(linear) {
+    rtest_(chain) {
+        TestRngReal3x3 mrng(0xcafe);
+
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("moebius.cl", std::string(
+                "#include <common/algebra/linear.hh>\n"
+                "__kernel void chain(__global const Linear3 *x, __global const Linear3 *y, __global Linear3 *z) {\n"
+                "    int i = get_global_id(0);\n"
+                "    z[i] = lin3_chain(x[i], y[i]);\n"
+                "}\n"
+                "#include <device/source.cl>\n"
+            ))
+            .build("chain").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<Linear3> xbuf(n), ybuf(n), zbuf(n);
+            for (size_t i = 0; i < n; ++i) {
+                xbuf[i] = mrng.normal();
+                ybuf[i] = mrng.normal();
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
+
+            for(size_t i = 0; i < n; ++i) {
+                Linear3 z = lin3_chain(xbuf[i], ybuf[i]);
+                assert_eq_(approx(z).epsilon(1e-4), zbuf[i]);
+            }
+        }
+    }
+}
+
+#endif // TEST_DEV
+
+#endif // TEST

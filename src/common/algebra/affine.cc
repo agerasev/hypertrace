@@ -43,10 +43,7 @@ Affine3 aff3_interpolate(Affine3 a, Affine3 b, real t) {
 }
 
 
-#ifdef TEST_UNIT
-
-#include <rtest.hpp>
-
+#ifdef TEST
 
 Affine3 TestRngAffine3::normal() {
     return aff3_from_ls(lrng.normal(), srng.normal());
@@ -58,6 +55,9 @@ Affine3 TestRngAffine3::invertible() {
     return aff3_from_ls(lrng.invertible(), srng.normal());
 }
 
+#include <rtest.hpp>
+
+#ifdef TEST_UNIT
 
 rtest_module_(affine) {
     static_thread_local_(TestRngAffine3, arng) {
@@ -91,3 +91,52 @@ rtest_module_(affine) {
 };
 
 #endif // TEST_UNIT
+
+#ifdef TEST_DEV
+
+#include <rtest.hpp>
+
+#include <vector>
+
+#include <test/devtest.hpp>
+
+extern_lazy_static_(devtest::Selector, devtest_selector);
+
+rtest_module_(affine) {
+    rtest_(chain) {
+        TestRngAffine3 arng(0xcafe);
+
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("moebius.cl", std::string(
+                "#include <common/algebra/affine.hh>\n"
+                "__kernel void chain(__global const Affine3 *x, __global const Affine3 *y, __global Affine3 *z) {\n"
+                "    int i = get_global_id(0);\n"
+                "    z[i] = aff3_chain(x[i], y[i]);\n"
+                "}\n"
+                "#include <device/source.cl>\n"
+            ))
+            .build("chain").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<Affine3> xbuf(n), ybuf(n), zbuf(n);
+            for (size_t i = 0; i < n; ++i) {
+                xbuf[i] = arng.normal();
+                ybuf[i] = arng.normal();
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
+
+            for(size_t i = 0; i < n; ++i) {
+                Affine3 z = aff3_chain(xbuf[i], ybuf[i]);
+                assert_eq_(approx(z).epsilon(1e-4), zbuf[i]);
+            }
+        }
+    }
+}
+
+#endif // TEST_DEV
+
+#endif // TEST

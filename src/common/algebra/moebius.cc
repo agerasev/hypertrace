@@ -42,6 +42,10 @@ real mo_diff(Moebius a, Moebius b) {
 
 #ifdef TEST
 
+Moebius TestRngMoebius::normal() {
+    return c22_normalize(rng.normal());
+}
+
 #include <rtest.hpp>
 
 #ifdef TEST_UNIT

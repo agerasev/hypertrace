@@ -136,7 +136,7 @@ typedef float16 real16;
 #define length2(x) dot((x), (x))
 
 
-#ifdef TEST_UNIT
+#ifdef TEST
 
 template <int N>
 class TestRng<vec<real, N>> {
@@ -191,4 +191,4 @@ public:
     }
 };
 
-#endif // TEST_UNIT
+#endif // TEST

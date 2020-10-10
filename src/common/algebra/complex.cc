@@ -44,9 +44,11 @@ comp c_sqrt(comp a) {
 }
 
 
-#ifdef TEST_UNIT
+#ifdef TEST
 
 #include <rtest.hpp>
+
+#ifdef TEST_UNIT
 
 rtest_module_(complex) {
     static_thread_local_(TestRng<real>, rng) {
@@ -93,3 +95,82 @@ rtest_module_(complex) {
 };
 
 #endif // TEST_UNIT
+
+#ifdef TEST_DEV
+
+#include <rtest.hpp>
+
+#include <vector>
+
+#include <test/devtest.hpp>
+
+extern_lazy_static_(devtest::Selector, devtest_selector);
+
+rtest_module_(complex) {
+    rtest_(to_dev_and_back) {
+        TestRng<comp> crng(0xbeef);
+
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("complex.cl", std::string(
+                "#include <common/algebra/complex.hh>\n"
+                "__kernel void identity(__global const comp *ibuf, __global comp *obuf) {\n"
+                "    int i = get_global_id(0);\n"
+                "    obuf[i] = ibuf[i];\n"
+                "}\n"
+                "#include <device/source.cl>\n"
+            ))
+            .build("identity").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<comp> ibuf(n), obuf(n);
+            for (size_t i = 0; i < n; ++i) {
+                ibuf[i] = crng.normal();
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(n, ibuf, obuf).expect("Kernel run error");
+
+            for(size_t i = 0; i < obuf.size(); ++i) {
+                assert_eq_(approx(ibuf[i]), obuf[i]);
+            }
+        }
+    }
+    rtest_(product) {
+        TestRng<comp> crng(0xbeef);
+
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("complex.cl", std::string(
+                "#include <common/algebra/complex.hh>\n"
+                "__kernel void product(__global const comp *xbuf, __global const comp *ybuf, __global comp *obuf) {\n"
+                "    int i = get_global_id(0);\n"
+                "    obuf[i] = c_mul(xbuf[i], ybuf[i]);\n"
+                "}\n"
+                "#include <device/source.cl>\n"
+            ))
+            .build("product").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<comp> xbuf(n), ybuf(n), obuf(n);
+            for (size_t i = 0; i < n; ++i) {
+                xbuf[i] = crng.normal();
+                ybuf[i] = crng.normal();
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(n, xbuf, ybuf, obuf).expect("Kernel run error");
+
+            for(size_t i = 0; i < n; ++i) {
+                comp z = c_mul(xbuf[i], ybuf[i]);
+                assert_eq_(approx(z), obuf[i]);
+            }
+        }
+    }
+}
+
+#endif // TEST_DEV
+
+#endif // TEST

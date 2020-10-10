@@ -23,7 +23,7 @@ typedef float real;
 #endif // HOST || DEV_F64
 
 
-#ifdef TEST_UNIT
+#ifdef TEST
 
 #define TEST_ATTEMPTS 1024
 
@@ -105,4 +105,4 @@ Approx<real> approx(T v) {
     return Approx<real>(real(v));
 }
 
-#endif // TEST_UNIT
+#endif // TEST

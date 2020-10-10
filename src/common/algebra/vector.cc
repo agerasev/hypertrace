@@ -1,9 +1,10 @@
 #include "vector.hh"
 
-
-#ifdef TEST_UNIT
+#ifdef TEST
 
 #include <rtest.hpp>
+
+#ifdef TEST_UNIT
 
 rtest_module_(vector) {
     rtest_(approx) {
@@ -69,10 +70,7 @@ rtest_module_(vector) {
 
 #endif // TEST_UNIT
 
-
 #ifdef TEST_DEV
-
-#include <rtest.hpp>
 
 #include <vector>
 
@@ -92,10 +90,11 @@ rtest_module_(vector) {
                 "    real4 x = ibuf[i];\n"
                 "    obuf[i] = x*x;\n"
                 "}\n"
+                "#include <device/source.cl>\n"
             ))
             .build("square").unwrap();
 
-            const int n = 256;
+            const int n = TEST_ATTEMPTS;
             std::vector<real4> ibuf(n), obuf(n);
             for (size_t i = 0; i < ibuf.size(); ++i) {
                 ibuf[i] = real4(i, 2*i, 2*i + 1, 3*i);
@@ -113,3 +112,5 @@ rtest_module_(vector) {
 }
 
 #endif // TEST_DEV
+
+#endif // TEST

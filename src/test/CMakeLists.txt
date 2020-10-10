@@ -10,6 +10,7 @@ if(USE_PCH)
     )
 endif()
 target_compile_definitions(test_unit PRIVATE
+    "-DTEST"
     "-DTEST_UNIT"
 )
 target_link_libraries(test_unit pthread rstd)
@@ -21,6 +22,7 @@ add_executable(test_dev
     "test_dev.cpp"
 )
 target_compile_definitions(test_dev PRIVATE
+    "-DTEST"
     "-DTEST_DEV"
     "-DINTEROP"
     "-DCL_TARGET_OPENCL_VERSION=120"

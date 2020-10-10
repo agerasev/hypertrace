@@ -137,7 +137,7 @@ rtest_module_(complex) {
             }
         }
     }
-    rtest_(product) {
+    rtest_(mul_div) {
         TestRng<comp> crng(0xbeef);
 
         for (devtest::Target target : *devtest_selector) {
@@ -145,27 +145,31 @@ rtest_module_(complex) {
             auto kernel = devtest::KernelBuilder(target.device_id(), queue)
             .source("complex.cl", std::string(
                 "#include <common/algebra/complex.hh>\n"
-                "__kernel void product(__global const comp *xbuf, __global const comp *ybuf, __global comp *obuf) {\n"
+                "__kernel void mul_div(__global const comp *x, __global const comp *y, __global comp *m, __global comp *d) {\n"
                 "    int i = get_global_id(0);\n"
-                "    obuf[i] = c_mul(xbuf[i], ybuf[i]);\n"
+                "    m[i] = c_mul(x[i], y[i]);\n"
+                "    d[i] = c_div(x[i], y[i]);\n"
                 "}\n"
                 "#include <device/source.cl>\n"
             ))
-            .build("product").unwrap();
+            .build("mul_div").unwrap();
 
             const int n = TEST_ATTEMPTS;
-            std::vector<comp> xbuf(n), ybuf(n), obuf(n);
+            std::vector<comp> xbuf(n), ybuf(n), mbuf(n), dbuf(n);
             for (size_t i = 0; i < n; ++i) {
                 xbuf[i] = crng.normal();
                 ybuf[i] = crng.normal();
             }
 
             devtest::KernelRunner(queue, std::move(kernel))
-            .run(n, xbuf, ybuf, obuf).expect("Kernel run error");
+            .run(n, xbuf, ybuf, mbuf, dbuf).expect("Kernel run error");
 
             for(size_t i = 0; i < n; ++i) {
-                comp z = c_mul(xbuf[i], ybuf[i]);
-                assert_eq_(approx(z), obuf[i]);
+                comp m = c_mul(xbuf[i], ybuf[i]);
+                assert_eq_(approx(m), mbuf[i]);
+
+                comp d = c_div(xbuf[i], ybuf[i]);
+                assert_eq_(approx(d).epsilon(1e-4), dbuf[i]);
             }
         }
     }

@@ -79,33 +79,39 @@ rtest_module_(vector) {
 extern_lazy_static_(devtest::Selector, devtest_selector);
 
 rtest_module_(vector) {
-    rtest_(square) {
+    rtest_(mul_dot) {
+        TestRng<real3> vrng(0xdead);
         for (devtest::Target target : *devtest_selector) {
             auto queue = target.make_queue();
             auto kernel = devtest::KernelBuilder(target.device_id(), queue)
             .source("vector.cl", std::string(
                 "#include <common/algebra/vector.hh>\n"
-                "__kernel void square(__global const real4 *ibuf, __global real4 *obuf) {\n"
+                "__kernel void mul_dot(__global const real3 *x, __global const real3 *y, __global real3 *m, __global real *d) {\n"
                 "    int i = get_global_id(0);\n"
-                "    real4 x = ibuf[i];\n"
-                "    obuf[i] = x*x;\n"
+                "    m[i] = x[i]*y[i];\n"
+                "    d[i] = dot(x[i], y[i]);\n"
                 "}\n"
                 "#include <device/source.cl>\n"
             ))
-            .build("square").unwrap();
+            .build("mul_dot").unwrap();
 
             const int n = TEST_ATTEMPTS;
-            std::vector<real4> ibuf(n), obuf(n);
-            for (size_t i = 0; i < ibuf.size(); ++i) {
-                ibuf[i] = real4(i, 2*i, 2*i + 1, 3*i);
+            std::vector<real3> xbuf(n), ybuf(n), mbuf(n);
+            std::vector<real> dbuf(n);
+            for (size_t i = 0; i < n; ++i) {
+                xbuf[i] = vrng.normal();
+                ybuf[i] = vrng.normal();
             }
 
             devtest::KernelRunner(queue, std::move(kernel))
-            .run(n, ibuf, obuf).expect("Kernel run error");
+            .run(n, xbuf, ybuf, mbuf, dbuf).expect("Kernel run error");
 
-            for(size_t i = 0; i < obuf.size(); ++i) {
-                ulong4 x = ulong4(i, 2*i, 2*i + 1, 3*i);
-                assert_eq_(x*x, obuf[i].convert<ulong>());
+            for(size_t i = 0; i < n; ++i) {
+                real3 m = xbuf[i]*ybuf[i];
+                assert_eq_(approx(m), mbuf[i]);
+
+                real d = dot(xbuf[i], ybuf[i]);
+                assert_eq_(approx(d), dbuf[i]);
             }
         }
     }

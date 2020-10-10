@@ -108,10 +108,10 @@ rtest_module_(vector) {
 
             for(size_t i = 0; i < n; ++i) {
                 real3 m = xbuf[i]*ybuf[i];
-                assert_eq_(approx(m), mbuf[i]);
+                assert_eq_(approx(m).epsilon(1e-4), mbuf[i]);
 
                 real d = dot(xbuf[i], ybuf[i]);
-                assert_eq_(approx(d), dbuf[i]);
+                assert_eq_(approx(d).epsilon(1e-4), dbuf[i]);
             }
         }
     }

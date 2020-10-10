@@ -45,3 +45,20 @@ public:
 };
 
 #endif // HOST
+
+
+#ifdef TEST
+
+class TestRngMoebius {
+private:
+    TestRng<comp2x2> rng;
+public:
+    inline TestRngMoebius() = default;
+    inline explicit TestRngMoebius(uint32_t seed) : rng(seed) {}
+
+    inline Moebius normal() {
+        return c22_normalize(rng.normal());
+    }
+};
+
+#endif // TEST

@@ -299,7 +299,7 @@ rtest_module_(matrix) {
         for (devtest::Target target : *devtest_selector) {
             auto queue = target.make_queue();
             auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("matrix_complex.cl", std::string(
+            .source("matrix_real.cl", std::string(
                 "#include <common/algebra/matrix.hh>\n"
                 "__kernel void product(__global const real3x3 *xbuf, __global const real3x3 *ybuf, __global real3x3 *obuf) {\n"
                 "    int i = get_global_id(0);\n"
@@ -321,7 +321,7 @@ rtest_module_(matrix) {
 
             for(size_t i = 0; i < n; ++i) {
                 real3x3 z = r33_dot(xbuf[i], ybuf[i]);
-                assert_eq_(approx(z), obuf[i]);
+                assert_eq_(approx(z).epsilon(1e-4), obuf[i]);
             }
         }
     }
@@ -353,7 +353,7 @@ rtest_module_(matrix) {
 
             for(size_t i = 0; i < n; ++i) {
                 comp2x2 z = c22_dot(xbuf[i], ybuf[i]);
-                assert_eq_(approx(z), obuf[i]);
+                assert_eq_(approx(z).epsilon(1e-4), obuf[i]);
             }
         }
     }

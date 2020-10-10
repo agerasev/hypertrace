@@ -6,3 +6,4 @@
 #include <common/algebra/quaternion.cc>
 #include <common/algebra/matrix_real.cc>
 #include <common/algebra/matrix_complex.cc>
+#include <common/algebra/moebius.cc>

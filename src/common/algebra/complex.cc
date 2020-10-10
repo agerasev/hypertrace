@@ -133,7 +133,7 @@ rtest_module_(complex) {
             .run(n, ibuf, obuf).expect("Kernel run error");
 
             for(size_t i = 0; i < obuf.size(); ++i) {
-                assert_eq_(approx(ibuf[i]), obuf[i]);
+                assert_eq_(approx(ibuf[i]).epsilon(1e-4), obuf[i]);
             }
         }
     }
@@ -166,7 +166,7 @@ rtest_module_(complex) {
 
             for(size_t i = 0; i < n; ++i) {
                 comp m = c_mul(xbuf[i], ybuf[i]);
-                assert_eq_(approx(m), mbuf[i]);
+                assert_eq_(approx(m).epsilon(1e-4), mbuf[i]);
 
                 comp d = c_div(xbuf[i], ybuf[i]);
                 assert_eq_(approx(d).epsilon(1e-4), dbuf[i]);

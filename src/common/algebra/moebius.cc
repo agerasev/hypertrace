@@ -40,22 +40,11 @@ real mo_diff(Moebius a, Moebius b) {
     return mo_norm_l1(a - b);
 }
 
-#ifdef TEST_UNIT
+#ifdef TEST
 
 #include <rtest.hpp>
 
-
-class TestRngMoebius {
-private:
-    TestRng<comp2x2> rng;
-public:
-    inline TestRngMoebius() = default;
-    inline explicit TestRngMoebius(uint32_t seed) : rng(seed) {}
-
-    Moebius normal() {
-        return c22_normalize(rng.normal());
-    }
-};
+#ifdef TEST_UNIT
 
 rtest_module_(moebius) {
     static_thread_local_(TestRng<comp>, crng) {
@@ -110,3 +99,52 @@ rtest_module_(moebius) {
 };
 
 #endif // TEST_UNIT
+
+#ifdef TEST_DEV
+
+#include <rtest.hpp>
+
+#include <vector>
+
+#include <test/devtest.hpp>
+
+extern_lazy_static_(devtest::Selector, devtest_selector);
+
+rtest_module_(moebius) {
+    rtest_(chain) {
+        TestRngMoebius morng(0xdead);
+
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("moebius.cl", std::string(
+                "#include <common/algebra/moebius.hh>\n"
+                "__kernel void chain(__global const Moebius *x, __global const Moebius *y, __global Moebius *z) {\n"
+                "    int i = get_global_id(0);\n"
+                "    z[i] = mo_chain(x[i], y[i]);\n"
+                "}\n"
+                "#include <device/source.cl>\n"
+            ))
+            .build("chain").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<Moebius> xbuf(n), ybuf(n), zbuf(n);
+            for (size_t i = 0; i < n; ++i) {
+                xbuf[i] = morng.normal();
+                ybuf[i] = morng.normal();
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
+
+            for(size_t i = 0; i < n; ++i) {
+                Moebius z = mo_chain(xbuf[i], ybuf[i]);
+                assert_eq_(approx(z).epsilon(1e-4), zbuf[i]);
+            }
+        }
+    }
+}
+
+#endif // TEST_DEV
+
+#endif // TEST

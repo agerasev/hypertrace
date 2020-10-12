@@ -78,3 +78,7 @@ public:
 typedef Euclidean Eu;
 
 #endif // HOST
+
+#ifndef HOST
+#include "euclidean.cc"
+#endif // !HOST

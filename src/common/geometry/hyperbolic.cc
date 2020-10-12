@@ -4,17 +4,20 @@
 HyDir hy_origin() {
     return QJ;
 }
-EuDir hy_dir_to_local(HyDir, HyDir dir) {
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+EuDir hy_dir_to_local(HyPos pos, HyDir dir) {
     return dir.xyz;
 }
-HyDir hy_dir_from_local(HyDir, EuDir ldir) {
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+HyDir hy_dir_from_local(HyPos pos, EuDir ldir) {
     return q_new(ldir, R0);
 }
 
-real hy_length(HyDir a) {
+real hy_length(HyPos a) {
     return hy_distance(a, hy_origin());
 }
-real hy_distance(HyDir a, HyDir b) {
+real hy_distance(HyPos a, HyPos b) {
     real x = 1 + length2(a - b)/(2*a.z*b.z);
     return log(x + sqrt(x*x - 1));
 }
@@ -30,7 +33,7 @@ HyDir hy_apply_dir(HyMap m, HyPos p, HyDir d) {
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
 HyDir hy_dir_at(HyDir src_pos, HyDir src_dir, HyDir dst_pos) {
     quat p = src_pos, d = src_dir, h = dst_pos;
-    return quat(
+    return MAKE(HyDir)(
         h.z/p.z*d.x,
         h.z/p.z*d.y,
         d.z - length(p.xy - h.xy)/p.z*length(d.xy),
@@ -81,7 +84,7 @@ HyMap hy_look_to(HyDir dir) {
 }
 
 // Rotatates point `pos` around the origin to make it lay on the z axis.
-HyMap hy_look_at(HyDir pos) {
+HyMap hy_look_at(HyPos pos) {
     // The origin is at *j* (z = 1).
 	real phi = -atan2(pos.y, pos.x);
 	real theta = -atan2(2*length(pos.xy), length2(pos) - 1);
@@ -90,7 +93,7 @@ HyMap hy_look_at(HyDir pos) {
 
 // Translates point `pos` to the origin preserving orientation
 // relative to the line that connects `pos` to the origin.
-HyMap hy_move_at(HyDir pos) {
+HyMap hy_move_at(HyPos pos) {
     Moebius a = hy_look_at(pos);
     Moebius b = hy_zshift(-hy_length(pos));
     return mo_chain(mo_inverse(a), mo_chain(b, a));
@@ -102,14 +105,17 @@ HyMap hy_move_to(HyDir dir, real dist) {
 }
 
 
-#ifdef TEST_UNIT
-
-#include <rtest.hpp>
-#include <functional>
+#ifdef TEST
 
 quat TestRngHyPos::normal() {
     return q_new(rng2.normal(), exp(rng.normal()), R0);
 }
+
+#include <rtest.hpp>
+
+#ifdef TEST_UNIT
+
+#include <functional>
 
 rtest_module_(hyperbolic) {
     static_thread_local_(TestRng<real>, rng) {
@@ -201,4 +207,64 @@ rtest_module_(hyperbolic) {
         }
     }
 };
+
 #endif // TEST_UNIT
+
+#ifdef TEST_DEV
+
+#include <rtest.hpp>
+
+#include <vector>
+
+#include <test/devtest.hpp>
+
+extern_lazy_static_(devtest::Selector, devtest_selector);
+
+rtest_module_(hyperbolic) {
+    rtest_(distance_invariance) {
+        TestRng<real> rng(0xcafe);
+        TestRngHyPos hyrng(0xcafe);
+
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("hyperbolic.cl", std::string(
+                "#include <common/geometry/hyperbolic.hh>\n"
+                "__kernel void transform(__global const HyMap *map, __global const HyPos *ipos, __global HyPos *opos) {\n"
+                "    int i = get_global_id(0);\n"
+                "    opos[i] = hy_apply_pos(map[i/2], ipos[i]);\n"
+                "}\n"
+            ))
+            .build("transform").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<Hy::Pos> ipos(2*n), opos(2*n);
+            std::vector<Hy::Map> map(n);
+            std::vector<real> dist(n);
+            for (size_t i = 0; i < n; ++i) {
+                Hy::Pos x = hyrng.normal(), y = hyrng.normal();
+                ipos[2*i] = x;
+                ipos[2*i + 1] = y;
+                dist[i] = Hy::distance(x, y);
+                
+                map[i] = hy_chain(
+                    hy_zrotate(2*PI*rng.uniform()), hy_chain(
+                    hy_yrotate(2*PI*rng.uniform()),
+                    hy_zshift(rng.normal())
+                ));
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(2*n, map, ipos, opos).expect("Kernel run error");
+
+            for(size_t i = 0; i < n; ++i) {
+                Hy::Pos x = opos[2*i], y = opos[2*i + 1];
+                assert_eq_(Hy::distance(x, y), approx(dist[i]).epsilon(1e-4));
+            }
+        }
+    }
+}
+
+#endif // TEST_DEV
+
+#endif // TEST

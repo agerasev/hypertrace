@@ -13,11 +13,11 @@ typedef Moebius HyMap;
 
 HyDir hy_origin();
 
-EuDir hy_dir_to_local(HyDir pos, HyDir dir);
-HyDir hy_dir_from_local(HyDir pos, EuDir ldir);
+EuDir hy_dir_to_local(HyPos pos, HyDir dir);
+HyDir hy_dir_from_local(HyPos pos, EuDir ldir);
 
-real hy_length(HyDir a);
-real hy_distance(HyDir a, HyDir b);
+real hy_length(HyPos a);
+real hy_distance(HyPos a, HyPos b);
 
 HyPos hy_apply_pos(HyMap m, HyPos p);
 HyDir hy_apply_dir(HyMap m, HyPos p, HyDir d);
@@ -26,7 +26,7 @@ HyDir hy_apply_dir(HyMap m, HyPos p, HyDir d);
 
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
-HyDir hy_dir_at(HyDir src_pos, HyDir src_dir, HyDir dst_pos);
+HyDir hy_dir_at(HyPos src_pos, HyDir src_dir, HyPos dst_pos);
 
 HyMap hy_zshift(real l);
 HyMap hy_xshift(real l);
@@ -42,11 +42,11 @@ HyMap hy_horosphere(comp pos);
 HyMap hy_look_to(HyDir dir);
 
 // Rotatates point `pos` around the origin to make it lay on the z axis.
-HyMap hy_look_at(HyDir pos);
+HyMap hy_look_at(HyPos pos);
 
 // Translates point `pos` to the origin preserving orientation
 // relative to the line that connects `pos` to the origin.
-HyMap hy_move_at(HyDir pos);
+HyMap hy_move_at(HyPos pos);
 HyMap hy_move_to(HyDir dir, real dist);
 
 
@@ -90,7 +90,7 @@ typedef Hyperbolic Hy;
 
 #endif // HOST
 
-#ifdef TEST_UNIT
+#ifdef TEST
 
 class TestRngHyPos {
 private:
@@ -103,4 +103,8 @@ public:
     quat normal();
 };
 
-#endif // TEST_UNIT
+#endif // TEST
+
+#ifndef HOST
+#include "hyperbolic.cc"
+#endif // !HOST

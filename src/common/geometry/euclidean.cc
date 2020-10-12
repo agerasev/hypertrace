@@ -3,7 +3,7 @@
 
 
 EuPos eu_origin() {
-    return real3(0);
+    return MAKE(real3)(0);
 }
 
 real eu_length(EuPos a) {
@@ -16,13 +16,15 @@ real eu_distance(EuPos a, EuPos b) {
 EuPos eu_apply_pos(EuMap m, EuPos p) {
     return aff3_apply_pos(m, p);
 }
-EuDir eu_apply_dir(EuMap m, EuPos, EuDir d) {
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+EuDir eu_apply_dir(EuMap m, EuPos p, EuDir d) {
     return aff3_apply_dir(m, d);
 }
 
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
-EuDir eu_dir_at(EuPos, EuDir src_dir, EuPos) {
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+EuDir eu_dir_at(EuPos src_pos, EuDir src_dir, EuPos dst_pos) {
     return src_dir;
 }
 
@@ -53,10 +55,11 @@ EuMap eu_move_to(EuDir dir, real dist) {
 }
 
 
-#ifdef TEST_UNIT
+#ifdef TEST
 
 #include <rtest.hpp>
 
+#ifdef TEST_UNIT
 
 rtest_module_(euclidean) {
     static_thread_local_(TestRng<real3>, vrng) {
@@ -106,3 +109,57 @@ rtest_module_(euclidean) {
 };
 
 #endif // TEST_UNIT
+
+#ifdef TEST_DEV
+
+#include <rtest.hpp>
+
+#include <vector>
+
+#include <test/devtest.hpp>
+
+extern_lazy_static_(devtest::Selector, devtest_selector);
+
+rtest_module_(euclidean) {
+    rtest_(distance_invariance) {
+        TestRng<real3> vrng(0xdead);
+        TestRngRotation3 rrng(0xbeef);
+
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("euclidean.cl", std::string(
+                "#include <common/geometry/euclidean.hh>\n"
+                "__kernel void transform(__global const EuMap *map, __global const EuPos *ipos, __global EuPos *opos) {\n"
+                "    int i = get_global_id(0);\n"
+                "    opos[i] = eu_apply_pos(map[i/2], ipos[i]);\n"
+                "}\n"
+            ))
+            .build("transform").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<Eu::Pos> ipos(2*n), opos(2*n);
+            std::vector<Eu::Map> map(n);
+            std::vector<real> dist(n);
+            for (size_t i = 0; i < n; ++i) {
+                Eu::Pos x = vrng.normal(), y = vrng.normal();
+                ipos[2*i] = x;
+                ipos[2*i + 1] = y;
+                map[i] = aff3_from_ls(rot3_to_linear(rrng.uniform()), vrng.normal());
+                dist[i] = Eu::distance(x, y);
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(2*n, map, ipos, opos).expect("Kernel run error");
+
+            for(size_t i = 0; i < n; ++i) {
+                Eu::Pos x = opos[2*i], y = opos[2*i + 1];
+                assert_eq_(Eu::distance(x, y), approx(dist[i]).epsilon(1e-4));
+            }
+        }
+    }
+}
+
+#endif // TEST_DEV
+
+#endif // TEST

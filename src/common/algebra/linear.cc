@@ -132,7 +132,7 @@ rtest_module_(linear) {
         for (devtest::Target target : *devtest_selector) {
             auto queue = target.make_queue();
             auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("moebius.cl", std::string(
+            .source("linear.cl", std::string(
                 "#include <common/algebra/linear.hh>\n"
                 "__kernel void chain(__global const Linear3 *x, __global const Linear3 *y, __global Linear3 *z) {\n"
                 "    int i = get_global_id(0);\n"

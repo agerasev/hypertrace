@@ -33,4 +33,5 @@ if(USE_PCH)
         ${COMMON_PCH}
     )
 endif()
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/output")
 target_link_libraries(test_dev pthread rstd includer OpenCL)

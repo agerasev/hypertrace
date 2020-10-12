@@ -1,6 +1,10 @@
 #include "devtest.hpp"
 
+#include <fstream>
+#include <sstream>
 #include <regex>
+
+#include <host/opencl/search.hpp>
 
 using namespace rstd;
 using namespace devtest;
@@ -118,6 +122,29 @@ Selector::TargetIter Selector::end() const {
     return TargetIter(*this, platforms().size());
 }
 
+class DropLogger final {
+private:
+    const std::stringstream &stream;
+    std::string filename;
+public:
+    DropLogger(const std::stringstream &stream, const std::string &filename) :
+        stream(stream), filename(filename)
+    {}
+    DropLogger(const DropLogger &) = delete;
+    DropLogger &operator=(const DropLogger &) = delete;
+    ~DropLogger() {
+        std::string log = stream.str();
+        bool empty = std::all_of(log.begin(), log.end(), [](char c) {
+            return c == ' ' || c == '\n' || c == '\r';
+        });
+        if (!empty) {
+            std::fstream output(filename, std::ios::out);
+            assert_(output.good());
+            write_(output, log);
+            output.close();
+        }
+    }
+};
 
 KernelBuilder::KernelBuilder(cl_device_id device_id, Rc<cl::Queue> queue) :
     device_id(device_id),
@@ -145,27 +172,25 @@ Result<cl::Kernel, std::string> KernelBuilder::build(const std::string &kernel_n
         }
     );
 
-    std::string log;
-    std::fstream flog(format_("build/src/test/{}.log", name), std::ios::out);
+    std::stringstream log;
+    DropLogger dl(log, format_("build/src/test/output/{}.{}.log", name, device_id));
 
     bool ires = includer.include();
-    log += includer.log() + "\n";
-    flog << includer.log() << std::endl;
+    writeln_(log, includer.log());
     if (!ires) {
-        return Err("Include error:\n" + log);
+        return Err(format_("Include error:\n{}", log.str()));
     }
-    std::fstream(format_("build/src/test/{}", name), std::ios::out)
+    std::fstream(format_("build/src/test/output/{}", name), std::ios::out)
     << std::regex_replace(includer.data(), std::regex("\n\n[\n]+"), "\n\n\n");
 
     auto prog_and_log = cl::Program::create(queue->context_ref(), device_id, includer);
-    log += prog_and_log.get<1>() + "\n";
-    flog << prog_and_log.get<1>() << std::endl;
+    writeln_(log, prog_and_log.get<1>());
     
     cl::Program program;
     try_assign_(program, prog_and_log.get<0>().map_err([&](auto) {
-        return format_("Program build error:\n{}", log);
+        return format_("Program build error:\n{}", log.str());
     }));
     return cl::Kernel::create(Rc(std::move(program)), kernel_name).map_err([&](auto) {
-        return format_("Kernel '{}' create error:\n{}", kernel_name, log);
+        return format_("Kernel '{}' create error:\n{}", kernel_name, log.str());
     });
 }

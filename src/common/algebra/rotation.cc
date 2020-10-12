@@ -208,7 +208,7 @@ rtest_module_(rotation) {
         for (devtest::Target target : *devtest_selector) {
             auto queue = target.make_queue();
             auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("moebius.cl", std::string(
+            .source("rotation.cl", std::string(
                 "#include <common/algebra/rotation.hh>\n"
                 "__kernel void chain(__global const Rotation3 *x, __global const Rotation3 *y, __global Rotation3 *z) {\n"
                 "    int i = get_global_id(0);\n"

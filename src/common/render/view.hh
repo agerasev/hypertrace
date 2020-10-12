@@ -5,21 +5,21 @@
 #include <common/geometry/hyperbolic.hh>
 
 
-struct ViewEu {
+typedef struct ViewEu {
     EuMap position;
     real field_of_view;
     real lens_radius;
     real focal_length;
-};
+} ViewEu;
 
 ViewEu vieweu_interpolate(ViewEu a, ViewEu b, real t);
 
-struct ViewHy {
+typedef struct ViewHy {
     HyMap position;
     real field_of_view;
     real lens_radius;
     real focal_length;
-};
+} ViewHy;
 
 ViewHy viewhy_interpolate(ViewHy a, ViewHy b, real t);
 
@@ -82,3 +82,8 @@ struct Interop<ViewHy> {
 #endif // INTEROP
 
 #endif // HOST
+
+
+#ifndef HOST
+#include "view.cc"
+#endif // !HOST

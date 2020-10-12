@@ -5,6 +5,9 @@ set(COMMON_PCH
 PARENT_SCOPE)
 
 set(COMMON_SRC
+    "${CMAKE_CURRENT_SOURCE_DIR}/types.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/math.cc"
+
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/real.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/vector.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/complex.cc"
@@ -22,9 +25,8 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/hyperbolic.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/ray.cc"
 
+    "${CMAKE_CURRENT_SOURCE_DIR}/object/euclidean/shapes.cc"
+
     "${CMAKE_CURRENT_SOURCE_DIR}/render/view.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/render/light.cc"
-
-    "${CMAKE_CURRENT_SOURCE_DIR}/types.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/math.cc"
 PARENT_SCOPE)

@@ -42,7 +42,7 @@ EuMap eu_move_to(EuDir dir, real dist);
 
 #include "geometry.hpp"
 
-class Euclidean : public Geometry {
+class Euclidean : public Geometry<Euclidean> {
 public:
     typedef EuPos Pos;
     typedef EuDir Dir;

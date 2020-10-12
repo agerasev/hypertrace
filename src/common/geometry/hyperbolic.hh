@@ -54,7 +54,7 @@ HyMap hy_move_to(HyDir dir, real dist);
 
 #include "geometry.hpp"
 
-class Hyperbolic : public Geometry {
+class Hyperbolic : public Geometry<Hyperbolic> {
 public:
     typedef HyPos Pos;
     typedef HyDir Dir;

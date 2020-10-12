@@ -115,7 +115,6 @@ rtest_module_(affine) {
                 "    int i = get_global_id(0);\n"
                 "    z[i] = aff3_chain(x[i], y[i]);\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("chain").unwrap();
 

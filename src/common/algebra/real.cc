@@ -34,7 +34,6 @@ rtest_module_(real) {
                 "    real x = ibuf[i];\n"
                 "    obuf[i] = x*x;\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("square").unwrap();
 

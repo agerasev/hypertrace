@@ -131,3 +131,9 @@ public:
 };
 
 #endif // TEST
+
+
+#ifndef HOST
+#include "matrix_real.cc"
+#include "matrix_complex.cc"
+#endif // !HOST

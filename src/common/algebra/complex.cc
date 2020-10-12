@@ -119,7 +119,6 @@ rtest_module_(complex) {
                 "    int i = get_global_id(0);\n"
                 "    obuf[i] = ibuf[i];\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("identity").unwrap();
 
@@ -150,7 +149,6 @@ rtest_module_(complex) {
                 "    m[i] = c_mul(x[i], y[i]);\n"
                 "    d[i] = c_div(x[i], y[i]);\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("mul_div").unwrap();
 

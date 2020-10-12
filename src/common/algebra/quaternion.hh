@@ -27,3 +27,8 @@ quat q_inverse(quat a);
 quat q_div(quat a, quat b);
 quat qc_div(quat a, comp b);
 quat cq_div(comp a, quat b);
+
+
+#ifndef HOST
+#include "quaternion.cc"
+#endif // !HOST

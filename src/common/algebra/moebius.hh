@@ -59,3 +59,8 @@ public:
 };
 
 #endif // TEST
+
+
+#ifndef HOST
+#include "moebius.cc"
+#endif // !HOST

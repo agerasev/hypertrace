@@ -138,7 +138,6 @@ rtest_module_(linear) {
                 "    int i = get_global_id(0);\n"
                 "    z[i] = lin3_chain(x[i], y[i]);\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("chain").unwrap();
 

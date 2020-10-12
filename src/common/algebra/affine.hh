@@ -39,3 +39,8 @@ public:
 };
 
 #endif // TEST
+
+
+#ifndef HOST
+#include "affine.cc"
+#endif // !HOST

@@ -192,3 +192,8 @@ public:
 };
 
 #endif // TEST
+
+
+#ifndef HOST
+#include "vector.cc"
+#endif // !HOST

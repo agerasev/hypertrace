@@ -91,7 +91,6 @@ rtest_module_(vector) {
                 "    m[i] = x[i]*y[i];\n"
                 "    d[i] = dot(x[i], y[i]);\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("mul_dot").unwrap();
 

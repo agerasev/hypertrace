@@ -106,3 +106,8 @@ Approx<real> approx(T v) {
 }
 
 #endif // TEST
+
+
+#ifndef HOST
+#include "real.cc"
+#endif // !HOST

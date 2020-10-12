@@ -305,7 +305,6 @@ rtest_module_(matrix) {
                 "    int i = get_global_id(0);\n"
                 "    obuf[i] = r33_dot(xbuf[i], ybuf[i]);\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("product").unwrap();
 
@@ -337,7 +336,6 @@ rtest_module_(matrix) {
                 "    int i = get_global_id(0);\n"
                 "    obuf[i] = c22_dot(xbuf[i], ybuf[i]);\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("product").unwrap();
 

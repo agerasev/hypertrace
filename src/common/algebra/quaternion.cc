@@ -169,7 +169,6 @@ rtest_module_(quaternion) {
                 "    m[i] = q_mul(x[i], y[i]);\n"
                 "    d[i] = q_div(x[i], y[i]);\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("mul_div").unwrap();
 

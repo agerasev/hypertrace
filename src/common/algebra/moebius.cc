@@ -127,7 +127,6 @@ rtest_module_(moebius) {
                 "    int i = get_global_id(0);\n"
                 "    z[i] = mo_chain(x[i], y[i]);\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("chain").unwrap();
 

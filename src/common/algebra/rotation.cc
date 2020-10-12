@@ -214,7 +214,6 @@ rtest_module_(rotation) {
                 "    int i = get_global_id(0);\n"
                 "    z[i] = rot3_chain(x[i], y[i]);\n"
                 "}\n"
-                "#include <device/source.cl>\n"
             ))
             .build("chain").unwrap();
 

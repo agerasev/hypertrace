@@ -25,3 +25,7 @@ real3 lin3_apply(Linear3 m, real3 v);
 Linear3 lin3_chain(Linear3 a, Linear3 b);
 Linear3 lin3_inverse(Linear3 m);
 
+
+#ifndef HOST
+#include "linear.cc"
+#endif // !HOST

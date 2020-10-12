@@ -52,3 +52,8 @@ public:
 };
 
 #endif // TEST
+
+
+#ifndef HOST
+#include "rotation.cc"
+#endif // !HOST

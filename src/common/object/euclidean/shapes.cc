@@ -1,7 +1,7 @@
 #include "shapes.hh"
 
 
-real sphere_detect(Context *context, real3 *normal, LightEu *light) {
+real sphereeu_detect(Context *context, real3 *normal, LightEu *light) {
     real3 pos = light->ray.start;
     real3 dir = light->ray.direction;
     real b = -dot(dir, pos);
@@ -21,7 +21,7 @@ real sphere_detect(Context *context, real3 *normal, LightEu *light) {
     return e;
 }
 
-static real cube_detect_nearest(real3 near, real3 *normal) {
+static real cubeeu_detect_nearest(real3 near, real3 *normal) {
     bool xy = near.x > near.y;
     bool yz = near.y > near.z;
     bool xz = near.x > near.z;
@@ -40,7 +40,7 @@ static real cube_detect_nearest(real3 near, real3 *normal) {
     return dist;
 }
 
-real cube_detect(Context *context, real3 *normal, LightEu *light) {
+real cubeeu_detect(Context *context, real3 *normal, LightEu *light) {
     const real3 cmax = MAKE(real3)(R1);
     const real3 cmin = MAKE(real3)(-R1);
 
@@ -53,11 +53,11 @@ real cube_detect(Context *context, real3 *normal, LightEu *light) {
     real3 far = fmax(vmin, vmax);
 
     real3 norm_in = MAKE(real3)(R0);
-    float dist_in = cube_detect_nearest(near, &norm_in);
+    float dist_in = cubeeu_detect_nearest(near, &norm_in);
     norm_in *= -sign(light->ray.direction);
 
     real3 norm_out = MAKE(real3)(R0);
-    float dist_out = -cube_detect_nearest(-far, &norm_out);
+    float dist_out = -cubeeu_detect_nearest(-far, &norm_out);
     norm_out *= sign(light->ray.direction);
 
     if (dist_in < EPS*context->repeat || dist_in > dist_out) {
@@ -109,7 +109,7 @@ rtest_module_(euclidean_shapes) {
             light.ray = RayEu { start, dir };
             real3 normal;
             
-            real dist = sphere_detect(&ctx, &normal, &light);
+            real dist = sphereeu_detect(&ctx, &normal, &light);
 
             if (length(start) < 1 - EPS) {
                 // TODO: Update on refraction
@@ -136,7 +136,7 @@ rtest_module_(euclidean_shapes) {
             light.ray = RayEu { start, dir };
             real3 normal;
 
-            real dist = cube_detect(&ctx, &normal, &light);
+            real dist = cubeeu_detect(&ctx, &normal, &light);
             
             if (max_comp(fabs(start)) < 1 - EPS) {
                 // TODO: Update on refraction
@@ -189,7 +189,7 @@ rtest_module_(euclidean_shapes) {
                 "    light.ray.start = start[i];\n"
                 "    light.ray.direction = dir[i];\n"
                 "    real3 normal;\n"
-                "    dist[i] = sphere_detect(&ctx, &normal, &light);\n"
+                "    dist[i] = sphereeu_detect(&ctx, &normal, &light);\n"
                 "    hit[i] = light.ray.start;\n"
                 "    norm[i] = normal;\n"
                 "}\n"
@@ -235,7 +235,7 @@ rtest_module_(euclidean_shapes) {
                 "    light.ray.start = start[i];\n"
                 "    light.ray.direction = dir[i];\n"
                 "    real3 normal;\n"
-                "    dist[i] = cube_detect(&ctx, &normal, &light);\n"
+                "    dist[i] = cubeeu_detect(&ctx, &normal, &light);\n"
                 "    hit[i] = light.ray.start;\n"
                 "    norm[i] = normal;\n"
                 "}\n"

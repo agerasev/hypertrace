@@ -3,8 +3,7 @@
 #include <common/algebra/quaternion.hh>
 #include <common/geometry/hyperbolic.hh>
 #include <common/render/light.hh>
-
-#include <generated/trace_context.hh>
+#include <common/render/context.hh>
 
 //#include <container/array.hpp>
 //#include <object/shape.hpp>
@@ -12,27 +11,38 @@
 //#include <object/material.hpp>
 
 
-real plane_hy_detect(TraceContext *context, HyDir *normal, Light<Hy> *light);
+typedef void PlaneHy; // : Shape
 
-struct PlaneHyCache {
-    HyDir normal;
-};
+#define PLANEHY_REPEATED false
 
-#define tiled_plane_hy_detect plane_hy_detect
+real planehy_detect(Context *context, HyDir *normal, LightHy *light);
 
-bool tiled_plane_hy_interact(
-    TraceContext *context, const Cache *cache,
+/*
+typedef struct {
+    uint tiling;
+} TiledPlaneHy;
+
+typedef struct {
+    real3 normal;
+} TiledPlaneHyCache;
+
+real tiledplanehy_detect(
+    Context *context, TiledPlaneHyCache *cache,
+    HyDir *normal, LightHy *light
+);
+
+bool tiledplanehy_interact(
+    Context *context, const TiledPlaneHyCache *cache,
     LightHy *light, color3 *luminance
 );
 
-#define TILED_PLANE_HY_TILING_NONE        0
-#define TILED_PLANE_HY_TILING_PENTAGONAL  1
-#define TILED_PLANE_HY_TILING_PENTASTAR   2
+#define TILEDPLANEHY_TILING_NONE        0
+#define TILEDPLANEHY_TILING_PENTAGONAL  1
+#define TILEDPLANEHY_TILING_PENTASTAR   2
 
 
 #ifdef HOST
 
-/*
 class PlaneHy : public SurfaceShape<Hy> {
 public:
     typedef Hy Geo;
@@ -116,6 +126,6 @@ struct ToDevice<hy::TiledPlane<Mat, N>> {
         return out;
     }
 };
-*/
 
 #endif // HOST
+*/

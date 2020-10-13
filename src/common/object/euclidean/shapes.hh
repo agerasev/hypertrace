@@ -6,18 +6,18 @@
 #include <common/render/light.hh>
 
 
-typedef void Sphere;
+typedef void SphereEu; // : Shape
 
-#define SPHERE_REPEATED true
+#define SPHEREEU_REPEATED true
 
-real sphere_detect(Context *context, real3 *normal, LightEu *light);
+real sphereeu_detect(Context *context, real3 *normal, LightEu *light);
 
 
-typedef void Cube;
+typedef void CubeEu; // : Shape
 
-#define CUBE_REPEATED true
+#define CUBEEU_REPEATED true
 
-real cube_detect(Context *context, real3 *normal, LightEu *light);
+real cubeeu_detect(Context *context, real3 *normal, LightEu *light);
 
 
 #ifndef HOST

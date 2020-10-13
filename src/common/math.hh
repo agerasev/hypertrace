@@ -135,7 +135,7 @@ T tgamma(T a) {
 }
 template <typename T>
 T sign(T a) {
-    return ((T(0) < a) - (a - T(0)));
+    return ((T(0) < a) - (a < T(0)));
 }
 
 template <typename T>

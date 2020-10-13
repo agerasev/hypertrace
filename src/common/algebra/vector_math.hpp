@@ -37,46 +37,46 @@ vec<T, N> normalize(vec<T, N> a) {
 }
 
 
-#define VECTOR_MATH_FA(F) \
+#define VECTOR_MATH_F1(F) \
 template <typename T, int N> \
 vec<T, N> F(vec<T, N> a) { \
     return vec<T, N>::map([](T x) { return F(x); }, a); \
 } \
 
-#define VECTOR_MATH_FAB(F) \
+#define VECTOR_MATH_F2(F) \
 template <typename T, int N> \
 vec<T, N> F(vec<T, N> a, vec<T, N> b) { \
     return vec<T, N>::map([](T x, T y) { return F(x, y); }, a, b); \
 } \
 
-VECTOR_MATH_FA(fabs)
-VECTOR_MATH_FAB(fmax)
-VECTOR_MATH_FAB(fmin)
-VECTOR_MATH_FA(acos)
-VECTOR_MATH_FA(acosh)
-VECTOR_MATH_FA(asin)
-VECTOR_MATH_FA(asinh)
-VECTOR_MATH_FA(atan)
-VECTOR_MATH_FAB(atan2)
-VECTOR_MATH_FA(atanh)
-VECTOR_MATH_FA(ceil)
-VECTOR_MATH_FA(cos)
-VECTOR_MATH_FA(cosh)
-VECTOR_MATH_FA(erfc)
-VECTOR_MATH_FA(erf)
-VECTOR_MATH_FA(exp)
-VECTOR_MATH_FA(floor)
-VECTOR_MATH_FAB(fmod)
-VECTOR_MATH_FA(log)
-VECTOR_MATH_FAB(pow)
-VECTOR_MATH_FA(round)
-VECTOR_MATH_FA(sqrt)
-VECTOR_MATH_FA(sin)
-VECTOR_MATH_FA(sinh)
-VECTOR_MATH_FA(tan)
-VECTOR_MATH_FA(tanh)
-VECTOR_MATH_FA(tgamma)
-VECTOR_MATH_FA(sign)
+VECTOR_MATH_F1(fabs)
+VECTOR_MATH_F2(fmax)
+VECTOR_MATH_F2(fmin)
+VECTOR_MATH_F1(acos)
+VECTOR_MATH_F1(acosh)
+VECTOR_MATH_F1(asin)
+VECTOR_MATH_F1(asinh)
+VECTOR_MATH_F1(atan)
+VECTOR_MATH_F2(atan2)
+VECTOR_MATH_F1(atanh)
+VECTOR_MATH_F1(ceil)
+VECTOR_MATH_F1(cos)
+VECTOR_MATH_F1(cosh)
+VECTOR_MATH_F1(erfc)
+VECTOR_MATH_F1(erf)
+VECTOR_MATH_F1(exp)
+VECTOR_MATH_F1(floor)
+VECTOR_MATH_F2(fmod)
+VECTOR_MATH_F1(log)
+VECTOR_MATH_F2(pow)
+VECTOR_MATH_F1(round)
+VECTOR_MATH_F1(sqrt)
+VECTOR_MATH_F1(sin)
+VECTOR_MATH_F1(sinh)
+VECTOR_MATH_F1(tan)
+VECTOR_MATH_F1(tanh)
+VECTOR_MATH_F1(tgamma)
+VECTOR_MATH_F1(sign)
 
 template <typename T, int N>
 vec<T, N> fmin(vec<T, N> a, T b) {

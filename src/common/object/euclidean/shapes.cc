@@ -1,7 +1,7 @@
 #include "shapes.hh"
 
 
-real sphereeu_detect(Context *context, real3 *normal, LightEu *light) {
+real sphere_detect(Context *context, real3 *normal, LightEu *light) {
     real3 pos = light->ray.start;
     real3 dir = light->ray.direction;
     real b = -dot(dir, pos);
@@ -74,6 +74,25 @@ real cube_detect(Context *context, real3 *normal, LightEu *light) {
 
 #include <rtest.hpp>
 
+real max_comp(real3 v) {
+    return max(max(v.x, v.y), v.z);
+}
+real max_comp_idx(real3 v) {
+    if (v.y > v.x) {
+        if (v.z > v.y) {
+            return 2;
+        } else {
+            return 1;
+        }
+    } else {
+        if (v.z > v.x) {
+            return 2;
+        } else {
+            return 0;
+        }
+    }
+}
+
 #ifdef TEST_UNIT
 
 rtest_module_(euclidean_shapes) {
@@ -89,15 +108,14 @@ rtest_module_(euclidean_shapes) {
             LightEu light;
             light.ray = RayEu { start, dir };
             real3 normal;
-            real dist = sphereeu_detect(&ctx, &normal, &light);
-            println_("{}, {}", start, dir);
+            
+            real dist = sphere_detect(&ctx, &normal, &light);
+
             if (length(start) < 1 - EPS) {
-                println_("inside");
                 // TODO: Update on refraction
                 assert_eq_(dist, approx(-1));
             }
             if (length(start) > 1 + EPS) {
-                println_("outside");
                 real proj = -dot(start, dir);
                 if (proj > EPS && length(start + proj*dir) < 1 - EPS) {
                     assert_eq_(length2(light.ray.start), approx(1));
@@ -105,6 +123,35 @@ rtest_module_(euclidean_shapes) {
                     assert_(dist > -EPS);
                 } else {
                     assert_eq_(dist, approx(-1));
+                }
+            }
+        }
+    }
+    rtest_(cube) {
+        Context ctx;
+        ctx.repeat = false;
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            real3 start = vrng->normal(), dir = vrng->unit();
+            LightEu light;
+            light.ray = RayEu { start, dir };
+            real3 normal;
+
+            real dist = cube_detect(&ctx, &normal, &light);
+            
+            if (max_comp(fabs(start)) < 1 - EPS) {
+                // TODO: Update on refraction
+                assert_eq_(dist, approx(-1));
+            }
+            if (max_comp(fabs(start)) > 1 + EPS) {
+                real proj = -dot(start, dir);
+                bool sph = proj > EPS && length(start + proj*dir) < 1 - EPS;
+                if (sph || dist > EPS) {
+                    assert_eq_(max_comp(fabs(light.ray.start)), approx(1));
+                    int idx = max_comp_idx(fabs(light.ray.start));
+                    assert_eq_(normal[idx], approx(sign(light.ray.start[idx])));
+                    normal[idx] = 0;
+                    assert_eq_(normal, approx(real3(0)));
+                    assert_(dist > -EPS);
                 }
             }
         }
@@ -124,7 +171,7 @@ rtest_module_(euclidean_shapes) {
 extern_lazy_static_(devtest::Selector, devtest_selector);
 
 rtest_module_(euclidean_shapes) {
-    rtest_(detect) {
+    rtest_(sphere_detect) {
         TestRng<real3> vrng(0xBAAB);
         for (devtest::Target target : *devtest_selector) {
             auto queue = target.make_queue();
@@ -142,7 +189,7 @@ rtest_module_(euclidean_shapes) {
                 "    light.ray.start = start[i];\n"
                 "    light.ray.direction = dir[i];\n"
                 "    real3 normal;\n"
-                "    dist[i] = sphereeu_detect(&ctx, &normal, &light);\n"
+                "    dist[i] = sphere_detect(&ctx, &normal, &light);\n"
                 "    hit[i] = light.ray.start;\n"
                 "    norm[i] = normal;\n"
                 "}\n"
@@ -164,6 +211,55 @@ rtest_module_(euclidean_shapes) {
                 if (dist[i] > -1e-4) {
                     assert_eq_(length(hit[i]), approx(1).epsilon(1e-4));
                     assert_eq_(hit[i], approx(norm[i]).epsilon(1e-4));
+                } else {
+                    assert_eq_(dist[i], approx(-1).epsilon(1e-4));
+                }
+            }
+        }
+    }
+    rtest_(cube_detect) {
+        TestRng<real3> vrng(0xBAAB);
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("euclidean_shapes.cl", std::string(
+                "#include <common/object/euclidean/shapes.hh>\n"
+                "__kernel void detect(\n"
+                "    __global const real3 *start, __global const real3 *dir,\n"
+                "    __global real3 *hit, __global real3 *norm, __global real *dist\n"
+                ") {\n"
+                "    int i = get_global_id(0);\n"
+                "    Context ctx;\n"
+                "    ctx.repeat = false;\n"
+                "    LightEu light;\n"
+                "    light.ray.start = start[i];\n"
+                "    light.ray.direction = dir[i];\n"
+                "    real3 normal;\n"
+                "    dist[i] = cube_detect(&ctx, &normal, &light);\n"
+                "    hit[i] = light.ray.start;\n"
+                "    norm[i] = normal;\n"
+                "}\n"
+            ))
+            .build("detect").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<real3> start(n), dir(n), hit(n), norm(n);
+            std::vector<real> dist(n);
+            for (size_t i = 0; i < n; ++i) {
+                start[i] = vrng.normal();
+                dir[i] = vrng.unit();
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(n, start, dir, hit, norm, dist).expect("Kernel run error");
+
+            for(size_t i = 0; i < n; ++i) {
+                if (dist[i] > -1e-4) {
+                    assert_eq_(max_comp(fabs(hit[i])), approx(1).epsilon(1e-4));
+                    int idx = max_comp_idx(fabs(hit[i]));
+                    assert_eq_(norm[i][idx], approx(sign(hit[i][idx])).epsilon(1e-4));
+                    norm[i][idx] = 0;
+                    assert_eq_(norm[i], approx(real3(0)).epsilon(1e-4));
                 } else {
                     assert_eq_(dist[i], approx(-1).epsilon(1e-4));
                 }

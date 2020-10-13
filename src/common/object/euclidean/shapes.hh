@@ -6,11 +6,11 @@
 #include <common/render/light.hh>
 
 
-typedef void SphereEu;
+typedef void Sphere;
 
-#define SPHEREEU_REPEATED true
+#define SPHERE_REPEATED true
 
-real sphereeu_detect(Context *context, real3 *normal, LightEu *light);
+real sphere_detect(Context *context, real3 *normal, LightEu *light);
 
 
 typedef void Cube;

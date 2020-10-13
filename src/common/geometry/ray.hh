@@ -9,8 +9,8 @@ typedef struct RayEu {
     EuDir direction;
 } RayEu;
 
-RayEu ray_eu_map(RayEu ray, EuMap map);
-RayEu ray_eu_advance(RayEu ray, real l);
+RayEu rayeu_map(RayEu ray, EuMap map);
+RayEu rayeu_advance(RayEu ray, real l);
 
 
 typedef struct RayHy {
@@ -18,8 +18,8 @@ typedef struct RayHy {
     HyPos direction;
 } RayHy;
 
-RayHy ray_hy_map(RayHy ray, HyMap map);
-RayHy ray_hy_advance(RayHy ray, real l);
+RayHy rayhy_map(RayHy ray, HyMap map);
+RayHy rayhy_advance(RayHy ray, real l);
 
 
 #ifndef HOST

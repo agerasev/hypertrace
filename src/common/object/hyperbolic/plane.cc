@@ -145,7 +145,7 @@ rtest_module_(hyperbolic_plane) {
         return TestRngHyPos(0xBAAB);
     }
 
-    rtest_(sphere) {
+    rtest_(detect) {
         Context ctx;
         ctx.repeat = false;
         size_t hits = 0;
@@ -185,7 +185,7 @@ rtest_module_(hyperbolic_plane) {
 extern_lazy_static_(devtest::Selector, devtest_selector);
 
 rtest_module_(hyperbolic_plane) {
-    rtest_(sphere_detect) {
+    rtest_(detect) {
         TestRng<real3> vrng(0xBAAB);
         TestRngHyPos hyrng(0xBAAB);
         for (devtest::Target target : *devtest_selector) {

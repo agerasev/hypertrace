@@ -1,39 +1,40 @@
 #include "plane.hh"
 
 
-real detect(TraceContext &context, HyDir &normal, Light<Hy> &light) {
+real planehy_detect(Context *context, HyDir *normal, LightHy *light) {
     // Line cannot intersect plane twice
-    if (context.repeat) {
+    if (context->repeat) {
         return -R1;
     }
 
-    quat p = light.ray.start, d = light.ray.direction;
+    quat p = light->ray.start, d = light->ray.direction;
     //real dxy = sqrt(d.x*d.x + d.y*d.y);
     // FIXME: check (dxy < EPS)
 
     real pd = dot(p, d);
-    if (math::abs(pd) < EPS) {
-        return -1_r;
+    if (fabs(pd) < EPS) {
+        return -R1;
     }
-    real t = (1_r - length2(p))/(2*pd);
-    if (t < 0_r) {
-        return -1_r;
+    real t = (R1 - length2(p))/(2*pd);
+    if (t < R0) {
+        return -R1;
     }
-    quat h(p.re() + d.re()*t, 0, 0);
+    quat h = MAKE(quat)(p.xy + d.xy*t, 0, 0);
     
-    real pxy2 = length2(h.re());
-    if (pxy2 > 1_r) {
-        return -1_r;
+    real pxy2 = length2(h.xy);
+    if (pxy2 > R1) {
+        return -R1;
     }
-    h[2] = math::sqrt(1 - pxy2);
+    h[2] = sqrt(1 - pxy2);
 
-    light.ray.start = h;
-    light.ray.direction = Hy::dir_at(p, d, h);
-    normal = h;
+    light->ray.start = h;
+    light->ray.direction = Hy::dir_at(p, d, h);
+    *normal = h;
 
     return Hy::distance(p, h);
 }
 
+/*
 bool tiled_plane_hy_interact(
     TraceContext *context, const Cache *cache,
     LightHy *light, color3 *luminance
@@ -129,40 +130,42 @@ bool tiled_plane_hy_interact(
     }
     return bounce;
 }
-
+*/
 #ifdef TEST_UNIT
 
-#include <catch.hpp>
+#include <rtest.hpp>
 
-TEST_CASE("Hyperbolic Plane", "[hyperbolic.plane]") {
-    Rng rng(0x807A);
+rtest_module_(hyperbolic_plane) {
+    static_thread_local_(TestRng<real3>, vrng) {
+        return TestRng<real3>(0xBAAB);
+    }
+    static_thread_local_(TestRngHyPos, hyrng) {
+        return TestRngHyPos(0xBAAB);
+    }
 
-    struct DummyCtx {
-        bool repeat = false;
-    } ctx;
-
-    SECTION("Collision") {
-        Plane h;
-        int hits = 0;
-        for (int i = 0; i < 64; ++i) {
-            Ray<Hy> incoming(
-                quat(rng.d<real2>().normal(), math::exp(rng.d<real>().normal()), 0),
-                quat(rng.d<real3>().unit(), 0)
-            );
-            Light<Hy> light{incoming, float3(0)};
+    rtest_(sphere) {
+        Context ctx;
+        ctx.repeat = false;
+        size_t hits = 0;
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            quat start = hyrng->normal(), dir = quat(vrng->unit(), 0.0);
+            LightHy light;
+            light.ray = RayHy { start, dir };
             quat normal;
-            real dist = h.detect(ctx, normal, light);
-            if (dist > 0_r) {
+            
+            real dist = planehy_detect(&ctx, &normal, &light);
+
+            if (dist > 0.0) {
                 hits += 1;
 
-                REQUIRE(length(light.ray.start) == approx(1));
-                REQUIRE(length(light.ray.direction) == approx(1));
+                assert_eq_(length(light.ray.start), approx(1));
+                assert_eq_(length(light.ray.direction), approx(1));
 
-                REQUIRE(length(normal) == approx(1));
-                REQUIRE(normal == approx(light.ray.start));
+                assert_eq_(length(normal), approx(1));
+                assert_eq_(normal, approx(light.ray.start));
             }
         }
-        REQUIRE(hits > 0);
+        assert_(hits > 0);
     }
 }
 

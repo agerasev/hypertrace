@@ -9,5 +9,5 @@ set(HOST_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/sdl/image.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/sdl/viewer.cpp"
 
-    "${CMAKE_CURRENT_SOURCE_DIR}/renderer.cpp"
+    #"${CMAKE_CURRENT_SOURCE_DIR}/renderer.cpp"
 PARENT_SCOPE)

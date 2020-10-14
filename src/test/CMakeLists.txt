@@ -13,7 +13,7 @@ target_compile_definitions(test_unit PRIVATE
     "-DTEST"
     "-DTEST_UNIT"
 )
-target_link_libraries(test_unit pthread rstd)
+target_link_libraries(test_unit ${RSTD_LIBS})
 
 add_executable(test_dev
     ${COMMON_SRC}
@@ -34,4 +34,4 @@ if(USE_PCH)
     )
 endif()
 file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/output")
-target_link_libraries(test_dev pthread rstd includer OpenCL)
+target_link_libraries(test_dev ${RSTD_LIBS} ${OPENCL_LIBS})

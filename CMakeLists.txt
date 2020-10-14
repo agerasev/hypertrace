@@ -21,11 +21,24 @@ add_subdirectory("src/host")
 include_directories(
     "${CMAKE_SOURCE_DIR}/src"
 )
-add_library(${PROJECT_NAME} OBJECT ${HOST_SRC})
 add_definitions(
     "-DDEBUG"
     "-DHOST"
 )
+set(RSTD_LIBS
+    pthread
+    rstd
+)
+set(OPENCL_LIBS
+    includer
+    OpenCL
+)
+set(SDL_LIBS
+    SDL2
+    SDL2_image
+)
+
+add_library(${PROJECT_NAME} OBJECT ${HOST_SRC})
 target_compile_definitions(${PROJECT_NAME} PUBLIC
     "-DINTEROP"
     "-DCL_TARGET_OPENCL_VERSION=120"
@@ -36,7 +49,11 @@ if(USE_PCH)
         ${COMMON_PCH}
     )
 endif()
-target_link_libraries(${PROJECT_NAME} pthread rstd OpenCL SDL2 SDL2_image)
+target_link_libraries(${PROJECT_NAME}
+    ${RSTD_LIBS}
+    ${OPENCL_LIBS}
+    ${SDL_LIBS}
+)
 
 add_subdirectory("src/examples")
 add_subdirectory("src/test")

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <functional>
+
 #include "base.hpp"
 
 #include <SDL2/SDL_image.h>

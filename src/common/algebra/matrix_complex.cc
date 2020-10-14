@@ -1,6 +1,6 @@
 #include "matrix.hh"
 
-// FIXME: Why 1e-4?
+// FIXME: Why 1e4?
 #define POW_EPS ((real)1e4*EPS)
 
 comp2x2 c22_zero() {

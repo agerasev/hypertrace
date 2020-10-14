@@ -153,7 +153,7 @@ rtest_module_(linear) {
 
             for(size_t i = 0; i < n; ++i) {
                 Linear3 z = lin3_chain(xbuf[i], ybuf[i]);
-                assert_eq_(approx(z).epsilon(1e-4), zbuf[i]);
+                assert_eq_(dev_approx(z), zbuf[i]);
             }
         }
     }

@@ -259,7 +259,7 @@ rtest_module_(hyperbolic) {
 
             for(size_t i = 0; i < n; ++i) {
                 Hy::Pos x = opos[2*i], y = opos[2*i + 1];
-                assert_eq_(Hy::distance(x, y), approx(dist[i]).epsilon(1e-4));
+                assert_eq_(Hy::distance(x, y), dev_approx(dist[i]));
             }
         }
     }

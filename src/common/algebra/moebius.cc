@@ -142,7 +142,7 @@ rtest_module_(moebius) {
 
             for(size_t i = 0; i < n; ++i) {
                 Moebius z = mo_chain(xbuf[i], ybuf[i]);
-                assert_eq_(approx(z).epsilon(1e-4), zbuf[i]);
+                assert_eq_(dev_approx(z), zbuf[i]);
             }
         }
     }

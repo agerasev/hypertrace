@@ -105,6 +105,21 @@ Approx<real> approx(T v) {
     return Approx<real>(real(v));
 }
 
+#ifdef TEST_DEV
+
+#ifdef DEV_F64
+#define DEV_EPS 100*EPS
+#else // !DEV_F64
+#define DEV_EPS 1e-4
+#endif // DEV_F64
+
+template <typename T>
+decltype(auto) dev_approx(T v) {
+    return approx(v).epsilon(DEV_EPS);
+}
+
+#endif // TEST_DEV
+
 #endif // TEST
 
 

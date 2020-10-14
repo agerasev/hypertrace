@@ -129,3 +129,7 @@ struct ToDevice<hy::TiledPlane<Mat, N>> {
 
 #endif // HOST
 */
+
+#ifndef HOST
+#include "plane.cc"
+#endif // !HOST

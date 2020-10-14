@@ -25,13 +25,13 @@ real planehy_detect(Context *context, HyDir *normal, LightHy *light) {
     if (pxy2 > R1) {
         return -R1;
     }
-    h[2] = sqrt(1 - pxy2);
+    h.z = sqrt(1 - pxy2);
 
     light->ray.start = h;
-    light->ray.direction = Hy::dir_at(p, d, h);
+    light->ray.direction = hy_dir_at(p, d, h);
     *normal = h;
 
-    return Hy::distance(p, h);
+    return hy_distance(p, h);
 }
 
 /*
@@ -131,9 +131,11 @@ bool tiled_plane_hy_interact(
     return bounce;
 }
 */
-#ifdef TEST_UNIT
+#ifdef TEST
 
 #include <rtest.hpp>
+
+#ifdef TEST_UNIT
 
 rtest_module_(hyperbolic_plane) {
     static_thread_local_(TestRng<real3>, vrng) {
@@ -155,7 +157,7 @@ rtest_module_(hyperbolic_plane) {
             
             real dist = planehy_detect(&ctx, &normal, &light);
 
-            if (dist > 0.0) {
+            if (dist > -EPS) {
                 hits += 1;
 
                 assert_eq_(length(light.ray.start), approx(1));
@@ -169,4 +171,72 @@ rtest_module_(hyperbolic_plane) {
     }
 }
 
-#endif
+#endif // TEST_UNIT
+
+
+#ifdef TEST_DEV
+
+#include <rtest.hpp>
+
+#include <vector>
+
+#include <test/devtest.hpp>
+
+extern_lazy_static_(devtest::Selector, devtest_selector);
+
+rtest_module_(hyperbolic_plane) {
+    rtest_(sphere_detect) {
+        TestRng<real3> vrng(0xBAAB);
+        TestRngHyPos hyrng(0xBAAB);
+        for (devtest::Target target : *devtest_selector) {
+            auto queue = target.make_queue();
+            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+            .source("hyperbolic_plane.cl", std::string(
+                "#include <common/object/hyperbolic/plane.hh>\n"
+                "__kernel void detect(\n"
+                "    __global const quat *start, __global const quat *idir,\n"
+                "    __global quat *hit, __global quat *odir, __global quat *norm,\n"
+                "    __global real *dist\n"
+                ") {\n"
+                "    int i = get_global_id(0);\n"
+                "    Context ctx;\n"
+                "    ctx.repeat = false;\n"
+                "    LightHy light;\n"
+                "    light.ray.start = start[i];\n"
+                "    light.ray.direction = idir[i];\n"
+                "    quat normal;\n"
+                "    dist[i] = planehy_detect(&ctx, &normal, &light);\n"
+                "    hit[i] = light.ray.start;\n"
+                "    odir[i] = light.ray.direction;\n"
+                "    norm[i] = normal;\n"
+                "}\n"
+            ))
+            .build("detect").unwrap();
+
+            const int n = TEST_ATTEMPTS;
+            std::vector<quat> start(n), idir(n), hit(n), odir(n), norm(n);
+            std::vector<real> dist(n);
+            for (size_t i = 0; i < n; ++i) {
+                start[i] = hyrng.normal();
+                idir[i] = quat(vrng.unit(), 0.0);
+            }
+
+            devtest::KernelRunner(queue, std::move(kernel))
+            .run(n, start, idir, hit, odir, norm, dist).expect("Kernel run error");
+
+            for(size_t i = 0; i < n; ++i) {
+                if (dist[i] > -DEV_EPS) {
+                    assert_eq_(length(hit[i]), dev_approx(1));
+                    assert_eq_(length(odir[i]), dev_approx(1));
+
+                    assert_eq_(length(norm[i]), dev_approx(1));
+                    assert_eq_(norm[i], dev_approx(hit[i]));
+                }
+            }
+        }
+    }
+}
+
+#endif // TEST_DEV
+
+#endif // TEST

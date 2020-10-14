@@ -320,7 +320,7 @@ rtest_module_(matrix) {
 
             for(size_t i = 0; i < n; ++i) {
                 real3x3 z = r33_dot(xbuf[i], ybuf[i]);
-                assert_eq_(approx(z).epsilon(1e-4), obuf[i]);
+                assert_eq_(dev_approx(z), obuf[i]);
             }
         }
     }
@@ -351,7 +351,7 @@ rtest_module_(matrix) {
 
             for(size_t i = 0; i < n; ++i) {
                 comp2x2 z = c22_dot(xbuf[i], ybuf[i]);
-                assert_eq_(approx(z).epsilon(1e-4), obuf[i]);
+                assert_eq_(dev_approx(z), obuf[i]);
             }
         }
     }

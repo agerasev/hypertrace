@@ -176,7 +176,7 @@ rtest_module_(euclidean_shapes) {
         for (devtest::Target target : *devtest_selector) {
             auto queue = target.make_queue();
             auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("euclidean_shapes.cl", std::string(
+            .source("euclidean_sphere.cl", std::string(
                 "#include <common/object/euclidean/shapes.hh>\n"
                 "__kernel void detect(\n"
                 "    __global const real3 *start, __global const real3 *dir,\n"
@@ -208,11 +208,11 @@ rtest_module_(euclidean_shapes) {
             .run(n, start, dir, hit, norm, dist).expect("Kernel run error");
 
             for(size_t i = 0; i < n; ++i) {
-                if (dist[i] > -1e-4) {
-                    assert_eq_(length(hit[i]), approx(1).epsilon(1e-4));
-                    assert_eq_(hit[i], approx(norm[i]).epsilon(1e-4));
+                if (dist[i] > -DEV_EPS) {
+                    assert_eq_(length(hit[i]), dev_approx(1));
+                    assert_eq_(hit[i], dev_approx(norm[i]));
                 } else {
-                    assert_eq_(dist[i], approx(-1).epsilon(1e-4));
+                    assert_eq_(dist[i], dev_approx(-1));
                 }
             }
         }
@@ -222,7 +222,7 @@ rtest_module_(euclidean_shapes) {
         for (devtest::Target target : *devtest_selector) {
             auto queue = target.make_queue();
             auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("euclidean_shapes.cl", std::string(
+            .source("euclidean_cube.cl", std::string(
                 "#include <common/object/euclidean/shapes.hh>\n"
                 "__kernel void detect(\n"
                 "    __global const real3 *start, __global const real3 *dir,\n"
@@ -254,14 +254,14 @@ rtest_module_(euclidean_shapes) {
             .run(n, start, dir, hit, norm, dist).expect("Kernel run error");
 
             for(size_t i = 0; i < n; ++i) {
-                if (dist[i] > -1e-4) {
-                    assert_eq_(max_comp(fabs(hit[i])), approx(1).epsilon(1e-4));
+                if (dist[i] > -DEV_EPS) {
+                    assert_eq_(max_comp(fabs(hit[i])), dev_approx(1));
                     int idx = max_comp_idx(fabs(hit[i]));
-                    assert_eq_(norm[i][idx], approx(sign(hit[i][idx])).epsilon(1e-4));
+                    assert_eq_(norm[i][idx], dev_approx(sign(hit[i][idx])));
                     norm[i][idx] = 0;
-                    assert_eq_(norm[i], approx(real3(0)).epsilon(1e-4));
+                    assert_eq_(norm[i], dev_approx(real3(0)));
                 } else {
-                    assert_eq_(dist[i], approx(-1).epsilon(1e-4));
+                    assert_eq_(dist[i], dev_approx(-1));
                 }
             }
         }

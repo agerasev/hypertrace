@@ -187,7 +187,7 @@ rtest_module_(quaternion) {
                 assert_eq_(approx(m), mbuf[i]);
 
                 quat d = q_div(xbuf[i], ybuf[i]);
-                assert_eq_(approx(d).epsilon(1e-4), dbuf[i]);
+                assert_eq_(dev_approx(d), dbuf[i]);
             }
         }
     }

@@ -154,7 +154,7 @@ rtest_module_(euclidean) {
 
             for(size_t i = 0; i < n; ++i) {
                 Eu::Pos x = opos[2*i], y = opos[2*i + 1];
-                assert_eq_(Eu::distance(x, y), approx(dist[i]).epsilon(1e-4));
+                assert_eq_(Eu::distance(x, y), dev_approx(dist[i]));
             }
         }
     }

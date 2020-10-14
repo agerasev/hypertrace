@@ -10,12 +10,16 @@ using namespace rstd;
 using namespace devtest;
 
 
-Device::Device(cl_device_id id) {
-    id_ = id;
-}
+Device::Device(cl_device_id id):
+    id_(id),
+    mutex_(Tuple<>())
+{}
 
 cl_device_id Device::id() const {
     return id_;
+}
+Mutex<Tuple<>> &Device::mutex() const {
+    return mutex_;
 }
 
 void Device::print_info() const {
@@ -49,12 +53,14 @@ void Platform::print_info() const {
 
 // Target
 
-Target::Target(cl_device_id device_id) :
-    device_id_(device_id)
+Target::Target(const Device *device) :
+    device_(device)
 {
-    context_ = Rc(cl::Context::create(device_id_).unwrap());
+    auto _ = device_->mutex().lock();
+    context_ = Rc(cl::Context::create(device_->id()).unwrap());
 }
 Target::~Target() {
+    auto _ = device_->mutex().lock();
     context_.try_take().expect("Context is referenced somewhere else");
 }
 
@@ -62,13 +68,13 @@ Target::~Target() {
 //    return device_;
 //}
 cl_device_id Target::device_id() const {
-    return device_id_;
+    return device_->id();
 }
 const Rc<cl::Context> &Target::context() const {
     return context_;
 }
 Rc<cl::Queue> Target::make_queue() const {
-    return Rc(cl::Queue::create(context_, device_id_).unwrap());
+    return Rc(cl::Queue::create(context_, device_->id()).unwrap());
 }
 
 // Selector::TargetIter
@@ -95,7 +101,7 @@ void Selector::TargetIter::operator++() {
     }
 }
 Target Selector::TargetIter::operator*() const {
-    return Target(parent.platforms()[plpos].devices()[devpos].id());
+    return Target(&(parent.platforms()[plpos].devices()[devpos]));
 }
 
 // Selector

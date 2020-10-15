@@ -4,6 +4,7 @@
 
 #include <common/types.hh>
 #include <host/opencl/opencl.hpp>
+#include <host/aligned_vector.hpp>
 
 
 namespace devtest {
@@ -144,7 +145,7 @@ private:
         BufferArg(const rstd::Rc<cl::Queue> &q, std::vector<T> &hb) :
             queue(q), hostbuf(hb)
         {
-            std::vector<dev_type<T>> tmpbuf(hostbuf.size());
+            aligned_vector<dev_type<T>> tmpbuf(hostbuf.size());
             for (size_t i = 0; i < hostbuf.size(); ++i) {
                 dev_store(&tmpbuf[i], &hostbuf[i]);
             }
@@ -155,7 +156,7 @@ private:
             return devbuf;
         }
         void load() override {
-            std::vector<dev_type<T>> tmpbuf(hostbuf.size());
+            aligned_vector<dev_type<T>> tmpbuf(hostbuf.size());
             devbuf.load(*queue, tmpbuf.data()).expect("Buffer load error");
             for (size_t i = 0; i < hostbuf.size(); ++i) {
                 dev_load(&hostbuf[i], &tmpbuf[i]);

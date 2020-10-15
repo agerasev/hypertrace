@@ -8,9 +8,12 @@
 
 namespace devtest {
 
+class Platform;
+
 class Device {
 private:
     cl_device_id id_;
+    mutable rstd::Mutex<rstd::Tuple<>> mutex_;
 
 public:
     Device() = delete;
@@ -23,6 +26,7 @@ public:
     explicit Device(cl_device_id id);
 
     cl_device_id id() const;
+    rstd::Mutex<rstd::Tuple<>> &mutex() const;
 
     void print_info() const;
 };
@@ -50,7 +54,7 @@ public:
 
 class Target {
 private:
-    cl_device_id device_id_;
+    const Device *device_;
     rstd::Rc<cl::Context> context_;
 public:
     Target() = delete;
@@ -60,7 +64,7 @@ public:
     Target(Target &&) = default;
     Target &operator=(Target &&) = default;
 
-    explicit Target(cl_device_id device_id);
+    explicit Target(const Device *device);
     ~Target();
 
     //const Device &device() const;

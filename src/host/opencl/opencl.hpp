@@ -52,7 +52,7 @@ public:
     T &operator->() { return resource; }
     const T &operator->() const { return resource; }
     operator T() const { return resource; }
-    operator bool() const { return resource != 0; }
+    explicit operator bool() const { return resource != 0; }
 };
 
 class Context {
@@ -60,10 +60,10 @@ private:
     static void free_raw(cl_context raw);
 
     Device device_;
-    _Guard<cl_context, free_raw> raw;
+    _Guard<cl_context, free_raw> raw_;
 
     inline Context(cl_context raw, Device device) :
-        device_(device), raw(raw) {}
+        device_(device), raw_(raw) {}
 
 public:
     Context() = default;
@@ -76,8 +76,9 @@ public:
 
     static rstd::Result<Context> create(Device device);
 
-    inline operator cl_context() const { return raw; }
-    inline operator bool() const { return raw; }
+    inline cl_context raw() const { return raw_; }
+    inline operator cl_context() const { return raw(); }
+    inline explicit operator bool() const { return raw(); }
 
     inline Device device() const { return device_; }
 };
@@ -87,10 +88,10 @@ private:
     static void free_raw(cl_command_queue raw);
 
     rstd::Rc<Context> context_;
-    _Guard<cl_command_queue, free_raw> raw;
+    _Guard<cl_command_queue, free_raw> raw_;
 
     inline Queue(cl_command_queue raw, rstd::Rc<Context> context) :
-        context_(std::move(context)), raw(raw) {}
+        context_(std::move(context)), raw_(raw) {}
 
 public:
     Queue() = default;
@@ -105,8 +106,9 @@ public:
     void flush();
     void finish();
 
-    inline operator cl_command_queue() const { return raw; }
-    inline operator bool() const { return raw; }
+    inline cl_command_queue raw() const { return raw_; }
+    inline operator cl_command_queue() const { return raw(); }
+    inline explicit operator bool() const { return raw(); }
 
     inline Context &context() { return *context_; }
     inline const Context &context() const { return *context_; }
@@ -119,10 +121,10 @@ private:
 
     Device device_;
     rstd::Rc<Context> context_;
-    _Guard<cl_program, free_raw> raw;
+    _Guard<cl_program, free_raw> raw_;
 
     inline Program(cl_program raw, Device device, rstd::Rc<Context> context) :
-        device_(device), context_(std::move(context)), raw(raw) {}
+        device_(device), context_(std::move(context)), raw_(raw) {}
     static std::string log(cl_program program, cl_device_id device);
 
 public:
@@ -145,8 +147,9 @@ public:
         const includer &includer
     );
 
-    inline operator cl_program() const { return raw; }
-    inline operator bool() const { return raw; }
+    inline cl_program raw() const { return raw_; }
+    inline operator cl_program() const { return raw(); }
+    inline explicit operator bool() const { return raw(); }
 
     inline Context &context() { return *context_; }
     inline const Context &context() const { return *context_; }
@@ -159,11 +162,11 @@ private:
     static void free_raw(cl_mem raw);
     
     rstd::Rc<Context> context_;
-    _Guard<cl_mem, free_raw> raw;
+    _Guard<cl_mem, free_raw> raw_;
     size_t size_ = 0;
 
     inline Buffer(cl_mem raw, size_t size, rstd::Rc<Context> context) :
-        context_(std::move(context)), raw(raw), size_(size) {}
+        context_(std::move(context)), raw_(raw), size_(size) {}
 
 public:
     Buffer() = default;
@@ -176,17 +179,18 @@ public:
 
     static rstd::Result<Buffer> create(Queue &queue, size_t size, bool zeroed=false);
 
-    inline operator cl_mem() const { return raw; }
-    inline operator bool() const { return raw; }
-    inline size_t size() const { return size_; }
-    inline Context &context() { return *context_; }
-    inline const Context &context() const { return *context_; }
-    inline rstd::Rc<Context> context_ref() const { return context_; }
-
     rstd::Result<rstd::Tuple<>, std::string> load(Queue &queue, void *data);
     rstd::Result<rstd::Tuple<>, std::string> load(Queue &queue, void *data, size_t size);
     rstd::Result<rstd::Tuple<>, std::string> store(Queue &queue, const void *data);
     rstd::Result<rstd::Tuple<>, std::string> store(Queue &queue, const void *data, size_t size);
+
+    inline cl_mem raw() const { return raw_; }
+    inline operator cl_mem() const { return raw(); }
+    inline explicit operator bool() const { return raw(); }
+    inline size_t size() const { return size_; }
+    inline Context &context() { return *context_; }
+    inline const Context &context() const { return *context_; }
+    inline rstd::Rc<Context> context_ref() const { return context_; }
 };
 
 class Kernel {
@@ -194,11 +198,11 @@ private:
     static void free_raw(cl_kernel raw);
 
     rstd::Rc<Program> program_;
-    _Guard<cl_kernel, free_raw> raw;
+    _Guard<cl_kernel, free_raw> raw_;
     std::string name_;
 
     inline Kernel(cl_kernel raw, rstd::Rc<Program> program, const std::string &name) :
-        program_(std::move(program)), raw(raw), name_(name) {}
+        program_(std::move(program)), raw_(raw), name_(name) {}
 
 public:
     Kernel() = default;
@@ -211,8 +215,9 @@ public:
 
     static rstd::Result<Kernel> create(rstd::Rc<Program> program, const std::string &name);
 
-    inline operator cl_kernel() const { return raw; }
-    inline operator bool() const { return raw; }
+    inline cl_kernel raw() const { return raw_; }
+    inline operator cl_kernel() const { return raw(); }
+    inline explicit operator bool() const { return raw(); }
 
     inline Program &program() { return *program_; }
     inline const Program &program() const { return *program_; }
@@ -233,7 +238,7 @@ private:
 public:
     template <typename T>
     void set_arg(size_t n, const T &arg) {
-        assert_eq_(clSetKernelArg(raw, n, sizeof(T), (void *)&arg), CL_SUCCESS);
+        assert_eq_(clSetKernelArg(raw_, n, sizeof(T), (void *)&arg), CL_SUCCESS);
     }
     inline void set_arg(size_t n, const Buffer &buf) {
         set_arg(n, cl_mem(buf));

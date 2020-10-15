@@ -38,11 +38,11 @@ Result<Queue> Queue::create(Rc<Context> context, cl_device_id device) {
     }
 }
 void Queue::flush() {
-    assert_eq_(clFlush(raw), CL_SUCCESS);
+    assert_eq_(clFlush(raw_), CL_SUCCESS);
 }
 void Queue::finish() {
     flush();
-    assert_eq_(clFinish(raw), CL_SUCCESS);
+    assert_eq_(clFinish(raw_), CL_SUCCESS);
 }
 
 
@@ -151,7 +151,7 @@ LsResult Buffer::load(Queue &queue, void *data, size_t size) {
         return LsResult::Err(format_("Requested size ({}) is greater that buffer size ({})", size, size_));
     }
     if (size != 0 && clEnqueueReadBuffer(
-        queue, raw, CL_TRUE,
+        queue, raw_, CL_TRUE,
         0, size, data,
         0, nullptr, nullptr
     ) != CL_SUCCESS) {
@@ -173,7 +173,7 @@ LsResult Buffer::store(Queue &queue, const void *data, size_t size) {
         }
     }
     if (size != 0 && clEnqueueWriteBuffer(
-        queue, raw, CL_TRUE,
+        queue, raw_, CL_TRUE,
         0, size, data,
         0, nullptr, nullptr
     ) != CL_SUCCESS) {
@@ -202,7 +202,7 @@ Result<Kernel> Kernel::create(Rc<Program> program, const std::string &name) {
 Result<> Kernel::run(Queue &queue, size_t work_size) {
     size_t global_work_size[1] = {work_size};
     if (clEnqueueNDRangeKernel(
-        queue, raw,
+        queue, raw_,
         1, NULL, global_work_size, NULL,
         0, NULL, NULL
     ) != CL_SUCCESS) {

@@ -20,6 +20,13 @@ typedef void CubeEu; // : Shape
 real cubeeu_detect(Context *context, real3 *normal, LightEu *light);
 
 
+#ifdef HOST
+
+
+
+#endif // HOST
+
+
 #ifndef HOST
 #include "shapes.cc"
 #endif // !HOST

@@ -1,9 +1,24 @@
 #pragma once
 
-#include <traits.hpp>
-#include "object.hpp"
+#include "object.hh"
 
+/*
+struct MappedX {
+    Shape shape;
+    Map map;
+};
+*/
 
+#ifdef HOST
+
+template <typename T, typename M>
+struct Mapped : public Object<T> {
+
+};
+
+#endif // HOST
+
+/*
 template <typename Obj>
 class Mapped {
 // : public Object<typename Obj::Geo>
@@ -64,3 +79,4 @@ struct ToDevice<Mapped<Obj>> {
 };
 
 #endif
+*/

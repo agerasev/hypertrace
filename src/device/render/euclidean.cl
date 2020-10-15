@@ -30,10 +30,19 @@ __kernel void render(
 	ray.direction = v;
 	ray = rayeu_map(ray, view.position);
 
-	//LightEu light;
-	//light.ray = ray;
+	LightEu light;
+	light.ray = ray;
+	light.base.intensity = (float3)(0.0f);
 
-	float3 color = 0.5f*(ray.direction + 1.0f);
+	Context ctx;
+	ctx.repeat = false;
+
+	float3 color = (float3)(1.0f);
+
+	real3 normal;
+	if (cubeeu_detect(&ctx, &normal, &light) > 0.0f) {
+		color = 0.0f;
+	}
 
 	//seeds[idx] = rng.state;
 

@@ -11,7 +11,10 @@ struct Config {};
 
 class BasicRenderer {
 private:
-    includer make_includer(const Config &);
+    includer make_includer(
+        const Config &cfg,
+        const std::string &src
+    );
 
 protected:
     int width, height;
@@ -35,7 +38,8 @@ public:
     BasicRenderer(
         cl_device_id device,
         int width, int height,
-        const Config &config={}
+        const Config &config,
+        const std::string &src
     );
 
     void load_image(uint8_t *data);
@@ -43,6 +47,21 @@ public:
     virtual void render() = 0;
     int render_n(int n);
     int render_for(double sec);
+};
+
+template <typename G>
+struct RenderFile {};
+template <>
+struct RenderFile<Eu> {
+    static std::string path() {
+        return "device/render/euclidean.cl";
+    }
+};
+template <>
+struct RenderFile<Hy> {
+    static std::string path() {
+        return "device/render/hyperbolic.cl";
+    }
 };
 
 template <typename G>
@@ -56,7 +75,12 @@ public:
         int width, int height,
         const Config &config={}
     ) :
-        BasicRenderer(device, width, height, config)
+        BasicRenderer(
+            device,
+            width, height,
+            config,
+            RenderFile<G>::path()
+        )
     {}
     
     /*

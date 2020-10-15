@@ -11,9 +11,12 @@ using namespace rstd;
 using duration = std::chrono::duration<double>;
 
 
-includer BasicRenderer::make_includer(const Config &) {
+includer BasicRenderer::make_includer(
+    const Config &,
+    const std::string &src
+) {
     includer inc(
-        "device/render/euclidean.cl",
+        src,
         std::list<std::string>{"src"},
         {},
         std::map<std::string, bool>{
@@ -35,7 +38,8 @@ includer BasicRenderer::make_includer(const Config &) {
 BasicRenderer::BasicRenderer(
     cl_device_id device,
     int width, int height,
-    const Config &config
+    const Config &config,
+    const std::string &src
 ) :
     width(width),
     height(height)
@@ -45,7 +49,7 @@ BasicRenderer::BasicRenderer(
 
     auto prog_and_log = cl::Program::create(
         context, device,
-        make_includer(config)
+        make_includer(config, src)
     );
     println_("Render build log: {}", prog_and_log.get<1>());
     program = Rc(prog_and_log.get<0>().expect("Program create error"));

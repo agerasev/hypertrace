@@ -1,7 +1,6 @@
-#include <common/geometry/euclidean.hh>
+#include <common/geometry/hyperbolic.hh>
 #include <common/geometry/ray.hh>
 
-#include <common/object/euclidean/shapes.hh>
 #include <common/render/view.hh>
 
 
@@ -11,7 +10,7 @@ __kernel void render(
 	int width, int height,
 	int sample_no,
 	__global uint *seeds,
-	ViewEu view
+	ViewHy view
 ) {
 	int idx = get_global_id(0);
 	//Rng rng;
@@ -19,21 +18,21 @@ __kernel void render(
 
 	//real time = rand_uniform(&rng);
 
-	real3 v = normalize((real3)(
+	quat v = normalize((quat)(
 		((real)(idx % width) - 0.5f*width/* + rand_uniform(&rng)*/)/height,
 		((real)(idx / width) - 0.5f*height/* + rand_uniform(&rng)*/)/height,
-		view.field_of_view
+		view.field_of_view, 0.0f
 	));
 
-	RayEu ray;
-	ray.start = eu_origin();
+	RayHy ray;
+	ray.start = hy_origin();
 	ray.direction = v;
-	ray = rayeu_map(ray, view.position);
+	ray = rayhy_map(ray, view.position);
 
-	//LightEu light;
+	//LightHy light;
 	//light.ray = ray;
 
-	float3 color = 0.5f*(ray.direction + 1.0f);
+	float3 color = 0.5f*(ray.direction.xyz + 1.0f);
 
 	//seeds[idx] = rng.state;
 

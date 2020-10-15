@@ -47,37 +47,39 @@ template <typename G>
 using View = typename _ViewTrait<G>::T;
 
 template <typename G>
-View<G> interpolate(View<G> a, View<G> b, real t) {
+View<G> view_interpolate(View<G> a, View<G> b, real t) {
     return _ViewTrait<G>::interpolate(a, b, t);
 }
 
 #ifdef INTEROP
 
-template <>
-struct Interop<ViewEu> {
-    typedef ViewEu Host;
+template <typename G>
+struct _ViewInterop {
+    typedef View<G> Host;
     struct Dev {
-        dev_type<EuMap> pos;
+        dev_type<typename G::Map> pos;
         dev_type<real> fov;
         dev_type<real> lr;
         dev_type<real> fl;
     };
-    static void load(Host *dst, const Dev *src);
-    static void store(Dev *dst, const Host *src);
+    static void load(Host *dst, const Dev *src) {
+        dev_load(&dst->position, &src->pos);
+        dst->field_of_view = src->fov;
+        dst->lens_radius = src->lr;
+        dst->focal_length = src->fl;
+    }
+    static void store(Dev *dst, const Host *src) {
+        dev_store(&dst->pos, &src->position);
+        dst->fov = src->field_of_view;
+        dst->lr = src->lens_radius;
+        dst->fl = src->focal_length;
+    }
 };
 
 template <>
-struct Interop<ViewHy> {
-    typedef ViewHy Host;
-    struct Dev {
-        dev_type<HyMap> pos;
-        dev_type<real> fov;
-        dev_type<real> lr;
-        dev_type<real> fl;
-    };
-    static void load(Host *dst, const Dev *src);
-    static void store(Dev *dst, const Host *src);
-};
+struct Interop<ViewEu> : public _ViewInterop<Eu> {};
+template <>
+struct Interop<ViewHy> : public _ViewInterop<Hy> {};
 
 #endif // INTEROP
 

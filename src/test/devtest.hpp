@@ -8,9 +8,38 @@
 
 namespace devtest {
 
-class Platform;
+class Device;
+
+class Target {
+public:
+    friend class Device;
+
+private:
+    const Device *device_;
+    rstd::Rc<cl::Context> context_;
+
+    explicit Target(const Device *device);
+
+public:
+    Target() = delete;
+    Target(const Target &) = delete;
+    Target &operator=(const Target &) = delete;
+
+    Target(Target &&) = default;
+    Target &operator=(Target &&) = default;
+
+    ~Target();
+
+    //const Device &device() const;
+    cl_device_id device_id() const;
+    const rstd::Rc<cl::Context> &context() const;
+    rstd::Rc<cl::Queue> make_queue() const;
+};
 
 class Device {
+public:
+    friend class Target;
+
 private:
     cl_device_id id_;
     mutable rstd::Mutex<rstd::Tuple<>> mutex_;
@@ -26,9 +55,9 @@ public:
     explicit Device(cl_device_id id);
 
     cl_device_id id() const;
-    rstd::Mutex<rstd::Tuple<>> &mutex() const;
+    std::string info() const;
 
-    void print_info() const;
+    Target make_target() const;
 };
 
 class Platform {
@@ -49,59 +78,21 @@ public:
     cl_platform_id id() const;
     const std::vector<Device> &devices() const;
 
-    void print_info() const;
+    std::string info() const;
 };
 
-class Target {
-private:
-    const Device *device_;
-    rstd::Rc<cl::Context> context_;
-public:
-    Target() = delete;
-    Target(const Target &) = delete;
-    Target &operator=(const Target &) = delete;
-
-    Target(Target &&) = default;
-    Target &operator=(Target &&) = default;
-
-    explicit Target(const Device *device);
-    ~Target();
-
-    //const Device &device() const;
-    cl_device_id device_id() const;
-    const rstd::Rc<cl::Context> &context() const;
-    rstd::Rc<cl::Queue> make_queue() const;
-};
-
-class Selector {
-public:
-    class TargetIter {
-    private:
-        const Selector &parent;
-        size_t plpos, devpos;
-    public:
-        explicit TargetIter(const Selector &parent, size_t plpos=0, size_t devpos=0);
-        bool operator==(const TargetIter &other) const;
-        bool operator!=(const TargetIter &other) const;
-        void operator++();
-        Target operator*() const;
-    };
-
+class Machine {
 private:
     std::vector<Platform> platforms_;
 
 public:
-    Selector();
-    Selector(const Selector &) = delete;
-    Selector &operator=(const Selector &) = delete;
-    Selector(Selector &&) = default;
-    Selector &operator=(Selector &&) = default;
+    Machine();
+    Machine(const Machine &) = delete;
+    Machine &operator=(const Machine &) = delete;
+    Machine(Machine &&) = default;
+    Machine &operator=(Machine &&) = default;
 
     const std::vector<Platform> &platforms() const;
-    void print_info() const;
-
-    TargetIter begin() const;
-    TargetIter end() const;
 };
 
 class KernelBuilder {

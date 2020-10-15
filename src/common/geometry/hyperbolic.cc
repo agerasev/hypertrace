@@ -218,49 +218,48 @@ rtest_module_(hyperbolic) {
 
 #include <test/devtest.hpp>
 
-extern_lazy_static_(devtest::Selector, devtest_selector);
+extern devtest::Target devtest_make_target();
 
 rtest_module_(hyperbolic) {
     rtest_(distance_invariance) {
         TestRng<real> rng(0xcafe);
         TestRngHyPos hyrng(0xcafe);
 
-        for (devtest::Target target : *devtest_selector) {
-            auto queue = target.make_queue();
-            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("hyperbolic.cl", std::string(
-                "#include <common/geometry/hyperbolic.hh>\n"
-                "__kernel void transform(__global const HyMap *map, __global const HyPos *ipos, __global HyPos *opos) {\n"
-                "    int i = get_global_id(0);\n"
-                "    opos[i] = hy_apply_pos(map[i/2], ipos[i]);\n"
-                "}\n"
-            ))
-            .build("transform").unwrap();
+        devtest::Target target = devtest_make_target();
+        auto queue = target.make_queue();
+        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+        .source("hyperbolic.cl", std::string(
+            "#include <common/geometry/hyperbolic.hh>\n"
+            "__kernel void transform(__global const HyMap *map, __global const HyPos *ipos, __global HyPos *opos) {\n"
+            "    int i = get_global_id(0);\n"
+            "    opos[i] = hy_apply_pos(map[i/2], ipos[i]);\n"
+            "}\n"
+        ))
+        .build("transform").expect("Kernel build error");
 
-            const int n = TEST_ATTEMPTS;
-            std::vector<Hy::Pos> ipos(2*n), opos(2*n);
-            std::vector<Hy::Map> map(n);
-            std::vector<real> dist(n);
-            for (size_t i = 0; i < n; ++i) {
-                Hy::Pos x = hyrng.normal(), y = hyrng.normal();
-                ipos[2*i] = x;
-                ipos[2*i + 1] = y;
-                dist[i] = Hy::distance(x, y);
-                
-                map[i] = hy_chain(
-                    hy_zrotate(2*PI*rng.uniform()), hy_chain(
-                    hy_yrotate(2*PI*rng.uniform()),
-                    hy_zshift(rng.normal())
-                ));
-            }
+        const int n = TEST_ATTEMPTS;
+        std::vector<Hy::Pos> ipos(2*n), opos(2*n);
+        std::vector<Hy::Map> map(n);
+        std::vector<real> dist(n);
+        for (size_t i = 0; i < n; ++i) {
+            Hy::Pos x = hyrng.normal(), y = hyrng.normal();
+            ipos[2*i] = x;
+            ipos[2*i + 1] = y;
+            dist[i] = Hy::distance(x, y);
+            
+            map[i] = hy_chain(
+                hy_zrotate(2*PI*rng.uniform()), hy_chain(
+                hy_yrotate(2*PI*rng.uniform()),
+                hy_zshift(rng.normal())
+            ));
+        }
 
-            devtest::KernelRunner(queue, std::move(kernel))
-            .run(2*n, map, ipos, opos).expect("Kernel run error");
+        devtest::KernelRunner(queue, std::move(kernel))
+        .run(2*n, map, ipos, opos).expect("Kernel run error");
 
-            for(size_t i = 0; i < n; ++i) {
-                Hy::Pos x = opos[2*i], y = opos[2*i + 1];
-                assert_eq_(Hy::distance(x, y), dev_approx(dist[i]));
-            }
+        for(size_t i = 0; i < n; ++i) {
+            Hy::Pos x = opos[2*i], y = opos[2*i + 1];
+            assert_eq_(Hy::distance(x, y), dev_approx(dist[i]));
         }
     }
 }

@@ -76,42 +76,42 @@ rtest_module_(vector) {
 
 #include <test/devtest.hpp>
 
-extern_lazy_static_(devtest::Selector, devtest_selector);
+extern devtest::Target devtest_make_target();
 
 rtest_module_(vector) {
     rtest_(mul_dot) {
         TestRng<real3> vrng(0xdead);
-        for (devtest::Target target : *devtest_selector) {
-            auto queue = target.make_queue();
-            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("vector.cl", std::string(
-                "#include <common/algebra/vector.hh>\n"
-                "__kernel void mul_dot(__global const real3 *x, __global const real3 *y, __global real3 *m, __global real *d) {\n"
-                "    int i = get_global_id(0);\n"
-                "    m[i] = x[i]*y[i];\n"
-                "    d[i] = dot(x[i], y[i]);\n"
-                "}\n"
-            ))
-            .build("mul_dot").unwrap();
 
-            const int n = TEST_ATTEMPTS;
-            std::vector<real3> xbuf(n), ybuf(n), mbuf(n);
-            std::vector<real> dbuf(n);
-            for (size_t i = 0; i < n; ++i) {
-                xbuf[i] = vrng.normal();
-                ybuf[i] = vrng.normal();
-            }
+        devtest::Target target = devtest_make_target();
+        auto queue = target.make_queue();
+        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+        .source("vector.cl", std::string(
+            "#include <common/algebra/vector.hh>\n"
+            "__kernel void mul_dot(__global const real3 *x, __global const real3 *y, __global real3 *m, __global real *d) {\n"
+            "    int i = get_global_id(0);\n"
+            "    m[i] = x[i]*y[i];\n"
+            "    d[i] = dot(x[i], y[i]);\n"
+            "}\n"
+        ))
+        .build("mul_dot").expect("Kernel build error");
 
-            devtest::KernelRunner(queue, std::move(kernel))
-            .run(n, xbuf, ybuf, mbuf, dbuf).expect("Kernel run error");
+        const int n = TEST_ATTEMPTS;
+        std::vector<real3> xbuf(n), ybuf(n), mbuf(n);
+        std::vector<real> dbuf(n);
+        for (size_t i = 0; i < n; ++i) {
+            xbuf[i] = vrng.normal();
+            ybuf[i] = vrng.normal();
+        }
 
-            for(size_t i = 0; i < n; ++i) {
-                real3 m = xbuf[i]*ybuf[i];
-                assert_eq_(dev_approx(m), mbuf[i]);
+        devtest::KernelRunner(queue, std::move(kernel))
+        .run(n, xbuf, ybuf, mbuf, dbuf).expect("Kernel run error");
 
-                real d = dot(xbuf[i], ybuf[i]);
-                assert_eq_(dev_approx(d), dbuf[i]);
-            }
+        for(size_t i = 0; i < n; ++i) {
+            real3 m = xbuf[i]*ybuf[i];
+            assert_eq_(dev_approx(m), mbuf[i]);
+
+            real d = dot(xbuf[i], ybuf[i]);
+            assert_eq_(dev_approx(d), dbuf[i]);
         }
     }
 }

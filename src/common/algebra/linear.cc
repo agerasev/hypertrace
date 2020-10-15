@@ -123,38 +123,37 @@ rtest_module_(linear) {
 
 #include <test/devtest.hpp>
 
-extern_lazy_static_(devtest::Selector, devtest_selector);
+extern devtest::Target devtest_make_target();
 
 rtest_module_(linear) {
     rtest_(chain) {
         TestRngReal3x3 mrng(0xcafe);
 
-        for (devtest::Target target : *devtest_selector) {
-            auto queue = target.make_queue();
-            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("linear.cl", std::string(
-                "#include <common/algebra/linear.hh>\n"
-                "__kernel void chain(__global const Linear3 *x, __global const Linear3 *y, __global Linear3 *z) {\n"
-                "    int i = get_global_id(0);\n"
-                "    z[i] = lin3_chain(x[i], y[i]);\n"
-                "}\n"
-            ))
-            .build("chain").unwrap();
+        devtest::Target target = devtest_make_target();
+        auto queue = target.make_queue();
+        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+        .source("linear.cl", std::string(
+            "#include <common/algebra/linear.hh>\n"
+            "__kernel void chain(__global const Linear3 *x, __global const Linear3 *y, __global Linear3 *z) {\n"
+            "    int i = get_global_id(0);\n"
+            "    z[i] = lin3_chain(x[i], y[i]);\n"
+            "}\n"
+        ))
+        .build("chain").expect("Kernel build error");
 
-            const int n = TEST_ATTEMPTS;
-            std::vector<Linear3> xbuf(n), ybuf(n), zbuf(n);
-            for (size_t i = 0; i < n; ++i) {
-                xbuf[i] = mrng.normal();
-                ybuf[i] = mrng.normal();
-            }
+        const int n = TEST_ATTEMPTS;
+        std::vector<Linear3> xbuf(n), ybuf(n), zbuf(n);
+        for (size_t i = 0; i < n; ++i) {
+            xbuf[i] = mrng.normal();
+            ybuf[i] = mrng.normal();
+        }
 
-            devtest::KernelRunner(queue, std::move(kernel))
-            .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
+        devtest::KernelRunner(queue, std::move(kernel))
+        .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
 
-            for(size_t i = 0; i < n; ++i) {
-                Linear3 z = lin3_chain(xbuf[i], ybuf[i]);
-                assert_eq_(dev_approx(z), zbuf[i]);
-            }
+        for(size_t i = 0; i < n; ++i) {
+            Linear3 z = lin3_chain(xbuf[i], ybuf[i]);
+            assert_eq_(dev_approx(z), zbuf[i]);
         }
     }
 }

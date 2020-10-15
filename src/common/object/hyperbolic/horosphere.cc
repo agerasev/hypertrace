@@ -79,58 +79,58 @@ rtest_module_(horosphere) {
 
 #include <test/devtest.hpp>
 
-extern_lazy_static_(devtest::Selector, devtest_selector);
+extern devtest::Target devtest_make_target();
 
 rtest_module_(horosphere) {
     rtest_(detect) {
         TestRng<real3> vrng(0xBAAB);
         TestRngHyPos hyrng(0xBAAB);
-        for (devtest::Target target : *devtest_selector) {
-            auto queue = target.make_queue();
-            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("horosphere.cl", std::string(
-                "#include <common/object/hyperbolic/horosphere.hh>\n"
-                "__kernel void detect(\n"
-                "    __global const quat *start, __global const quat *idir,\n"
-                "    __global quat *hit, __global quat *odir, __global quat *norm,\n"
-                "    __global real *dist\n"
-                ") {\n"
-                "    int i = get_global_id(0);\n"
-                "    Context ctx;\n"
-                "    ctx.repeat = false;\n"
-                "    LightHy light;\n"
-                "    light.ray.start = start[i];\n"
-                "    light.ray.direction = idir[i];\n"
-                "    quat normal;\n"
-                "    dist[i] = horosphere_detect(&ctx, &normal, &light);\n"
-                "    hit[i] = light.ray.start;\n"
-                "    odir[i] = light.ray.direction;\n"
-                "    norm[i] = normal;\n"
-                "}\n"
-            ))
-            .build("detect").unwrap();
 
-            const int n = TEST_ATTEMPTS;
-            std::vector<quat> start(n), idir(n), hit(n), odir(n), norm(n);
-            std::vector<real> dist(n);
-            for (size_t i = 0; i < n; ++i) {
-                start[i] = hyrng.normal();
-                idir[i] = quat(vrng.unit(), 0.0);
+        devtest::Target target = devtest_make_target();
+        auto queue = target.make_queue();
+        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+        .source("horosphere.cl", std::string(
+            "#include <common/object/hyperbolic/horosphere.hh>\n"
+            "__kernel void detect(\n"
+            "    __global const quat *start, __global const quat *idir,\n"
+            "    __global quat *hit, __global quat *odir, __global quat *norm,\n"
+            "    __global real *dist\n"
+            ") {\n"
+            "    int i = get_global_id(0);\n"
+            "    Context ctx;\n"
+            "    ctx.repeat = false;\n"
+            "    LightHy light;\n"
+            "    light.ray.start = start[i];\n"
+            "    light.ray.direction = idir[i];\n"
+            "    quat normal;\n"
+            "    dist[i] = horosphere_detect(&ctx, &normal, &light);\n"
+            "    hit[i] = light.ray.start;\n"
+            "    odir[i] = light.ray.direction;\n"
+            "    norm[i] = normal;\n"
+            "}\n"
+        ))
+        .build("detect").expect("Kernel build error");
+
+        const int n = TEST_ATTEMPTS;
+        std::vector<quat> start(n), idir(n), hit(n), odir(n), norm(n);
+        std::vector<real> dist(n);
+        for (size_t i = 0; i < n; ++i) {
+            start[i] = hyrng.normal();
+            idir[i] = quat(vrng.unit(), 0.0);
+        }
+
+        devtest::KernelRunner(queue, std::move(kernel))
+        .run(n, start, idir, hit, odir, norm, dist).expect("Kernel run error");
+
+        for(size_t i = 0; i < n; ++i) {
+            if (start[i].z > R1) {
+                assert_(dist[i] > -DEV_EPS);
             }
+            if (dist[i] > -DEV_EPS) {
+                assert_eq_(hit[i].z, dev_approx(1));
+                assert_eq_(length(odir[i]), dev_approx(1));
 
-            devtest::KernelRunner(queue, std::move(kernel))
-            .run(n, start, idir, hit, odir, norm, dist).expect("Kernel run error");
-
-            for(size_t i = 0; i < n; ++i) {
-                if (start[i].z > R1) {
-                    assert_(dist[i] > -DEV_EPS);
-                }
-                if (dist[i] > -DEV_EPS) {
-                    assert_eq_(hit[i].z, dev_approx(1));
-                    assert_eq_(length(odir[i]), dev_approx(1));
-
-                    assert_eq_(norm[i], dev_approx(quat(0,0,1,0)));
-                }
+                assert_eq_(norm[i], dev_approx(quat(0,0,1,0)));
             }
         }
     }

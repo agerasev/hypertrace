@@ -168,101 +168,99 @@ rtest_module_(euclidean_shapes) {
 
 #include <test/devtest.hpp>
 
-extern_lazy_static_(devtest::Selector, devtest_selector);
+extern devtest::Target devtest_make_target();
 
 rtest_module_(euclidean_shapes) {
     rtest_(sphere_detect) {
         TestRng<real3> vrng(0xBAAB);
-        for (devtest::Target target : *devtest_selector) {
-            auto queue = target.make_queue();
-            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("euclidean_sphere.cl", std::string(
-                "#include <common/object/euclidean/shapes.hh>\n"
-                "__kernel void detect(\n"
-                "    __global const real3 *start, __global const real3 *dir,\n"
-                "    __global real3 *hit, __global real3 *norm, __global real *dist\n"
-                ") {\n"
-                "    int i = get_global_id(0);\n"
-                "    Context ctx;\n"
-                "    ctx.repeat = false;\n"
-                "    LightEu light;\n"
-                "    light.ray.start = start[i];\n"
-                "    light.ray.direction = dir[i];\n"
-                "    real3 normal;\n"
-                "    dist[i] = sphereeu_detect(&ctx, &normal, &light);\n"
-                "    hit[i] = light.ray.start;\n"
-                "    norm[i] = normal;\n"
-                "}\n"
-            ))
-            .build("detect").unwrap();
+        devtest::Target target = devtest_make_target();
+        auto queue = target.make_queue();
+        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+        .source("euclidean_sphere.cl", std::string(
+            "#include <common/object/euclidean/shapes.hh>\n"
+            "__kernel void detect(\n"
+            "    __global const real3 *start, __global const real3 *dir,\n"
+            "    __global real3 *hit, __global real3 *norm, __global real *dist\n"
+            ") {\n"
+            "    int i = get_global_id(0);\n"
+            "    Context ctx;\n"
+            "    ctx.repeat = false;\n"
+            "    LightEu light;\n"
+            "    light.ray.start = start[i];\n"
+            "    light.ray.direction = dir[i];\n"
+            "    real3 normal;\n"
+            "    dist[i] = sphereeu_detect(&ctx, &normal, &light);\n"
+            "    hit[i] = light.ray.start;\n"
+            "    norm[i] = normal;\n"
+            "}\n"
+        ))
+        .build("detect").expect("Kernel build error");
 
-            const int n = TEST_ATTEMPTS;
-            std::vector<real3> start(n), dir(n), hit(n), norm(n);
-            std::vector<real> dist(n);
-            for (size_t i = 0; i < n; ++i) {
-                start[i] = vrng.normal();
-                dir[i] = vrng.unit();
-            }
+        const int n = TEST_ATTEMPTS;
+        std::vector<real3> start(n), dir(n), hit(n), norm(n);
+        std::vector<real> dist(n);
+        for (size_t i = 0; i < n; ++i) {
+            start[i] = vrng.normal();
+            dir[i] = vrng.unit();
+        }
 
-            devtest::KernelRunner(queue, std::move(kernel))
-            .run(n, start, dir, hit, norm, dist).expect("Kernel run error");
+        devtest::KernelRunner(queue, std::move(kernel))
+        .run(n, start, dir, hit, norm, dist).expect("Kernel run error");
 
-            for(size_t i = 0; i < n; ++i) {
-                if (dist[i] > -DEV_EPS) {
-                    assert_eq_(length(hit[i]), dev_approx(1));
-                    assert_eq_(hit[i], dev_approx(norm[i]));
-                } else {
-                    assert_eq_(dist[i], dev_approx(-1));
-                }
+        for(size_t i = 0; i < n; ++i) {
+            if (dist[i] > -DEV_EPS) {
+                assert_eq_(length(hit[i]), dev_approx(1));
+                assert_eq_(hit[i], dev_approx(norm[i]));
+            } else {
+                assert_eq_(dist[i], dev_approx(-1));
             }
         }
     }
     rtest_(cube_detect) {
         TestRng<real3> vrng(0xBAAB);
-        for (devtest::Target target : *devtest_selector) {
-            auto queue = target.make_queue();
-            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("euclidean_cube.cl", std::string(
-                "#include <common/object/euclidean/shapes.hh>\n"
-                "__kernel void detect(\n"
-                "    __global const real3 *start, __global const real3 *dir,\n"
-                "    __global real3 *hit, __global real3 *norm, __global real *dist\n"
-                ") {\n"
-                "    int i = get_global_id(0);\n"
-                "    Context ctx;\n"
-                "    ctx.repeat = false;\n"
-                "    LightEu light;\n"
-                "    light.ray.start = start[i];\n"
-                "    light.ray.direction = dir[i];\n"
-                "    real3 normal;\n"
-                "    dist[i] = cubeeu_detect(&ctx, &normal, &light);\n"
-                "    hit[i] = light.ray.start;\n"
-                "    norm[i] = normal;\n"
-                "}\n"
-            ))
-            .build("detect").unwrap();
+        devtest::Target target = devtest_make_target();
+        auto queue = target.make_queue();
+        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+        .source("euclidean_cube.cl", std::string(
+            "#include <common/object/euclidean/shapes.hh>\n"
+            "__kernel void detect(\n"
+            "    __global const real3 *start, __global const real3 *dir,\n"
+            "    __global real3 *hit, __global real3 *norm, __global real *dist\n"
+            ") {\n"
+            "    int i = get_global_id(0);\n"
+            "    Context ctx;\n"
+            "    ctx.repeat = false;\n"
+            "    LightEu light;\n"
+            "    light.ray.start = start[i];\n"
+            "    light.ray.direction = dir[i];\n"
+            "    real3 normal;\n"
+            "    dist[i] = cubeeu_detect(&ctx, &normal, &light);\n"
+            "    hit[i] = light.ray.start;\n"
+            "    norm[i] = normal;\n"
+            "}\n"
+        ))
+        .build("detect").expect("Kernel build error");
 
-            const int n = TEST_ATTEMPTS;
-            std::vector<real3> start(n), dir(n), hit(n), norm(n);
-            std::vector<real> dist(n);
-            for (size_t i = 0; i < n; ++i) {
-                start[i] = vrng.normal();
-                dir[i] = vrng.unit();
-            }
+        const int n = TEST_ATTEMPTS;
+        std::vector<real3> start(n), dir(n), hit(n), norm(n);
+        std::vector<real> dist(n);
+        for (size_t i = 0; i < n; ++i) {
+            start[i] = vrng.normal();
+            dir[i] = vrng.unit();
+        }
 
-            devtest::KernelRunner(queue, std::move(kernel))
-            .run(n, start, dir, hit, norm, dist).expect("Kernel run error");
+        devtest::KernelRunner(queue, std::move(kernel))
+        .run(n, start, dir, hit, norm, dist).expect("Kernel run error");
 
-            for(size_t i = 0; i < n; ++i) {
-                if (dist[i] > -DEV_EPS) {
-                    assert_eq_(max_comp(fabs(hit[i])), dev_approx(1));
-                    int idx = max_comp_idx(fabs(hit[i]));
-                    assert_eq_(norm[i][idx], dev_approx(sign(hit[i][idx])));
-                    norm[i][idx] = 0;
-                    assert_eq_(norm[i], dev_approx(real3(0)));
-                } else {
-                    assert_eq_(dist[i], dev_approx(-1));
-                }
+        for(size_t i = 0; i < n; ++i) {
+            if (dist[i] > -DEV_EPS) {
+                assert_eq_(max_comp(fabs(hit[i])), dev_approx(1));
+                int idx = max_comp_idx(fabs(hit[i]));
+                assert_eq_(norm[i][idx], dev_approx(sign(hit[i][idx])));
+                norm[i][idx] = 0;
+                assert_eq_(norm[i], dev_approx(real3(0)));
+            } else {
+                assert_eq_(dist[i], dev_approx(-1));
             }
         }
     }

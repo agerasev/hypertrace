@@ -153,42 +153,41 @@ rtest_module_(quaternion) {
 
 #include <test/devtest.hpp>
 
-extern_lazy_static_(devtest::Selector, devtest_selector);
+extern devtest::Target devtest_make_target();
 
 rtest_module_(quaternion) {
     rtest_(mul_div) {
         TestRng<quat> crng(0xbeef);
 
-        for (devtest::Target target : *devtest_selector) {
-            auto queue = target.make_queue();
-            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("quaternion.cl", std::string(
-                "#include <common/algebra/quaternion.hh>\n"
-                "__kernel void mul_div(__global const quat *x, __global const quat *y, __global quat *m, __global quat *d) {\n"
-                "    int i = get_global_id(0);\n"
-                "    m[i] = q_mul(x[i], y[i]);\n"
-                "    d[i] = q_div(x[i], y[i]);\n"
-                "}\n"
-            ))
-            .build("mul_div").unwrap();
+        devtest::Target target = devtest_make_target();
+        auto queue = target.make_queue();
+        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+        .source("quaternion.cl", std::string(
+            "#include <common/algebra/quaternion.hh>\n"
+            "__kernel void mul_div(__global const quat *x, __global const quat *y, __global quat *m, __global quat *d) {\n"
+            "    int i = get_global_id(0);\n"
+            "    m[i] = q_mul(x[i], y[i]);\n"
+            "    d[i] = q_div(x[i], y[i]);\n"
+            "}\n"
+        ))
+        .build("mul_div").expect("Kernel build error");
 
-            const int n = TEST_ATTEMPTS;
-            std::vector<quat> xbuf(n), ybuf(n), mbuf(n), dbuf(n);
-            for (size_t i = 0; i < n; ++i) {
-                xbuf[i] = crng.normal();
-                ybuf[i] = crng.normal();
-            }
+        const int n = TEST_ATTEMPTS;
+        std::vector<quat> xbuf(n), ybuf(n), mbuf(n), dbuf(n);
+        for (size_t i = 0; i < n; ++i) {
+            xbuf[i] = crng.normal();
+            ybuf[i] = crng.normal();
+        }
 
-            devtest::KernelRunner(queue, std::move(kernel))
-            .run(n, xbuf, ybuf, mbuf, dbuf).expect("Kernel run error");
+        devtest::KernelRunner(queue, std::move(kernel))
+        .run(n, xbuf, ybuf, mbuf, dbuf).expect("Kernel run error");
 
-            for(size_t i = 0; i < n; ++i) {
-                quat m = q_mul(xbuf[i], ybuf[i]);
-                assert_eq_(approx(m), mbuf[i]);
+        for(size_t i = 0; i < n; ++i) {
+            quat m = q_mul(xbuf[i], ybuf[i]);
+            assert_eq_(approx(m), mbuf[i]);
 
-                quat d = q_div(xbuf[i], ybuf[i]);
-                assert_eq_(dev_approx(d), dbuf[i]);
-            }
+            quat d = q_div(xbuf[i], ybuf[i]);
+            assert_eq_(dev_approx(d), dbuf[i]);
         }
     }
 }

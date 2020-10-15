@@ -199,38 +199,37 @@ rtest_module_(rotation_3d) {
 
 #include <test/devtest.hpp>
 
-extern_lazy_static_(devtest::Selector, devtest_selector);
+extern devtest::Target devtest_make_target();
 
 rtest_module_(rotation) {
     rtest_(chain) {
         TestRngRotation3 rrng(0xcafe);
 
-        for (devtest::Target target : *devtest_selector) {
-            auto queue = target.make_queue();
-            auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-            .source("rotation.cl", std::string(
-                "#include <common/algebra/rotation.hh>\n"
-                "__kernel void chain(__global const Rotation3 *x, __global const Rotation3 *y, __global Rotation3 *z) {\n"
-                "    int i = get_global_id(0);\n"
-                "    z[i] = rot3_chain(x[i], y[i]);\n"
-                "}\n"
-            ))
-            .build("chain").unwrap();
+        devtest::Target target = devtest_make_target();
+        auto queue = target.make_queue();
+        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
+        .source("rotation.cl", std::string(
+            "#include <common/algebra/rotation.hh>\n"
+            "__kernel void chain(__global const Rotation3 *x, __global const Rotation3 *y, __global Rotation3 *z) {\n"
+            "    int i = get_global_id(0);\n"
+            "    z[i] = rot3_chain(x[i], y[i]);\n"
+            "}\n"
+        ))
+        .build("chain").expect("Kernel build error");
 
-            const int n = TEST_ATTEMPTS;
-            std::vector<Rotation3> xbuf(n), ybuf(n), zbuf(n);
-            for (size_t i = 0; i < n; ++i) {
-                xbuf[i] = rrng.uniform();
-                ybuf[i] = rrng.uniform();
-            }
+        const int n = TEST_ATTEMPTS;
+        std::vector<Rotation3> xbuf(n), ybuf(n), zbuf(n);
+        for (size_t i = 0; i < n; ++i) {
+            xbuf[i] = rrng.uniform();
+            ybuf[i] = rrng.uniform();
+        }
 
-            devtest::KernelRunner(queue, std::move(kernel))
-            .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
+        devtest::KernelRunner(queue, std::move(kernel))
+        .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
 
-            for(size_t i = 0; i < n; ++i) {
-                Rotation3 z = rot3_chain(xbuf[i], ybuf[i]);
-                assert_eq_(dev_approx(z), zbuf[i]);
-            }
+        for(size_t i = 0; i < n; ++i) {
+            Rotation3 z = rot3_chain(xbuf[i], ybuf[i]);
+            assert_eq_(dev_approx(z), zbuf[i]);
         }
     }
 }

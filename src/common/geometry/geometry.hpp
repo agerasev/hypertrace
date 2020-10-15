@@ -1,7 +1,7 @@
 #pragma once
 
 
-template <typename Geo>
+template <typename G>
 class Geometry {
 public:
     

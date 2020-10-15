@@ -1,7 +1,9 @@
 if(USE_PCH)
     cmake_minimum_required(VERSION 3.16)
+    message(STATUS "Precompiled headers ON")
 else()
     cmake_minimum_required(VERSION 3.0)
+    message(STATUS "Precompiled headers OFF")
 endif()
 
 project(hypertrace)
@@ -38,7 +40,10 @@ set(SDL_LIBS
     SDL2_image
 )
 
-add_library(${PROJECT_NAME} OBJECT ${HOST_SRC})
+add_library(${PROJECT_NAME} OBJECT
+    ${COMMON_SRC}
+    ${HOST_SRC}
+)
 target_compile_definitions(${PROJECT_NAME} PUBLIC
     "-DINTEROP"
     "-DCL_TARGET_OPENCL_VERSION=120"

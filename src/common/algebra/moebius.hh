@@ -37,9 +37,8 @@ real mo_diff(Moebius a, Moebius b);
 #include "traits.hpp"
 
 template <>
-class Group<Moebius> {
-public:
-    Moebius chain(Moebius a, Moebius b) {
+struct Group<Moebius> {
+    static Moebius chain(Moebius a, Moebius b) {
         return mo_chain(a, b);
     }
 };

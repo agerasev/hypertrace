@@ -10,14 +10,14 @@ typedef struct LightBase {
 } LightBase;
 
 typedef struct LightLocal {
-    real3 direction;
     LightBase base;
+    real3 direction;
 } LightLocal;
 
 
 typedef struct LightEu {
-    RayEu ray;
     LightBase base;
+    RayEu ray;
 } LightEu;
 
 LightLocal light_eu_to_local(LightEu light);
@@ -26,8 +26,8 @@ void light_eu_update_local(LightEu *light, LightLocal ll);
 
 
 typedef struct LightHy {
-    RayHy ray;
     LightBase base;
+    RayHy ray;
 } LightHy;
 
 LightLocal light_hy_to_local(LightHy light);

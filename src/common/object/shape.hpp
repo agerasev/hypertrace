@@ -13,6 +13,8 @@ public:
 
     // Whether to allow repeated collisions or not.
     virtual bool repeat_allowed() const = 0;
+
+    virtual std::string prefix() = 0;
 };
 
 template <typename G>

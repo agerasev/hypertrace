@@ -4,27 +4,31 @@
 #include "material.hh"
 
 
-template <typename Self>
-class MaterialModifier final : public virtual Material {
+template <typename Self, typename Base, typename Data>
+class ImplModifier : public Base {
 public:
-    struct Instance : public Material::Instance {
-        rstd::Box<Material::Instance> inner;
-        float3 color;
+    struct Instance : public Base::Instance {
+        rstd::Box<Base::Instance> inner;
+        Data data;
 
         inline virtual rstd::Box<Type> type() const { return rstd::Box(Self(inner->type())); }
+        virtual void store(void *dst) const = 0;
     };
 private:
-    rstd::Box<Material> inner_;
+    rstd::Box<Base> inner_;
+
 public:
-    Colored(rstd::Box<Material> &&inner) : inner_(std::move(inner)) {}
-    inline const Material &inner() const { return inner_.get(); }
+    ImplModifier(rstd::Box<Base> &&inner) : inner_(std::move(inner)) {}
+    inline const Base &inner() const { return inner_.get(); }
 
     inline virtual size_t id() const override { return typeid(Self).hash_code(); }
 
     inline virtual bool empty() const override { return false; }
     inline virtual size_t size() const override { return ; }
     inline virtual size_t align() const override { return std::max(inner().align(), alignof(float3)); }
-    inline virtual rstd::Box<::Instance> load(const void *) const { return EmptyType::load(); }
+    inline virtual rstd::Box<::Instance> load(const void *) const {
+        // FIXME: load
+    }
 
     virtual std::string name() { return EmptyType::name(); }
     inline virtual std::string source() override { return "#include <common/object/material.hh>"; };
@@ -32,6 +36,7 @@ public:
     inline virtual rstd::Box<::Instance> instance() const { return rstd::Box(Instance()); }
 };
 
+/*
 class Colored final : public virtual Material {
 public:
     struct Instance : public Material::Instance {
@@ -55,7 +60,6 @@ public:
     inline const Material &inner() const { return inner_.get(); }
 };
 
-/*
 template <typename M, bool Z=is_empty<M>()>
 class Colored {
 // : public Material

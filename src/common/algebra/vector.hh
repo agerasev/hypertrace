@@ -63,11 +63,12 @@ VECTOR_ALL_N(real)
 
 #include <CL/cl.h>
 
-#define VECTOR_INTEROP(T, S, N) \
+#define VECTOR_INTEROP(T, S, A, N) \
 template <> \
 struct Interop<T##N> { \
     typedef T##N Host; \
     typedef S##N Dev; \
+    inline static const char *const name = A #S; \
     static void load(Host *dst, const Dev *src) { \
         for (size_t i = 0; i < N; ++i) { \
             (*dst)[i] = (T)src->s[i]; \
@@ -80,28 +81,28 @@ struct Interop<T##N> { \
     } \
 };
 
-#define VECTOR_INTEROP_N(T, S) \
-VECTOR_INTEROP(T, S, 2) \
-VECTOR_INTEROP(T, S, 3) \
-VECTOR_INTEROP(T, S, 4) \
-VECTOR_INTEROP(T, S, 8) \
-VECTOR_INTEROP(T, S, 16)
+#define VECTOR_INTEROP_N(T, S, A) \
+VECTOR_INTEROP(T, S, A, 2) \
+VECTOR_INTEROP(T, S, A, 3) \
+VECTOR_INTEROP(T, S, A, 4) \
+VECTOR_INTEROP(T, S, A, 8) \
+VECTOR_INTEROP(T, S, A, 16)
 
-VECTOR_INTEROP_N(uchar,  cl_uchar)
-VECTOR_INTEROP_N(ushort, cl_ushort)
-VECTOR_INTEROP_N(uint,   cl_uint)
-VECTOR_INTEROP_N(ulong,  cl_ulong)
-VECTOR_INTEROP_N(char,   cl_char)
-VECTOR_INTEROP_N(short,  cl_short)
-VECTOR_INTEROP_N(int,    cl_int)
-VECTOR_INTEROP_N(long,   cl_long)
+VECTOR_INTEROP_N(uchar,  cl_uchar,  "uchar" )
+VECTOR_INTEROP_N(ushort, cl_ushort, "ushort")
+VECTOR_INTEROP_N(uint,   cl_uint,   "uint"  )
+VECTOR_INTEROP_N(ulong,  cl_ulong,  "ulong" )
+VECTOR_INTEROP_N(char,   cl_char,   "char"  )
+VECTOR_INTEROP_N(short,  cl_short,  "short" )
+VECTOR_INTEROP_N(int,    cl_int,    "int"   )
+VECTOR_INTEROP_N(long,   cl_long,   "long"  )
 
-VECTOR_INTEROP_N(float,  cl_float)
+VECTOR_INTEROP_N(float,  cl_float,  "float" )
 #ifdef DEV_F64
-VECTOR_INTEROP_N(double, cl_double)
-VECTOR_INTEROP_N(real,   cl_double)
+VECTOR_INTEROP_N(double, cl_double, "double")
+VECTOR_INTEROP_N(real,   cl_double, "double")
 #else // DEV_F64
-VECTOR_INTEROP_N(real,   cl_float)
+VECTOR_INTEROP_N(real,   cl_float,  "float" )
 #endif // DEV_F64
 
 #endif // INTEROP

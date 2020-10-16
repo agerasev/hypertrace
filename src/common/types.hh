@@ -32,22 +32,23 @@ struct Interop;
 
 template <typename H>
 using dev_type = typename Interop<H>::Dev;
-
+template <typename H>
+inline static const char *const dev_name = Interop<H>::name;
 template <typename H>
 void dev_load(H *dst, const dev_type<H> *src) {
     Interop<H>::load(dst, src);
 }
-
 template <typename H>
 void dev_store(dev_type<H> *dst, const H *src) {
     Interop<H>::store(dst, src);
 }
 
-#define PRIMITIVE_INTEROP(H, D) \
+#define PRIMITIVE_INTEROP(H, D, N) \
 template <> \
 struct Interop<H> { \
     typedef H Host; \
     typedef D Dev; \
+    inline static const char *const name = N; \
     static void load(Host *dst, const Dev *src) { \
         *dst = (Host)(*src); \
     } \
@@ -58,19 +59,19 @@ struct Interop<H> { \
 
 #include <CL/cl.h>
 
-PRIMITIVE_INTEROP(uchar,  cl_uchar);
-PRIMITIVE_INTEROP(char,   cl_char);
-PRIMITIVE_INTEROP(ushort, cl_ushort);
-PRIMITIVE_INTEROP(ulong,  cl_ulong);
-PRIMITIVE_INTEROP(short,  cl_short);
-PRIMITIVE_INTEROP(uint,   cl_uint);
-PRIMITIVE_INTEROP(int,    cl_int);
-PRIMITIVE_INTEROP(long,   cl_long);
-PRIMITIVE_INTEROP(float,  cl_float);
+PRIMITIVE_INTEROP(uchar,  cl_uchar,  "uchar" );
+PRIMITIVE_INTEROP(char,   cl_char,   "char"  );
+PRIMITIVE_INTEROP(ushort, cl_ushort, "ushort");
+PRIMITIVE_INTEROP(ulong,  cl_ulong,  "ulong" );
+PRIMITIVE_INTEROP(short,  cl_short,  "short" );
+PRIMITIVE_INTEROP(uint,   cl_uint,   "uint"  );
+PRIMITIVE_INTEROP(int,    cl_int,    "int"   );
+PRIMITIVE_INTEROP(long,   cl_long,   "long"  );
+PRIMITIVE_INTEROP(float,  cl_float,  "float" );
 #ifdef DEV_F64
-PRIMITIVE_INTEROP(double, cl_double);
+PRIMITIVE_INTEROP(double, cl_double, "double");
 #else // DEV_F64
-PRIMITIVE_INTEROP(double, cl_float);
+PRIMITIVE_INTEROP(double, cl_float,  "float" );
 #endif // DEV_F64
 
 

@@ -21,6 +21,8 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/rotation.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/algebra/color.cc"
 
+    "${CMAKE_CURRENT_SOURCE_DIR}/random.cc"
+
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/euclidean.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/hyperbolic.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/ray.cc"

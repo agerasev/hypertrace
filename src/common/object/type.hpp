@@ -16,7 +16,7 @@ public:
         virtual rstd::Box<Type> type() const = 0;
 
         // Dynamic size of instance. If instance is statically sized, then returns static size.
-        virtual size_t dyn_size() const { return type()->size(); };
+        virtual size_t size() const { return type()->size(); };
         // Stores the instance to the device. The `dst` pointer should be properly aligned.
         virtual void store(void *dst) const = 0;
     };

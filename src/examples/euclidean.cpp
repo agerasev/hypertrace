@@ -3,6 +3,7 @@
 #include <rstd/prelude.hpp>
 
 #include <common/geometry/euclidean.hh>
+#include <common/object/euclidean/shapes.hh>
 
 #include <host/opencl/opencl.hpp>
 #include <host/sdl/viewer.hpp>
@@ -29,7 +30,12 @@ int main(int argc, const char *argv[]) {
 
     int width = 800, height = 600;
 
-    Renderer<Euclidean> renderer(device, width, height);
+    Renderer<Euclidean> renderer(
+        device,
+        rstd::Rc(cl::Context::create(device).expect("Context create error")),
+        width, height,
+        Box(Cube<Eu>())
+    );
 
     Viewer viewer(width, height);
     Controller<Euclidean> controller;

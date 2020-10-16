@@ -74,10 +74,11 @@ rtest_module_(horosphere) {
 #ifdef TEST_DEV
 
 #include <rtest.hpp>
-
 #include <vector>
-
 #include <test/devtest.hpp>
+#include <host/renderer.hpp>
+
+using namespace rstd;
 
 extern devtest::Target devtest_make_target();
 
@@ -133,6 +134,17 @@ rtest_module_(horosphere) {
                 assert_eq_(norm[i], dev_approx(quat(0,0,1,0)));
             }
         }
+    }
+    rtest_(renderer) {
+        devtest::Target target = devtest_make_target();
+        Renderer<Hyperbolic> renderer(
+            target.device_id(),
+            target.context(),
+            800, 600,
+            Box(Horosphere())
+        );
+        renderer.set_view(View<Hy> { mo_identity(), 1, 1, 1 });
+        renderer.render();
     }
 }
 

@@ -3,6 +3,7 @@
 #include <rstd/prelude.hpp>
 
 #include <common/geometry/hyperbolic.hh>
+#include <common/object/hyperbolic/plane.hh>
 
 #include <host/opencl/opencl.hpp>
 #include <host/sdl/viewer.hpp>
@@ -29,7 +30,12 @@ int main(int argc, const char *argv[]) {
 
     int width = 800, height = 600;
 
-    Renderer<Hyperbolic> renderer(device, width, height);
+    Renderer<Hyperbolic> renderer(
+        device,
+        rstd::Rc(cl::Context::create(device).expect("Context create error")),
+        width, height,
+        Box(Plane<Hy>())
+    );
 
     Viewer viewer(width, height);
     Controller<Hyperbolic> controller;

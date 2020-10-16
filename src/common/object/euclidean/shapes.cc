@@ -163,10 +163,11 @@ rtest_module_(euclidean_shapes) {
 #ifdef TEST_DEV
 
 #include <rtest.hpp>
-
 #include <vector>
-
 #include <test/devtest.hpp>
+#include <host/renderer.hpp>
+
+using namespace rstd;
 
 extern devtest::Target devtest_make_target();
 
@@ -263,6 +264,28 @@ rtest_module_(euclidean_shapes) {
                 assert_eq_(dist[i], dev_approx(-1));
             }
         }
+    }
+    rtest_(sphere_renderer) {
+        devtest::Target target = devtest_make_target();
+        Renderer<Euclidean> renderer(
+            target.device_id(),
+            target.context(),
+            800, 600,
+            Box(Sphere<Eu>())
+        );
+        renderer.set_view(View<Eu> { aff3_identity(), 1, 1, 1 });
+        renderer.render();
+    }
+    rtest_(cube_renderer) {
+        devtest::Target target = devtest_make_target();
+        Renderer<Euclidean> renderer(
+            target.device_id(),
+            target.context(),
+            800, 600,
+            Box(Cube<Eu>())
+        );
+        renderer.set_view(View<Eu> { aff3_identity(), 1, 1, 1 });
+        renderer.render();
     }
 }
 

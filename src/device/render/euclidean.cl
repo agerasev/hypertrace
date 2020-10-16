@@ -1,7 +1,5 @@
 #include <common/geometry/euclidean.hh>
 #include <common/geometry/ray.hh>
-
-#include <common/object/euclidean/shapes.hh>
 #include <common/render/view.hh>
 
 
@@ -40,7 +38,7 @@ __kernel void render(
 	float3 color = (float3)(1.0f);
 
 	real3 normal;
-	if (cubeeu_detect(&ctx, &normal, &light) > 0.0f) {
+	if (object_detect(&ctx, &normal, &light) > 0.0f) {
 		color = 0.0f;
 	}
 

@@ -177,10 +177,11 @@ rtest_module_(hyperbolic_plane) {
 #ifdef TEST_DEV
 
 #include <rtest.hpp>
-
 #include <vector>
-
 #include <test/devtest.hpp>
+#include <host/renderer.hpp>
+
+using namespace rstd;
 
 extern devtest::Target devtest_make_target();
 
@@ -234,6 +235,17 @@ rtest_module_(hyperbolic_plane) {
                 assert_eq_(norm[i], dev_approx(hit[i]));
             }
         }
+    }
+    rtest_(renderer) {
+        devtest::Target target = devtest_make_target();
+        Renderer<Hyperbolic> renderer(
+            target.device_id(),
+            target.context(),
+            800, 600,
+            Box(Plane<Hy>())
+        );
+        renderer.set_view(View<Hy> { mo_identity(), 1, 1, 1 });
+        renderer.render();
     }
 }
 

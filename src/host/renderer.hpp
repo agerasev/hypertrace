@@ -1,53 +1,19 @@
 #pragma once
 
-#include <host/opencl/opencl.hpp>
+#include <cstdint>
+#include <vector>
+#include <chrono>
+#include <random>
+#include <algorithm>
 
 #include <common/types.hh>
 #include <common/render/view.hh>
-//#include <object.hh>
+#include <common/object/shape.hpp>
+
+#include <host/opencl/opencl.hpp>
 
 
 struct Config {};
-
-class BasicRenderer {
-private:
-    includer make_includer(
-        const Config &cfg,
-        const std::string &src
-    );
-
-protected:
-    int width, height;
-
-    rstd::Rc<cl::Context> context;
-    cl::Queue queue;
-
-    rstd::Rc<cl::Program> program;
-    cl::Kernel kernel;
-
-    cl::Buffer image;
-    cl::Buffer screen;
-
-    //cl::Buffer object;
-
-    cl::Buffer seeds;
-    int monte_carlo_counter = 0;
-    bool fresh = true;
-
-public:
-    BasicRenderer(
-        cl_device_id device,
-        int width, int height,
-        const Config &config,
-        const std::string &src
-    );
-
-    void load_image(uint8_t *data);
-
-    virtual void render() = 0;
-    int render_n(int n);
-    int render_for(double sec);
-};
 
 template <typename G>
 struct RenderFile {};
@@ -65,23 +31,99 @@ struct RenderFile<Hy> {
 };
 
 template <typename G>
-class Renderer : public BasicRenderer {
-public:
+class Renderer {
+private:
+    includer make_includer(
+        const Config &,
+        const std::string &source
+    ) {
+        includer inc(
+            "main.cl",
+            std::list<std::string>{"src"},
+            std::map<std::string, std::string>{
+                std::make_pair("main.cl", source),
+            },
+            std::map<std::string, bool>{
+                std::make_pair("HOST", false),
+                std::make_pair("INTEROP", false),
+                std::make_pair("TEST", false),
+                std::make_pair("TEST_UNIT", false),
+                std::make_pair("TEST_DEV", false)
+            }
+        );
+
+        bool status = inc.include();
+        println_(inc.log());
+        assert_(status);
+
+        return inc;
+    }
+
+    rstd::Rc<cl::Context> context;
+    cl::Queue queue;
+
+    int width, height;
+
+    rstd::Rc<cl::Program> program;
+    cl::Kernel kernel;
+
+    cl::Buffer image;
+    cl::Buffer screen;
+
+    //cl::Buffer object;
+
+    cl::Buffer seeds;
+    int monte_carlo_counter = 0;
+    bool fresh = true;
+
     View<G> view;
+    rstd::Box<Shape<G>> type;
+
+    using duration = std::chrono::duration<double>;
 
 public:
     Renderer(
         cl_device_id device,
-        int width, int height,
+        rstd::Rc<cl::Context> context_,
+        int width_, int height_,
+        rstd::Box<Shape<G>> &&type_,
         const Config &config={}
     ) :
-        BasicRenderer(
-            device,
-            width, height,
-            config,
+        context(context_),
+        width(width_),
+        height(height_),
+        type(std::move(type_))
+    {
+        queue = cl::Queue::create(context, device).expect("Queue create error");
+
+        std::string source = format_(
+            "{}\n"
+            "#define object_detect {}_detect\n"
+            "#include <{}>\n"
+            ,
+            type->source(),
+            type->prefix(),
             RenderFile<G>::path()
-        )
-    {}
+        );
+        auto prog_and_log = cl::Program::create(
+            context, device,
+            make_includer(config, source)
+        );
+        println_("Render build log: {}", prog_and_log.template get<1>());
+        program = rstd::Rc(prog_and_log.template get<0>().expect("Program create error"));
+        kernel = cl::Kernel::create(program, "render").expect("Kernel create error");
+
+        image = cl::Buffer::create(queue, width*height*4).expect("Image buffer create error");
+        screen = cl::Buffer::create(queue, width*height*3*sizeof(cl_float), true).expect("Screen buffer create error");
+
+        seeds = cl::Buffer::create(queue, width*height*sizeof(cl_uint)).expect("Seed buffer create error");
+        std::mt19937 rng(0xdeadbeef);
+        std::vector<uint32_t> host_seeds(width*height);
+        for (uint32_t &seed : host_seeds) {
+            seed = rng();
+        }
+        seeds.store(queue, host_seeds.data()).expect("Seed buffer store error");
+    }
     
     /*
     void store_objects(const std::vector<Obj> &objs) {
@@ -121,8 +163,11 @@ public:
         fresh = true;
     }
 
+    void load_image(uint8_t *data) {
+        image.load(queue, data).expect("Image load error");
+    }
 
-    void render() override {
+    void render() {
         if (fresh) {
             monte_carlo_counter = 0;
             fresh = false;
@@ -142,5 +187,25 @@ public:
         ).expect("Kernel run error");
 
         monte_carlo_counter += 1;
+    }
+
+    int render_n(int n) {
+        for (int i = 0; i < n; ++i) {
+            render();
+        };
+        return n;
+    }
+
+    int render_for(double sec) {
+        const duration render_time(sec);
+        
+        int sample_counter = 0;
+        auto start = std::chrono::system_clock::now();
+        do {
+            render();
+            sample_counter += 1;
+        } while(std::chrono::system_clock::now() - start < render_time);
+
+        return sample_counter;
     }
 };

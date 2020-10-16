@@ -13,14 +13,11 @@ real horosphere_detect(Context *context, HyDir *normal, LightHy *light);
 
 #include <common/object/shape.hpp>
 
-template <typename G>
-class Plane;
-template <>
-class Plane<Hy> final : public ImplEmptyType<Plane<Hy>, SurfaceShape<Hy>> {
+class Horosphere final : public ImplEmptyType<Horosphere, SurfaceShape<Hy>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
-    inline virtual std::string prefix() override { return "planehy"; };
-    inline virtual std::string source() override { return "#include <common/object/hyperbolic/plane.hh>"; };
+    inline virtual std::string prefix() override { return "horosphere"; };
+    inline virtual std::string source() override { return "#include <common/object/hyperbolic/horosphere.hh>"; };
 };
 
 #endif // HOST

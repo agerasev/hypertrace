@@ -3,9 +3,9 @@
 #include "type.hpp"
 
 
-class Material : public virtual Type {
+class Material : public Type {
 public:
-    struct Instance : public virtual ::Instance {};
+    struct Instance : public Type::Instance {};
 };
-class SurfaceMaterial : public virtual Material {};
-class VolumeMaterial : public virtual Material {};
+class SurfaceMaterial : public Material {};
+class VolumeMaterial : public Material {};

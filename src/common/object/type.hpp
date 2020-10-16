@@ -6,12 +6,21 @@
 #include <common/geometry/geometry.hpp>
 
 
-class Type;
-class Instance;
-
-
 class Type {
 public:
+    class Instance {
+    public:
+        Instance() = default;
+        virtual ~Instance() = default;
+
+        virtual rstd::Box<Type> type() const = 0;
+
+        // Dynamic size of instance. If instance is statically sized, then returns static size.
+        virtual size_t dyn_size() const { return type()->size(); };
+        // Stores the instance to the device. The `dst` pointer should be properly aligned.
+        virtual void store(void *dst) const = 0;
+    };
+
     Type() = default;
     virtual ~Type() = default;
 
@@ -31,39 +40,26 @@ public:
     virtual std::string source() = 0;
 };
 
-class EmptyType : public Type {
-public:
-    virtual rstd::Box<Instance> instance() const = 0;
+template <typename Self, typename Base>
+class ImplEmptyType : public Base {
+    class Instance final : public Base::Instance {
+    public:
+        inline virtual rstd::Box<Type> type() const override { return rstd::Box(Self()); }
+        inline virtual size_t size() const override { return 0; }
+        inline virtual void store(void *) const override {}
+    };
+
+    inline virtual size_t id() const override { return typeid(Self).hash_code(); }
 
     inline virtual bool empty() const override { return true; }
     inline virtual size_t size() const override { return 0; }
     inline virtual size_t align() const override { return 0; }
-
-    inline virtual rstd::Box<Instance> load(const void *) const override { return this->instance(); }
+    inline virtual rstd::Box<Type::Instance> load(const void *) const override { return rstd::Box(Instance()); }
 
     inline virtual std::string name() override { return ""; }
 };
 
-
-struct Instance {
-    Instance() = default;
-    virtual ~Instance() = default;
-
-    virtual rstd::Box<Type> type() const = 0;
-
-    // Dynamic size of instance. If instance is statically sized, then returns static size.
-    virtual size_t dyn_size() const = 0;
-    // Stores the instance to the device. The `dst` pointer should be properly aligned.
-    virtual void store(void *dst) const = 0;
-};
-
-struct EmptyInstance : public virtual Instance {
-    virtual size_t dyn_size() const { return 0; }
-    virtual void store(void *) const {}
-};
-
-struct SizedInstance : public virtual Instance {
-    inline virtual size_t dyn_size() const override {
-        return this->type()->size();
-    }
+class DynInterop final {
+public:
+    DynInterop() = default;
 };

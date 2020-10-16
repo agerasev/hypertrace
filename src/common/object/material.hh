@@ -16,44 +16,29 @@ bool lambertian_interact(Context *context, real3 normal, LightLocal *light, floa
 
 #include "material.hpp"
 
-template <typename Self>
-class EmptySurfaceMaterial : public virtual SurfaceMaterial, public virtual EmptyType {
-    class Instance final : public virtual Material::Instance, public virtual EmptyInstance {
-    public:
-        inline virtual rstd::Box<Type> type() const { return rstd::Box(Self()); }
-    };
 
-    inline virtual size_t id() const override { return typeid(Self).hash_code(); }
-
-    inline virtual bool empty() const override { return EmptyType::empty(); }
-    inline virtual size_t size() const override { return EmptyType::size(); }
-    inline virtual size_t align() const override { return EmptyType::align(); }
-    inline virtual rstd::Box<::Instance> load(const void *) const { return EmptyType::load(); }
-
-    virtual std::string name() { return EmptyType::name(); }
-    inline virtual std::string source() override { return "#include <common/object/material.hh>"; };
-
-    inline virtual rstd::Box<::Instance> instance() const { return rstd::Box(Instance()); }
-};
-
-class Black final : public virtual EmptySurfaceMaterial<Black> {
+class Black final : public ImplEmptyType<Black, SurfaceMaterial> {
 public:
     inline virtual std::string prefix() override { return "black"; };
+    inline virtual std::string source() override { return "#include <common/object/material.hh>"; };
 };
 
-class Transparent final : public virtual EmptySurfaceMaterial<Transparent> {
+class Transparent final : public ImplEmptyType<Black, SurfaceMaterial> {
 public:
-    virtual std::string prefix() override { return "transparent"; };
+    inline virtual std::string prefix() override { return "transparent"; };
+    inline virtual std::string source() override { return "#include <common/object/material.hh>"; };
 };
 
-class Specular final : public virtual EmptySurfaceMaterial<Specular> {
+class Specular final : public ImplEmptyType<Black, SurfaceMaterial> {
 public:
-    virtual std::string prefix() override { return "specular"; };
+    inline virtual std::string prefix() override { return "specular"; };
+    inline virtual std::string source() override { return "#include <common/object/material.hh>"; };
 };
 
-class Lambertian final : public virtual EmptySurfaceMaterial<Lambertian> {
+class Lambertian final : public ImplEmptyType<Black, SurfaceMaterial> {
 public:
-    virtual std::string prefix() override { return "lambertian"; };
+    inline virtual std::string prefix() override { return "lambertian"; };
+    inline virtual std::string source() override { return "#include <common/object/material.hh>"; };
 };
 
 #endif // HOST

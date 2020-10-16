@@ -5,17 +5,25 @@
 #include <common/render/light.hh>
 #include <common/render/context.hh>
 
-//#include <container/array.hpp>
-//#include <object/shape.hpp>
-//#include <object/object.hpp>
-//#include <object/material.hpp>
-
-
-typedef void PlaneHy; // : Shape
-
-#define PLANEHY_REPEATED false
 
 real planehy_detect(Context *context, HyDir *normal, LightHy *light);
+
+
+#ifdef HOST
+
+#include <common/object/shape.hpp>
+
+template <typename G>
+class Plane;
+template <>
+class Plane<Hy> final : public ImplEmptyType<Plane<Hy>, SurfaceShape<Hy>> {
+public:
+    inline virtual bool repeat_allowed() const override { return false; }
+    inline virtual std::string prefix() override { return "planehy"; };
+    inline virtual std::string source() override { return "#include <common/object/hyperbolic/plane.hh>"; };
+};
+
+#endif // HOST
 
 /*
 typedef struct {

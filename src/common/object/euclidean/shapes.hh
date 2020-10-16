@@ -6,23 +6,33 @@
 #include <common/render/light.hh>
 
 
-typedef void SphereEu; // : Shape
-
-#define SPHEREEU_REPEATED true
-
 real sphereeu_detect(Context *context, real3 *normal, LightEu *light);
-
-
-typedef void CubeEu; // : Shape
-
-#define CUBEEU_REPEATED true
-
 real cubeeu_detect(Context *context, real3 *normal, LightEu *light);
 
 
 #ifdef HOST
 
+#include <common/object/shape.hpp>
 
+template <typename G>
+class Cube;
+template <>
+class Cube<Eu> final : public ImplEmptyType<Cube<Eu>, SurfaceShape<Eu>> {
+public:
+    inline virtual bool repeat_allowed() const override { return true; }
+    inline virtual std::string prefix() override { return "cubeeu"; };
+    inline virtual std::string source() override { return "#include <common/object/euclidean/shapes.hh>"; };
+};
+
+template <typename G>
+class Sphere;
+template <>
+class Sphere<Eu> final : public ImplEmptyType<Sphere<Eu>, SurfaceShape<Eu>> {
+public:
+    inline virtual bool repeat_allowed() const override { return true; }
+    inline virtual std::string prefix() override { return "sphereeu"; };
+    inline virtual std::string source() override { return "#include <common/object/euclidean/shapes.hh>"; };
+};
 
 #endif // HOST
 

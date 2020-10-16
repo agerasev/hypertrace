@@ -6,11 +6,25 @@
 #include <common/render/context.hh>
 
 
-typedef void Horosphere; // : Shape
-
-#define HOROSPHERE_REPEATED true
-
 real horosphere_detect(Context *context, HyDir *normal, LightHy *light);
+
+
+#ifdef HOST
+
+#include <common/object/shape.hpp>
+
+template <typename G>
+class Plane;
+template <>
+class Plane<Hy> final : public ImplEmptyType<Plane<Hy>, SurfaceShape<Hy>> {
+public:
+    inline virtual bool repeat_allowed() const override { return true; }
+    inline virtual std::string prefix() override { return "planehy"; };
+    inline virtual std::string source() override { return "#include <common/object/hyperbolic/plane.hh>"; };
+};
+
+#endif // HOST
+
 
 /*
 namespace hyperbolic {

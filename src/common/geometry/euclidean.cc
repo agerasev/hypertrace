@@ -16,14 +16,14 @@ real eu_distance(EuPos a, EuPos b) {
 EuPos eu_apply_pos(EuMap m, EuPos p) {
     return aff3_apply_pos(m, p);
 }
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+_ALLOW_UNUSED_PARAMETERS_
 EuDir eu_apply_dir(EuMap m, EuPos p, EuDir d) {
     return aff3_apply_dir(m, d);
 }
 
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+_ALLOW_UNUSED_PARAMETERS_
 EuDir eu_dir_at(EuPos src_pos, EuDir src_dir, EuPos dst_pos) {
     return src_dir;
 }

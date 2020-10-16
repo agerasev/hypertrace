@@ -5,11 +5,11 @@ HyDir hy_origin() {
     return QJ;
 }
 
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+_ALLOW_UNUSED_PARAMETERS_
 EuDir hy_dir_to_local(HyPos pos, HyDir dir) {
     return dir.xyz;
 }
-#pragma GCC diagnostic ignored "-Wunused-parameter"
+_ALLOW_UNUSED_PARAMETERS_
 HyDir hy_dir_from_local(HyPos pos, EuDir ldir) {
     return q_new(ldir, R0);
 }

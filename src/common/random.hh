@@ -19,8 +19,8 @@ real4 random_uniform4(Rng *rng);
 
 real3 random_sphere(Rng *rng);
 real3 random_hemisphere(Rng *rng);
-real3 hemisphere_cosine(Rng *rng);
-real3 sphere_cap(Rng *rng, real cos_alpha);
+real3 random_hemisphere_cosine(Rng *rng);
+real3 random_sphere_cap(Rng *rng, real cos_alpha);
 
 #ifndef HOST
 #include "random.cc"

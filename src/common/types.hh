@@ -77,3 +77,10 @@ PRIMITIVE_INTEROP(double, cl_float);
 #endif // INTEROP
 
 #endif // HOST
+
+
+#ifdef HOST
+#define _ALLOW_UNUSED_PARAMETERS_ _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"");
+#else // !HOST
+#define _ALLOW_UNUSED_PARAMETERS_
+#endif // HOST

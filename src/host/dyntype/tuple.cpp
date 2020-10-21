@@ -22,7 +22,7 @@ rtest_module_(dyntype_tuple) {
         TestRng<real3> rng3;
         TestRng<real> rng;
 
-        const size_t n = 1;//TEST_ATTEMPTS;
+        const size_t n = TEST_ATTEMPTS;
 
         std::vector<real> datar(n), outr(n);
         std::vector<real3> datar3(n), outr3(n);
@@ -58,7 +58,7 @@ rtest_module_(dyntype_tuple) {
             datar3[i] = r3;
             datar16[i] = r16;
             datau[i] = u;
-            datar[i] = r;
+            datab[i] = b;
         }
 
         TypeBox darrty = darr.type();
@@ -102,10 +102,8 @@ rtest_module_(dyntype_tuple) {
         devtest::KernelRunner(queue, std::move(kernel))
         .run(n, (Type::Instance*)&darr, outr, outr3, outr16, outu, outb, ssize, offset).expect("Kernel run error");
 
-        println_("Tuple: {}", ssize[0]);
         assert_eq_(dtupty->size().unwrap(), ssize[0]);
         for (int i = 0; i < 5; ++i) {
-            println_("field{}: {}", i, offset[i]);
             assert_eq_(dyn_offset[i], offset[i]);
         }
 
@@ -114,14 +112,14 @@ rtest_module_(dyntype_tuple) {
             assert_eq_(dev_approx(datar3[i]), outr3[i]);
             assert_eq_(dev_approx(datar16[i]), outr16[i]);
             assert_eq_(datau[i], outu[i]);
-            assert_eq_(datab[i], outb[i]);
+            assert_eq_(int(datab[i]), int(outb[i]));
 
             rstd::Box<Tuple::Instance> dtup = darr.items()[i].template downcast<Tuple::Instance>().unwrap();
             assert_eq_(dev_approx(datar[i]), dtup->fields()[0].template downcast<Primitive<real>::Instance>().unwrap()->value);
             assert_eq_(dev_approx(datar3[i]), dtup->fields()[1].template downcast<Primitive<real3>::Instance>().unwrap()->value);
             assert_eq_(dev_approx(datar16[i]), dtup->fields()[2].template downcast<Primitive<real16>::Instance>().unwrap()->value);
             assert_eq_(datau[i], dtup->fields()[3].template downcast<Primitive<uint>::Instance>().unwrap()->value);
-            assert_eq_(datab[i], dtup->fields()[4].template downcast<Primitive<uchar>::Instance>().unwrap()->value);
+            assert_eq_(int(datab[i]), int(dtup->fields()[4].template downcast<Primitive<uchar>::Instance>().unwrap()->value));
         }
     }
 }

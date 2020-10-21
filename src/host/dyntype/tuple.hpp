@@ -85,8 +85,7 @@ public:
             iter_ref(fields_)
             .scan((size_t)0, [](size_t *p, const TypeBox *f) {
                 size_t offt = upper_multiple((*f)->align(), *p);
-                //println_("{} offt: {}", (*f)->name(), offt);
-                *p += (*f)->size().unwrap();
+                *p = offt + (*f)->size().unwrap();
                 return rstd::Some(offt);
             })
             .template collect<std::vector>();

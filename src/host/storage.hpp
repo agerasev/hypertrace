@@ -22,3 +22,39 @@ struct aligned_allocator {
 
 template <typename T>
 using aligned_vector = std::vector<T, aligned_allocator<T>>;
+
+class AlignedMem {
+private:
+    void *data = nullptr;
+public:
+    AlignedMem() = default;
+    AlignedMem(size_t align, size_t size) {
+        data = std::aligned_alloc(align, size);
+    }
+    ~AlignedMem() {
+        if (data != nullptr) {
+            std::free(data);
+        }
+    }
+    AlignedMem(const AlignedMem &) = delete;
+    AlignedMem &operator=(const AlignedMem &) = delete;
+    AlignedMem(AlignedMem &&other) {
+        data = other.data;
+        other.data = nullptr;
+    }
+    AlignedMem &operator=(AlignedMem &&other) {
+        if (data != nullptr) {
+            std::free(data);
+        }
+        data = other.data;
+        other.data = nullptr;
+        return *this;
+    }
+
+    void *operator*() {
+        return data;
+    }
+    const void *operator*() const {
+        return data;
+    }
+};

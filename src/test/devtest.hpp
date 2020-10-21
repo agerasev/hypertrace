@@ -3,6 +3,7 @@
 #include <rstd/prelude.hpp>
 
 #include <common/types.hh>
+#include <host/dyntype/type.hpp>
 #include <host/opencl/opencl.hpp>
 #include <host/storage.hpp>
 
@@ -132,7 +133,7 @@ private:
         const dev_type<T> &arg() const {
             return dv;
         }
-        void load() override {}
+        virtual void load() override {}
     };
 
     template <typename T>
@@ -155,7 +156,7 @@ private:
         const cl::Buffer &arg() const {
             return devbuf;
         }
-        void load() override {
+        virtual void load() override {
             aligned_vector<dev_type<T>> tmpbuf(hostbuf.size());
             devbuf.load(*queue, tmpbuf.data()).expect("Buffer load error");
             for (size_t i = 0; i < hostbuf.size(); ++i) {
@@ -164,10 +165,34 @@ private:
         }
     };
 
+    class InstanceArg : public KernelArg {
+    private:
+        rstd::Rc<cl::Queue> queue;
+        Type::Instance *inst;
+        cl::Buffer devbuf;
+    public:
+        InstanceArg(const rstd::Rc<cl::Queue> &q, Type::Instance *hi) :
+            queue(q), inst(hi)
+        {
+            AlignedMem tmpbuf(inst->align(), inst->size());
+            inst->store(*tmpbuf);
+            devbuf = cl::Buffer::create(*queue, inst->size()).expect("Buffer create error");
+            devbuf.store(*queue, *tmpbuf).expect("Buffer store error");
+        }
+        const cl::Buffer &arg() const {
+            return devbuf;
+        }
+        virtual void load() override {
+            AlignedMem tmpbuf(inst->align(), inst->size());
+            devbuf.load(*queue, *tmpbuf).expect("Buffer load error");
+            inst->load(*tmpbuf);
+        }
+    };
+
 private:
     rstd::Rc<cl::Queue> queue;
     rstd::Rc<cl::Kernel> kernel;
-    std::vector<std::unique_ptr<KernelArg>> args;
+    std::vector<rstd::Box<KernelArg>> args;
 
 public:
     KernelRunner() = default;
@@ -185,15 +210,20 @@ public:
 
     template <typename T>
     void push_arg(const T &val) {
-        auto varg = std::make_unique<ValueArg<T>>(val);
-        kernel->set_arg(args.size(), varg->arg());
-        args.push_back(std::move(varg));
+        auto karg = rstd::Box(ValueArg<T>(val));
+        kernel->set_arg(args.size(), karg->arg());
+        args.push_back(std::move(karg));
     }
     template <typename T>
     void push_arg(std::vector<T> &buf) {
-        auto barg = std::make_unique<BufferArg<T>>(queue, buf);
-        kernel->set_arg(args.size(), barg->arg());
-        args.push_back(std::move(barg));
+        auto karg = rstd::Box(BufferArg<T>(queue, buf));
+        kernel->set_arg(args.size(), karg->arg());
+        args.push_back(std::move(karg));
+    }
+    inline void push_arg(Type::Instance *inst) {
+        auto karg = rstd::Box(InstanceArg(queue, inst));
+        kernel->set_arg(args.size(), karg->arg());
+        args.push_back(karg.upcast<KernelArg>());
     }
     inline void load_args() {
         for (auto &arg : args) {

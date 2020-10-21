@@ -1,7 +1,7 @@
 #pragma once
 
 #include <common/types.hh>
-#include <common/object/type.hpp>
+#include "type.hpp"
 
 
 template <typename T>
@@ -11,29 +11,41 @@ public:
     public:
         T value;
 
+        Instance() = default;
         Instance(T v) : value(v) {}
 
-        virtual rstd::Box<Type> type() const override { return rstd::Box(Primitive<T>()); }
+        Primitive type_() const {
+            return Primitive();
+        }
+        virtual rstd::Box<Type> type() const override {
+            return rstd::Box(type_());
+        }
         virtual void store(void *dst) const override {
             assert_eq_((size_t)dst % alignof(dev_type<T>), 0);
             dev_store((dev_type<T> *)dst, &value);
+        }
+        virtual void load(const void *dst) override {
+            *this = type_().load_(dst);
         }
     };
 
     inline virtual size_t id() const override { return typeid(Primitive<T>).hash_code(); }
 
-    virtual size_t size() const override { return sizeof(dev_type<T>); }
+    virtual rstd::Option<size_t> size() const override { return rstd::Some(sizeof(dev_type<T>)); }
     virtual size_t align() const override { return alignof(dev_type<T>); }
 
-    virtual rstd::Box<Instance> load(const void *src) const override {
+    Instance load_(const void *src) const {
         assert_eq_((size_t)src % alignof(dev_type<T>), 0);
         T v;
         dev_load(&v, (const dev_type<T> *)src);
         return Instance(v);
     }
+    virtual rstd::Box<Type::Instance> load(const void *src) const override {
+        return rstd::Box(load_(src));
+    }
 
-    virtual std::string name() { return dev_name<T>; }
-    virtual std::string source() {
+    virtual std::string name() override { return dev_name<T>; }
+    virtual std::string source() override {
         return 
             "#include <common/types.hh>\n"
             "#include <common/algebra/real.hh>\n"

@@ -18,6 +18,7 @@ target_link_libraries(test_unit ${RSTD_LIBS})
 add_executable(test_dev
     ${COMMON_SRC}
     ${HOST_OPENCL_SRC}
+    ${HOST_DYNTYPE_SRC}
     "devtest.cpp"
     "test_dev.cpp"
 )

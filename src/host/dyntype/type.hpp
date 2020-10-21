@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <typeinfo>
 #include <rstd/prelude.hpp>
-#include <common/geometry/geometry.hpp>
 
 
 class Type {
@@ -15,10 +14,13 @@ public:
 
         virtual rstd::Box<Type> type() const = 0;
 
-        // Dynamic size of instance. If instance is statically sized, then returns 0.
-        virtual size_t size() const { return 0; };
+        // Dynamic size of instance. If instance is statically sized, then returns Type::size().
+        virtual size_t size() const { return type()->size().unwrap(); };
+        virtual size_t align() const { return type()->align(); };
+
         // Stores the instance to the device. The `dst` pointer should be properly aligned.
         virtual void store(void *dst) const = 0;
+        virtual void load(const void *src) = 0;
     };
 
     Type() = default;
@@ -44,6 +46,7 @@ class ImplEmptyType : public Base {
     public:
         inline virtual rstd::Box<Type> type() const override { return rstd::Box(Self()); }
         inline virtual void store(void *) const override {}
+        inline virtual void load(const void *) override {}
     };
 
     inline virtual size_t id() const override { return typeid(Self).hash_code(); }

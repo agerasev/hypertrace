@@ -68,7 +68,7 @@ template <> \
 struct Interop<T##N> { \
     typedef T##N Host; \
     typedef S##N Dev; \
-    inline static const char *const name = A #S; \
+    inline static const char *const name = A #N; \
     static void load(Host *dst, const Dev *src) { \
         for (size_t i = 0; i < N; ++i) { \
             (*dst)[i] = (T)src->s[i]; \

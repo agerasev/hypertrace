@@ -2,7 +2,7 @@
 
 #include <rstd/prelude.hpp>
 #include <common/geometry/geometry.hpp>
-#include "type.hpp"
+#include <host/dyntype/type.hpp>
 
 
 // Base class for all shapes

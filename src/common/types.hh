@@ -43,12 +43,12 @@ void dev_store(dev_type<H> *dst, const H *src) {
     Interop<H>::store(dst, src);
 }
 
-#define PRIMITIVE_INTEROP(H, D, N) \
+#define PRIMITIVE_INTEROP(H, D, A) \
 template <> \
 struct Interop<H> { \
     typedef H Host; \
     typedef D Dev; \
-    inline static const char *const name = N; \
+    inline static const char *const name = A; \
     static void load(Host *dst, const Dev *src) { \
         *dst = (Host)(*src); \
     } \

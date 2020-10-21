@@ -1,6 +1,6 @@
 #pragma once
 
-#include "type.hpp"
+#include <host/dyntype/type.hpp>
 
 
 class Material : public Type {

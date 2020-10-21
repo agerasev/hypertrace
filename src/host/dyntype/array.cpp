@@ -3,40 +3,51 @@
 #include <vector>
 #include <rtest.hpp>
 #include <test/devtest.hpp>
-#include "primitive.hpp"
 #include <common/algebra/vector.hh>
+#include "primitive.hpp"
+#include "array.hpp"
+
+using namespace dyn;
+
 
 extern devtest::Target devtest_make_target();
 
-rtest_module_(dyntype_primitive) {
+rtest_module_(dyntype_array) {
     rtest_(real_vector) {
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
 
+        const size_t n = TEST_ATTEMPTS;
         TestRng<real16> vrng(0xdeadbeef);
-        Primitive<real16> dty;
+        std::vector<real16> data(n), out(n);
+        Array::Instance darr;
+        for (size_t i = 0; i < n; ++i) {
+            real16 v = vrng.normal();
+            darr.append(InstanceBox(Primitive<real16>::Instance(v)));
+            data[i] = v;
+        }
 
+        TypeBox dty = darr.type();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("dyntype_real16.cl", std::string(format_(
+        .source("dyntype_array_of_real16.cl", std::string(format_(
             "{}\n"
-            "__kernel void unpack(__global const {} *input, __global float16 *output) {{\n"
+            "__kernel void unpack(__global const {} *darr, __global float16 *out) {{\n"
             "    int i = get_global_id(0);\n"
-            "    output[i] = input[i];\n"
+            "    out[i] = darr->items[i];\n"
             "}}\n",
-            dty.source(),
-            dty.name()
+            dty->source(),
+            dty->name()
         )))
         .build("unpack").expect("Kernel build error");
 
-
-        real16 v = vrng.normal();
-        std::vector<real16> data{v};
-        Primitive<real16>::Instance dval(v);
-
         devtest::KernelRunner(queue, std::move(kernel))
-        .run(1, (Type::Instance*)&dval, data).expect("Kernel run error");
+        .run(n, (Type::Instance*)&darr, out).expect("Kernel run error");
 
-        assert_eq_(data[0], dev_approx(v));
+        for (size_t i = 0; i < n; ++i) {
+            assert_eq_(out[i], dev_approx(data[i]));
+            real16 v = darr.items()[i].template downcast<Primitive<real16>::Instance>().unwrap()->value;
+            assert_eq_(v, dev_approx(data[i]));
+        }
     }
 }
 

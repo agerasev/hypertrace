@@ -22,11 +22,11 @@ public:
         virtual rstd::Box<Type> type() const override {
             return rstd::Box(type_());
         }
-        virtual void store(void *dst) const override {
+        virtual void store(uchar *dst) const override {
             assert_eq_((size_t)dst % alignof(dev_type<T>), 0);
             dev_store((dev_type<T> *)dst, &value);
         }
-        virtual void load(const void *dst) override {
+        virtual void load(const uchar *dst) override {
             *this = type_().load_(dst);
         }
     };
@@ -38,13 +38,13 @@ public:
     virtual rstd::Option<size_t> size() const override { return rstd::Some(sizeof(dev_type<T>)); }
     virtual size_t align() const override { return alignof(dev_type<T>); }
 
-    Instance load_(const void *src) const {
+    Instance load_(const uchar *src) const {
         assert_eq_((size_t)src % alignof(dev_type<T>), 0);
         T v;
         dev_load(&v, (const dev_type<T> *)src);
         return Instance(v);
     }
-    virtual rstd::Box<Type::Instance> load(const void *src) const override {
+    virtual rstd::Box<Type::Instance> load(const uchar *src) const override {
         return rstd::Box(load_(src));
     }
 

@@ -19,7 +19,7 @@ public:
         {}
         template <typename I>
         Instance(I &&item_iter) {
-            items_ = item_iter.collect<std::vector>();
+            items_ = item_iter.template collect<std::vector>();
             if (items_.size() > 0) {
                 item_type_ = items_[0]->type();
             }
@@ -34,49 +34,98 @@ public:
             } else {
                 item_type_ = i->type();
             }
+            items_.push_back(std::move(i));
         }
         
-        TypeBox item_type() {
-            return item_type_;
+        const Type &item_type() const {
+            return item_type_.get();
         }
-        std::vector<InstanceBox>
+        std::vector<InstanceBox> &items() {
+            return items_;
+        }
+        const std::vector<InstanceBox> &items() const {
+            return items_;
+        }
 
         Array type_() const {
-            return Array();
+            return Array(item_type_->clone(), items_.size());
         }
         virtual TypeBox type() const override {
-            return rstd::Box(type_());
+            return TypeBox(type_());
         }
-        virtual void store(void *dst) const override {
-            assert_eq_((size_t)dst % alignof(dev_type<T>), 0);
-            dev_store((dev_type<T> *)dst, &value);
+        virtual void store(uchar *dst) const override {
+            for (size_t i = 0; i < items_.size(); ++i) {
+                items_[i]->store(dst + i*item_type_->size().unwrap());
+            }
         }
-        virtual void load(const void *dst) override {
+        virtual void load(const uchar *dst) override {
             *this = type_().load_(dst);
         }
     };
 
-    inline virtual size_t id() const override { return typeid(Primitive<T>).hash_code(); }
+private:
+    TypeBox item_type_;
+    size_t item_count_;
 
-    virtual rstd::Option<size_t> size() const override { return rstd::Some(sizeof(dev_type<T>)); }
-    virtual size_t align() const override { return alignof(dev_type<T>); }
-
-    Instance load_(const void *src) const {
-        assert_eq_((size_t)src % alignof(dev_type<T>), 0);
-        T v;
-        dev_load(&v, (const dev_type<T> *)src);
-        return Instance(v);
+public:
+    Array() = delete;
+    Array(TypeBox &&type, size_t n) :
+        item_type_(std::move(type)),
+        item_count_(n)
+    {
+        assert_(bool(item_type_));
+        assert_(item_count_ > 0);
     }
-    virtual rstd::Box<Type::Instance> load(const void *src) const override {
-        return rstd::Box(load_(src));
+    TypeBox item_type() const {
+        return item_type_->clone();
+    }
+    size_t item_count() const {
+        return item_count_;
     }
 
-    virtual std::string name() override { return dev_name<T>; }
+    inline virtual TypeBox clone() const override {
+        return rstd::Box(Array(item_type_->clone(), item_count_));
+    }
+    inline virtual size_t id() const override { 
+        rstd::DefaultHasher hasher;
+        hasher._hash_raw(typeid(Array).hash_code());
+        hasher._hash_raw(item_type_->id());
+        hasher.hash(item_count_);
+        return hasher.finish();
+    }
+
+    virtual rstd::Option<size_t> size() const override {
+        return rstd::Some(item_type_->size().unwrap()*item_count_);
+    }
+    virtual size_t align() const override {
+        return item_type_->align();
+    }
+
+    Instance load_(const uchar *src) const {
+        Instance dst(item_type_->clone());
+        for (size_t i = 0; i < item_count_; ++i) {
+            dst.append(item_type_->load(src + i*item_type_->size().unwrap()));
+        }
+        return dst;
+    }
+    virtual InstanceBox load(const uchar *src) const override {
+        return InstanceBox(load_(src));
+    }
+
+    virtual std::string name() override {
+        // FIXME: Pretty name, but can cause collisions
+        //return format_("Array{}", id());
+        return format_("Array_{}_{}", item_type_->name(), item_count_);
+    }
     virtual std::string source() override {
-        return 
-            "#include <common/types.hh>\n"
-            "#include <common/algebra/real.hh>\n"
-            "#include <common/algebra/vector.hh>\n";
+        return item_type_->source() + "\n" + format_(
+            "typedef struct {{\n"
+            "   {} items[{}];\n"
+            "}} {};\n",
+            item_type_->name(),
+            item_count_,
+            name()
+        );
     }
 };
 

@@ -17,29 +17,28 @@ rtest_module_(dyntype_primitive) {
         auto queue = target.make_queue();
 
         TestRng<real16> vrng(0xdeadbeef);
-        Primitive<real16> dty;
+        real16 v = vrng.normal();
+        std::vector<real16> out(1);
+        Primitive<real16>::Instance dval(v);
 
+        TypeBox dty = dval.type();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_real16.cl", std::string(format_(
             "{}\n"
-            "__kernel void unpack(__global const {} *input, __global float16 *output) {{\n"
+            "__kernel void unpack(__global const {} *dval, __global float16 *out) {{\n"
             "    int i = get_global_id(0);\n"
-            "    output[i] = input[i];\n"
+            "    out[i] = dval[i];\n"
             "}}\n",
-            dty.source(),
-            dty.name()
+            dty->source(),
+            dty->name()
         )))
         .build("unpack").expect("Kernel build error");
 
-
-        real16 v = vrng.normal();
-        std::vector<real16> data{v};
-        Primitive<real16>::Instance dval(v);
-
         devtest::KernelRunner(queue, std::move(kernel))
-        .run(1, (Type::Instance*)&dval, data).expect("Kernel run error");
+        .run(1, (Type::Instance*)&dval, out).expect("Kernel run error");
 
-        assert_eq_(data[0], dev_approx(v));
+        assert_eq_(out[0], dev_approx(v));
+        assert_eq_(dval.value, dev_approx(v));
     }
 }
 

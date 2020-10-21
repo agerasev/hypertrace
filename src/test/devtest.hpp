@@ -175,7 +175,7 @@ private:
             queue(q), inst(hi)
         {
             AlignedMem tmpbuf(inst->align(), inst->size());
-            inst->store(*tmpbuf);
+            inst->store((uchar *)*tmpbuf);
             devbuf = cl::Buffer::create(*queue, inst->size()).expect("Buffer create error");
             devbuf.store(*queue, *tmpbuf).expect("Buffer store error");
         }
@@ -185,7 +185,7 @@ private:
         virtual void load() override {
             AlignedMem tmpbuf(inst->align(), inst->size());
             devbuf.load(*queue, *tmpbuf).expect("Buffer load error");
-            inst->load(*tmpbuf);
+            inst->load((const uchar *)*tmpbuf);
         }
     };
 

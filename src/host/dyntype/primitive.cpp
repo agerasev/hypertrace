@@ -12,7 +12,7 @@ using namespace dyn;
 extern devtest::Target devtest_make_target();
 
 rtest_module_(dyntype_primitive) {
-    rtest_(real_vector) {
+    rtest_(store_load) {
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
 
@@ -23,7 +23,7 @@ rtest_module_(dyntype_primitive) {
 
         TypeBox dty = dval.type();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("dyntype_real16.cl", std::string(format_(
+        .source("dyntype_primitive.cl", std::string(format_(
             "{}\n"
             "__kernel void unpack(__global const {} *dval, __global float16 *out) {{\n"
             "    int i = get_global_id(0);\n"

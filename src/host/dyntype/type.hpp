@@ -6,6 +6,11 @@
 #include <common/types.hh>
 
 
+template <typename T>
+T upper_multiple(T m, T x) {
+    return ((x + m - 1)/m)*m;
+}
+
 namespace dyn {
 
 class Type {
@@ -41,6 +46,7 @@ public:
     // Loads instance from device. The `src` pointer should be properly aligned.
     virtual rstd::Box<Instance> load(const uchar *src) const = 0;
 
+    // FIXME: Make these methods constant
     virtual std::string name() = 0;
     virtual std::string source() = 0;
 };

@@ -13,7 +13,7 @@ using namespace dyn;
 extern devtest::Target devtest_make_target();
 
 rtest_module_(dyntype_array) {
-    rtest_(real_vector) {
+    rtest_(store_load) {
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
 
@@ -29,7 +29,7 @@ rtest_module_(dyntype_array) {
 
         TypeBox dty = darr.type();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("dyntype_array_of_real16.cl", std::string(format_(
+        .source("dyntype_array.cl", std::string(format_(
             "{}\n"
             "__kernel void unpack(__global const {} *darr, __global float16 *out) {{\n"
             "    int i = get_global_id(0);\n"

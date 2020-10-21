@@ -77,6 +77,11 @@ PRIMITIVE_INTEROP(double, cl_float,  "float" );
 
 #endif // INTEROP
 
+#else // !HOST
+
+#define offsetof(st, m) \
+    ((ulong)&(((st *)0)->m))
+
 #endif // HOST
 
 

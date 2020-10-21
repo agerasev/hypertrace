@@ -8,6 +8,7 @@ if [ -z $SINGLE_THREAD ]; then
 else
     NCPU=1
 fi
+echo "Building with $NCPU threads"
 
 cmake .. -DUSE_PCH=ON && \
 if [ -z $1 ]; then

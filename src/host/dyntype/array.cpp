@@ -31,7 +31,7 @@ rtest_module_(dyntype_array) {
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_array.cl", std::string(format_(
             "{}\n"
-            "__kernel void unpack(__global const {} *darr, __global float16 *out) {{\n"
+            "__kernel void unpack(__global const {} *darr, __global real16 *out) {{\n"
             "    int i = get_global_id(0);\n"
             "    out[i] = darr->items[i];\n"
             "}}\n",

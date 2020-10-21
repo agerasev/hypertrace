@@ -6,11 +6,6 @@
 #include <common/types.hh>
 
 
-template <typename T>
-T upper_multiple(T m, T x) {
-    return ((x + m - 1)/m)*m;
-}
-
 namespace dyn {
 
 class Type {

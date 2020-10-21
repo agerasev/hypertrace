@@ -77,10 +77,18 @@ PRIMITIVE_INTEROP(double, cl_float,  "float" );
 
 #endif // INTEROP
 
+template <typename T>
+T upper_multiple(T m, T x) {
+    return ((x + m - 1)/m)*m;
+}
+
 #else // !HOST
 
 #define offsetof(st, m) \
     ((ulong)&(((st *)0)->m))
+
+#define upper_multiple(m, x) \
+    (((x + m - 1)/m)*m)
 
 #endif // HOST
 

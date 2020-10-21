@@ -125,13 +125,13 @@ public:
         return InstanceBox(load_(src));
     }
 
-    virtual std::string name() override {
+    virtual std::string name() const override {
         return format_("Tuple{}", id());
     }
     template <typename F>
-    std::string source_with_names(F field_name) {
+    std::string source_with_names(F field_name) const {
         std::stringstream ss;
-        for (TypeBox &f : fields_) {
+        for (const TypeBox &f : fields_) {
             writeln_(ss, f->source());
         }
         writeln_(ss, "typedef struct {{");
@@ -141,7 +141,7 @@ public:
         writeln_(ss, "}} {};", name());
         return ss.str();
     }
-    virtual std::string source() override {
+    virtual std::string source() const override {
         return source_with_names([](size_t i){ return format_("field{}", i); });
     }
 };

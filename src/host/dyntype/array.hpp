@@ -112,12 +112,12 @@ public:
         return InstanceBox(load_(src));
     }
 
-    virtual std::string name() override {
+    virtual std::string name() const override {
         return format_("Array{}", id());
         // FIXME: Pretty name, but can cause collisions
         //return format_("Array_{}_{}", item_type_->name(), item_count_);
     }
-    virtual std::string source() override {
+    virtual std::string source() const override {
         return item_type_->source() + "\n" + format_(
             "typedef struct {{\n"
             "   {} items[{}];\n"

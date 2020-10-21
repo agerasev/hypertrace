@@ -19,8 +19,8 @@ template <>
 class Plane<Hy> final : public dyn::ImplEmptyType<Plane<Hy>, SurfaceShape<Hy>> {
 public:
     inline virtual bool repeat_allowed() const override { return false; }
-    inline virtual std::string prefix() override { return "planehy"; };
-    inline virtual std::string source() override { return "#include <common/object/hyperbolic/plane.hh>"; };
+    inline virtual std::string prefix() const override { return "planehy"; };
+    inline virtual std::string source() const override { return "#include <common/object/hyperbolic/plane.hh>"; };
 };
 
 #endif // HOST

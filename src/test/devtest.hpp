@@ -168,10 +168,10 @@ private:
     class InstanceArg : public KernelArg {
     private:
         rstd::Rc<cl::Queue> queue;
-        Type::Instance *inst;
+        dyn::Type::Instance *inst;
         cl::Buffer devbuf;
     public:
-        InstanceArg(const rstd::Rc<cl::Queue> &q, Type::Instance *hi) :
+        InstanceArg(const rstd::Rc<cl::Queue> &q, dyn::Type::Instance *hi) :
             queue(q), inst(hi)
         {
             AlignedMem tmpbuf(inst->align(), inst->size());
@@ -220,7 +220,7 @@ public:
         kernel->set_arg(args.size(), karg->arg());
         args.push_back(std::move(karg));
     }
-    inline void push_arg(Type::Instance *inst) {
+    inline void push_arg(dyn::Type::Instance *inst) {
         auto karg = rstd::Box(InstanceArg(queue, inst));
         kernel->set_arg(args.size(), karg->arg());
         args.push_back(karg.upcast<KernelArg>());

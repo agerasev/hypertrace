@@ -17,25 +17,25 @@ bool lambertian_interact(Context *context, real3 normal, LightLocal *light, floa
 #include "material.hpp"
 
 
-class Black final : public ImplEmptyType<Black, SurfaceMaterial> {
+class Black final : public dyn::ImplEmptyType<Black, SurfaceMaterial> {
 public:
     inline virtual std::string prefix() override { return "black"; };
     inline virtual std::string source() override { return "#include <common/object/material.hh>"; };
 };
 
-class Transparent final : public ImplEmptyType<Black, SurfaceMaterial> {
+class Transparent final : public dyn::ImplEmptyType<Black, SurfaceMaterial> {
 public:
     inline virtual std::string prefix() override { return "transparent"; };
     inline virtual std::string source() override { return "#include <common/object/material.hh>"; };
 };
 
-class Specular final : public ImplEmptyType<Black, SurfaceMaterial> {
+class Specular final : public dyn::ImplEmptyType<Black, SurfaceMaterial> {
 public:
     inline virtual std::string prefix() override { return "specular"; };
     inline virtual std::string source() override { return "#include <common/object/material.hh>"; };
 };
 
-class Lambertian final : public ImplEmptyType<Black, SurfaceMaterial> {
+class Lambertian final : public dyn::ImplEmptyType<Black, SurfaceMaterial> {
 public:
     inline virtual std::string prefix() override { return "lambertian"; };
     inline virtual std::string source() override { return "#include <common/object/material.hh>"; };

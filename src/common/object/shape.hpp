@@ -7,7 +7,7 @@
 
 // Base class for all shapes
 template <typename G>
-class Shape : public Type {
+class Shape : public dyn::Type {
 public:
     typedef G Geo;
 

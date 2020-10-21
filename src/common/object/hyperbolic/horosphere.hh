@@ -13,7 +13,7 @@ real horosphere_detect(Context *context, HyDir *normal, LightHy *light);
 
 #include <common/object/shape.hpp>
 
-class Horosphere final : public ImplEmptyType<Horosphere, SurfaceShape<Hy>> {
+class Horosphere final : public dyn::ImplEmptyType<Horosphere, SurfaceShape<Hy>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string prefix() override { return "horosphere"; };

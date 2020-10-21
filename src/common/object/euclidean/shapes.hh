@@ -17,7 +17,7 @@ real cubeeu_detect(Context *context, real3 *normal, LightEu *light);
 template <typename G>
 class Cube;
 template <>
-class Cube<Eu> final : public ImplEmptyType<Cube<Eu>, SurfaceShape<Eu>> {
+class Cube<Eu> final : public dyn::ImplEmptyType<Cube<Eu>, SurfaceShape<Eu>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string prefix() override { return "cubeeu"; };
@@ -27,7 +27,7 @@ public:
 template <typename G>
 class Sphere;
 template <>
-class Sphere<Eu> final : public ImplEmptyType<Sphere<Eu>, SurfaceShape<Eu>> {
+class Sphere<Eu> final : public dyn::ImplEmptyType<Sphere<Eu>, SurfaceShape<Eu>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string prefix() override { return "sphereeu"; };

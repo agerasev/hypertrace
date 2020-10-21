@@ -6,9 +6,6 @@
 #include "primitive.hpp"
 #include <common/algebra/vector.hh>
 
-using namespace dyn;
-
-
 extern devtest::Target devtest_make_target();
 
 rtest_module_(dyntype_primitive) {

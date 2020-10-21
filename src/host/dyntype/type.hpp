@@ -5,6 +5,8 @@
 #include <rstd/prelude.hpp>
 
 
+namespace dyn {
+
 class Type {
 public:
     class Instance {
@@ -25,6 +27,8 @@ public:
 
     Type() = default;
     virtual ~Type() = default;
+
+    virtual rstd::Box<Type> clone() const = 0;
 
     virtual size_t id() const = 0;
 
@@ -49,6 +53,7 @@ class ImplEmptyType : public Base {
         inline virtual void load(const void *) override {}
     };
 
+    inline virtual rstd::Box<Type> clone() const override { return rstd::Box(rstd::clone(*static_cast<const Self *>(this))); }
     inline virtual size_t id() const override { return typeid(Self).hash_code(); }
 
     inline virtual rstd::Option<size_t> size() const override { return rstd::Some<size_t>(0); }
@@ -57,3 +62,8 @@ class ImplEmptyType : public Base {
 
     inline virtual std::string name() override { return ""; }
 };
+
+typedef rstd::Box<Type> TypeBox;
+typedef rstd::Box<Type::Instance> InstanceBox;
+
+} // namespace dyn

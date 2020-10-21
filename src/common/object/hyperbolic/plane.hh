@@ -16,7 +16,7 @@ real planehy_detect(Context *context, HyDir *normal, LightHy *light);
 template <typename G>
 class Plane;
 template <>
-class Plane<Hy> final : public ImplEmptyType<Plane<Hy>, SurfaceShape<Hy>> {
+class Plane<Hy> final : public dyn::ImplEmptyType<Plane<Hy>, SurfaceShape<Hy>> {
 public:
     inline virtual bool repeat_allowed() const override { return false; }
     inline virtual std::string prefix() override { return "planehy"; };

@@ -7,7 +7,7 @@
 
 // Base class for all objects
 template <typename G>
-struct Object : public virtual Type {
+struct Object : public virtual dyn::Type {
     // Storage for state between detection and interaction.
     virtual Box<Type> cache() const = 0;
 

@@ -6,20 +6,45 @@
 
 namespace dyn {
 
-template <typename T>
-class Primitive : public Type {
+class Array : public Type {
 public:
     class Instance : public Type::Instance {
     public:
-        T value;
+        TypeBox item_type_; 
+        std::vector<InstanceBox> items_;
 
         Instance() = default;
-        Instance(T v) : value(v) {}
-
-        Primitive type_() const {
-            return Primitive();
+        Instance(TypeBox &&type) :
+            item_type_(std::move(type))
+        {}
+        template <typename I>
+        Instance(I &&item_iter) {
+            items_ = item_iter.collect<std::vector>();
+            if (items_.size() > 0) {
+                item_type_ = items_[0]->type();
+            }
+            for (auto &i : items_) {
+                assert_eq_(item_type_->id(), i->type()->id());
+            }
         }
-        virtual rstd::Box<Type> type() const override {
+
+        void append(InstanceBox &&i) {
+            if (items_.size() > 0) {
+                assert_eq_(item_type_->id(), i->type()->id());
+            } else {
+                item_type_ = i->type();
+            }
+        }
+        
+        TypeBox item_type() {
+            return item_type_;
+        }
+        std::vector<InstanceBox>
+
+        Array type_() const {
+            return Array();
+        }
+        virtual TypeBox type() const override {
             return rstd::Box(type_());
         }
         virtual void store(void *dst) const override {
@@ -30,8 +55,6 @@ public:
             *this = type_().load_(dst);
         }
     };
-
-    inline virtual TypeBox clone() const override { return rstd::Box(Primitive<T>()); }
 
     inline virtual size_t id() const override { return typeid(Primitive<T>).hash_code(); }
 

@@ -7,7 +7,7 @@ class Material : public dyn::Type {
 public:
     struct Instance : public dyn::Type::Instance {};
 
-    virtual std::string prefix() = 0;
+    virtual std::string prefix() const = 0;
 };
 
 class SurfaceMaterial : public Material {};

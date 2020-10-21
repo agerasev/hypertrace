@@ -6,6 +6,11 @@
 #include <common/types.hh>
 
 
+template <typename T>
+T upper_multiple(T m, T x) {
+    return ((x + m - 1)/m)*m;
+}
+
 namespace dyn {
 
 class Type {
@@ -41,8 +46,8 @@ public:
     // Loads instance from device. The `src` pointer should be properly aligned.
     virtual rstd::Box<Instance> load(const uchar *src) const = 0;
 
-    virtual std::string name() = 0;
-    virtual std::string source() = 0;
+    virtual std::string name() const = 0;
+    virtual std::string source() const = 0;
 };
 
 template <typename Self, typename Base>
@@ -61,7 +66,7 @@ class ImplEmptyType : public Base {
     inline virtual size_t align() const override { return 0; }
     inline virtual rstd::Box<Type::Instance> load(const uchar *) const override { return rstd::Box(Instance()); }
 
-    inline virtual std::string name() override { return ""; }
+    inline virtual std::string name() const override { return ""; }
 };
 
 typedef rstd::Box<Type> TypeBox;

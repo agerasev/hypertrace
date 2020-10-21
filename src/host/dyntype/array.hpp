@@ -37,8 +37,8 @@ public:
             items_.push_back(std::move(i));
         }
         
-        const Type &item_type() const {
-            return item_type_.get();
+        TypeBox item_type() const {
+            return item_type_->clone();
         }
         std::vector<InstanceBox> &items() {
             return items_;
@@ -84,7 +84,7 @@ public:
     }
 
     inline virtual TypeBox clone() const override {
-        return rstd::Box(Array(item_type_->clone(), item_count_));
+        return TypeBox(Array(item_type_->clone(), item_count_));
     }
     inline virtual size_t id() const override { 
         rstd::DefaultHasher hasher;
@@ -112,12 +112,12 @@ public:
         return InstanceBox(load_(src));
     }
 
-    virtual std::string name() override {
+    virtual std::string name() const override {
+        return format_("Array{}", id());
         // FIXME: Pretty name, but can cause collisions
-        //return format_("Array{}", id());
-        return format_("Array_{}_{}", item_type_->name(), item_count_);
+        //return format_("Array_{}_{}", item_type_->name(), item_count_);
     }
-    virtual std::string source() override {
+    virtual std::string source() const override {
         return item_type_->source() + "\n" + format_(
             "typedef struct {{\n"
             "   {} items[{}];\n"

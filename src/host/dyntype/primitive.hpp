@@ -48,8 +48,8 @@ public:
         return rstd::Box(load_(src));
     }
 
-    virtual std::string name() override { return dev_name<T>; }
-    virtual std::string source() override {
+    virtual std::string name() const override { return dev_name<T>; }
+    virtual std::string source() const override {
         return 
             "#include <common/types.hh>\n"
             "#include <common/algebra/real.hh>\n"

@@ -1,185 +1,163 @@
 #pragma once
 
-#include <traits.hpp>
-#include <container/variant.hpp>
-
-#include "shape.hpp"
-#include "object.hpp"
+#include <rstd/prelude.hpp>
+#include <common/types.hh>
+#include "type.hpp"
 
 
-template <typename Shp>
-constexpr bool _shp_repeated() {
-    return Shp::repeated;
-}
+namespace dyn {
 
-template <typename ...Shps>
-class VariantShape {
-// : public Shape<typename nth_arg<0, Shps...>::Geo>
+class Variant : public Type {
 public:
-    typedef typename nth_arg<0, Shps...>::Geo Geo;
-    static_assert(all<is_same<typename Shps::Geo, Geo>()...>());
-    static const bool repeated = any<_shp_repeated<Shps>()...>();
+    class Instance : public Type::Instance {
+    public:
+        std::vector<TypeBox> types_;
+        rstd::Option<size_t> idx_ = rstd::None();
+        InstanceBox value_;
+
+        Instance() = default;
+        template <typename I>
+        Instance(I &&type_iter) :
+            types_(type_iter.template collect<std::vector>())
+        {}
+        template <typename I>
+        Instance(I &&type_iter, size_t i, InstanceBox &&v) :
+            Instance(std::move(type_iter))
+        {
+            set_value(i, std::move(v));
+        }
+
+        void append_vartype(TypeBox &&i) {
+            types_.push_back(std::move(i));
+        }
+        
+        std::vector<TypeBox> &vartypes() {
+            return types_;
+        }
+        const std::vector<TypeBox> &vartypes() const {
+            return types_;
+        }
+
+        void set_value(size_t i, InstanceBox &&v) {
+            assert_(i < types_.size());
+            assert_(types_[i]->id() == v->type()->id());
+            idx_ = rstd::Some(i);
+            value_ = std::move(v);
+        }
+        size_t index() const {
+            return idx_.get();
+        }
+        InstanceBox &value() {
+            return value_;
+        }
+        const InstanceBox &value() const {
+            return value_;
+        }
+
+        Variant type_() const {
+            return Variant(iter_ref(types_).map([](const TypeBox *f) { return (*f)->clone(); }));
+        }
+        virtual TypeBox type() const override {
+            return TypeBox(type_());
+        }
+        virtual void store(uchar *dst) const override {
+            assert_eq_((size_t)dst % alignof(dev_type<ulong>), 0);
+            ulong i = index();
+            dev_store((dev_type<ulong> *)dst, &i);
+            value_->store(dst + upper_multiple(type_().align(), sizeof(dev_type<ulong>)));
+        }
+        virtual void load(const uchar *dst) override {
+            *this = type_().load_(dst);
+        }
+    };
+
+private:
+    std::vector<TypeBox> types_;
+
+public:
+    Variant() = delete;
+    template <typename I>
+    Variant(I &&type_iter) {
+        types_ = type_iter.template collect<std::vector>();
+    }
+
+    void append_vartype(TypeBox &&i) {
+        types_.push_back(std::move(i));
+    }
     
-private:
-    Variant<Shps...> variant;
-
-public:
-    VariantShape() = default;
-    VariantShape(Variant<Shps...> v) : variant(v) {}
-    template <int P, typename E>
-    static VariantShape init(const E &e) {
-        return VariantShape(Variant<Shps...>::template init<P>(e));
+    std::vector<TypeBox> &vartypes() {
+        return types_;
     }
-    Variant<Shps...> &as_variant() {
-        return variant;
-    }
-    const Variant<Shps...> &as_variant() const {
-        return variant;
+    const std::vector<TypeBox> &vartypes() const {
+        return types_;
     }
 
-private:
-    template <typename E, int P>
-    struct DetectCaller {
-        template <typename Context>
-        static real call(
-            const E &e, 
-            Context &context, typename Geo::Direction &normal, Light<Hy> &light
-        ) {
-            if (!context.repeat || E::repeated) {
-                return e.detect(context, normal, light);
-            } else {
-                return -1_r;
-            }
+    inline virtual TypeBox clone() const override {
+        return TypeBox(Variant(iter_ref(types_).map([](const TypeBox *f) { return (*f)->clone(); })));
+    }
+    inline virtual size_t id() const override { 
+        rstd::DefaultHasher hasher;
+        hasher._hash_raw(typeid(Variant).hash_code());
+        for (const TypeBox &f : types_) {
+            hasher._hash_raw(f->id());
         }
-    };
-public:
-    template <typename Context>
-    real detect(
-        Context &context, typename Geo::Direction &normal, Light<Hy> &light
-    ) const {
-        return variant.as_union().template call<DetectCaller, 0>(
-            variant.id(), context, normal, light
+        return hasher.finish();
+    }
+
+    virtual rstd::Option<size_t> size() const override {
+        return rstd::Some(
+            upper_multiple(align(), sizeof(dev_type<ulong>)) +
+            upper_multiple(align(),
+                iter_ref(types_)
+                .map([](const TypeBox *f) { return (*f)->size().unwrap(); })
+                .max().unwrap()
+            )
         );
+    }
+    virtual size_t align() const override {
+        return std::max(alignof(dev_type<ulong>),
+            iter_ref(types_)
+            .map([](const TypeBox *f) { return (*f)->align(); })
+            .max().unwrap()
+        );
+    }
+
+    Instance load_(const uchar *src) const {
+        Instance dst(iter_ref(types_).map([](const TypeBox *f) { return (*f)->clone(); }));
+        assert_eq_((size_t)src % alignof(dev_type<ulong>), 0);
+        ulong i;
+        dev_load(&i, (const dev_type<ulong> *)src);
+        assert_(i < types_.size());
+        InstanceBox v = types_[i]->load(src + upper_multiple(align(), sizeof(dev_type<ulong>)));
+        dst.set_value(i, std::move(v));
+        return dst;
+    }
+    virtual InstanceBox load(const uchar *src) const override {
+        return InstanceBox(load_(src));
+    }
+
+    virtual std::string name() const override {
+        return format_("Variant{}", id());
+    }
+    template <typename F>
+    std::string source_with_names(F field_name) const {
+        std::stringstream ss;
+        for (const TypeBox &f : types_) {
+            writeln_(ss, f->source());
+        }
+        writeln_(ss, "typedef struct {{");
+        writeln_(ss, "    ulong index;");
+        writeln_(ss, "    union {{");
+        for (size_t i = 0; i < types_.size(); ++i) {
+            writeln_(ss, "        {} {};", types_[i]->name(), field_name(i));
+        }
+        writeln_(ss, "    }} variants;");
+        writeln_(ss, "}} {};", name());
+        return ss.str();
+    }
+    virtual std::string source() const override {
+        return source_with_names([](size_t i){ return format_("variant{}", i); });
     }
 };
 
-
-template <typename Obj>
-using _obj_cache_type = typename Obj::Cache;
-template <typename Obj>
-constexpr bool _obj_repeated() {
-    return Obj::repeated;
-}
-
-template <typename ...Objs>
-class VariantObject {
-// : public Object<typename nth_arg<0, Objs...>::Geo>
-public:
-    typedef typename nth_arg<0, Objs...>::Geo Geo;
-    static_assert(all<is_same<typename Objs::Geo, Geo>()...>());
-
-    typedef Union<_obj_cache_type<Objs>...> Cache;
-
-    static const bool repeated = any<_obj_repeated<Objs>()...>();
-
-    
-private:
-    Variant<Objs...> variant;
-
-public:
-    VariantObject() = default;
-    VariantObject(Variant<Objs...> v) : variant(v) {}
-    template <int P, typename E>
-    static VariantObject init(const E &e) {
-        return VariantObject(Variant<Objs...>::template init<P>(e));
-    }
-    Variant<Objs...> &as_variant() {
-        return variant;
-    }
-    const Variant<Objs...> &as_variant() const {
-        return variant;
-    }
-
-private:
-    template <typename E, int P>
-    struct DetectCaller {
-        template <typename Context>
-        static real call(const E &e, Context &context, Cache &cache, Light<Hy> &light) {
-            if (!context.repeat || E::repeated) {
-                return e.detect(context, cache.template elem<P>(), light);
-            } else {
-                return -1_r;
-            }
-        }
-    };
-    template <typename E, int P>
-    struct InteractCaller {
-        template <typename Context>
-        static real call(
-            const E &e,
-            Context &context, const Cache &cache,
-            Light<Hy> &light, float3 &luminance
-        ) {
-            return e.interact(context, cache.template elem<P>(), light, luminance);
-        }
-    };
-public:
-    template <typename Context>
-    real detect(Context &context, Cache &cache, Light<Hy> &light) const {
-        return variant.as_union().template call<DetectCaller, 0>(
-            variant.id(), context, cache, light
-        );
-    }
-    template <typename Context>
-    bool interact(
-        Context &context, const Cache &cache,
-        Light<Hy> &light, float3 &luminance
-    ) const {
-        return variant.as_union().template call<InteractCaller, 0>(
-            variant.id(), context, cache, light, luminance
-        );
-    }
-};
-
-
-#ifdef HOST
-
-template <typename ...Shps>
-struct ToDevice<VariantShape<Shps...>> {
-public:
-    typedef Variant<device_type<Shps>...> type;
-private:
-    template <typename E, int P>
-    struct PackCaller {
-        static type call(const E &e) {
-            return type::template init<P>(::to_device(e));
-        }
-    };
-public:
-    static type to_device(const VariantShape<Shps...> &shp) {
-        return shp.as_variant().as_union().template call<PackCaller, 0>(
-            shp.as_variant().id()
-        );
-    }
-};
-
-template <typename ...Objs>
-struct ToDevice<VariantObject<Objs...>> {
-public:
-    typedef Variant<device_type<Objs>...> type;
-private:
-    template <typename E, int P>
-    struct PackCaller {
-        static type call(const E &e) {
-            return type::template init<P>(::to_device(e));
-        }
-    };
-public:
-    static type to_device(const VariantObject<Objs...> &obj) {
-        return obj.as_variant().as_union().template call<PackCaller, 0>(
-            obj.as_variant().id()
-        );
-    }
-};
-
-#endif
+} // namespace dyn

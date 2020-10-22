@@ -9,6 +9,7 @@ set(HOST_DYNTYPE_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/dyntype/array.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/dyntype/tuple.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/dyntype/vector.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/dyntype/variant.cpp"
 )
 set(HOST_DYNTYPE_SRC ${HOST_DYNTYPE_SRC} PARENT_SCOPE)
 

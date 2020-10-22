@@ -75,7 +75,7 @@ private:
     std::vector<TypeBox> types_;
 
 public:
-    Variant() = delete;
+    Variant() = default;
     template <typename I>
     Variant(I &&type_iter) {
         types_ = type_iter.template collect<std::vector>();
@@ -122,8 +122,11 @@ public:
         );
     }
 
+    Instance instance_() const {
+        return Instance(iter_ref(types_).map([](const TypeBox *f) { return (*f)->clone(); }));
+    }
     Instance load_(const uchar *src) const {
-        Instance dst(iter_ref(types_).map([](const TypeBox *f) { return (*f)->clone(); }));
+        Instance dst = instance_();
         assert_eq_((size_t)src % alignof(dev_type<ulong>), 0);
         ulong i;
         dev_load(&i, (const dev_type<ulong> *)src);

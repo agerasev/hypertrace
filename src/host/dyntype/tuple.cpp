@@ -49,7 +49,6 @@ rtest_module_(dyntype_tuple) {
             dtup.append(InstanceBox(Primitive<uint>::Instance(u)));
             dtup.append(InstanceBox(Primitive<uchar>::Instance(b)));
             if (i == 0) {
-                println_("float16: {{ size: {}, align: {} }}", sizeof(dev_type<real16>), alignof(dev_type<real16>));
                 dyn_offset = dtup.type_().offsets();
             }
             darr.append(InstanceBox(std::move(dtup)));

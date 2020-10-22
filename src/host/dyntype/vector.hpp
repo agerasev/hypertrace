@@ -55,14 +55,14 @@ public:
         }
         virtual size_t size() const override {
             return 
-                upper_multiple(type_().align(), sizeof(dev_type<ulong>))
+                upper_multiple(type_().align(), sizeof(dev_type<ulong_>))
                 + items_.size()*item_type_->size().unwrap();
         }
         virtual void store(uchar *dst) const override {
-            assert_eq_((size_t)dst % alignof(dev_type<ulong>), 0);
-            ulong n = items_.size();
-            dev_store<ulong>((dev_type<ulong> *)dst, &n);
-            size_t shift = upper_multiple(type_().align(), sizeof(dev_type<ulong>));
+            assert_eq_((size_t)dst % alignof(dev_type<ulong_>), 0);
+            ulong_ n = items_.size();
+            dev_store<ulong_>((dev_type<ulong_> *)dst, &n);
+            size_t shift = upper_multiple(type_().align(), sizeof(dev_type<ulong_>));
             for (size_t i = 0; i < items_.size(); ++i) {
                 items_[i]->store(dst + shift + i*item_type_->size().unwrap());
             }
@@ -100,15 +100,15 @@ public:
         return rstd::None();
     }
     virtual size_t align() const override {
-        return std::max(alignof(dev_type<ulong>), item_type_->align());
+        return std::max(alignof(dev_type<ulong_>), item_type_->align());
     }
 
     Instance load_(const uchar *src) const {
-        assert_eq_((size_t)src % alignof(dev_type<ulong>), 0);
+        assert_eq_((size_t)src % alignof(dev_type<ulong_>), 0);
         Instance dst(item_type_->clone());
-        ulong n;
-        dev_load<ulong>(&n, (const dev_type<ulong> *)src);
-        size_t shift = upper_multiple(align(), sizeof(dev_type<ulong>));
+        ulong_ n;
+        dev_load<ulong_>(&n, (const dev_type<ulong_> *)src);
+        size_t shift = upper_multiple(align(), sizeof(dev_type<ulong_>));
         for (size_t i = 0; i < n; ++i) {
             dst.append(item_type_->load(src + shift + i*item_type_->size().unwrap()));
         }

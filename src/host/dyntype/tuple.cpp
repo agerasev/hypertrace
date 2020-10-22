@@ -30,8 +30,8 @@ rtest_module_(dyntype_tuple) {
         std::vector<uint> datau(n), outu(n);
         std::vector<uchar> datab(n), outb(n);
 
-        std::vector<ulong> ssize(1);
-        std::vector<ulong> dyn_offset, offset(5);
+        std::vector<ulong_> ssize(1);
+        std::vector<ulong_> dyn_offset, offset(5);
 
         Array::Instance darr;
 

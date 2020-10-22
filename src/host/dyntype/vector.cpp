@@ -20,7 +20,7 @@ rtest_module_(dyntype_vector) {
         const size_t n = TEST_ATTEMPTS;
         TestRng<real16> vrng(0xdeadbeef);
         std::vector<real16> data(n), out(n, real16(0.0));
-        std::vector<ulong> vsize(1);
+        std::vector<ulong_> vsize(1);
         Vector::Instance darr;
         const size_t m = n - n/8;
         for (size_t i = 0; i < m; ++i) {
@@ -69,7 +69,7 @@ rtest_module_(dyntype_vector) {
         const size_t n = TEST_ATTEMPTS;
         TestRng<real> rng(0xdeadbeef);
         std::vector<uchar> data(n), out(n, 1);
-        std::vector<ulong> vsize(1);
+        std::vector<ulong_> vsize(1);
         Vector::Instance darr;
         const size_t m = n - n/8;
         for (size_t i = 0; i < m; ++i) {

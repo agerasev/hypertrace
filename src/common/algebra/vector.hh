@@ -9,53 +9,53 @@
 
 // Alias
 
-#define VECTOR_ALIAS(T, N) \
-typedef vec<T, N> T##N;
+#define VECTOR_ALIAS(T, A, N) \
+typedef vec<T, N> A##N;
 
 // Make
 
-#define VECTOR_MAKE(T, N) \
+#define VECTOR_MAKE(T, A, N) \
 template <typename... Args> \
-inline vec<T, N> make_##T##N(Args ...args) { \
+inline vec<T, N> make_##A##N(Args ...args) { \
     return vec<T, N>(args...); \
 }
 
 // Cast
 
-#define VECTOR_CAST(T, N) \
+#define VECTOR_CAST(T, A, N) \
 template <typename S> \
-inline vec<T, N> convert_##T##N(vec<S, N> v) { \
+inline vec<T, N> convert_##A##N(vec<S, N> v) { \
     return v.template cast<T>(); \
 }
 
 // All
 
-#define VECTOR_ALL(T, N) \
-VECTOR_ALIAS(T, N) \
-VECTOR_MAKE(T, N) \
-VECTOR_CAST(T, N)
+#define VECTOR_ALL(T, A, N) \
+VECTOR_ALIAS(T, A, N) \
+VECTOR_MAKE(T, A, N) \
+VECTOR_CAST(T, A, N)
 
-#define VECTOR_ALL_N(T) \
-VECTOR_ALL(T, 2) \
-VECTOR_ALL(T, 3) \
-VECTOR_ALL(T, 4) \
-VECTOR_ALL(T, 8) \
-VECTOR_ALL(T, 16)
+#define VECTOR_ALL_N(T, A) \
+VECTOR_ALL(T, A, 2) \
+VECTOR_ALL(T, A, 3) \
+VECTOR_ALL(T, A, 4) \
+VECTOR_ALL(T, A, 8) \
+VECTOR_ALL(T, A, 16)
 
-VECTOR_ALL_N(uchar)
-VECTOR_ALL_N(ushort)
-VECTOR_ALL_N(uint)
-VECTOR_ALL_N(ulong)
-VECTOR_ALL_N(char)
-VECTOR_ALL_N(short)
-VECTOR_ALL_N(int)
-VECTOR_ALL_N(long)
+VECTOR_ALL_N(uchar,  uchar)
+VECTOR_ALL_N(ushort, ushort)
+VECTOR_ALL_N(uint,   uint)
+VECTOR_ALL_N(ulong_, ulong)
+VECTOR_ALL_N(char,   char)
+VECTOR_ALL_N(short,  short)
+VECTOR_ALL_N(int,    int)
+VECTOR_ALL_N(long_,  long)
 
-VECTOR_ALL_N(float)
+VECTOR_ALL_N(float,  float)
 #ifdef DEV_F64
-VECTOR_ALL_N(double)
+VECTOR_ALL_N(double, double)
 #endif // DEV_F64
-VECTOR_ALL_N(real)
+VECTOR_ALL_N(real,   real)
 
 #define MAKE(x) x
 
@@ -65,10 +65,10 @@ VECTOR_ALL_N(real)
 
 #define VECTOR_INTEROP(T, S, A, N) \
 template <> \
-struct Interop<T##N> { \
-    typedef T##N Host; \
+struct Interop<vec<T, N>> { \
+    typedef vec<T, N> Host; \
     typedef S##N Dev; \
-    inline static const char *const name = A #N; \
+    inline static const char *const name = #A #N; \
     static void load(Host *dst, const Dev *src) { \
         for (size_t i = 0; i < N; ++i) { \
             (*dst)[i] = (T)src->s[i]; \
@@ -88,21 +88,21 @@ VECTOR_INTEROP(T, S, A, 4) \
 VECTOR_INTEROP(T, S, A, 8) \
 VECTOR_INTEROP(T, S, A, 16)
 
-VECTOR_INTEROP_N(uchar,  cl_uchar,  "uchar" )
-VECTOR_INTEROP_N(ushort, cl_ushort, "ushort")
-VECTOR_INTEROP_N(uint,   cl_uint,   "uint"  )
-VECTOR_INTEROP_N(ulong,  cl_ulong,  "ulong" )
-VECTOR_INTEROP_N(char,   cl_char,   "char"  )
-VECTOR_INTEROP_N(short,  cl_short,  "short" )
-VECTOR_INTEROP_N(int,    cl_int,    "int"   )
-VECTOR_INTEROP_N(long,   cl_long,   "long"  )
+VECTOR_INTEROP_N(uchar,  cl_uchar,  uchar )
+VECTOR_INTEROP_N(ushort, cl_ushort, ushort)
+VECTOR_INTEROP_N(uint,   cl_uint,   uint  )
+VECTOR_INTEROP_N(ulong_, cl_ulong,  ulong )
+VECTOR_INTEROP_N(char,   cl_char,   char  )
+VECTOR_INTEROP_N(short,  cl_short,  short )
+VECTOR_INTEROP_N(int,    cl_int,    int   )
+VECTOR_INTEROP_N(long_,  cl_long,   long  )
 
-VECTOR_INTEROP_N(float,  cl_float,  "float" )
+VECTOR_INTEROP_N(float,  cl_float,  float )
 #ifdef DEV_F64
-VECTOR_INTEROP_N(double, cl_double, "double")
-VECTOR_INTEROP_N(real,   cl_double, "double")
+VECTOR_INTEROP_N(double, cl_double, double)
+VECTOR_INTEROP_N(real,   cl_double, double)
 #else // DEV_F64
-VECTOR_INTEROP_N(real,   cl_float,  "float" )
+VECTOR_INTEROP_N(real,   cl_float,  float )
 #endif // DEV_F64
 
 #endif // INTEROP

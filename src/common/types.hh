@@ -13,17 +13,19 @@
 typedef unsigned char  uchar;
 typedef unsigned short ushort;
 typedef unsigned int   uint;
-typedef unsigned long int ulong;
+
+typedef int64_t  long_;
+typedef uint64_t ulong_;
 
 static_assert(sizeof(char) == 1);
 static_assert(sizeof(short) == 2);
 static_assert(sizeof(int) == 4);
-static_assert(sizeof(long) == 8);
+static_assert(sizeof(long_) == 8);
 
 static_assert(sizeof(uchar) == 1);
 static_assert(sizeof(ushort) == 2);
 static_assert(sizeof(uint) == 4);
-static_assert(sizeof(ulong) == 8);
+static_assert(sizeof(ulong_) == 8);
 
 #ifdef INTEROP
 
@@ -59,19 +61,19 @@ struct Interop<H> { \
 
 #include <CL/cl.h>
 
-PRIMITIVE_INTEROP(uchar,  cl_uchar,  "uchar" );
-PRIMITIVE_INTEROP(char,   cl_char,   "char"  );
-PRIMITIVE_INTEROP(ushort, cl_ushort, "ushort");
-PRIMITIVE_INTEROP(ulong,  cl_ulong,  "ulong" );
-PRIMITIVE_INTEROP(short,  cl_short,  "short" );
-PRIMITIVE_INTEROP(uint,   cl_uint,   "uint"  );
-PRIMITIVE_INTEROP(int,    cl_int,    "int"   );
-PRIMITIVE_INTEROP(long,   cl_long,   "long"  );
-PRIMITIVE_INTEROP(float,  cl_float,  "float" );
+PRIMITIVE_INTEROP(uint8_t,  cl_uchar,  "uchar" );
+PRIMITIVE_INTEROP(int8_t,   cl_char,   "char"  );
+PRIMITIVE_INTEROP(uint16_t, cl_ushort, "ushort");
+PRIMITIVE_INTEROP(int16_t,  cl_short,  "short" );
+PRIMITIVE_INTEROP(uint32_t, cl_uint,   "uint"  );
+PRIMITIVE_INTEROP(int32_t,  cl_int,    "int"   );
+PRIMITIVE_INTEROP(uint64_t, cl_ulong,  "ulong" );
+PRIMITIVE_INTEROP(int64_t,  cl_long,   "long"  );
+PRIMITIVE_INTEROP(float,    cl_float,  "float" );
 #ifdef DEV_F64
-PRIMITIVE_INTEROP(double, cl_double, "double");
+PRIMITIVE_INTEROP(double,   cl_double, "double");
 #else // DEV_F64
-PRIMITIVE_INTEROP(double, cl_float,  "float" );
+PRIMITIVE_INTEROP(double,   cl_float,  "float" );
 #endif // DEV_F64
 
 
@@ -83,6 +85,9 @@ T upper_multiple(T m, T x) {
 }
 
 #else // !HOST
+
+typedef long  long_;
+typedef ulong ulong_;
 
 #define offsetof(st, m) \
     ((ulong)&(((st *)0)->m))

@@ -39,7 +39,7 @@ rtest_module_(dyntype_tuple) {
             real r = rng.normal();
             real3 r3 = rng3.normal();
             real16 r16 = rng16.normal();
-            uint u = uint((1l<<32)*rng.uniform());
+            uint u = uint(((ulong_)1<<32)*rng.uniform());
             char b = uchar(256*rng.uniform());
 
             Tuple::Instance dtup;

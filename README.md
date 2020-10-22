@@ -32,12 +32,10 @@ To install packages with MSYS2:
 
 ```bash
 pacman -S \
-    gcc \
-    make \
-    cmake \
-    git \
-    mingw64/mingw-w64-x86_64-opencl-headers \
-    mingw64/mingw-w64-x86_64-opencl-icd-git \
+    mingw-w64-x86_64-make \
+    mingw-w64-x86_64-cmake \
+    mingw-w64-x86_64-opencl-headers \
+    mingw-w64-x86_64-opencl-icd-git \
     mingw-w64-x86_64-SDL2 \
     mingw-w64-x86_64-SDL2_image
 ```

@@ -57,8 +57,8 @@ template <typename Self, typename Base>
 class ImplEmptyType : public Base {
     class Instance final : public Base::Instance {
     public:
-        virtual typename Base::Instance *_type() const override { return new Self(); }
-        rstd::Box<typename Base::Instance> type() const { return rstd::Box<typename Base::Instance>::_from_raw(_type()); }
+        virtual Base *_type() const override { return new Self(); }
+        rstd::Box<Base> type() const { return rstd::Box<Base>::_from_raw(_type()); }
 
         virtual void store(uchar *) const override {}
         virtual void load(const uchar *) override {}

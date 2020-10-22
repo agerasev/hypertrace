@@ -32,18 +32,18 @@ rtest_module_(dyntype_variant) {
         std::vector<uchar> datab(n), outb(n);
         std::vector<ulong_> ssize(1);
 
-        Variant dty;
+        Variant<> dty;
         dty.append_vartype(TypeBox(Primitive<real>()));
         dty.append_vartype(TypeBox(Primitive<real3>()));
         dty.append_vartype(TypeBox(Primitive<real16>()));
         dty.append_vartype(TypeBox(Primitive<uint>()));
         dty.append_vartype(TypeBox(Primitive<uchar>()));
         
-        Array::Instance darr;
+        Array<Variant<>>::Instance darr;
 
         for (size_t i = 0; i < n; ++i) {
             size_t idx = int(5*rng.uniform());
-            Variant::Instance dvar = dty.instance_();
+            Variant<>::Instance dvar = dty.instance_();
 
             InstanceBox dprm;
             if (idx == 0) {
@@ -73,7 +73,7 @@ rtest_module_(dyntype_variant) {
             dvar.set_value(idx, std::move(dprm));
             idxs[i] = idx;
 
-            darr.append(InstanceBox(std::move(dvar)));
+            darr.append(rstd::Box(std::move(dvar)));
         }
 
         TypeBox darrty = darr.type();
@@ -121,7 +121,7 @@ rtest_module_(dyntype_variant) {
         assert_eq_(dty.size().unwrap(), ssize[0]);
 
         for (size_t i = 0; i < n; ++i) {
-            rstd::Box<Variant::Instance> dvar = darr.items()[i].template downcast<Variant::Instance>().unwrap();
+            rstd::Box<Variant<>::Instance> dvar = std::move(darr.items()[i]);
             size_t idx = idxs[i];
             assert_eq_(dvar->index(), idx);
 
@@ -162,18 +162,18 @@ rtest_module_(dyntype_variant) {
         std::vector<uint> datau(n), inu;
         std::vector<uchar> datab(n), inb;
 
-        Variant dty;
+        Variant<> dty;
         dty.append_vartype(TypeBox(Primitive<real>()));
         dty.append_vartype(TypeBox(Primitive<real3>()));
         dty.append_vartype(TypeBox(Primitive<real16>()));
         dty.append_vartype(TypeBox(Primitive<uint>()));
         dty.append_vartype(TypeBox(Primitive<uchar>()));
         
-        Array::Instance darr;
+        Array<Variant<>>::Instance darr;
 
         for (size_t i = 0; i < n; ++i) {
             size_t idx = int(5*rng.uniform());
-            Variant::Instance dvar = dty.instance_();
+            Variant<>::Instance dvar = dty.instance_();
             dvar.set_value(0, InstanceBox(Primitive<real>::Instance(0.0)));
 
             InstanceBox dprm;
@@ -197,7 +197,7 @@ rtest_module_(dyntype_variant) {
             }
             
             idxs[i] = idx;
-            darr.append(InstanceBox(std::move(dvar)));
+            darr.append(rstd::Box(std::move(dvar)));
         }
         inidxs = idxs;
         inr = datar;
@@ -245,7 +245,7 @@ rtest_module_(dyntype_variant) {
         .run(n, (Type::Instance*)&darr, inidxs, inr, inr3, inr16, inu, inb).expect("Kernel run error");
 
         for (size_t i = 0; i < n; ++i) {
-            rstd::Box<Variant::Instance> dvar = darr.items()[i].template downcast<Variant::Instance>().unwrap();
+            rstd::Box<Variant<>::Instance> dvar = std::move(darr.items()[i]);
             size_t idx = idxs[i];
             assert_eq_(idx, dvar->index());
 

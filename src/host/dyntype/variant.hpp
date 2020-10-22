@@ -7,13 +7,22 @@
 
 namespace dyn {
 
+template <typename T=Type>
 class Variant : public Type {
+public:
+    typedef T ItemType;
+    typedef typename T::Instance ItemInstance;
+
+private:
+    typedef rstd::Box<ItemType> ItemTypeBox;
+    typedef rstd::Box<ItemInstance> ItemInstanceBox;
+
 public:
     class Instance : public Type::Instance {
     public:
-        std::vector<TypeBox> types_;
+        std::vector<ItemTypeBox> types_;
         rstd::Option<size_t> idx_ = rstd::None();
-        InstanceBox value_;
+        ItemInstanceBox value_;
 
         Instance() = default;
         template <typename I>
@@ -27,18 +36,18 @@ public:
             set_value(i, std::move(v));
         }
 
-        void append_vartype(TypeBox &&i) {
+        void append_vartype(ItemTypeBox &&i) {
             types_.push_back(std::move(i));
         }
         
-        std::vector<TypeBox> &vartypes() {
+        std::vector<ItemTypeBox> &vartypes() {
             return types_;
         }
-        const std::vector<TypeBox> &vartypes() const {
+        const std::vector<ItemTypeBox> &vartypes() const {
             return types_;
         }
 
-        void set_value(size_t i, InstanceBox &&v) {
+        void set_value(size_t i, ItemInstanceBox &&v) {
             assert_(i < types_.size());
             assert_(types_[i]->id() == v->type()->id());
             idx_ = rstd::Some(i);
@@ -47,19 +56,23 @@ public:
         size_t index() const {
             return idx_.get();
         }
-        InstanceBox &value() {
+        ItemInstanceBox &value() {
             return value_;
         }
-        const InstanceBox &value() const {
+        const ItemInstanceBox &value() const {
             return value_;
         }
 
         Variant type_() const {
             return Variant(iter_ref(types_).map([](const TypeBox *f) { return (*f)->clone(); }));
         }
-        virtual TypeBox type() const override {
-            return TypeBox(type_());
+        virtual Variant *_type() const override {
+            return new Variant(type_());
         }
+        rstd::Box<Variant> type() const {
+            return rstd::Box<Variant>::_from_raw(_type());
+        }
+
         virtual void store(uchar *dst) const override {
             assert_eq_((size_t)dst % alignof(dev_type<ulong>), 0);
             ulong i = index();
@@ -72,7 +85,7 @@ public:
     };
 
 private:
-    std::vector<TypeBox> types_;
+    std::vector<ItemTypeBox> types_;
 
 public:
     Variant() = default;
@@ -81,21 +94,25 @@ public:
         types_ = type_iter.template collect<std::vector>();
     }
 
-    void append_vartype(TypeBox &&i) {
+    void append_vartype(ItemTypeBox &&i) {
         types_.push_back(std::move(i));
     }
     
-    std::vector<TypeBox> &vartypes() {
+    std::vector<ItemTypeBox> &vartypes() {
         return types_;
     }
-    const std::vector<TypeBox> &vartypes() const {
+    const std::vector<ItemTypeBox> &vartypes() const {
         return types_;
     }
 
-    inline virtual TypeBox clone() const override {
-        return TypeBox(Variant(iter_ref(types_).map([](const TypeBox *f) { return (*f)->clone(); })));
+    virtual Variant *_clone() const override {
+        return new Variant(iter_ref(types_).map([](const TypeBox *f) { return (*f)->clone(); }));
     }
-    inline virtual size_t id() const override { 
+    rstd::Box<Variant> clone() const {
+        return rstd::Box<Variant>::_from_raw(_clone());
+    }
+
+    virtual size_t id() const override { 
         rstd::DefaultHasher hasher;
         hasher._hash_raw(typeid(Variant).hash_code());
         for (const TypeBox &f : types_) {
@@ -135,8 +152,11 @@ public:
         dst.set_value(i, std::move(v));
         return dst;
     }
-    virtual InstanceBox load(const uchar *src) const override {
-        return InstanceBox(load_(src));
+    virtual Instance *_load(const uchar *src) const override {
+        return new Instance(load_(src));
+    }
+    rstd::Box<Instance> load(const uchar *src) const {
+        return rstd::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {

@@ -8,6 +8,11 @@
 
 namespace dyn {
 
+//struct Source {
+//    std::string name;
+//    std::map<std::string, std::string> includes;
+//};
+
 class Type {
 public:
     class Instance {
@@ -15,7 +20,8 @@ public:
         Instance() = default;
         virtual ~Instance() = default;
 
-        virtual rstd::Box<Type> type() const = 0;
+        virtual Type *_type() const = 0;
+        rstd::Box<Type> type() const { return rstd::Box<Type>::_from_raw(_type()); }
 
         // Dynamic size of instance. If instance is statically sized, then returns Type::size().
         virtual size_t size() const { return type()->size().unwrap(); };
@@ -29,7 +35,8 @@ public:
     Type() = default;
     virtual ~Type() = default;
 
-    virtual rstd::Box<Type> clone() const = 0;
+    virtual Type *_clone() const = 0;
+    rstd::Box<Type> clone() const { return rstd::Box<Type>::_from_raw(_clone()); }
 
     virtual size_t id() const = 0;
 
@@ -39,7 +46,8 @@ public:
     virtual size_t align() const = 0;
 
     // Loads instance from device. The `src` pointer should be properly aligned.
-    virtual rstd::Box<Instance> load(const uchar *src) const = 0;
+    virtual Instance *_load(const uchar *src) const = 0;
+    rstd::Box<Instance> load(const uchar *src) const { return rstd::Box<Instance>::_from_raw(_load(src)); }
 
     virtual std::string name() const = 0;
     virtual std::string source() const = 0;
@@ -49,19 +57,25 @@ template <typename Self, typename Base>
 class ImplEmptyType : public Base {
     class Instance final : public Base::Instance {
     public:
-        inline virtual rstd::Box<Type> type() const override { return rstd::Box(Self()); }
-        inline virtual void store(uchar *) const override {}
-        inline virtual void load(const uchar *) override {}
+        virtual typename Base::Instance *_type() const override { return new Self(); }
+        rstd::Box<typename Base::Instance> type() const { return rstd::Box<typename Base::Instance>::_from_raw(_type()); }
+
+        virtual void store(uchar *) const override {}
+        virtual void load(const uchar *) override {}
     };
 
-    inline virtual rstd::Box<Type> clone() const override { return rstd::Box(rstd::clone(*static_cast<const Self *>(this))); }
-    inline virtual size_t id() const override { return typeid(Self).hash_code(); }
+    virtual Base *_clone() const override { return new Self(*static_cast<const Self *>(this)); }
+    rstd::Box<Base> clone() const { return rstd::Box<Base>::_from_raw(_clone()); }
 
-    inline virtual rstd::Option<size_t> size() const override { return rstd::Some<size_t>(0); }
-    inline virtual size_t align() const override { return 0; }
-    inline virtual rstd::Box<Type::Instance> load(const uchar *) const override { return rstd::Box(Instance()); }
+    virtual size_t id() const override { return typeid(Self).hash_code(); }
 
-    inline virtual std::string name() const override { return ""; }
+    virtual rstd::Option<size_t> size() const override { return rstd::Some<size_t>(0); }
+    virtual size_t align() const override { return 0; }
+
+    virtual Instance *_load(const uchar *) const override { return new Instance(); }
+    rstd::Box<Instance> load(const uchar *) const { return rstd::Box(_load()); }
+
+    virtual std::string name() const override { return ""; }
 };
 
 typedef rstd::Box<Type> TypeBox;

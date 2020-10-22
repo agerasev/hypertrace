@@ -20,7 +20,7 @@ rtest_module_(dyntype_array) {
         const size_t n = TEST_ATTEMPTS;
         TestRng<real16> vrng(0xdeadbeef);
         std::vector<real16> data(n), out(n);
-        Array::Instance darr;
+        Array<>::Instance darr;
         for (size_t i = 0; i < n; ++i) {
             real16 v = vrng.normal();
             darr.append(InstanceBox(Primitive<real16>::Instance(v)));

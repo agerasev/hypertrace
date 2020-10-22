@@ -19,8 +19,8 @@ public:
         Primitive type_() const {
             return Primitive();
         }
-        virtual rstd::Box<Type> type() const override {
-            return rstd::Box(type_());
+        virtual Type *_type() const override {
+            return new Primitive(type_());
         }
         virtual void store(uchar *dst) const override {
             assert_eq_((size_t)dst % alignof(dev_type<T>), 0);
@@ -31,9 +31,9 @@ public:
         }
     };
 
-    inline virtual TypeBox clone() const override { return rstd::Box(Primitive<T>()); }
+    virtual Type *_clone() const override { return new Primitive<T>(); }
 
-    inline virtual size_t id() const override { return typeid(Primitive<T>).hash_code(); }
+    virtual size_t id() const override { return typeid(Primitive<T>).hash_code(); }
 
     virtual rstd::Option<size_t> size() const override { return rstd::Some(sizeof(dev_type<T>)); }
     virtual size_t align() const override { return alignof(dev_type<T>); }
@@ -44,8 +44,8 @@ public:
         dev_load(&v, (const dev_type<T> *)src);
         return Instance(v);
     }
-    virtual rstd::Box<Type::Instance> load(const uchar *src) const override {
-        return rstd::Box(load_(src));
+    virtual Type::Instance *_load(const uchar *src) const override {
+        return new Instance(load_(src));
     }
 
     virtual std::string name() const override { return dev_name<T>; }

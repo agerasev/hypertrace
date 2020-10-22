@@ -33,7 +33,7 @@ rtest_module_(dyntype_tuple) {
         std::vector<ulong_> ssize(1);
         std::vector<ulong_> dyn_offset, offset(5);
 
-        Array::Instance darr;
+        Array<Tuple<>>::Instance darr;
 
         for (size_t i = 0; i < n; ++i) {
             real r = rng.normal();
@@ -42,7 +42,7 @@ rtest_module_(dyntype_tuple) {
             uint u = uint(((ulong_)1<<32)*rng.uniform());
             char b = uchar(256*rng.uniform());
 
-            Tuple::Instance dtup;
+            Tuple<>::Instance dtup;
             dtup.append(InstanceBox(Primitive<real>::Instance(r)));
             dtup.append(InstanceBox(Primitive<real3>::Instance(r3)));
             dtup.append(InstanceBox(Primitive<real16>::Instance(r16)));
@@ -51,7 +51,7 @@ rtest_module_(dyntype_tuple) {
             if (i == 0) {
                 dyn_offset = dtup.type_().offsets();
             }
-            darr.append(InstanceBox(std::move(dtup)));
+            darr.append(rstd::Box(std::move(dtup)));
 
             datar[i] = r;
             datar3[i] = r3;
@@ -113,7 +113,7 @@ rtest_module_(dyntype_tuple) {
             assert_eq_(datau[i], outu[i]);
             assert_eq_(int(datab[i]), int(outb[i]));
 
-            rstd::Box<Tuple::Instance> dtup = darr.items()[i].template downcast<Tuple::Instance>().unwrap();
+            rstd::Box<Tuple<>::Instance> dtup = std::move(darr.items()[i]);
             assert_eq_(dev_approx(datar[i]), dtup->fields()[0].template downcast<Primitive<real>::Instance>().unwrap()->value);
             assert_eq_(dev_approx(datar3[i]), dtup->fields()[1].template downcast<Primitive<real3>::Instance>().unwrap()->value);
             assert_eq_(dev_approx(datar16[i]), dtup->fields()[2].template downcast<Primitive<real16>::Instance>().unwrap()->value);

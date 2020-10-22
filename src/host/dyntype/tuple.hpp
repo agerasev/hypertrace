@@ -7,11 +7,20 @@
 
 namespace dyn {
 
+template <typename T=Type>
 class Tuple : public Type {
+public:
+    typedef T ItemType;
+    typedef typename T::Instance ItemInstance;
+
+private:
+    typedef rstd::Box<ItemType> ItemTypeBox;
+    typedef rstd::Box<ItemInstance> ItemInstanceBox;
+
 public:
     class Instance : public Type::Instance {
     public:
-        std::vector<InstanceBox> fields_;
+        std::vector<ItemInstanceBox> fields_;
 
         Instance() = default;
         template <typename I>
@@ -19,23 +28,27 @@ public:
             fields_ = field_iter.template collect<std::vector>();
         }
 
-        void append(InstanceBox &&i) {
+        void append(ItemInstanceBox &&i) {
             fields_.push_back(std::move(i));
         }
         
-        std::vector<InstanceBox> &fields() {
+        std::vector<ItemInstanceBox> &fields() {
             return fields_;
         }
-        const std::vector<InstanceBox> &fields() const {
+        const std::vector<ItemInstanceBox> &fields() const {
             return fields_;
         }
 
         Tuple type_() const {
-            return Tuple(iter_ref(fields_).map([](const InstanceBox *f) { return (*f)->type(); }));
+            return Tuple(iter_ref(fields_).map([](const ItemInstanceBox *f) { return (*f)->type(); }));
         }
-        virtual TypeBox type() const override {
-            return TypeBox(type_());
+        virtual Tuple *_type() const override {
+            return new Tuple(type_());
         }
+        rstd::Box<Tuple> type() const {
+            return rstd::Box<Tuple>::_from_raw(_type());
+        }
+
         virtual void store(uchar *dst) const override {
             std::vector<size_t> offt = type_().offsets();
             for (size_t i = 0; i < fields_.size(); ++i) {
@@ -48,7 +61,7 @@ public:
     };
 
 private:
-    std::vector<TypeBox> fields_;
+    std::vector<ItemTypeBox> fields_;
 
 public:
     Tuple() = delete;
@@ -57,21 +70,25 @@ public:
         fields_ = field_iter.template collect<std::vector>();
     }
 
-    void append(TypeBox &&i) {
+    void append(ItemTypeBox &&i) {
         fields_.push_back(std::move(i));
     }
     
-    std::vector<TypeBox> &fields() {
+    std::vector<ItemTypeBox> &fields() {
         return fields_;
     }
-    const std::vector<TypeBox> &fields() const {
+    const std::vector<ItemTypeBox> &fields() const {
         return fields_;
     }
 
-    inline virtual TypeBox clone() const override {
-        return TypeBox(Tuple(iter_ref(fields_).map([](const TypeBox *f) { return (*f)->clone(); })));
+    virtual Tuple *_clone() const override {
+        return new Tuple(iter_ref(fields_).map([](const TypeBox *f) { return (*f)->clone(); }));
     }
-    inline virtual size_t id() const override { 
+    rstd::Box<Tuple> clone() const {
+        return rstd::Box<Tuple>::_from_raw(_clone());
+    }
+
+    virtual size_t id() const override { 
         rstd::DefaultHasher hasher;
         hasher._hash_raw(typeid(Tuple).hash_code());
         for (const TypeBox &f : fields_) {
@@ -120,8 +137,11 @@ public:
         }
         return dst;
     }
-    virtual InstanceBox load(const uchar *src) const override {
-        return InstanceBox(load_(src));
+    virtual Instance *_load(const uchar *src) const override {
+        return new Instance(load_(src));
+    }
+    rstd::Box<Instance> load(const uchar *src) const {
+        return rstd::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {

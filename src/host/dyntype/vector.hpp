@@ -6,15 +6,24 @@
 
 namespace dyn {
 
+template <typename T=Type>
 class Vector : public Type {
+public:
+    typedef T ItemType;
+    typedef typename T::Instance ItemInstance;
+
+private:
+    typedef rstd::Box<ItemType> ItemTypeBox;
+    typedef rstd::Box<ItemInstance> ItemInstanceBox;
+
 public:
     class Instance : public Type::Instance {
     public:
-        TypeBox item_type_; 
-        std::vector<InstanceBox> items_;
+        ItemTypeBox item_type_; 
+        std::vector<ItemInstanceBox> items_;
 
         Instance() = default;
-        Instance(TypeBox &&type) :
+        Instance(ItemTypeBox &&type) :
             item_type_(std::move(type))
         {}
         template <typename I>
@@ -28,7 +37,7 @@ public:
             }
         }
 
-        void append(InstanceBox &&i) {
+        void append(ItemInstanceBox &&i) {
             if (items_.size() > 0) {
                 assert_eq_(item_type_->id(), i->type()->id());
             } else {
@@ -37,22 +46,26 @@ public:
             items_.push_back(std::move(i));
         }
         
-        TypeBox item_type() const {
+        ItemTypeBox item_type() const {
             return item_type_->clone();
         }
-        std::vector<InstanceBox> &items() {
+        std::vector<ItemInstanceBox> &items() {
             return items_;
         }
-        const std::vector<InstanceBox> &items() const {
+        const std::vector<ItemInstanceBox> &items() const {
             return items_;
         }
 
         Vector type_() const {
             return Vector(item_type_->clone());
         }
-        virtual TypeBox type() const override {
-            return TypeBox(type_());
+        virtual Vector *_type() const override {
+            return new Vector(type_());
         }
+        rstd::Box<Vector> type() const {
+            return rstd::Box<Vector>::_from_raw(_type());
+        }
+        
         virtual size_t size() const override {
             return 
                 upper_multiple(type_().align(), sizeof(dev_type<ulong_>))
@@ -73,23 +86,27 @@ public:
     };
 
 private:
-    TypeBox item_type_;
+    ItemTypeBox item_type_;
 
 public:
     Vector() = delete;
-    Vector(TypeBox &&type) :
+    Vector(ItemTypeBox &&type) :
         item_type_(std::move(type))
     {
         assert_(bool(item_type_));
     }
-    TypeBox item_type() const {
+    ItemTypeBox item_type() const {
         return item_type_->clone();
     }
 
-    inline virtual TypeBox clone() const override {
-        return TypeBox(Vector(item_type_->clone()));
+    virtual Vector *_clone() const override {
+        return new Vector(item_type_->clone());
     }
-    inline virtual size_t id() const override { 
+    rstd::Box<Vector> clone() const {
+        return rstd::Box<Vector>::_from_raw(_clone());
+    }
+
+    virtual size_t id() const override { 
         rstd::DefaultHasher hasher;
         hasher._hash_raw(typeid(Vector).hash_code());
         hasher._hash_raw(item_type_->id());
@@ -114,8 +131,11 @@ public:
         }
         return dst;
     }
-    virtual InstanceBox load(const uchar *src) const override {
-        return InstanceBox(load_(src));
+    virtual Instance *_load(const uchar *src) const override {
+        return new Instance(load_(src));
+    }
+    rstd::Box<Instance> load(const uchar *src) const {
+        return rstd::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {

@@ -6,6 +6,7 @@
 #ifdef HOST
 
 #include <cmath>
+#include <type_traits>
 
 template <typename T>
 T clamp(T a, T b, T c) {
@@ -142,6 +143,17 @@ template <typename T>
 T abs(T a) {
     return std::abs(a);
 }
+
+
+template <typename T, typename U>
+std::common_type_t<T, U> upper_multiple(T m, U x) {
+    return ((x + m - 1)/m)*m;
+}
+
+#else // !HOST
+
+#define upper_multiple(m, x) \
+    (((x + m - 1)/m)*m)
 
 #endif // HOST
 

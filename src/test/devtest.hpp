@@ -5,7 +5,7 @@
 #include <common/types.hh>
 #include <host/dyntype/type.hpp>
 #include <host/opencl/opencl.hpp>
-#include <host/storage.hpp>
+#include <host/aligned.hpp>
 
 
 namespace devtest {
@@ -146,7 +146,7 @@ private:
         BufferArg(const rstd::Rc<cl::Queue> &q, std::vector<T> &hb) :
             queue(q), hostbuf(hb)
         {
-            aligned_vector<dev_type<T>> tmpbuf(hostbuf.size());
+            AlignedMem<dev_type<T>> tmpbuf(hostbuf.size());
             for (size_t i = 0; i < hostbuf.size(); ++i) {
                 dev_store(&tmpbuf[i], &hostbuf[i]);
             }
@@ -157,7 +157,7 @@ private:
             return devbuf;
         }
         virtual void load() override {
-            aligned_vector<dev_type<T>> tmpbuf(hostbuf.size());
+            AlignedMem<dev_type<T>> tmpbuf(hostbuf.size());
             devbuf.load(*queue, tmpbuf.data()).expect("Buffer load error");
             for (size_t i = 0; i < hostbuf.size(); ++i) {
                 dev_load(&hostbuf[i], &tmpbuf[i]);
@@ -174,18 +174,18 @@ private:
         InstanceArg(const rstd::Rc<cl::Queue> &q, dyn::Type::Instance *hi) :
             queue(q), inst(hi)
         {
-            AlignedMem tmpbuf(inst->align(), inst->size());
-            inst->store((uchar *)*tmpbuf);
+            AlignedMem<> tmpbuf(inst->align(), inst->size());
+            inst->store((uchar *)tmpbuf.data());
             devbuf = cl::Buffer::create(*queue, inst->size()).expect("Buffer create error");
-            devbuf.store(*queue, *tmpbuf).expect("Buffer store error");
+            devbuf.store(*queue, tmpbuf.data()).expect("Buffer store error");
         }
         const cl::Buffer &arg() const {
             return devbuf;
         }
         virtual void load() override {
-            AlignedMem tmpbuf(inst->align(), inst->size());
-            devbuf.load(*queue, *tmpbuf).expect("Buffer load error");
-            inst->load((const uchar *)*tmpbuf);
+            AlignedMem<> tmpbuf(inst->align(), inst->size());
+            devbuf.load(*queue, tmpbuf.data()).expect("Buffer load error");
+            inst->load((const uchar *)tmpbuf.data());
         }
     };
 

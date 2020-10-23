@@ -55,8 +55,8 @@ public:
                 fields_[i]->store(dst + offt[i]);
             }
         }
-        virtual void load(const uchar *dst) override {
-            *this = type_().load_(dst);
+        virtual void load(const uchar *src) override {
+            *this = type_().load_(src);
         }
     };
 

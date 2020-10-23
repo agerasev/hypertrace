@@ -45,17 +45,26 @@ public:
         rstd::Box<StaticTuple> type() const {
             return rstd::Box<StaticTuple>::_from_raw(_type());
         }
-        /*
-        virtual void store(uchar *dst) const override {
-            std::vector<size_t> offt = type_().offsets();
-            for (size_t i = 0; i < fields_.size(); ++i) {
-                fields_[i]->store(dst + offt[i]);
+
+
+    private:
+        struct Storer {
+            uchar *dst;
+            std::vector<size_t> ofv;
+            template <size_t P>
+            void operator()(const rstd::Box<rstd::nth_type<P, typename Types::Instance...>> &t) {
+                t->store(dst + ofv[P]);
             }
+        };
+
+    public:
+        virtual void store(uchar *dst) const override {
+            std::vector<size_t> ofv = type_().offsets();
+            fields_.visit_ref(Storer{dst, ofv});
         }
-        virtual void load(const uchar *dst) override {
-            *this = type_().load_(dst);
+        virtual void load(const uchar *src) override {
+            *this = type_().load_(src);
         }
-        */
     };
 
 private:
@@ -139,15 +148,15 @@ public:
         fields_.visit_ref(OffsetCounter{&ofv});
         return ofv;
     }
-    size_t align() const {
+    virtual size_t align() const override {
         size_t p = 0;
         fields_.visit_ref(AlignCounter{&p});
         return p;
     }
-    rstd::Option<size_t> size() const {
+    virtual rstd::Option<size_t> size() const override {
         size_t p = 0;
         fields_.visit_ref(SizeCounter{&p});
-        return rstd::Some(std::max(upper_multiple(align(), p), 1));
+        return rstd::Some(std::max(upper_multiple(align(), p), (size_t)1));
     }
 
 private:
@@ -174,26 +183,42 @@ public:
         return rstd::Box<Instance>::_from_raw(_load(src));
     }
 
-    /*
     virtual std::string name() const override {
-        return format_("Tuple{}", id());
+        return format_("StaticTuple{}", id());
     }
+
+private:
+    struct Includer {
+        std::stringstream *ss;
+        Source *src;
+        template <size_t P>
+        void operator()(const rstd::Box<rstd::nth_type<P, Types...>> &t) {
+            Source fsrc = t->source();
+            src->append(fsrc.into_files()).unwrap();
+            writeln_(*ss, "#include <{}>", fsrc.name());
+        }
+    };
+    template <typename F>
+    struct FieldWriter {
+        std::stringstream *ss;
+        F field_name;
+        template <size_t P>
+        void operator()(const rstd::Box<rstd::nth_type<P, Types...>> &t) {
+            if (t->size().unwrap() > 0) {
+                writeln_(*ss, "    {} {};", t->name(), field_name(P));
+            }
+        }
+    };
+
+public:
     template <typename F>
     Source source_with_names(F field_name) const {
         std::stringstream ss;
         Source src;
 
-        for (const TypeBox &f : fields_) {
-            Source fsrc = f->source();
-            src.append(fsrc.into_files()).unwrap();
-            writeln_(ss, "#include <{}>", fsrc.name());
-        }
+        fields_.visit_ref(Includer{&ss, &src});
         writeln_(ss, "\ntypedef struct {{");
-        for (size_t i = 0; i < fields_.size(); ++i) {
-            if (fields_[i]->size().unwrap() > 0) {
-                writeln_(ss, "    {} {};", fields_[i]->name(), field_name(i));
-            }
-        }
+        fields_.visit_ref(FieldWriter<F>{&ss, field_name});
         writeln_(ss, "}} {};", name());
 
         std::string fname = rstd::to_lower(name());
@@ -205,7 +230,6 @@ public:
     virtual Source source() const override {
         return source_with_names([](size_t i){ return format_("field{}", i); });
     }
-    */
 };
 
 } // namespace dyn

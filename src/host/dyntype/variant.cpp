@@ -77,9 +77,10 @@ rtest_module_(dyntype_variant) {
         }
 
         TypeBox darrty = darr.type();
+        Source src = darrty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_variant_in.cl", std::string(format_(
-            "{}\n"
+            "#include <{}>\n"
             "#define MyVar {}\n"
             "__kernel void unpack(\n"
             "    __global const {} *darr,\n"
@@ -109,10 +110,10 @@ rtest_module_(dyntype_variant) {
             "        *ssize = sizeof(MyVar);\n"
             "    }}\n"
             "}}\n",
-            darrty->source(),
+            src.name(),
             dty.name(),
             darrty->name()
-        )))
+        )), src.into_files())
         .build("unpack").expect("Kernel build error");
 
         devtest::KernelRunner(queue, std::move(kernel))
@@ -207,9 +208,10 @@ rtest_module_(dyntype_variant) {
         inb = datab;
 
         TypeBox darrty = darr.type();
+        Source src = darrty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_variant_in.cl", std::string(format_(
-            "{}\n"
+            "#include <{}>\n"
             "#define MyVar {}\n"
             "__kernel void unpack(\n"
             "    __global {} *darr,\n"
@@ -235,10 +237,10 @@ rtest_module_(dyntype_variant) {
             "        var->variants.variant4 = inb[i];\n"
             "    }}\n"
             "}}\n",
-            darrty->source(),
+            src.name(),
             dty.name(),
             darrty->name()
-        )))
+        )), src.into_files())
         .build("unpack").expect("Kernel build error");
 
         devtest::KernelRunner(queue, std::move(kernel))

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
 #include <typeinfo>
 #include <rstd/prelude.hpp>
 #include <common/types.hh>
@@ -8,10 +9,51 @@
 
 namespace dyn {
 
-//struct Source {
-//    std::string name;
-//    std::map<std::string, std::string> includes;
-//};
+struct Source {
+private:
+    std::string name_;
+    std::map<std::string, std::string> files_;
+public:
+    Source() = default;
+    inline explicit Source(
+        const std::string &n,
+        std::map<std::string, std::string> &&f={}
+    ) : name_(n), files_(std::move(f)) {}
+
+    inline std::string name() const { return name_; }
+    inline const std::map<std::string, std::string> &files() const { return files_; }
+    inline std::map<std::string, std::string> &files() { return files_; }
+    inline std::map<std::string, std::string> into_files() { return std::move(files_); }
+
+    inline void set_name(const std::string &n) { name_ = n; }
+    inline rstd::Result<rstd::Tuple<>, std::string> insert(
+        const std::string &fname, std::string &&content
+    ) {
+        auto it = files_.find(fname);
+        if (it == files_.end()) {
+            assert_(files_.insert(std::make_pair(fname, std::move(content))).second);
+            return rstd::Ok();
+        } else {
+            if (it->second == content) {
+                return rstd::Ok();
+            } else {
+                return rstd::Err(format_("Same file '{}' but different content", fname));
+            }
+        }
+    }
+    inline rstd::Result<rstd::Tuple<>, std::string> append(
+        std::map<std::string, std::string> &&other
+    ) {
+        files_.merge(other);
+        for (const auto &s : other) {
+            auto di = files_.find(s.first);
+            if (di->second != s.second) {
+                return rstd::Err(format_("Same file '{}' but different content", s.first));
+            }
+        }
+        return rstd::Ok();
+    }
+};
 
 class Type {
 public:
@@ -50,7 +92,7 @@ public:
     rstd::Box<Instance> load(const uchar *src) const { return rstd::Box<Instance>::_from_raw(_load(src)); }
 
     virtual std::string name() const = 0;
-    virtual std::string source() const = 0;
+    virtual Source source() const = 0;
 };
 
 template <typename Self, typename Base>

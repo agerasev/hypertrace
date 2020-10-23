@@ -137,15 +137,22 @@ public:
         // Pretty name, but it can cause collisions
         //return format_("Array_{}_{}", item_type_->name(), item_count_);
     }
-    virtual std::string source() const override {
-        return item_type_->source() + "\n" + format_(
+    virtual Source source() const override {
+        Source src = item_type_->source();
+        std::string fname = format_("generated/{}.hxx", rstd::to_lower(name()));
+        src.insert(fname, format_(
+            "#include <{}>\n"
+            "\n"
             "typedef struct {{\n"
             "   {} items[{}];\n"
             "}} {};\n",
+            src.name(),
             item_type_->name(),
             item_count_,
             name()
-        );
+        )).unwrap();
+        src.set_name(fname);
+        return src;
     }
 };
 

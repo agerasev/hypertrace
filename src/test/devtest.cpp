@@ -119,19 +119,27 @@ KernelBuilder::KernelBuilder(cl_device_id device_id, Rc<cl::Queue> queue) :
     queue(queue)
 {}
 
-KernelBuilder KernelBuilder::source(const std::string &filename, const std::string content) {
+KernelBuilder KernelBuilder::source(
+    const std::string &filename,
+    const std::string content,
+    std::map<std::string, std::string> &&files
+) {
     assert_(source_.is_none());
     source_ = Option(std::make_pair(filename, content));
+    files_ = std::move(files);
     return std::move(*this);
 }
 
 Result<cl::Kernel, std::string> KernelBuilder::build(const std::string &kernel_name) {
     auto src = this->source_.unwrap();
     std::string name = src.first;
+
+    auto files = std::move(files_);
+    assert_(files.insert(src).second);
     includer includer(
         name,
         std::list<std::string>{"src"},
-        std::map<std::string, std::string>{src},
+        files,
         std::map<std::string, bool>{
             std::make_pair("HOST", false),
             std::make_pair("TEST", false),

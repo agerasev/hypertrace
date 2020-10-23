@@ -22,16 +22,17 @@ rtest_module_(dyntype_primitive) {
         Primitive<real16>::Instance dval(v);
 
         TypeBox dty = dval.type();
+        Source src = dty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_primitive.cl", std::string(format_(
-            "{}\n"
+            "#include <{}>\n"
             "__kernel void unpack(__global const {} *dval, __global float16 *out) {{\n"
             "    int i = get_global_id(0);\n"
             "    out[i] = dval[i];\n"
             "}}\n",
-            dty->source(),
+            src.name(),
             dty->name()
-        )))
+        )), src.into_files())
         .build("unpack").expect("Kernel build error");
 
         devtest::KernelRunner(queue, std::move(kernel))

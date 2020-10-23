@@ -23,7 +23,7 @@ class Cube<Eu> final : public dyn::ImplEmptyType<Cube<Eu>, SurfaceShape<Eu>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string prefix() const override { return "cubeeu"; };
-    inline virtual std::string source() const override { return "#include <common/object/euclidean/shapes.hh>"; };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/object/euclidean/shapes.hh"); };
 };
 
 template <typename G>
@@ -33,7 +33,7 @@ class Sphere<Eu> final : public dyn::ImplEmptyType<Sphere<Eu>, SurfaceShape<Eu>>
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string prefix() const override { return "sphereeu"; };
-    inline virtual std::string source() const override { return "#include <common/object/euclidean/shapes.hh>"; };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/object/euclidean/shapes.hh"); };
 };
 
 #endif // HOST

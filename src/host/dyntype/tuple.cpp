@@ -62,9 +62,10 @@ rtest_module_(dyntype_tuple) {
 
         TypeBox darrty = darr.type();
         TypeBox dtupty = darr.item_type();
+        Source src = darrty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_tuple.cl", std::string(format_(
-            "{}\n"
+            "#include <{}>\n"
             "#define MyTuple {}\n"
             "__kernel void unpack(\n"
             "    __global const {} *darr,\n"
@@ -92,10 +93,10 @@ rtest_module_(dyntype_tuple) {
             "        offset[4] = offsetof(MyTuple, field4);\n"
             "    }}\n"
             "}}\n",
-            darrty->source(),
+            src.name(),
             dtupty->name(),
             darrty->name()
-        )))
+        )), src.into_files())
         .build("unpack").expect("Kernel build error");
 
         devtest::KernelRunner(queue, std::move(kernel))

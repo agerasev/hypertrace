@@ -28,16 +28,17 @@ rtest_module_(dyntype_array) {
         }
 
         TypeBox dty = darr.type();
+        Source src = dty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_array.cl", std::string(format_(
-            "{}\n"
+            "#include <{}>\n"
             "__kernel void unpack(__global const {} *darr, __global real16 *out) {{\n"
             "    int i = get_global_id(0);\n"
             "    out[i] = darr->items[i];\n"
             "}}\n",
-            dty->source(),
+            src.name(),
             dty->name()
-        )))
+        )), src.into_files())
         .build("unpack").expect("Kernel build error");
 
         devtest::KernelRunner(queue, std::move(kernel))

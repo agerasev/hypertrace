@@ -148,19 +148,28 @@ public:
         return format_("Tuple{}", id());
     }
     template <typename F>
-    std::string source_with_names(F field_name) const {
+    Source source_with_names(F field_name) const {
         std::stringstream ss;
+        Source src;
+
         for (const TypeBox &f : fields_) {
-            writeln_(ss, f->source());
+            Source fsrc = f->source();
+            src.append(fsrc.into_files()).unwrap();
+            writeln_(ss, "#include <{}>", fsrc.name());
         }
-        writeln_(ss, "typedef struct {{");
+        writeln_(ss, "\ntypedef struct {{");
         for (size_t i = 0; i < fields_.size(); ++i) {
             writeln_(ss, "    {} {};", fields_[i]->name(), field_name(i));
         }
         writeln_(ss, "}} {};", name());
-        return ss.str();
+
+        std::string fname = rstd::to_lower(name());
+        src.insert(fname, ss.str()).unwrap();
+        src.set_name(fname);
+        
+        return src;
     }
-    virtual std::string source() const override {
+    virtual Source source() const override {
         return source_with_names([](size_t i){ return format_("field{}", i); });
     }
 };

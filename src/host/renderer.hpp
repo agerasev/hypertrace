@@ -35,14 +35,15 @@ class Renderer {
 private:
     includer make_includer(
         const Config &,
-        const std::string &source
+        const std::string &source,
+        std::map<std::string, std::string> &&files={}
     ) {
+        assert_(files.insert(std::make_pair("main.cl", source)).second);
+
         includer inc(
             "main.cl",
             std::list<std::string>{"src"},
-            std::map<std::string, std::string>{
-                std::make_pair("main.cl", source),
-            },
+            files,
             std::map<std::string, bool>{
                 std::make_pair("HOST", false),
                 std::make_pair("INTEROP", false),
@@ -96,18 +97,19 @@ public:
     {
         queue = cl::Queue::create(context, device).expect("Queue create error");
 
+        dyn::Source src = type->source();
         std::string source = format_(
-            "{}\n"
+            "#include <{}>\n"
             "#define object_detect {}_detect\n"
             "#include <{}>\n"
             ,
-            type->source(),
+            src.name(),
             type->prefix(),
             RenderFile<G>::path()
         );
         auto prog_and_log = cl::Program::create(
             context, device,
-            make_includer(config, source)
+            make_includer(config, source, src.into_files())
         );
         println_("Render build log: {}", prog_and_log.template get<1>());
         program = rstd::Rc(prog_and_log.template get<0>().expect("Program create error"));

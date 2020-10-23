@@ -49,11 +49,8 @@ public:
     }
 
     virtual std::string name() const override { return dev_name<T>; }
-    virtual std::string source() const override {
-        return 
-            "#include <common/types.hh>\n"
-            "#include <common/algebra/real.hh>\n"
-            "#include <common/algebra/vector.hh>\n";
+    virtual Source source() const override {
+        return Source("common/algebra/vector.hh", {});
     }
 };
 

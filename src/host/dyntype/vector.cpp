@@ -30,10 +30,11 @@ rtest_module_(dyntype_vector) {
         }
 
         TypeBox dty = darr.type();
+        Source src = dty->source();
         std::string lname = rstd::to_lower(dty->name());
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_vector_real16.cl", std::string(format_(
-            "{}\n"
+            "#include <{}>\n"
             "__kernel void unpack(__global const {} *darr, __global real16 *out, __global ulong *vsize) {{\n"
             "    int i = get_global_id(0);\n"
             "    if (i == 0) {{\n"
@@ -43,9 +44,9 @@ rtest_module_(dyntype_vector) {
             "        out[i] = *{}_get(darr, i);\n"
             "    }}\n"
             "}}\n",
-            dty->source(),
+            src.name(),
             dty->name(), lname, lname, lname
-        )))
+        )), src.into_files())
         .build("unpack").expect("Kernel build error");
 
         devtest::KernelRunner(queue, std::move(kernel))
@@ -79,10 +80,11 @@ rtest_module_(dyntype_vector) {
         }
 
         TypeBox dty = darr.type();
+        Source src = dty->source();
         std::string lname = rstd::to_lower(dty->name());
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_vector_uchar.cl", std::string(format_(
-            "{}\n"
+            "#include <{}>\n"
             "__kernel void unpack(__global const {} *darr, __global uchar *out, __global ulong *vsize) {{\n"
             "    int i = get_global_id(0);\n"
             "    if (i == 0) {{\n"
@@ -92,9 +94,9 @@ rtest_module_(dyntype_vector) {
             "        out[i] = *{}_get(darr, i);\n"
             "    }}\n"
             "}}\n",
-            dty->source(),
+            src.name(),
             dty->name(), lname, lname, lname
-        )))
+        )), src.into_files())
         .build("unpack").expect("Kernel build error");
 
         devtest::KernelRunner(queue, std::move(kernel))

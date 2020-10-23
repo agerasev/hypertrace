@@ -102,6 +102,7 @@ private:
     cl_device_id device_id;
     rstd::Rc<cl::Queue> queue;
     rstd::Option<std::pair<std::string, std::string>> source_;
+    std::map<std::string, std::string> files_;
 public:
     KernelBuilder() = default;
     KernelBuilder(const KernelBuilder &) = delete;
@@ -110,7 +111,11 @@ public:
     KernelBuilder &operator=(KernelBuilder &&) = default;
 
     KernelBuilder(cl_device_id device_id, rstd::Rc<cl::Queue> queue);
-    KernelBuilder source(const std::string &filename, const std::string content);
+    KernelBuilder source(
+        const std::string &filename,
+        const std::string content,
+        std::map<std::string, std::string> &&files={}
+    );
     rstd::Result<cl::Kernel, std::string> build(const std::string &kernel_name);
 };
 

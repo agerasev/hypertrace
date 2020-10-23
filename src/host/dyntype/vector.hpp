@@ -141,10 +141,12 @@ public:
     virtual std::string name() const override {
         return format_("Vector{}", id());
     }
-    virtual std::string source() const override {
+    virtual Source source() const override {
         std::string lname = rstd::to_lower(name());
+        Source src = item_type_->source();
+
         std::stringstream ss;
-        writeln_(ss, item_type_->source());
+        writeln_(ss, "#include <{}>\n", src.name());
         writeln_(ss,
             "typedef struct {{\n"
             "   ulong size;\n"
@@ -154,7 +156,12 @@ public:
         );
         writeln_(ss, "#define {}_size(ptr) ((ptr)->size)", lname);
         writeln_(ss, "#define {}_get(ptr, idx) (&(ptr)->first + idx)", lname);
-        return ss.str();
+
+        std::string fname = format_("generated/{}.hxx", lname);
+        src.insert(fname, ss.str()).unwrap();
+        src.set_name(fname);
+
+        return src;
     }
 };
 

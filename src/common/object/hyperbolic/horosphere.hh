@@ -18,7 +18,7 @@ class Horosphere final : public dyn::ImplEmptyType<Horosphere, SurfaceShape<Hy>>
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string prefix() const override { return "horosphere"; };
-    inline virtual std::string source() const override { return "#include <common/object/hyperbolic/horosphere.hh>"; };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/object/hyperbolic/horosphere.hh"); };
 };
 
 #endif // HOST

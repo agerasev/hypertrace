@@ -6,10 +6,8 @@
 #include <common/render/light.hh>
 
 
-_ALLOW_UNUSED_PARAMETERS_
-real sphereeu_detect(__global const void *object, Context *context, real3 *normal, LightEu *light);
-_ALLOW_UNUSED_PARAMETERS_
-real cubeeu_detect(__global const void *object, Context *context, real3 *normal, LightEu *light);
+real sphereeu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light);
+real cubeeu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light);
 
 
 #ifdef HOST

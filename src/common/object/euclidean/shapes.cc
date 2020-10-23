@@ -2,7 +2,7 @@
 
 
 _ALLOW_UNUSED_PARAMETERS_
-real sphereeu_detect(__global const void *object, Context *context, real3 *normal, LightEu *light) {
+real sphereeu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light) {
     real3 pos = light->ray.start;
     real3 dir = light->ray.direction;
     real b = -dot(dir, pos);
@@ -42,7 +42,7 @@ static real cubeeu_detect_nearest(real3 near, real3 *normal) {
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-real cubeeu_detect(__global const void *object, Context *context, real3 *normal, LightEu *light) {
+real cubeeu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light) {
     const real3 cmax = MAKE(real3)(R1);
     const real3 cmin = MAKE(real3)(-R1);
 

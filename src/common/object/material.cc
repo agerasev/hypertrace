@@ -4,24 +4,24 @@
 
 
 _ALLOW_UNUSED_PARAMETERS_
-bool black_interact(Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool black_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     return false;
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-bool transparent_interact(Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool transparent_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     //light.face = !light.face;
     return true;
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-bool specular_interact(Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool specular_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     light->direction -= (2*dot(light->direction, normal))*normal;
     return true;
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-bool lambertian_interact(Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool lambertian_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     if (dot(normal, light->direction) > 0) {
         normal = -normal;
     }

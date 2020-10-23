@@ -6,10 +6,10 @@
 #include <common/render/context.hh>
 
 
-bool black_interact(Context *context, real3 normal, LightLocal *light, float3 *emission);
-bool transparent_interact(Context *context, real3 normal, LightLocal *light, float3 *emission);
-bool specular_interact(Context *context, real3 normal, LightLocal *light, float3 *emission);
-bool lambertian_interact(Context *context, real3 normal, LightLocal *light, float3 *emission);
+bool black_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
+bool transparent_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
+bool specular_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
+bool lambertian_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
 
 
 #ifdef HOST

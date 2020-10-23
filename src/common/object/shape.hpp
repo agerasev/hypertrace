@@ -11,9 +11,21 @@ class Shape : public dyn::Type {
 public:
     typedef G Geo;
 
+    class Instance : public dyn::Type::Instance {
+    public:
+        virtual Shape *_type() const override = 0;
+        rstd::Box<Shape> type() const { return rstd::Box<Shape>::_from_raw(_type()); }
+    };
+
+    virtual Shape *_clone() const override = 0;
+    rstd::Box<Shape> clone() const { return rstd::Box<Shape>::_from_raw(_clone()); }
+
+    virtual Instance *_load(const uchar *src) const override = 0;
+    rstd::Box<Instance> load(const uchar *src) const { return rstd::Box<Instance>::_from_raw(_load(src)); }
+
+
     // Whether to allow repeated collisions or not.
     virtual bool repeat_allowed() const = 0;
-
     virtual std::string prefix() const = 0;
 };
 

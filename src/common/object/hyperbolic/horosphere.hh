@@ -6,8 +6,7 @@
 #include <common/render/context.hh>
 
 
-_ALLOW_UNUSED_PARAMETERS_
-real horosphere_detect(__global const void *object, Context *context, HyDir *normal, LightHy *light);
+real horosphere_detect(__global const void *shape, Context *context, HyDir *normal, LightHy *light);
 
 
 #ifdef HOST

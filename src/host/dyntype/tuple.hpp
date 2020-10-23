@@ -13,7 +13,7 @@ public:
     typedef T ItemType;
     typedef typename T::Instance ItemInstance;
 
-private:
+protected:
     typedef rstd::Box<ItemType> ItemTypeBox;
     typedef rstd::Box<ItemInstance> ItemInstanceBox;
 
@@ -64,7 +64,7 @@ private:
     std::vector<ItemTypeBox> fields_;
 
 public:
-    Tuple() = delete;
+    Tuple() = default;
     template <typename I>
     Tuple(I &&field_iter) {
         fields_ = field_iter.template collect<std::vector>();

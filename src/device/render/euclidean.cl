@@ -38,7 +38,7 @@ __kernel void render(
 	float3 color = (float3)(1.0f);
 
 	real3 normal;
-	if (object_detect(&ctx, &normal, &light) > 0.0f) {
+	if (object_detect(NULL, &ctx, &normal, &light) > 0.0f) {
 		color = 0.0f;
 	}
 

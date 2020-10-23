@@ -1,7 +1,8 @@
 #include "horosphere.hh"
 
 
-real horosphere_detect(Context *context, HyDir *normal, LightHy *light) {
+_ALLOW_UNUSED_PARAMETERS_
+real horosphere_detect(__global const void *object, Context *context, HyDir *normal, LightHy *light) {
     quat p = light->ray.start, d = light->ray.direction;
     real dxy = length(d.xy);
     // FIXME: check (dxy < EPS)
@@ -53,7 +54,7 @@ rtest_module_(horosphere) {
             light.ray = RayHy { start, dir };
             quat normal;
             
-            real dist = horosphere_detect(&ctx, &normal, &light);
+            real dist = horosphere_detect(nullptr, &ctx, &normal, &light);
 
             if (light.ray.start.z > R1) {
                 assert_(dist > -EPS);
@@ -104,7 +105,7 @@ rtest_module_(horosphere) {
             "    light.ray.start = start[i];\n"
             "    light.ray.direction = idir[i];\n"
             "    quat normal;\n"
-            "    dist[i] = horosphere_detect(&ctx, &normal, &light);\n"
+            "    dist[i] = horosphere_detect(NULL, &ctx, &normal, &light);\n"
             "    hit[i] = light.ray.start;\n"
             "    odir[i] = light.ray.direction;\n"
             "    norm[i] = normal;\n"

@@ -1,7 +1,8 @@
 #include "shapes.hh"
 
 
-real sphereeu_detect(Context *context, real3 *normal, LightEu *light) {
+_ALLOW_UNUSED_PARAMETERS_
+real sphereeu_detect(__global const void *object, Context *context, real3 *normal, LightEu *light) {
     real3 pos = light->ray.start;
     real3 dir = light->ray.direction;
     real b = -dot(dir, pos);
@@ -40,7 +41,8 @@ static real cubeeu_detect_nearest(real3 near, real3 *normal) {
     return dist;
 }
 
-real cubeeu_detect(Context *context, real3 *normal, LightEu *light) {
+_ALLOW_UNUSED_PARAMETERS_
+real cubeeu_detect(__global const void *object, Context *context, real3 *normal, LightEu *light) {
     const real3 cmax = MAKE(real3)(R1);
     const real3 cmin = MAKE(real3)(-R1);
 
@@ -109,7 +111,7 @@ rtest_module_(euclidean_shapes) {
             light.ray = RayEu { start, dir };
             real3 normal;
             
-            real dist = sphereeu_detect(&ctx, &normal, &light);
+            real dist = sphereeu_detect(nullptr, &ctx, &normal, &light);
 
             if (length(start) < 1 - EPS) {
                 // TODO: Update on refraction
@@ -136,7 +138,7 @@ rtest_module_(euclidean_shapes) {
             light.ray = RayEu { start, dir };
             real3 normal;
 
-            real dist = cubeeu_detect(&ctx, &normal, &light);
+            real dist = cubeeu_detect(nullptr, &ctx, &normal, &light);
             
             if (max_comp(fabs(start)) < 1 - EPS) {
                 // TODO: Update on refraction
@@ -190,7 +192,7 @@ rtest_module_(euclidean_shapes) {
             "    light.ray.start = start[i];\n"
             "    light.ray.direction = dir[i];\n"
             "    real3 normal;\n"
-            "    dist[i] = sphereeu_detect(&ctx, &normal, &light);\n"
+            "    dist[i] = sphereeu_detect(NULL, &ctx, &normal, &light);\n"
             "    hit[i] = light.ray.start;\n"
             "    norm[i] = normal;\n"
             "}\n"
@@ -235,7 +237,7 @@ rtest_module_(euclidean_shapes) {
             "    light.ray.start = start[i];\n"
             "    light.ray.direction = dir[i];\n"
             "    real3 normal;\n"
-            "    dist[i] = cubeeu_detect(&ctx, &normal, &light);\n"
+            "    dist[i] = cubeeu_detect(NULL, &ctx, &normal, &light);\n"
             "    hit[i] = light.ray.start;\n"
             "    norm[i] = normal;\n"
             "}\n"

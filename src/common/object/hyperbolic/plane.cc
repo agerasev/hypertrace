@@ -1,7 +1,8 @@
 #include "plane.hh"
 
 
-real planehy_detect(Context *context, HyDir *normal, LightHy *light) {
+_ALLOW_UNUSED_PARAMETERS_
+real planehy_detect(__global const void *object, Context *context, HyDir *normal, LightHy *light) {
     // Line cannot intersect plane twice
     if (context->repeat) {
         return -R1;
@@ -155,7 +156,7 @@ rtest_module_(hyperbolic_plane) {
             light.ray = RayHy { start, dir };
             quat normal;
             
-            real dist = planehy_detect(&ctx, &normal, &light);
+            real dist = planehy_detect(nullptr, &ctx, &normal, &light);
 
             if (dist > -EPS) {
                 hits += 1;
@@ -207,7 +208,7 @@ rtest_module_(hyperbolic_plane) {
             "    light.ray.start = start[i];\n"
             "    light.ray.direction = idir[i];\n"
             "    quat normal;\n"
-            "    dist[i] = planehy_detect(&ctx, &normal, &light);\n"
+            "    dist[i] = planehy_detect(NULL, &ctx, &normal, &light);\n"
             "    hit[i] = light.ray.start;\n"
             "    odir[i] = light.ray.direction;\n"
             "    norm[i] = normal;\n"

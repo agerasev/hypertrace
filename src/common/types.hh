@@ -81,6 +81,8 @@ PRIMITIVE_INTEROP(double,   cl_float,  "float" );
 
 #else // !HOST
 
+#define NULL 0
+
 typedef long  long_;
 typedef ulong ulong_;
 

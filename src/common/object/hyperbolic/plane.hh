@@ -6,7 +6,8 @@
 #include <common/render/context.hh>
 
 
-real planehy_detect(Context *context, HyDir *normal, LightHy *light);
+_ALLOW_UNUSED_PARAMETERS_
+real planehy_detect(__global const void *object, Context *context, HyDir *normal, LightHy *light);
 
 
 #ifdef HOST

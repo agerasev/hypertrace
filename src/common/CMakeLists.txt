@@ -31,6 +31,7 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/object/hyperbolic/plane.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/object/hyperbolic/horosphere.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/object/material.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/object/modifier.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/render/view.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/render/light.cc"

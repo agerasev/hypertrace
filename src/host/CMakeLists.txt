@@ -14,6 +14,7 @@ set(HOST_DYNTYPE_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/dyntype/tuple.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/dyntype/struct.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/dyntype/variant.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/dyntype/static_tuple.cpp"
 )
 set(HOST_DYNTYPE_SRC ${HOST_DYNTYPE_SRC} PARENT_SCOPE)
 

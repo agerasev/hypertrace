@@ -2,34 +2,51 @@
 
 #include "material.hpp"
 #include "material.hh"
+#include <host/dyntype/primitive.hpp>
+#include <host/dyntype/struct.hpp>
 
 
-template <typename Self, typename Base, typename Data>
+template <typename Self, typename Base, typename D>
 class ImplModifier : public Base {
 public:
+    typedef Base BaseType;
     typedef typename Base::Instance BaseInstance;
-    typedef rstd::Box<Base> BaseBox;
+    typedef rstd::Box<BaseType> BaseTypeBox;
     typedef rstd::Box<BaseInstance> BaseInstanceBox;
 
     class Instance : public BaseInstance {
     public:
-        BaseInstanceBox inner;
-        Data data;
+        dyn::Struct<>::Instance content;
 
-        virtual Base *_type() const override { return new Self(inner->type()); }
+        Instance(BaseInstanceBox &&inner) {
+            content.append("inner", std::move(inner));
+            content.append("data", dyn::Primitive<D>::Instance());
+        }
+
+        Self type_() const {
+            return Self(content.fields[i]->type()->clone().template downcast<BaseInstance>().unwrap());
+        }
+        virtual Self *_type() const override { return new Self(_type()); }
         
-        virtual void load(const void *src) const override = 0;
-        virtual void store(void *dst) const override = 0;
+        virtual void load(const uchar *src) const override {
+            content.load(src);
+        }
+        virtual void store(uchar *dst) const override {
+            content.store(dst);
+        }
     };
 private:
-    BaseBox inner_;
+    dyn::Struct<> struct_;
 
 public:
-    ImplModifier(BaseBox &&inner) : inner_(std::move(inner)) {}
-    const BaseBox &inner() const { return inner_; }
+    ImplModifier(BaseTypeBox &&inner) {
+        struct_.append("inner", std::move(inner));
+        struct_.append("data", dyn::Primitive<D>());
+    }
+    const BaseTypeBox &inner() const { return inner_; }
 
-    virtual Base *_clone() const override { return new Self(inner_->clone()); }
-    BaseBox clone() const { return BaseBox::_from_raw(_clone()); }
+    virtual Self *_clone() const override { return new Self(inner_->clone()); }
+    rstd::Box<Self> clone() const { return rstd::Box<Self>::_from_raw(_clone()); }
 
     virtual size_t id() const override { return typeid(Self).hash_code(); }
 
@@ -43,23 +60,22 @@ public:
     };
 
     Instance load_(const uchar *src) const {
-        
+        Instance inst;
+        inst.inner = inner_->load(src);
+        dev_load<Data>(
+            &inst.data,
+            (const dev_type<Data> *)(src + upper_multiple(align(), inner_->size()))
+        );
+        return inst;
     }
-    virtual BaseInstance *_load(const uchar *src) const override {
-        return new Instance(load_());
+    virtual Instance *_load(const uchar *src) const override {
+        return new Instance(load_(src));
     }
-    BaseInstanceBox load(const uchar *src) const { return BaseInstanceBox::_from_raw(_load(src)); }
-
-    virtual std::string name() const = 0;
-    virtual Source source() const = 0;
-
-    virtual std::string name() { return EmptyType::name(); }
-    virtual std::string source() override { return "#include <common/object/material.hh>"; };
-
-    virtual rstd::Box<::Instance> instance() const { return rstd::Box(Instance()); }
+    rstd::Box<Instance> load(const uchar *src) const {
+        return rstd::Box<Instance>::_from_raw(_load(src));
+    }
 };
 
-/*
 class Colored final : public virtual Material {
 public:
     struct Instance : public Material::Instance {
@@ -75,6 +91,7 @@ public:
     const Material &inner() const { return inner_.get(); }
 };
 
+/*
 class Emissive final : public virtual Material {
 private:
     rstd::Box<Material> inner_;

@@ -159,7 +159,9 @@ public:
         }
         writeln_(ss, "\ntypedef struct {{");
         for (size_t i = 0; i < fields_.size(); ++i) {
-            writeln_(ss, "    {} {};", fields_[i]->name(), field_name(i));
+            if (fields_[i]->size().unwrap() > 0) {
+                writeln_(ss, "    {} {};", fields_[i]->name(), field_name(i));
+            }
         }
         writeln_(ss, "}} {};", name());
 

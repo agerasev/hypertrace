@@ -1,42 +1,46 @@
 #pragma once
 
+#include <array>
 #include <rstd/prelude.hpp>
-#include "tuple.hpp"
+#include "static_tuple.hpp"
 
 
 namespace dyn {
 
-template <typename T=Type>
-class Struct : public dyn::Tuple<T> {
+template <typename ...Types>
+class StaticStruct : public StaticTuple<Types...> {
 protected:
-    typedef dyn::Tuple<T> Base;
-    typedef typename dyn::Tuple<T>::Instance BaseInstance;
-
-public:
-    typedef typename Base::ItemType ItemType;
-    typedef typename Base::ItemInstance ItemInstance;
-
-protected:
-    typedef rstd::Box<ItemType> ItemTypeBox;
-    typedef rstd::Box<ItemInstance> ItemInstanceBox;
+    typedef StaticTuple<Types...> Base;
+    typedef typename StaticTuple<Types...>::Instance BaseInstance;
 
 public:
     class Instance : public BaseInstance {
     public:
-        std::vector<std::string> field_names_;
+        std::array<std::string, sizeof...(Types)> field_names_;
 
-        Instance() = default;
-        template <typename I>
-        Instance(I &&field_iter) {
-            for (auto &&t : field_iter) {
-                append(t.template get<0>(), std::move(t.template get<1>()));
+    private:
+        struct Unzipper {
+            rstd::Tuple<std::array<std::string, sizeof...(Types)>, rstd::Tuple<rstd::Box<Types>...>> operator()(
+                rstd::Tuple<std::string, rstd::Box<typename Types::Instance>> &&...insts
+            ) {
+                return rstd::Tuple(
+                    std::array{insts.template get<0>()...},
+                    rstd::Tuple(std::forward<rstd::Box<Types>>(insts.template get<1>())...)
+                );
             }
+        };
+    public:
+        Instance() = default;
+        explicit Instance(rstd::Tuple<rstd::Tuple<std::string, rstd::Box<typename Types::Instance>>...> &&flds) {
+            auto ret = flds.unpack(Unzipper());
+            field_names_ = std::move(ret.template get<0>());
+            BaseInstance::fields() = std::move(ret.template get<1>());
         }
-        void append(const std::string &str, ItemInstanceBox &&i) {
-            BaseInstance::append(std::move(i));
-            field_names_.push_back(str);
-        }
-        
+        explicit Instance(rstd::Tuple<std::string, rstd::Box<typename Types::Instance>> &&...flds) :
+            BaseInstance(std::forward<rstd::Box<Types>>(flds.template get<1>())...),
+            field_names_{flds.template get<0>()...}
+        {}
+        /*
         std::vector<ItemInstanceBox> &fields() { return BaseInstance::fields(); }
         const std::vector<ItemInstanceBox> &fields() const { return BaseInstance::fields(); }
 
@@ -50,7 +54,7 @@ public:
         Struct type_() const {
             return Struct(
                 rstd::iter_ref(field_names_).zip(rstd::iter_ref(fields()))
-                .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*nf.template get<0>()), (*nf.template get<1>())->type()); })
+                .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*rstd::get<0>(nf)), (*rstd::get<1>(nf))->type()); })
             );
         }
         virtual Struct *_type() const override {
@@ -59,8 +63,9 @@ public:
         rstd::Box<Struct> type() const {
             return rstd::Box<Struct>::_from_raw(_type());
         }
+        */
     };
-
+    /*
 private:
     std::vector<std::string> field_names_;
 
@@ -69,7 +74,7 @@ public:
     template <typename I>
     Struct(I &&field_iter) {
         for (auto &&t : field_iter) {
-            append(t.template get<0>(), std::move(t.template get<1>()));
+            append(rstd::get<0>(t), std::move(rstd::get<1>(t)));
         }
     }
     void append(const std::string &str, ItemTypeBox &&i) {
@@ -90,7 +95,7 @@ public:
     virtual Struct *_clone() const override {
         return new Struct(
             rstd::iter_ref(field_names_).zip(rstd::iter_ref(fields()))
-            .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*nf.template get<0>()), (*nf.template get<1>())->clone()); })
+            .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*rstd::get<0>(nf)), (*rstd::get<1>(nf))->clone()); })
         );
     }
     rstd::Box<Struct> clone() const {
@@ -128,6 +133,7 @@ public:
     virtual Source source() const override {
         return Base::source_with_names([&](size_t i){ return field_names_[i]; });
     }
+    */
 };
 
 } // namespace dyn

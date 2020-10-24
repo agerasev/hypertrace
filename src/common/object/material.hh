@@ -7,8 +7,8 @@
 
 #ifndef DYNTYPE
 
-typedef void Black;
-bool black_interact(__global const Black *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
+typedef void Absorbing;
+bool absorbing_interact(__global const Absorbing *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
 
 typedef void Transparent;
 bool transparent_interact(__global const Transparent *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
@@ -24,25 +24,25 @@ bool lambertian_interact(__global const Lambertian *material, Context *context, 
 #include "material.hpp"
 
 
-class Black final : public dyn::ImplEmptyType<Black, SurfaceMaterial> {
+class Absorbing final : public dyn::ImplEmptyType<Absorbing, SurfaceMaterial> {
 public:
-    inline virtual std::string name() const override { return "Black"; };
+    inline virtual std::string name() const override { return "Absorbing"; };
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/material.hh"); };
 };
 
-class Transparent final : public dyn::ImplEmptyType<Black, SurfaceMaterial> {
+class Transparent final : public dyn::ImplEmptyType<Transparent, SurfaceMaterial> {
 public:
     inline virtual std::string name() const override { return "Transparent"; };
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/material.hh"); };
 };
 
-class Specular final : public dyn::ImplEmptyType<Black, SurfaceMaterial> {
+class Specular final : public dyn::ImplEmptyType<Specular, SurfaceMaterial> {
 public:
     inline virtual std::string name() const override { return "Specular"; };
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/material.hh"); };
 };
 
-class Lambertian final : public dyn::ImplEmptyType<Black, SurfaceMaterial> {
+class Lambertian final : public dyn::ImplEmptyType<Lambertian, SurfaceMaterial> {
 public:
     inline virtual std::string name() const override { return "Lambertian"; };
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/material.hh"); };

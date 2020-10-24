@@ -78,7 +78,7 @@ public:
 
     virtual std::string modifier_code() const = 0;
     virtual dyn::Source source() const override {
-        std::string lname = rstd::to_lower(this->name());
+        std::string lname = this->prefix();
         std::string fname = format_("generated/object/material_{}.hxx", lname);
         dyn::Source src = content_.source();
         
@@ -101,7 +101,7 @@ public:
             content_.name(), this->name(),
             lname,
             modifier_code(),
-            rstd::to_lower(inner()->name()), inner_elem
+            inner()->prefix(), inner_elem
         )).unwrap();
         src.set_name(fname);
         return src;

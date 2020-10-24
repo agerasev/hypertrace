@@ -26,6 +26,7 @@ public:
 
     // Whether to allow repeated collisions or not.
     virtual bool repeat_allowed() const = 0;
+    std::string prefix() const { return rstd::to_lower(name()); }
 };
 
 template <typename G>

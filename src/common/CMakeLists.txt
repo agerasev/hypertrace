@@ -27,11 +27,12 @@ set(COMMON_SRC
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/hyperbolic.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/geometry/ray.cc"
 
-    "${CMAKE_CURRENT_SOURCE_DIR}/object/euclidean/shapes.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/object/hyperbolic/plane.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/object/hyperbolic/horosphere.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/object/material.cc"
-    "${CMAKE_CURRENT_SOURCE_DIR}/object/modifier.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shape/euclidean/shapes.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shape/hyperbolic/plane.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/shape/hyperbolic/horosphere.cc"
+
+    "${CMAKE_CURRENT_SOURCE_DIR}/material/material.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/material/modifier.cpp"
 
     "${CMAKE_CURRENT_SOURCE_DIR}/render/view.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/render/light.cc"

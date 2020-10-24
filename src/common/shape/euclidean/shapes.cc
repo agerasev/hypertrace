@@ -178,13 +178,16 @@ rtest_module_(euclidean_shapes) {
         TestRng<real3> vrng(0xBAAB);
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
+
+        auto sty = Box<Shape<Eu>>(Sphere<Eu>());
+        auto src = sty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("euclidean_sphere.cl", std::string(
-            "#include <common/object/euclidean/shapes.hh>\n"
+        .source("euclidean_sphere.cl", format_(
+            "#include <{}>\n"
             "__kernel void detect(\n"
             "    __global const real3 *start, __global const real3 *dir,\n"
             "    __global real3 *hit, __global real3 *norm, __global real *dist\n"
-            ") {\n"
+            ") {{\n"
             "    int i = get_global_id(0);\n"
             "    Context ctx;\n"
             "    ctx.repeat = false;\n"
@@ -192,11 +195,13 @@ rtest_module_(euclidean_shapes) {
             "    light.ray.start = start[i];\n"
             "    light.ray.direction = dir[i];\n"
             "    real3 normal;\n"
-            "    dist[i] = sphereeu_detect(NULL, &ctx, &normal, &light);\n"
+            "    dist[i] = {}_detect(NULL, &ctx, &normal, &light);\n"
             "    hit[i] = light.ray.start;\n"
             "    norm[i] = normal;\n"
-            "}\n"
-        ))
+            "}}\n",
+            src.name(),
+            sty->prefix()
+        ), std::move(src.files()))
         .build("detect").expect("Kernel build error");
 
         const int n = TEST_ATTEMPTS;
@@ -223,13 +228,16 @@ rtest_module_(euclidean_shapes) {
         TestRng<real3> vrng(0xBAAB);
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
+
+        auto sty = Box<Shape<Eu>>(Cube<Eu>());
+        auto src = sty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("euclidean_cube.cl", std::string(
-            "#include <common/object/euclidean/shapes.hh>\n"
+        .source("euclidean_cube.cl", format_(
+            "#include <{}>\n"
             "__kernel void detect(\n"
             "    __global const real3 *start, __global const real3 *dir,\n"
             "    __global real3 *hit, __global real3 *norm, __global real *dist\n"
-            ") {\n"
+            ") {{\n"
             "    int i = get_global_id(0);\n"
             "    Context ctx;\n"
             "    ctx.repeat = false;\n"
@@ -237,11 +245,13 @@ rtest_module_(euclidean_shapes) {
             "    light.ray.start = start[i];\n"
             "    light.ray.direction = dir[i];\n"
             "    real3 normal;\n"
-            "    dist[i] = cubeeu_detect(NULL, &ctx, &normal, &light);\n"
+            "    dist[i] = {}_detect(NULL, &ctx, &normal, &light);\n"
             "    hit[i] = light.ray.start;\n"
             "    norm[i] = normal;\n"
-            "}\n"
-        ))
+            "}}\n",
+            src.name(),
+            sty->prefix()
+        ), std::move(src.files()))
         .build("detect").expect("Kernel build error");
 
         const int n = TEST_ATTEMPTS;

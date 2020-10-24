@@ -16,7 +16,7 @@ real cubeeu_detect(__global const CubeEu *shape, Context *context, real3 *normal
 
 #else // DYNTYPE
 
-#include <common/object/shape.hpp>
+#include <common/shape/shape.hpp>
 
 template <typename G>
 class Cube;
@@ -25,7 +25,7 @@ class Cube<Eu> final : public dyn::ImplEmptyType<Cube<Eu>, SurfaceShape<Eu>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string name() const override { return "CubeEu"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("common/object/euclidean/shapes.hh"); };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/shape/euclidean/shapes.hh"); };
 };
 
 template <typename G>
@@ -35,7 +35,7 @@ class Sphere<Eu> final : public dyn::ImplEmptyType<Sphere<Eu>, SurfaceShape<Eu>>
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string name() const override { return "SphereEu"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("common/object/euclidean/shapes.hh"); };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/shape/euclidean/shapes.hh"); };
 };
 
 #endif // !DYNTYPE

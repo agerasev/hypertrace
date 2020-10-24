@@ -193,14 +193,17 @@ rtest_module_(hyperbolic_plane) {
 
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
+
+        auto sty = Box<Shape<Hy>>(Plane<Hy>());
+        auto src = sty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("hyperbolic_plane.cl", std::string(
-            "#include <common/object/hyperbolic/plane.hh>\n"
+        .source("hyperbolic_plane.cl", format_(
+            "#include <{}>\n"
             "__kernel void detect(\n"
             "    __global const quat *start, __global const quat *idir,\n"
             "    __global quat *hit, __global quat *odir, __global quat *norm,\n"
             "    __global real *dist\n"
-            ") {\n"
+            ") {{\n"
             "    int i = get_global_id(0);\n"
             "    Context ctx;\n"
             "    ctx.repeat = false;\n"
@@ -208,12 +211,14 @@ rtest_module_(hyperbolic_plane) {
             "    light.ray.start = start[i];\n"
             "    light.ray.direction = idir[i];\n"
             "    quat normal;\n"
-            "    dist[i] = planehy_detect(NULL, &ctx, &normal, &light);\n"
+            "    dist[i] = {}_detect(NULL, &ctx, &normal, &light);\n"
             "    hit[i] = light.ray.start;\n"
             "    odir[i] = light.ray.direction;\n"
             "    norm[i] = normal;\n"
-            "}\n"
-        ))
+            "}}\n",
+            src.name(),
+            sty->prefix()
+        ), std::move(src.files()))
         .build("detect").expect("Kernel build error");
 
         const int n = TEST_ATTEMPTS;

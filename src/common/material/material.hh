@@ -27,25 +27,25 @@ bool lambertian_interact(__global const Lambertian *material, Context *context, 
 class Absorbing final : public dyn::ImplEmptyType<Absorbing, SurfaceMaterial> {
 public:
     inline virtual std::string name() const override { return "Absorbing"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("common/object/material.hh"); };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/material/material.hh"); };
 };
 
 class Transparent final : public dyn::ImplEmptyType<Transparent, SurfaceMaterial> {
 public:
     inline virtual std::string name() const override { return "Transparent"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("common/object/material.hh"); };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/material/material.hh"); };
 };
 
 class Specular final : public dyn::ImplEmptyType<Specular, SurfaceMaterial> {
 public:
     inline virtual std::string name() const override { return "Specular"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("common/object/material.hh"); };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/material/material.hh"); };
 };
 
 class Lambertian final : public dyn::ImplEmptyType<Lambertian, SurfaceMaterial> {
 public:
     inline virtual std::string name() const override { return "Lambertian"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("common/object/material.hh"); };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/material/material.hh"); };
 };
 
 #endif // !DYNTYPE

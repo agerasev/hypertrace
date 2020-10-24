@@ -8,7 +8,7 @@
 
 #include <common/types.hh>
 #include <common/render/view.hh>
-#include <common/object/shape.hpp>
+#include <common/shape/shape.hpp>
 
 #include <host/opencl/opencl.hpp>
 

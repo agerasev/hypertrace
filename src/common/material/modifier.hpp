@@ -7,7 +7,7 @@
 
 
 template <typename Self, typename Base, typename D>
-class ImplModifier : public Base {
+class ImplMaterialModifier : public Base {
 public:
     typedef Base BaseType;
     typedef typename Base::Instance BaseInstance;
@@ -52,7 +52,7 @@ private:
     InnerType content_;
 
 public:
-    ImplModifier(BaseTypeBox &&inner) :
+    ImplMaterialModifier(BaseTypeBox &&inner) :
         content_(
             rs::Tuple(std::string("inner"), std::move(inner)),    
             rs::Tuple(std::string("data"), dyn::Primitive<D>())
@@ -108,7 +108,7 @@ public:
     }
 };
 
-class Colored final : public ImplModifier<Colored, Material, float3> {
+class Colored final : public ImplMaterialModifier<Colored, Material, float3> {
     virtual std::string name() const override {
         return format_("Colored{}", inner()->name());
     }
@@ -119,7 +119,7 @@ class Colored final : public ImplModifier<Colored, Material, float3> {
     }
 };
 
-class Emissive final : public ImplModifier<Emissive, Material, float3> {
+class Emissive final : public ImplMaterialModifier<Emissive, Material, float3> {
     virtual std::string name() const override {
         return format_("Emissive{}", inner()->name());
     }

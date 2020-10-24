@@ -13,13 +13,13 @@ real horosphere_detect(__global const Horosphere *shape, Context *context, HyDir
 
 #else // DYNTYPE
 
-#include <common/object/shape.hpp>
+#include <common/shape/shape.hpp>
 
 class Horosphere final : public dyn::ImplEmptyType<Horosphere, SurfaceShape<Hy>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string name() const override { return "Horosphere"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("common/object/hyperbolic/horosphere.hh"); };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/shape/hyperbolic/horosphere.hh"); };
 };
 
 #endif // DYNTYPE

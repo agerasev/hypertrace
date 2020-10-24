@@ -13,7 +13,7 @@ real planehy_detect(__global const PlaneHy *shape, Context *context, HyDir *norm
 
 #else // DYNTYPE
 
-#include <common/object/shape.hpp>
+#include <common/shape/shape.hpp>
 
 template <typename G>
 class Plane;
@@ -22,7 +22,7 @@ class Plane<Hy> final : public dyn::ImplEmptyType<Plane<Hy>, SurfaceShape<Hy>> {
 public:
     inline virtual bool repeat_allowed() const override { return false; }
     inline virtual std::string name() const override { return "PlaneHy"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("common/object/hyperbolic/plane.hh"); };
+    inline virtual dyn::Source source() const override { return dyn::Source("common/shape/hyperbolic/plane.hh"); };
 };
 
 #endif // !DYNTYPE

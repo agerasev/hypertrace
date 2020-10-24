@@ -25,6 +25,8 @@ real3 random_sphere_cap(Rng *rng, real cos_alpha);
 
 #ifdef TEST
 
+#include <rstd.hpp>
+
 template <typename T>
 class Grid {
 private:

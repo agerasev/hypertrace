@@ -6,11 +6,12 @@
 #include <common/render/context.hh>
 
 
-typedef void _Horosphere;
-real horosphere_detect(__global const _Horosphere *shape, Context *context, HyDir *normal, LightHy *light);
+#ifndef DYNTYPE
 
+typedef void Horosphere;
+real horosphere_detect(__global const Horosphere *shape, Context *context, HyDir *normal, LightHy *light);
 
-#ifdef HOST
+#else // DYNTYPE
 
 #include <common/object/shape.hpp>
 
@@ -21,11 +22,7 @@ public:
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/hyperbolic/horosphere.hh"); };
 };
 
-#else // !HOST
-
-typedef _Horosphere Horosphere;
-
-#endif // HOST
+#endif // DYNTYPE
 
 
 /*

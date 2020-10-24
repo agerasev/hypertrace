@@ -6,13 +6,15 @@
 #include <common/render/light.hh>
 
 
+#ifndef DYNTYPE
+
 typedef void SphereEu;
 real sphereeu_detect(__global const SphereEu *shape, Context *context, real3 *normal, LightEu *light);
+
 typedef void CubeEu;
 real cubeeu_detect(__global const CubeEu *shape, Context *context, real3 *normal, LightEu *light);
 
-
-#ifdef HOST
+#else // DYNTYPE
 
 #include <common/object/shape.hpp>
 
@@ -36,7 +38,7 @@ public:
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/euclidean/shapes.hh"); };
 };
 
-#endif // HOST
+#endif // !DYNTYPE
 
 
 #ifndef HOST

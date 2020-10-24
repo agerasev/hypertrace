@@ -142,6 +142,8 @@ Result<cl::Kernel, std::string> KernelBuilder::build(const std::string &kernel_n
         files,
         std::map<std::string, bool>{
             std::make_pair("HOST", false),
+            std::make_pair("INTEROP", false),
+            std::make_pair("DYNTYPE", false),
             std::make_pair("TEST", false),
             std::make_pair("TEST_UNIT", false),
             std::make_pair("TEST_DEV", false)

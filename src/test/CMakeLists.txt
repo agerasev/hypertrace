@@ -26,6 +26,7 @@ target_compile_definitions(test_dev PRIVATE
     "-DTEST"
     "-DTEST_DEV"
     "-DINTEROP"
+    "-DDYNTYPE"
     "-DCL_TARGET_OPENCL_VERSION=120"
     "-DCL_USE_DEPRECATED_OPENCL_1_2_APIS"
 )

@@ -5,21 +5,21 @@
 #include <common/render/light.hh>
 #include <common/render/context.hh>
 
+#ifndef DYNTYPE
 
-typedef void _Black;
-bool black_interact(__global const _Black *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
+typedef void Black;
+bool black_interact(__global const Black *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
 
-typedef void _Transparent;
-bool transparent_interact(__global const _Transparent *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
+typedef void Transparent;
+bool transparent_interact(__global const Transparent *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
 
-typedef void _Specular;
-bool specular_interact(__global const _Specular *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
+typedef void Specular;
+bool specular_interact(__global const Specular *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
 
-typedef void _Lambertian;
-bool lambertian_interact(__global const _Lambertian *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
+typedef void Lambertian;
+bool lambertian_interact(__global const Lambertian *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
 
-
-#ifdef HOST
+#else // DYNTYPE
 
 #include "material.hpp"
 
@@ -48,14 +48,7 @@ public:
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/material.hh"); };
 };
 
-#else // !HOST
-
-typedef _Black Black;
-typedef _Transparent Transparent;
-typedef _Specular Specular;
-typedef _Lambertian Lambertian;
-
-#endif // HOST
+#endif // !DYNTYPE
 
 
 #ifndef HOST

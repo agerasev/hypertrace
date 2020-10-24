@@ -6,11 +6,12 @@
 #include <common/render/context.hh>
 
 
+#ifndef DYNTYPE
+
 typedef void PlaneHy;
 real planehy_detect(__global const PlaneHy *shape, Context *context, HyDir *normal, LightHy *light);
 
-
-#ifdef HOST
+#else // DYNTYPE
 
 #include <common/object/shape.hpp>
 
@@ -24,7 +25,7 @@ public:
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/hyperbolic/plane.hh"); };
 };
 
-#endif // HOST
+#endif // !DYNTYPE
 
 /*
 typedef struct {

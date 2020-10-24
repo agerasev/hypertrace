@@ -10,15 +10,15 @@ namespace dyn {
 template <typename ...Types>
 class StaticTuple : public Type {
 public:
-    class Instance : public Type::Instance {
+    class Instance_ : public Type::Instance {
     public:
         rstd::Tuple<rstd::Box<typename Types::Instance>...> fields_;
 
-        Instance() = default;
-        explicit Instance(rstd::Box<typename Types::Instance> &&...flds) :
+        Instance_() = default;
+        explicit Instance_(rstd::Box<typename Types::Instance> &&...flds) :
             fields_(std::forward<rstd::Box<typename Types::Instance>>(flds)...)
         {}
-        explicit Instance(rstd::Tuple<rstd::Box<typename Types::Instance>...> flds) :
+        explicit Instance_(rstd::Tuple<rstd::Box<typename Types::Instance>...> flds) :
             fields_(std::move(flds))
         {}
 
@@ -66,6 +66,7 @@ public:
             *this = type_().load_(src);
         }
     };
+    typedef Instance_ Instance;
 
 private:
     rstd::Tuple<rstd::Box<Types>...> fields_;

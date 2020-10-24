@@ -16,8 +16,6 @@ public:
 
     virtual Instance *_load(const uchar *src) const override = 0;
     rstd::Box<Instance> load(const uchar *src) const { return rstd::Box<Instance>::_from_raw(_load(src)); }
-
-    virtual std::string prefix() const = 0;
 };
 
 class SurfaceMaterial : public Material {};

@@ -6,7 +6,8 @@
 #include <common/render/context.hh>
 
 
-real planehy_detect(__global const void *shape, Context *context, HyDir *normal, LightHy *light);
+typedef void PlaneHy;
+real planehy_detect(__global const PlaneHy *shape, Context *context, HyDir *normal, LightHy *light);
 
 
 #ifdef HOST
@@ -19,7 +20,7 @@ template <>
 class Plane<Hy> final : public dyn::ImplEmptyType<Plane<Hy>, SurfaceShape<Hy>> {
 public:
     inline virtual bool repeat_allowed() const override { return false; }
-    inline virtual std::string prefix() const override { return "planehy"; };
+    inline virtual std::string name() const override { return "PlaneHy"; };
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/hyperbolic/plane.hh"); };
 };
 

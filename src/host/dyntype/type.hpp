@@ -70,8 +70,6 @@ class ImplEmptyType : public Base {
 
     virtual Instance *_load(const uchar *) const override { return new Instance(); }
     rstd::Box<Instance> load(const uchar *) const { return rstd::Box(_load()); }
-
-    virtual std::string name() const override { return "void"; }
 };
 
 typedef rstd::Box<Type> TypeBox;

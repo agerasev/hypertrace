@@ -104,7 +104,7 @@ public:
             "#include <{}>\n"
             ,
             src.name(),
-            type->prefix(),
+            rstd::to_lower(type->name()),
             RenderFile<G>::path()
         );
         auto prog_and_log = cl::Program::create(

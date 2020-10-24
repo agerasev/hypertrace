@@ -14,7 +14,7 @@ protected:
     typedef typename StaticTuple<Types...>::Instance BaseInstance;
 
 public:
-    class Instance : public BaseInstance {
+    class Instance_ : public BaseInstance {
     private:
         std::array<std::string, sizeof...(Types)> field_names_;
 
@@ -35,17 +35,17 @@ public:
         };
 
     public:
-        Instance() = default;
-        explicit Instance(rstd::Tuple<rstd::Tuple<std::string, rstd::Box<typename Types::Instance>>...> &&flds) {
+        Instance_() = default;
+        explicit Instance_(rstd::Tuple<rstd::Tuple<std::string, rstd::Box<typename Types::Instance>>...> &&flds) {
             auto ret = flds.unpack(Unzipper());
             field_names_ = std::move(ret.template get<0>());
             BaseInstance::fields() = std::move(ret.template get<1>());
         }
-        explicit Instance(rstd::Tuple<std::string, rstd::Box<typename Types::Instance>> &&...flds) :
+        explicit Instance_(rstd::Tuple<std::string, rstd::Box<typename Types::Instance>> &&...flds) :
             BaseInstance(std::forward<rstd::Box<typename Types::Instance>>(flds.template get<1>())...),
             field_names_{flds.template get<0>()...}
         {}
-        Instance(const std::array<std::string, sizeof...(Types)> &names, rstd::Tuple<rstd::Box<typename Types::Instance>...> &&insts) :
+        Instance_(const std::array<std::string, sizeof...(Types)> &names, rstd::Tuple<rstd::Box<typename Types::Instance>...> &&insts) :
             BaseInstance(std::move(insts)),
             field_names_(names)
         {}
@@ -70,6 +70,7 @@ public:
             return rstd::Box<StaticStruct>::_from_raw(_type());
         }
     };
+    typedef Instance_ Instance;
 
 private:
     std::array<std::string, sizeof...(Types)> field_names_;

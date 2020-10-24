@@ -1,4 +1,5 @@
 #pragma once
+#pragma GCC diagnostic ignored "-Wignored-attributes"
 
 #include <cstdlib>
 #include <memory>
@@ -9,7 +10,6 @@ void *aligned_alloc_(size_t align, size_t size, void **orig);
 
 template <typename T=void>
 class AlignedMem;
-
 
 template <>
 class AlignedMem<void> {

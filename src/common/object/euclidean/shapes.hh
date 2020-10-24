@@ -6,8 +6,10 @@
 #include <common/render/light.hh>
 
 
-real sphereeu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light);
-real cubeeu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light);
+typedef void SphereEu;
+real sphereeu_detect(__global const SphereEu *shape, Context *context, real3 *normal, LightEu *light);
+typedef void CubeEu;
+real cubeeu_detect(__global const CubeEu *shape, Context *context, real3 *normal, LightEu *light);
 
 
 #ifdef HOST
@@ -20,7 +22,7 @@ template <>
 class Cube<Eu> final : public dyn::ImplEmptyType<Cube<Eu>, SurfaceShape<Eu>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
-    inline virtual std::string prefix() const override { return "cubeeu"; };
+    inline virtual std::string name() const override { return "CubeEu"; };
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/euclidean/shapes.hh"); };
 };
 
@@ -30,7 +32,7 @@ template <>
 class Sphere<Eu> final : public dyn::ImplEmptyType<Sphere<Eu>, SurfaceShape<Eu>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
-    inline virtual std::string prefix() const override { return "sphereeu"; };
+    inline virtual std::string name() const override { return "SphereEu"; };
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/euclidean/shapes.hh"); };
 };
 

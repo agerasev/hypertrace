@@ -6,7 +6,8 @@
 #include <common/render/context.hh>
 
 
-real horosphere_detect(__global const void *shape, Context *context, HyDir *normal, LightHy *light);
+typedef void _Horosphere;
+real horosphere_detect(__global const _Horosphere *shape, Context *context, HyDir *normal, LightHy *light);
 
 
 #ifdef HOST
@@ -16,9 +17,13 @@ real horosphere_detect(__global const void *shape, Context *context, HyDir *norm
 class Horosphere final : public dyn::ImplEmptyType<Horosphere, SurfaceShape<Hy>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
-    inline virtual std::string prefix() const override { return "horosphere"; };
+    inline virtual std::string name() const override { return "Horosphere"; };
     inline virtual dyn::Source source() const override { return dyn::Source("common/object/hyperbolic/horosphere.hh"); };
 };
+
+#else // !HOST
+
+typedef _Horosphere Horosphere;
 
 #endif // HOST
 

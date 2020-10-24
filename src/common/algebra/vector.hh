@@ -184,7 +184,7 @@ public:
     }
     bool operator==(V x) const {
         for (int i = 0; i < N; ++i) {
-            if (std::abs(_value[i] - x[i]) > _epsilon) {
+            if (!(std::abs(_value[i] - x[i]) <= _epsilon)) {
                 return false;
             }
         }

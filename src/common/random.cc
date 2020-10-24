@@ -72,125 +72,59 @@ real3 random_sphere_cap(Rng *rng, real cos_alpha) {
 // Monte Carlo confidence interval
 static const real CONF = 3.0/sqrt(real(TEST_ATTEMPTS));
 
+
+std::vector<real> SphereGrid::sizes() const {
+    std::vector<real> s(P*T);
+    real ar = 2*PI*(1 - cos(max_theta));
+    real dp = 2*PI/P;
+    real dt = max_theta/T;
+    for (size_t t = 0; t < T; ++t) {
+        for (size_t p = 0; p < P; ++p) {
+            s[p + t*P] = dp*(cos(t*dt) - cos((t + 1)*dt))/ar;
+        }
+    }
+    return s;
+}
+size_t SphereGrid::index(real3 x) const {
+    real phi = atan2(x.y, x.x);
+    if (phi < 0.0) {
+        phi += 2*PI;
+    }
+    real theta = atan2(length(x.xy), x.z);
+
+    size_t p = P*phi/(2*PI);
+    size_t t = T*theta/max_theta;
+
+    return p + t*P;
+}
+
+std::vector<real> DiskGrid::sizes() const {
+    std::vector<real> s(P*R);
+    real ar = PI;
+    real dp = 2*PI/P;
+    real dr = 1.0/R;
+    for (size_t r = 0; r < R; ++r) {
+        for (size_t p = 0; p < P; ++p) {
+            real r1 = r*dr, r2 = (r + 1)*dr;
+            s[p + r*P] = dp*(r2*r2 - r1*r1)/ar;
+        }
+    }
+    return s;
+}
+size_t DiskGrid::index(real2 x) const {
+    real phi = atan2(x.y, x.x);
+    if (phi < 0.0) {
+        phi += 2*PI;
+    }
+    real rad = length(x);
+
+    size_t p = P*phi/(2*PI);
+    size_t r = R*rad;
+
+    return p + r*P;
+}
+
 #ifdef TEST_UNIT
-
-#include <functional>
-#include <iterator>
-#include <algorithm>
-
-template <typename T>
-class Grid {
-private:
-    std::vector<real> cells;
-
-public:
-    virtual std::vector<real> sizes() const = 0;
-    virtual size_t index(T x) const = 0;
-
-public:
-    Grid(size_t N) : cells(N, 0.0) {}
-
-    real &operator[](T x) {
-        size_t i = index(x);
-        assert_(i < cells.size());
-        return cells[i];
-    }
-    std::vector<real> total(real norm) const {
-        std::vector<real> total(cells.size());
-        std::vector<real> sizes = this->sizes();
-        for (size_t i = 0; i < cells.size(); ++i) {
-            total[i] = cells[i]/sizes[i]/norm;
-        }
-        return total;
-    }
-    void assert_all(real norm, real eps) const {
-        std::vector<real> total = this->total(norm);
-        std::vector<real> sizes = this->sizes();
-        for (size_t i = 0; i < total.size(); ++i) {
-            assert_eq_(total[i], approx(1).epsilon(eps/sizes[i]));
-        }
-    }
-};
-class SphereGrid : public Grid<real3> {
-private:
-    size_t P, T;
-    real max_theta;
-
-public:
-    std::vector<real> sizes() const override {
-        std::vector<real> s(P*T);
-        real ar = 2*PI*(1 - cos(max_theta));
-        real dp = 2*PI/P;
-        real dt = max_theta/T;
-        for (size_t t = 0; t < T; ++t) {
-            for (size_t p = 0; p < P; ++p) {
-                s[p + t*P] = dp*(cos(t*dt) - cos((t + 1)*dt))/ar;
-            }
-        }
-        return s;
-    }
-    size_t index(real3 x) const override {
-        real phi = atan2(x.y, x.x);
-        if (phi < 0.0) {
-            phi += 2*PI;
-        }
-        real theta = atan2(length(x.xy), x.z);
-
-        size_t p = P*phi/(2*PI);
-        size_t t = T*theta/max_theta;
-
-        return p + t*P;
-    }
-
-public:
-    SphereGrid(
-        size_t P, size_t T,
-        real mt=PI
-    ) :
-        Grid<real3>(P*T),
-        P(P), T(T),
-        max_theta(mt)
-    {}
-};
-class DiskGrid : public Grid<real2> {
-private:
-    size_t P, R;
-
-public:
-    std::vector<real> sizes() const override {
-        std::vector<real> s(P*R);
-        real ar = PI;
-        real dp = 2*PI/P;
-        real dr = 1.0/R;
-        for (size_t r = 0; r < R; ++r) {
-            for (size_t p = 0; p < P; ++p) {
-                real r1 = r*dr, r2 = (r + 1)*dr;
-                s[p + r*P] = dp*(r2*r2 - r1*r1)/ar;
-            }
-        }
-        return s;
-    }
-    size_t index(real2 x) const override {
-        real phi = atan2(x.y, x.x);
-        if (phi < 0.0) {
-            phi += 2*PI;
-        }
-        real rad = length(x);
-
-        size_t p = P*phi/(2*PI);
-        size_t r = R*rad;
-
-        return p + r*P;
-    }
-
-public:
-    DiskGrid(
-        size_t P, size_t R
-    ) :
-        Grid<real2>(P*R),
-        P(P), R(R)
-    {}
-};
 
 rtest_module_(random) {
     rtest_(uniform) {

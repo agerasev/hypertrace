@@ -22,12 +22,12 @@ bool specular_interact(__global const void *material, Context *context, real3 no
 
 _ALLOW_UNUSED_PARAMETERS_
 bool lambertian_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
-    if (dot(normal, light->direction) > 0) {
+    if (dot(normal, light->direction) > R0) {
         normal = -normal;
     }
     real3 rand = random_hemisphere_cosine(context->rng);
-    // FIXME: Use Rotation3
-    Linear3 rot = lin3_look_to(normal);
+    // FIXME: Use Rotation3 instead of more general Linear3
+    Linear3 rot = lin3_inverse(lin3_look_to(normal)); // Transpose
     light->direction = lin3_apply(rot, rand);
     //light->diffuse = true;
     return true;
@@ -40,7 +40,10 @@ bool lambertian_interact(__global const void *material, Context *context, real3 
 
 #ifdef TEST_UNIT
 
-rtest_module_(basic_materials) {
+rtest_module_(material) {
+    // Monte Carlo confidence interval
+    static const real CONF = 3.0/sqrt(real(TEST_ATTEMPTS));
+
     static_thread_local_(TestRng<real3>, rng) {
         return TestRng<real3>(0xABBA);
     }
@@ -52,16 +55,17 @@ rtest_module_(basic_materials) {
         Context ctx;
         for (int i = 0; i < TEST_ATTEMPTS; ++i) {
             real3 normal = rng->unit();
+            real3 dir = rng->unit();
+            if (dot(normal, dir) > 0.0) {
+                dir = -dir;
+            }
             LightLocal light {
                 LightBase {
                     float3(1.0f),
                     false
                 },
-                rng->unit()
+                dir
             };
-            if (dot(normal, light.direction) > 0.0) {
-                light.direction = -light.direction;
-            }
             float3 emission(0.0f);
 
             bool b = black_interact(nullptr, &ctx, normal, &light, &emission);
@@ -69,6 +73,98 @@ rtest_module_(basic_materials) {
             assert_(!b);
             assert_eq_(emission, approx(float3(0.0f)));
         }
+    }
+    rtest_(transparent) {
+        Context ctx;
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            real3 normal = rng->unit();
+            real3 dir = rng->unit();
+            if (dot(normal, dir) > 0.0) {
+                dir = -dir;
+            }
+            LightLocal light {
+                LightBase {
+                    float3(1.0f),
+                    false
+                },
+                dir
+            };
+            float3 emission(0.0f);
+
+            bool b = transparent_interact(nullptr, &ctx, normal, &light, &emission);
+
+            assert_(b);
+            assert_eq_(emission, approx(float3(0.0f)));
+            assert_eq_(light.direction, approx(dir));
+        }
+    }
+    rtest_(specular) {
+        Context ctx;
+        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+            real3 normal = rng->unit();
+            real3 dir = rng->unit();
+            if (dot(normal, dir) > 0.0) {
+                dir = -dir;
+            }
+            LightLocal light {
+                LightBase {
+                    float3(1.0f),
+                    false
+                },
+                dir
+            };
+            float3 emission(0.0f);
+
+            bool b = specular_interact(nullptr, &ctx, normal, &light, &emission);
+
+            assert_(b);
+            assert_eq_(emission, approx(float3(0.0f)));
+            assert_eq_(length(light.direction), approx(1.0));
+            assert_eq_(normalize(light.direction - dir), approx(normal));
+        }
+    }
+    rtest_(lambertian) {
+        Context ctx;
+        Rng devrng { 0xDEADBEEF };
+        ctx.rng = &devrng;
+
+        real3 sum = real3(R0);
+        size_t P = 16, R = 16;
+        DiskGrid grid(P, R);
+
+        real3 normal = rng->unit();
+        Linear3 loc = lin3_inverse(lin3_look_to(normal));
+        float3 emission(0.0f);
+
+        const size_t N = P*R*TEST_ATTEMPTS;
+        for (size_t i = 0; i < N; ++i) {
+            real3 dir = rng->unit();
+            if (dot(normal, dir) > 0.0) {
+                dir = -dir;
+            }
+            LightLocal light {
+                LightBase {
+                    float3(1.0f),
+                    false
+                },
+                dir
+            };
+
+            bool b = lambertian_interact(nullptr, &ctx, normal, &light, &emission);
+            real3 odir = light.direction;
+
+            assert_(b);
+            assert_eq_(length(odir), approx(1.0));
+            assert_(dot(odir, normal) > 0.0);
+
+            real3 ldir = lin3_apply(loc, odir);
+            sum += ldir;
+            grid[ldir.xy] += 1.0;
+        }
+
+        assert_eq_(emission, approx(float3(0.0f)));
+        assert_eq_(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
+        grid.assert_all(N, CONF);
     }
 }
 

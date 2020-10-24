@@ -29,7 +29,7 @@ public:
         template <typename I>
         Instance(I &&field_iter) {
             for (auto &&t : field_iter) {
-                append(rstd::get<0>(t), std::move(rstd::get<1>(t)));
+                append(t.template get<0>(), std::move(t.template get<1>()));
             }
         }
         void append(const std::string &str, ItemInstanceBox &&i) {
@@ -50,7 +50,7 @@ public:
         Struct type_() const {
             return Struct(
                 rstd::iter_ref(field_names_).zip(rstd::iter_ref(fields()))
-                .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*rstd::get<0>(nf)), (*rstd::get<1>(nf))->type()); })
+                .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*nf.template get<0>()), (*nf.template get<1>())->type()); })
             );
         }
         virtual Struct *_type() const override {
@@ -69,7 +69,7 @@ public:
     template <typename I>
     Struct(I &&field_iter) {
         for (auto &&t : field_iter) {
-            append(rstd::get<0>(t), std::move(rstd::get<1>(t)));
+            append(t.template get<0>(), std::move(t.template get<1>()));
         }
     }
     void append(const std::string &str, ItemTypeBox &&i) {
@@ -90,7 +90,7 @@ public:
     virtual Struct *_clone() const override {
         return new Struct(
             rstd::iter_ref(field_names_).zip(rstd::iter_ref(fields()))
-            .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*rstd::get<0>(nf)), (*rstd::get<1>(nf))->clone()); })
+            .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*nf.template get<0>()), (*nf.template get<1>())->clone()); })
         );
     }
     rstd::Box<Struct> clone() const {

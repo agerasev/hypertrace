@@ -10,10 +10,17 @@
 
 using namespace dyn;
 
-/*
 extern devtest::Target devtest_make_target();
 
-rtest_module_(dyntype_struct) {
+rtest_module_(dyntype_static_struct) {
+    typedef StaticStruct<
+        Primitive<real>,
+        Primitive<real3>,
+        Primitive<real16>,
+        Primitive<uint>,
+        Primitive<uchar>
+    > TestStaticStruct;
+
     rtest_(store_load) {
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
@@ -33,7 +40,7 @@ rtest_module_(dyntype_struct) {
         std::vector<ulong_> ssize(1);
         std::vector<ulong_> dyn_offset, offset(5);
 
-        Array<Struct<>>::Instance darr;
+        Array<TestStaticStruct>::Instance darr;
 
         for (size_t i = 0; i < n; ++i) {
             real r = rng.normal();
@@ -42,12 +49,13 @@ rtest_module_(dyntype_struct) {
             uint u = uint(((ulong_)1<<32)*rng.uniform());
             char b = uchar(256*rng.uniform());
 
-            Struct<>::Instance dinst;
-            dinst.append("r", InstanceBox(Primitive<real>::Instance(r)));
-            dinst.append("r3", InstanceBox(Primitive<real3>::Instance(r3)));
-            dinst.append("r16", InstanceBox(Primitive<real16>::Instance(r16)));
-            dinst.append("u", InstanceBox(Primitive<uint>::Instance(u)));
-            dinst.append("b", InstanceBox(Primitive<uchar>::Instance(b)));
+            TestStaticStruct::Instance dinst = TestStaticStruct::Instance(
+                rstd::Tuple(std::string("r"), rstd::Box(Primitive<real>::Instance(r))),
+                rstd::Tuple(std::string("r3"), rstd::Box(Primitive<real3>::Instance(r3))),
+                rstd::Tuple(std::string("r16"), rstd::Box(Primitive<real16>::Instance(r16))),
+                rstd::Tuple(std::string("u"), rstd::Box(Primitive<uint>::Instance(u))),
+                rstd::Tuple(std::string("b"), rstd::Box(Primitive<uchar>::Instance(b)))
+            );
             if (i == 0) {
                 dyn_offset = dinst.type_().offsets();
             }
@@ -114,14 +122,13 @@ rtest_module_(dyntype_struct) {
             assert_eq_(datau[i], outu[i]);
             assert_eq_(int(datab[i]), int(outb[i]));
 
-            rstd::Box<Struct<>::Instance> dinst = std::move(darr.items()[i]);
-            assert_eq_(dev_approx(datar[i]), dinst->fields()[0].template downcast<Primitive<real>::Instance>().unwrap()->value);
-            assert_eq_(dev_approx(datar3[i]), dinst->fields()[1].template downcast<Primitive<real3>::Instance>().unwrap()->value);
-            assert_eq_(dev_approx(datar16[i]), dinst->fields()[2].template downcast<Primitive<real16>::Instance>().unwrap()->value);
-            assert_eq_(datau[i], dinst->fields()[3].template downcast<Primitive<uint>::Instance>().unwrap()->value);
-            assert_eq_(int(datab[i]), int(dinst->fields()[4].template downcast<Primitive<uchar>::Instance>().unwrap()->value));
+            rstd::Box<TestStaticStruct::Instance> dtup = std::move(darr.items()[i]);
+            assert_eq_(dev_approx(datar[i]), dtup->fields().template get<0>()->value);
+            assert_eq_(dev_approx(datar3[i]), dtup->fields().template get<1>()->value);
+            assert_eq_(dev_approx(datar16[i]), dtup->fields().template get<2>()->value);
+            assert_eq_(datau[i], dtup->fields().template get<3>()->value);
+            assert_eq_(int(datab[i]), int(dtup->fields().template get<4>()->value));
         }
     }
 }
-*/
 #endif // TEST_DEV

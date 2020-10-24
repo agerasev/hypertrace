@@ -15,20 +15,25 @@ protected:
 
 public:
     class Instance : public BaseInstance {
-    public:
+    private:
         std::array<std::string, sizeof...(Types)> field_names_;
 
-    private:
         struct Unzipper {
-            rstd::Tuple<std::array<std::string, sizeof...(Types)>, rstd::Tuple<rstd::Box<Types>...>> operator()(
+            rstd::Tuple<std::array<std::string, sizeof...(Types)>, rstd::Tuple<rstd::Box<typename Types::Instance>...>> operator()(
                 rstd::Tuple<std::string, rstd::Box<typename Types::Instance>> &&...insts
             ) {
                 return rstd::Tuple(
                     std::array{insts.template get<0>()...},
-                    rstd::Tuple(std::forward<rstd::Box<Types>>(insts.template get<1>())...)
+                    rstd::Tuple(std::forward<rstd::Box<typename Types::Instance>>(insts.template get<1>())...)
                 );
             }
         };
+        struct TypeExtractor {
+            rstd::Tuple<rstd::Box<Types>...> operator()(const rstd::Box<typename Types::Instance> &...insts) {
+                return rstd::Tuple(insts->type()...);
+            }
+        };
+
     public:
         Instance() = default;
         explicit Instance(rstd::Tuple<rstd::Tuple<std::string, rstd::Box<typename Types::Instance>>...> &&flds) {
@@ -37,75 +42,94 @@ public:
             BaseInstance::fields() = std::move(ret.template get<1>());
         }
         explicit Instance(rstd::Tuple<std::string, rstd::Box<typename Types::Instance>> &&...flds) :
-            BaseInstance(std::forward<rstd::Box<Types>>(flds.template get<1>())...),
+            BaseInstance(std::forward<rstd::Box<typename Types::Instance>>(flds.template get<1>())...),
             field_names_{flds.template get<0>()...}
         {}
-        /*
-        std::vector<ItemInstanceBox> &fields() { return BaseInstance::fields(); }
-        const std::vector<ItemInstanceBox> &fields() const { return BaseInstance::fields(); }
+        Instance(const std::array<std::string, sizeof...(Types)> &names, rstd::Tuple<rstd::Box<typename Types::Instance>...> &&insts) :
+            BaseInstance(std::move(insts)),
+            field_names_(names)
+        {}
 
-        std::vector<ItemInstanceBox> &field_names() {
+        rstd::Tuple<rstd::Box<typename Types::Instance>...> &fields() { return BaseInstance::fields(); }
+        const rstd::Tuple<rstd::Box<typename Types::Instance>...> &fields() const { return BaseInstance::fields(); }
+
+        std::array<std::string, sizeof...(Types)> &field_names() {
             return field_names_;
         }
-        const std::vector<ItemInstanceBox> &field_names() const {
+        const std::array<std::string, sizeof...(Types)> &field_names() const {
             return field_names_;
         }
 
-        Struct type_() const {
-            return Struct(
-                rstd::iter_ref(field_names_).zip(rstd::iter_ref(fields()))
-                .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*rstd::get<0>(nf)), (*rstd::get<1>(nf))->type()); })
+        StaticStruct type_() const {
+            return StaticStruct(field_names_, fields().unpack_ref(TypeExtractor()));
+        }
+        virtual StaticStruct *_type() const override {
+            return new StaticStruct(type_());
+        }
+        rstd::Box<StaticStruct> type() const {
+            return rstd::Box<StaticStruct>::_from_raw(_type());
+        }
+    };
+
+private:
+    std::array<std::string, sizeof...(Types)> field_names_;
+
+    struct Unzipper {
+        rstd::Tuple<std::array<std::string, sizeof...(Types)>, rstd::Tuple<rstd::Box<Types>...>> operator()(
+            rstd::Tuple<std::string, rstd::Box<Types>> &&...insts
+        ) {
+            return rstd::Tuple(
+                std::array{insts.template get<0>()...},
+                rstd::Tuple(std::forward<rstd::Box<Types>>(insts.template get<1>())...)
             );
         }
-        virtual Struct *_type() const override {
-            return new Struct(type_());
-        }
-        rstd::Box<Struct> type() const {
-            return rstd::Box<Struct>::_from_raw(_type());
-        }
-        */
     };
-    /*
-private:
-    std::vector<std::string> field_names_;
 
 public:
-    Struct() = default;
-    template <typename I>
-    Struct(I &&field_iter) {
-        for (auto &&t : field_iter) {
-            append(rstd::get<0>(t), std::move(rstd::get<1>(t)));
+    StaticStruct() = default;
+    explicit StaticStruct(rstd::Tuple<rstd::Tuple<std::string, rstd::Box<Types>>...> &&flds) {
+        auto ret = flds.unpack(Unzipper());
+        field_names_ = std::move(ret.template get<0>());
+        Base::fields() = std::move(ret.template get<1>());
+    }
+    explicit StaticStruct(rstd::Tuple<std::string, rstd::Box<Types>> &&...flds) :
+        Base(std::forward<rstd::Box<Types>>(flds.template get<1>())...),
+        field_names_{flds.template get<0>()...}
+    {}
+    StaticStruct(const std::array<std::string, sizeof...(Types)> &names, rstd::Tuple<rstd::Box<Types>...> &&insts) :
+        Base(std::move(insts)),
+        field_names_(names)
+    {}
+
+    rstd::Tuple<rstd::Box<Types>...> &fields() { return Base::fields(); }
+    const rstd::Tuple<rstd::Box<Types>...> &fields() const { return Base::fields(); }
+
+    std::array<std::string, sizeof...(Types)> &field_names() {
+        return field_names_;
+    }
+    const std::array<std::string, sizeof...(Types)> &field_names() const {
+        return field_names_;
+    }
+
+private:
+    struct Cloner {
+        rstd::Tuple<rstd::Box<Types>...> operator()(const rstd::Box<Types> &...types) {
+            return rstd::Tuple(types->clone()...);
         }
-    }
-    void append(const std::string &str, ItemTypeBox &&i) {
-        Base::append(std::move(i));
-        field_names_.push_back(str);
-    }
-    
-    std::vector<ItemTypeBox> &fields() { return Base::fields(); }
-    const std::vector<ItemTypeBox> &fields() const { return Base::fields(); }
+    };
 
-    std::vector<ItemTypeBox> &field_names() {
-        return field_names_;
+public:
+    virtual StaticStruct *_clone() const override {
+        return new StaticStruct(field_names(), fields().unpack_ref(Cloner()));
     }
-    const std::vector<ItemTypeBox> &field_names() const {
-        return field_names_;
-    }
-
-    virtual Struct *_clone() const override {
-        return new Struct(
-            rstd::iter_ref(field_names_).zip(rstd::iter_ref(fields()))
-            .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*rstd::get<0>(nf)), (*rstd::get<1>(nf))->clone()); })
-        );
-    }
-    rstd::Box<Struct> clone() const {
-        return rstd::Box<Struct>::_from_raw(_clone());
+    rstd::Box<StaticStruct> clone() const {
+        return rstd::Box<StaticStruct>::_from_raw(_clone());
     }
 
     virtual size_t id() const override { 
         rstd::DefaultHasher hasher;
         hasher._hash_raw(Base::id());
-        hasher._hash_raw(typeid(Struct).hash_code());
+        hasher._hash_raw(typeid(StaticStruct).hash_code());
         for (const std::string &n : field_names_) {
             hasher.hash(n);
         }
@@ -114,11 +138,7 @@ public:
 
     Instance load_(const uchar *src) const {
         BaseInstance dtup = Base::load_(src);
-        Instance dst;
-        for (size_t i = 0; i < field_names_.size(); ++i) {
-            dst.append(field_names_[i], std::move(dtup.fields()[i]));
-        }
-        return dst;
+        return Instance(field_names(), std::move(dtup.fields()));
     }
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
@@ -128,12 +148,11 @@ public:
     }
 
     virtual std::string name() const override {
-        return format_("Struct{}", id());
+        return format_("StaticStruct{}", id());
     }
     virtual Source source() const override {
         return Base::source_with_names([&](size_t i){ return field_names_[i]; });
     }
-    */
 };
 
 } // namespace dyn

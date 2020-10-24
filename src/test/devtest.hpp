@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 
 #include <common/types.hh>
 #include <host/dyntype/type.hpp>
@@ -18,7 +18,7 @@ public:
 
 private:
     const Device *device_;
-    rstd::Rc<cl::Context> context_;
+    rs::Rc<cl::Context> context_;
 
     explicit Target(const Device *device);
 
@@ -34,8 +34,8 @@ public:
 
     //const Device &device() const;
     cl_device_id device_id() const;
-    const rstd::Rc<cl::Context> &context() const;
-    rstd::Rc<cl::Queue> make_queue() const;
+    const rs::Rc<cl::Context> &context() const;
+    rs::Rc<cl::Queue> make_queue() const;
 };
 
 class Device {
@@ -44,7 +44,7 @@ public:
 
 private:
     cl_device_id id_;
-    mutable rstd::Mutex<rstd::Tuple<>> mutex_;
+    mutable rs::Mutex<rs::Tuple<>> mutex_;
 
 public:
     Device() = delete;
@@ -100,8 +100,8 @@ public:
 class KernelBuilder {
 private:
     cl_device_id device_id;
-    rstd::Rc<cl::Queue> queue;
-    rstd::Option<std::pair<std::string, std::string>> source_;
+    rs::Rc<cl::Queue> queue;
+    rs::Option<std::pair<std::string, std::string>> source_;
     std::map<std::string, std::string> files_;
 public:
     KernelBuilder() = default;
@@ -110,13 +110,13 @@ public:
     KernelBuilder(KernelBuilder &&) = default;
     KernelBuilder &operator=(KernelBuilder &&) = default;
 
-    KernelBuilder(cl_device_id device_id, rstd::Rc<cl::Queue> queue);
+    KernelBuilder(cl_device_id device_id, rs::Rc<cl::Queue> queue);
     KernelBuilder source(
         const std::string &filename,
         const std::string content,
         std::map<std::string, std::string> &&files={}
     );
-    rstd::Result<cl::Kernel, std::string> build(const std::string &kernel_name);
+    rs::Result<cl::Kernel, std::string> build(const std::string &kernel_name);
 };
 
 class KernelRunner {
@@ -144,11 +144,11 @@ private:
     template <typename T>
     class BufferArg : public KernelArg {
     private:
-        rstd::Rc<cl::Queue> queue;
+        rs::Rc<cl::Queue> queue;
         std::vector<T> &hostbuf;
         cl::Buffer devbuf;
     public:
-        BufferArg(const rstd::Rc<cl::Queue> &q, std::vector<T> &hb) :
+        BufferArg(const rs::Rc<cl::Queue> &q, std::vector<T> &hb) :
             queue(q), hostbuf(hb)
         {
             AlignedMem<dev_type<T>> tmpbuf(hostbuf.size());
@@ -172,11 +172,11 @@ private:
 
     class InstanceArg : public KernelArg {
     private:
-        rstd::Rc<cl::Queue> queue;
+        rs::Rc<cl::Queue> queue;
         dyn::Type::Instance *inst;
         cl::Buffer devbuf;
     public:
-        InstanceArg(const rstd::Rc<cl::Queue> &q, dyn::Type::Instance *hi) :
+        InstanceArg(const rs::Rc<cl::Queue> &q, dyn::Type::Instance *hi) :
             queue(q), inst(hi)
         {
             AlignedMem<> tmpbuf(inst->align(), inst->size());
@@ -195,9 +195,9 @@ private:
     };
 
 private:
-    rstd::Rc<cl::Queue> queue;
-    rstd::Rc<cl::Kernel> kernel;
-    std::vector<rstd::Box<KernelArg>> args;
+    rs::Rc<cl::Queue> queue;
+    rs::Rc<cl::Kernel> kernel;
+    std::vector<rs::Box<KernelArg>> args;
 
 public:
     KernelRunner() = default;
@@ -206,27 +206,27 @@ public:
     KernelRunner(KernelRunner &&) = default;
     KernelRunner &operator=(KernelRunner &&) = default;
 
-    inline KernelRunner(const rstd::Rc<cl::Queue> &q, const rstd::Rc<cl::Kernel> &k) :
+    inline KernelRunner(const rs::Rc<cl::Queue> &q, const rs::Rc<cl::Kernel> &k) :
         queue(q), kernel(k)
     {}
-    inline KernelRunner(const rstd::Rc<cl::Queue> &q, cl::Kernel &&k) :
-        queue(q), kernel(rstd::Rc(std::move(k)))
+    inline KernelRunner(const rs::Rc<cl::Queue> &q, cl::Kernel &&k) :
+        queue(q), kernel(rs::Rc(std::move(k)))
     {}
 
     template <typename T>
     void push_arg(const T &val) {
-        auto karg = rstd::Box(ValueArg<T>(val));
+        auto karg = rs::Box(ValueArg<T>(val));
         kernel->set_arg(args.size(), karg->arg());
         args.push_back(std::move(karg));
     }
     template <typename T>
     void push_arg(std::vector<T> &buf) {
-        auto karg = rstd::Box(BufferArg<T>(queue, buf));
+        auto karg = rs::Box(BufferArg<T>(queue, buf));
         kernel->set_arg(args.size(), karg->arg());
         args.push_back(std::move(karg));
     }
     inline void push_arg(dyn::Type::Instance *inst) {
-        auto karg = rstd::Box(InstanceArg(queue, inst));
+        auto karg = rs::Box(InstanceArg(queue, inst));
         kernel->set_arg(args.size(), karg->arg());
         args.push_back(karg.upcast<KernelArg>());
     }
@@ -251,12 +251,12 @@ private:
 
 public:
     template <typename ... Args>
-    rstd::Result<> run(size_t work_size, Args &&...args) {
+    rs::Result<> run(size_t work_size, Args &&...args) {
         unwind_args(std::forward<Args>(args)...);
         return kernel->run(*queue, work_size)
         .and_then([&](auto) {
             this->load_args();
-            return rstd::Result<>::Ok();
+            return rs::Result<>::Ok();
         });
     }
 };

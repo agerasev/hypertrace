@@ -73,7 +73,7 @@ rtest_module_(dyntype_variant) {
             dvar.set_value(idx, std::move(dprm));
             idxs[i] = idx;
 
-            darr.append(rstd::Box(std::move(dvar)));
+            darr.append(rs::Box(std::move(dvar)));
         }
 
         TypeBox darrty = darr.type();
@@ -122,7 +122,7 @@ rtest_module_(dyntype_variant) {
         assert_eq_(dty.size().unwrap(), ssize[0]);
 
         for (size_t i = 0; i < n; ++i) {
-            rstd::Box<Variant<>::Instance> dvar = std::move(darr.items()[i]);
+            rs::Box<Variant<>::Instance> dvar = std::move(darr.items()[i]);
             size_t idx = idxs[i];
             assert_eq_(dvar->index(), idx);
 
@@ -198,7 +198,7 @@ rtest_module_(dyntype_variant) {
             }
             
             idxs[i] = idx;
-            darr.append(rstd::Box(std::move(dvar)));
+            darr.append(rs::Box(std::move(dvar)));
         }
         inidxs = idxs;
         inr = datar;
@@ -247,7 +247,7 @@ rtest_module_(dyntype_variant) {
         .run(n, (Type::Instance*)&darr, inidxs, inr, inr3, inr16, inu, inb).expect("Kernel run error");
 
         for (size_t i = 0; i < n; ++i) {
-            rstd::Box<Variant<>::Instance> dvar = std::move(darr.items()[i]);
+            rs::Box<Variant<>::Instance> dvar = std::move(darr.items()[i]);
             size_t idx = idxs[i];
             assert_eq_(idx, dvar->index());
 

@@ -188,7 +188,7 @@ rtest_module_(material) {
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
 
-        auto mty = rstd::Box<Material>(Absorbing());
+        auto mty = rs::Box<Material>(Absorbing());
         auto src = mty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("material_absorbing.cl", format_(
@@ -241,7 +241,7 @@ rtest_module_(material) {
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
 
-        auto mty = rstd::Box<Material>(Transparent());
+        auto mty = rs::Box<Material>(Transparent());
         auto src = mty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("material_transparent.cl", format_(
@@ -295,7 +295,7 @@ rtest_module_(material) {
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
 
-        auto mty = rstd::Box<Material>(Specular());
+        auto mty = rs::Box<Material>(Specular());
         auto src = mty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("material_specular.cl", format_(
@@ -350,7 +350,7 @@ rtest_module_(material) {
         devtest::Target target = devtest_make_target();
         auto queue = target.make_queue();
 
-        auto mty = rstd::Box<Material>(Lambertian());
+        auto mty = rs::Box<Material>(Lambertian());
         auto src = mty->source();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("material_lambertian.cl", format_(

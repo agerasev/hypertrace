@@ -11,8 +11,8 @@ class ImplModifier : public Base {
 public:
     typedef Base BaseType;
     typedef typename Base::Instance BaseInstance;
-    typedef rstd::Box<BaseType> BaseTypeBox;
-    typedef rstd::Box<BaseInstance> BaseInstanceBox;
+    typedef rs::Box<BaseType> BaseTypeBox;
+    typedef rs::Box<BaseInstance> BaseInstanceBox;
     typedef dyn::StaticStruct<Base, dyn::Primitive<D>> InnerType;
     typedef typename InnerType::Instance InnerInstance;
 
@@ -24,8 +24,8 @@ public:
     public:
         Instance(BaseInstanceBox &&inner, D data) :
             content_(
-                rstd::Tuple(std::string("inner"), std::move(inner)),    
-                rstd::Tuple(std::string("data"), dyn::Primitive<D>::Instance(data))
+                rs::Tuple(std::string("inner"), std::move(inner)),    
+                rs::Tuple(std::string("data"), dyn::Primitive<D>::Instance(data))
             )
         {}
         explicit Instance(InnerInstance &&cont) : content_(cont) {}
@@ -54,8 +54,8 @@ private:
 public:
     ImplModifier(BaseTypeBox &&inner) :
         content_(
-            rstd::Tuple(std::string("inner"), std::move(inner)),    
-            rstd::Tuple(std::string("data"), dyn::Primitive<D>())
+            rs::Tuple(std::string("inner"), std::move(inner)),    
+            rs::Tuple(std::string("data"), dyn::Primitive<D>())
         )
     {}
     const BaseTypeBox &inner() const { return content_.fields().template get<0>(); }
@@ -64,7 +64,7 @@ public:
     virtual size_t id() const override { return typeid(Self).hash_code(); }
 
     virtual size_t align() const override { return content_.align(); };
-    virtual rstd::Option<size_t> size() const override { return content_.size(); };
+    virtual rs::Option<size_t> size() const override { return content_.size(); };
 
     Instance load_(const uchar *src) const {
         return Include(content_.load_(src));
@@ -72,8 +72,8 @@ public:
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
     }
-    rstd::Box<Instance> load(const uchar *src) const {
-        return rstd::Box<Instance>::_from_raw(_load(src));
+    rs::Box<Instance> load(const uchar *src) const {
+        return rs::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string modifier_code() const = 0;

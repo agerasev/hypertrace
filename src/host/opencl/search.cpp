@@ -2,7 +2,7 @@
 #include <sstream>
 #include <cassert>
 
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 #include "search.hpp"
 
 

@@ -8,16 +8,16 @@ public:
     class Instance : public dyn::Type::Instance {
     public:
         virtual Material *_type() const override = 0;
-        inline rstd::Box<Material> type() const { return rstd::Box<Material>::_from_raw(_type()); }
+        inline rs::Box<Material> type() const { return rs::Box<Material>::_from_raw(_type()); }
     };
 
     virtual Material *_clone() const override = 0;
-    rstd::Box<Material> clone() const { return rstd::Box<Material>::_from_raw(_clone()); }
+    rs::Box<Material> clone() const { return rs::Box<Material>::_from_raw(_clone()); }
 
     virtual Instance *_load(const uchar *src) const override = 0;
-    rstd::Box<Instance> load(const uchar *src) const { return rstd::Box<Instance>::_from_raw(_load(src)); }
+    rs::Box<Instance> load(const uchar *src) const { return rs::Box<Instance>::_from_raw(_load(src)); }
 
-    std::string prefix() const { return rstd::to_lower(name()); }
+    std::string prefix() const { return rs::to_lower(name()); }
 };
 
 class SurfaceMaterial : public Material {};

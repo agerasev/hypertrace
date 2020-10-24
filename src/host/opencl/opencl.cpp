@@ -142,7 +142,7 @@ Result<Buffer> Buffer::create(Queue &queue, size_t size, bool zeroed) {
         return Ok(Buffer());
     }
 }
-typedef Result<rstd::Tuple<>, std::string> LsResult;
+typedef Result<rs::Tuple<>, std::string> LsResult;
 LsResult Buffer::load(Queue &queue, void *data) {
     return load(queue, data, size_);
 }

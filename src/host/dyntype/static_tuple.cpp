@@ -51,16 +51,16 @@ rtest_module_(dyntype_static_tuple) {
             char b = uchar(256*rng.uniform());
 
             TestStaticTuple::Instance dtup = TestStaticTuple::Instance(
-                rstd::Box(Primitive<real>::Instance(r)),
-                rstd::Box(Primitive<real3>::Instance(r3)),
-                rstd::Box(Primitive<real16>::Instance(r16)),
-                rstd::Box(Primitive<uint>::Instance(u)),
-                rstd::Box(Primitive<uchar>::Instance(b))
+                rs::Box(Primitive<real>::Instance(r)),
+                rs::Box(Primitive<real3>::Instance(r3)),
+                rs::Box(Primitive<real16>::Instance(r16)),
+                rs::Box(Primitive<uint>::Instance(u)),
+                rs::Box(Primitive<uchar>::Instance(b))
             );
             if (i == 0) {
                 dyn_offset = dtup.type_().offsets();
             }
-            darr.append(rstd::Box(std::move(dtup)));
+            darr.append(rs::Box(std::move(dtup)));
 
             datar[i] = r;
             datar3[i] = r3;
@@ -123,7 +123,7 @@ rtest_module_(dyntype_static_tuple) {
             assert_eq_(datau[i], outu[i]);
             assert_eq_(int(datab[i]), int(outb[i]));
 
-            rstd::Box<TestStaticTuple::Instance> dtup = std::move(darr.items()[i]);
+            rs::Box<TestStaticTuple::Instance> dtup = std::move(darr.items()[i]);
             assert_eq_(dev_approx(datar[i]), dtup->fields().template get<0>()->value);
             assert_eq_(dev_approx(datar3[i]), dtup->fields().template get<1>()->value);
             assert_eq_(dev_approx(datar16[i]), dtup->fields().template get<2>()->value);

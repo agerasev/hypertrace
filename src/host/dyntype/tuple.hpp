@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 #include <common/types.hh>
 #include "type.hpp"
 
@@ -14,8 +14,8 @@ public:
     typedef typename T::Instance ItemInstance;
 
 protected:
-    typedef rstd::Box<ItemType> ItemTypeBox;
-    typedef rstd::Box<ItemInstance> ItemInstanceBox;
+    typedef rs::Box<ItemType> ItemTypeBox;
+    typedef rs::Box<ItemInstance> ItemInstanceBox;
 
 public:
     class Instance : public Type::Instance {
@@ -45,8 +45,8 @@ public:
         virtual Tuple *_type() const override {
             return new Tuple(type_());
         }
-        rstd::Box<Tuple> type() const {
-            return rstd::Box<Tuple>::_from_raw(_type());
+        rs::Box<Tuple> type() const {
+            return rs::Box<Tuple>::_from_raw(_type());
         }
 
         virtual void store(uchar *dst) const override {
@@ -84,12 +84,12 @@ public:
     virtual Tuple *_clone() const override {
         return new Tuple(iter_ref(fields_).map([](const TypeBox *f) { return (*f)->clone(); }));
     }
-    rstd::Box<Tuple> clone() const {
-        return rstd::Box<Tuple>::_from_raw(_clone());
+    rs::Box<Tuple> clone() const {
+        return rs::Box<Tuple>::_from_raw(_clone());
     }
 
     virtual size_t id() const override { 
-        rstd::DefaultHasher hasher;
+        rs::DefaultHasher hasher;
         hasher._hash_raw(typeid(Tuple).hash_code());
         for (const TypeBox &f : fields_) {
             hasher._hash_raw(f->id());
@@ -103,11 +103,11 @@ public:
             .scan((size_t)0, [](size_t *p, const TypeBox *f) {
                 size_t offt = upper_multiple((*f)->align(), *p);
                 *p = offt + (*f)->size().unwrap();
-                return rstd::Some(offt);
+                return rs::Some(offt);
             })
             .template collect<std::vector>();
     }
-    virtual rstd::Option<size_t> size() const override {
+    virtual rs::Option<size_t> size() const override {
         size_t csize = upper_multiple(align(),
             iter_ref(fields_)
             .fold((size_t)0, [](size_t p, const TypeBox *f) {
@@ -119,7 +119,7 @@ public:
             // empty Tuple has 1-byte size
             csize = 1;
         }
-        return rstd::Some(csize);
+        return rs::Some(csize);
     }
     virtual size_t align() const override {
         return 
@@ -140,8 +140,8 @@ public:
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
     }
-    rstd::Box<Instance> load(const uchar *src) const {
-        return rstd::Box<Instance>::_from_raw(_load(src));
+    rs::Box<Instance> load(const uchar *src) const {
+        return rs::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {
@@ -165,7 +165,7 @@ public:
         }
         writeln_(ss, "}} {};", name());
 
-        std::string fname = rstd::to_lower(name());
+        std::string fname = rs::to_lower(name());
         src.insert(fname, ss.str()).unwrap();
         src.set_name(fname);
         

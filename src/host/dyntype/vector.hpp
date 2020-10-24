@@ -13,8 +13,8 @@ public:
     typedef typename T::Instance ItemInstance;
 
 private:
-    typedef rstd::Box<ItemType> ItemTypeBox;
-    typedef rstd::Box<ItemInstance> ItemInstanceBox;
+    typedef rs::Box<ItemType> ItemTypeBox;
+    typedef rs::Box<ItemInstance> ItemInstanceBox;
 
 public:
     class Instance : public Type::Instance {
@@ -62,8 +62,8 @@ public:
         virtual Vector *_type() const override {
             return new Vector(type_());
         }
-        rstd::Box<Vector> type() const {
-            return rstd::Box<Vector>::_from_raw(_type());
+        rs::Box<Vector> type() const {
+            return rs::Box<Vector>::_from_raw(_type());
         }
         
         virtual size_t size() const override {
@@ -102,19 +102,19 @@ public:
     virtual Vector *_clone() const override {
         return new Vector(item_type_->clone());
     }
-    rstd::Box<Vector> clone() const {
-        return rstd::Box<Vector>::_from_raw(_clone());
+    rs::Box<Vector> clone() const {
+        return rs::Box<Vector>::_from_raw(_clone());
     }
 
     virtual size_t id() const override { 
-        rstd::DefaultHasher hasher;
+        rs::DefaultHasher hasher;
         hasher._hash_raw(typeid(Vector).hash_code());
         hasher._hash_raw(item_type_->id());
         return hasher.finish();
     }
 
-    virtual rstd::Option<size_t> size() const override {
-        return rstd::None();
+    virtual rs::Option<size_t> size() const override {
+        return rs::None();
     }
     virtual size_t align() const override {
         return std::max(alignof(dev_type<ulong_>), item_type_->align());
@@ -134,15 +134,15 @@ public:
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
     }
-    rstd::Box<Instance> load(const uchar *src) const {
-        return rstd::Box<Instance>::_from_raw(_load(src));
+    rs::Box<Instance> load(const uchar *src) const {
+        return rs::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {
         return format_("Vector{}", id());
     }
     virtual Source source() const override {
-        std::string lname = rstd::to_lower(name());
+        std::string lname = rs::to_lower(name());
         Source src = item_type_->source();
 
         std::stringstream ss;

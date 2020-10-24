@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 #include <common/types.hh>
 #include "type.hpp"
 
@@ -12,27 +12,27 @@ class StaticTuple : public Type {
 public:
     class Instance_ : public Type::Instance {
     public:
-        rstd::Tuple<rstd::Box<typename Types::Instance>...> fields_;
+        rs::Tuple<rs::Box<typename Types::Instance>...> fields_;
 
         Instance_() = default;
-        explicit Instance_(rstd::Box<typename Types::Instance> &&...flds) :
-            fields_(std::forward<rstd::Box<typename Types::Instance>>(flds)...)
+        explicit Instance_(rs::Box<typename Types::Instance> &&...flds) :
+            fields_(std::forward<rs::Box<typename Types::Instance>>(flds)...)
         {}
-        explicit Instance_(rstd::Tuple<rstd::Box<typename Types::Instance>...> flds) :
+        explicit Instance_(rs::Tuple<rs::Box<typename Types::Instance>...> flds) :
             fields_(std::move(flds))
         {}
 
-        rstd::Tuple<rstd::Box<typename Types::Instance>...> &fields() {
+        rs::Tuple<rs::Box<typename Types::Instance>...> &fields() {
             return fields_;
         }
-        const rstd::Tuple<rstd::Box<typename Types::Instance>...> &fields() const {
+        const rs::Tuple<rs::Box<typename Types::Instance>...> &fields() const {
             return fields_;
         }
 
     private:
         struct TypeExtractor {
-            rstd::Tuple<rstd::Box<Types>...> operator()(const rstd::Box<typename Types::Instance> &...insts) {
-                return rstd::Tuple(insts->type()...);
+            rs::Tuple<rs::Box<Types>...> operator()(const rs::Box<typename Types::Instance> &...insts) {
+                return rs::Tuple(insts->type()...);
             }
         };
     public:
@@ -42,8 +42,8 @@ public:
         virtual StaticTuple *_type() const override {
             return new StaticTuple(type_());
         }
-        rstd::Box<StaticTuple> type() const {
-            return rstd::Box<StaticTuple>::_from_raw(_type());
+        rs::Box<StaticTuple> type() const {
+            return rs::Box<StaticTuple>::_from_raw(_type());
         }
 
 
@@ -52,7 +52,7 @@ public:
             uchar *dst;
             std::vector<size_t> ofv;
             template <size_t P>
-            void operator()(const rstd::Box<rstd::nth_type<P, typename Types::Instance...>> &t) {
+            void operator()(const rs::Box<rs::nth_type<P, typename Types::Instance...>> &t) {
                 t->store(dst + ofv[P]);
             }
         };
@@ -69,35 +69,35 @@ public:
     typedef Instance_ Instance;
 
 private:
-    rstd::Tuple<rstd::Box<Types>...> fields_;
+    rs::Tuple<rs::Box<Types>...> fields_;
 
 public:
     StaticTuple() = default;
-    explicit StaticTuple(rstd::Box<Types> &&...flds) :
-        fields_(std::forward<rstd::Box<Types>>(flds)...)
+    explicit StaticTuple(rs::Box<Types> &&...flds) :
+        fields_(std::forward<rs::Box<Types>>(flds)...)
     {}
-    explicit StaticTuple(rstd::Tuple<rstd::Box<Types>...> flds) :
+    explicit StaticTuple(rs::Tuple<rs::Box<Types>...> flds) :
         fields_(std::move(flds))
     {}
 
-    rstd::Tuple<rstd::Box<Types>...> &fields() {
+    rs::Tuple<rs::Box<Types>...> &fields() {
         return fields_;
     }
-    const rstd::Tuple<rstd::Box<Types>...> &fields() const {
+    const rs::Tuple<rs::Box<Types>...> &fields() const {
         return fields_;
     }
 
 private:
     struct Cloner {
-        rstd::Tuple<rstd::Box<Types>...> operator()(const rstd::Box<Types> &...ts) {
-            return rstd::Tuple(ts->clone()...);
+        rs::Tuple<rs::Box<Types>...> operator()(const rs::Box<Types> &...ts) {
+            return rs::Tuple(ts->clone()...);
         }
     };
 
     struct Hasher {
-        rstd::DefaultHasher *hasher;
+        rs::DefaultHasher *hasher;
         template <size_t P>
-        void operator()(const rstd::Box<rstd::nth_type<P, Types...>> &t) {
+        void operator()(const rs::Box<rs::nth_type<P, Types...>> &t) {
             hasher->_hash_raw(t->id());
         }
     };
@@ -106,12 +106,12 @@ public:
     virtual StaticTuple *_clone() const override {
         return new StaticTuple(fields_.unpack_ref(Cloner()));
     }
-    rstd::Box<StaticTuple> clone() const {
-        return rstd::Box<StaticTuple>::_from_raw(_clone());
+    rs::Box<StaticTuple> clone() const {
+        return rs::Box<StaticTuple>::_from_raw(_clone());
     }
 
     virtual size_t id() const override { 
-        rstd::DefaultHasher hasher;
+        rs::DefaultHasher hasher;
         hasher._hash_raw(typeid(StaticTuple).hash_code());
         fields_.visit_ref(Hasher{&hasher});
         return hasher.finish();
@@ -122,7 +122,7 @@ private:
         std::vector<size_t> *ofv;
         size_t p = 0;
         template <size_t P>
-        void operator()(const rstd::Box<rstd::nth_type<P, Types...>> &t) {
+        void operator()(const rs::Box<rs::nth_type<P, Types...>> &t) {
             size_t of = upper_multiple(t->align(), p);
             p = of + t->size().unwrap();
             ofv->push_back(of);
@@ -131,14 +131,14 @@ private:
     struct AlignCounter {
         size_t *p;
         template <size_t P>
-        void operator()(const rstd::Box<rstd::nth_type<P, Types...>> &t) {
+        void operator()(const rs::Box<rs::nth_type<P, Types...>> &t) {
             *p = std::max(t->align(), *p);
         }
     };
     struct SizeCounter {
         size_t *p;
         template <size_t P>
-        void operator()(const rstd::Box<rstd::nth_type<P, Types...>> &t) {
+        void operator()(const rs::Box<rs::nth_type<P, Types...>> &t) {
             *p = upper_multiple(t->align(), *p) + t->size().unwrap();
         }
     };
@@ -154,34 +154,34 @@ public:
         fields_.visit_ref(AlignCounter{&p});
         return p;
     }
-    virtual rstd::Option<size_t> size() const override {
+    virtual rs::Option<size_t> size() const override {
         size_t p = 0;
         fields_.visit_ref(SizeCounter{&p});
-        return rstd::Some(std::max(upper_multiple(align(), p), (size_t)1));
+        return rs::Some(std::max(upper_multiple(align(), p), (size_t)1));
     }
 
 private:
     struct Loader {
-        rstd::Tuple<rstd::Box<typename Types::Instance>...> *ts;
+        rs::Tuple<rs::Box<typename Types::Instance>...> *ts;
         const uchar *src;
         std::vector<size_t> ofv;
         template <size_t P>
-        void operator()(const rstd::Box<rstd::nth_type<P, Types...>> &t) {
+        void operator()(const rs::Box<rs::nth_type<P, Types...>> &t) {
             ts->template get<P>() = t->load(src + ofv[P]);
         }
     };
 
 public:
     Instance load_(const uchar *src) const {
-        rstd::Tuple<rstd::Box<typename Types::Instance>...> insts;
+        rs::Tuple<rs::Box<typename Types::Instance>...> insts;
         fields_.visit_ref(Loader{&insts, src, offsets()});
         return Instance(std::move(insts));
     }
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
     }
-    rstd::Box<Instance> load(const uchar *src) const {
-        return rstd::Box<Instance>::_from_raw(_load(src));
+    rs::Box<Instance> load(const uchar *src) const {
+        return rs::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {
@@ -193,7 +193,7 @@ private:
         std::stringstream *ss;
         Source *src;
         template <size_t P>
-        void operator()(const rstd::Box<rstd::nth_type<P, Types...>> &t) {
+        void operator()(const rs::Box<rs::nth_type<P, Types...>> &t) {
             Source fsrc = t->source();
             src->append(fsrc.into_files()).unwrap();
             writeln_(*ss, "#include <{}>", fsrc.name());
@@ -204,7 +204,7 @@ private:
         std::stringstream *ss;
         F field_name;
         template <size_t P>
-        void operator()(const rstd::Box<rstd::nth_type<P, Types...>> &t) {
+        void operator()(const rs::Box<rs::nth_type<P, Types...>> &t) {
             if (t->size().unwrap() > 0) {
                 writeln_(*ss, "    {} {};", t->name(), field_name(P));
             }
@@ -222,7 +222,7 @@ public:
         fields_.visit_ref(FieldWriter<F>{&ss, field_name});
         writeln_(ss, "}} {};", name());
 
-        std::string fname = rstd::to_lower(name());
+        std::string fname = rs::to_lower(name());
         src.insert(fname, ss.str()).unwrap();
         src.set_name(fname);
         

@@ -50,16 +50,16 @@ rtest_module_(dyntype_static_struct) {
             char b = uchar(256*rng.uniform());
 
             TestStaticStruct::Instance dinst = TestStaticStruct::Instance(
-                rstd::Tuple(std::string("r"), rstd::Box(Primitive<real>::Instance(r))),
-                rstd::Tuple(std::string("r3"), rstd::Box(Primitive<real3>::Instance(r3))),
-                rstd::Tuple(std::string("r16"), rstd::Box(Primitive<real16>::Instance(r16))),
-                rstd::Tuple(std::string("u"), rstd::Box(Primitive<uint>::Instance(u))),
-                rstd::Tuple(std::string("b"), rstd::Box(Primitive<uchar>::Instance(b)))
+                rs::Tuple(std::string("r"), rs::Box(Primitive<real>::Instance(r))),
+                rs::Tuple(std::string("r3"), rs::Box(Primitive<real3>::Instance(r3))),
+                rs::Tuple(std::string("r16"), rs::Box(Primitive<real16>::Instance(r16))),
+                rs::Tuple(std::string("u"), rs::Box(Primitive<uint>::Instance(u))),
+                rs::Tuple(std::string("b"), rs::Box(Primitive<uchar>::Instance(b)))
             );
             if (i == 0) {
                 dyn_offset = dinst.type_().offsets();
             }
-            darr.append(rstd::Box(std::move(dinst)));
+            darr.append(rs::Box(std::move(dinst)));
 
             datar[i] = r;
             datar3[i] = r3;
@@ -122,7 +122,7 @@ rtest_module_(dyntype_static_struct) {
             assert_eq_(datau[i], outu[i]);
             assert_eq_(int(datab[i]), int(outb[i]));
 
-            rstd::Box<TestStaticStruct::Instance> dtup = std::move(darr.items()[i]);
+            rs::Box<TestStaticStruct::Instance> dtup = std::move(darr.items()[i]);
             assert_eq_(dev_approx(datar[i]), dtup->fields().template get<0>()->value);
             assert_eq_(dev_approx(datar3[i]), dtup->fields().template get<1>()->value);
             assert_eq_(dev_approx(datar16[i]), dtup->fields().template get<2>()->value);

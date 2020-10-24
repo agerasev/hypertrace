@@ -1,6 +1,6 @@
 #include <chrono>
 
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 
 #include <common/geometry/euclidean.hh>
 #include <common/object/euclidean/shapes.hh>
@@ -32,7 +32,7 @@ int main(int argc, const char *argv[]) {
 
     Renderer<Euclidean> renderer(
         device,
-        rstd::Rc(cl::Context::create(device).expect("Context create error")),
+        rs::Rc(cl::Context::create(device).expect("Context create error")),
         width, height,
         Box(Cube<Eu>())
     );

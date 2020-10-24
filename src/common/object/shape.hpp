@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 #include <common/geometry/geometry.hpp>
 #include <host/dyntype/type.hpp>
 
@@ -14,19 +14,19 @@ public:
     class Instance : public dyn::Type::Instance {
     public:
         virtual Shape *_type() const override = 0;
-        rstd::Box<Shape> type() const { return rstd::Box<Shape>::_from_raw(_type()); }
+        rs::Box<Shape> type() const { return rs::Box<Shape>::_from_raw(_type()); }
     };
 
     virtual Shape *_clone() const override = 0;
-    rstd::Box<Shape> clone() const { return rstd::Box<Shape>::_from_raw(_clone()); }
+    rs::Box<Shape> clone() const { return rs::Box<Shape>::_from_raw(_clone()); }
 
     virtual Instance *_load(const uchar *src) const override = 0;
-    rstd::Box<Instance> load(const uchar *src) const { return rstd::Box<Instance>::_from_raw(_load(src)); }
+    rs::Box<Instance> load(const uchar *src) const { return rs::Box<Instance>::_from_raw(_load(src)); }
 
 
     // Whether to allow repeated collisions or not.
     virtual bool repeat_allowed() const = 0;
-    std::string prefix() const { return rstd::to_lower(name()); }
+    std::string prefix() const { return rs::to_lower(name()); }
 };
 
 template <typename G>

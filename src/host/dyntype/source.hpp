@@ -2,7 +2,7 @@
 
 #include <string>
 #include <map>
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 
 namespace dyn {
 
@@ -23,10 +23,10 @@ public:
     inline std::map<std::string, std::string> into_files() { return std::move(files_); }
 
     inline void set_name(const std::string &n) { name_ = n; }
-    rstd::Result<rstd::Tuple<>, std::string> insert(
+    rs::Result<rs::Tuple<>, std::string> insert(
         const std::string &fname, std::string &&content
     );
-    rstd::Result<rstd::Tuple<>, std::string> append(
+    rs::Result<rs::Tuple<>, std::string> append(
         std::map<std::string, std::string> &&other
     );
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 #include <common/types.hh>
 #include "type.hpp"
 
@@ -14,14 +14,14 @@ public:
     typedef typename T::Instance ItemInstance;
 
 private:
-    typedef rstd::Box<ItemType> ItemTypeBox;
-    typedef rstd::Box<ItemInstance> ItemInstanceBox;
+    typedef rs::Box<ItemType> ItemTypeBox;
+    typedef rs::Box<ItemInstance> ItemInstanceBox;
 
 public:
     class Instance : public Type::Instance {
     public:
         std::vector<ItemTypeBox> types_;
-        rstd::Option<size_t> idx_ = rstd::None();
+        rs::Option<size_t> idx_ = rs::None();
         ItemInstanceBox value_;
 
         Instance() = default;
@@ -50,7 +50,7 @@ public:
         void set_value(size_t i, ItemInstanceBox &&v) {
             assert_(i < types_.size());
             assert_(types_[i]->id() == v->type()->id());
-            idx_ = rstd::Some(i);
+            idx_ = rs::Some(i);
             value_ = std::move(v);
         }
         size_t index() const {
@@ -69,8 +69,8 @@ public:
         virtual Variant *_type() const override {
             return new Variant(type_());
         }
-        rstd::Box<Variant> type() const {
-            return rstd::Box<Variant>::_from_raw(_type());
+        rs::Box<Variant> type() const {
+            return rs::Box<Variant>::_from_raw(_type());
         }
 
         virtual void store(uchar *dst) const override {
@@ -108,12 +108,12 @@ public:
     virtual Variant *_clone() const override {
         return new Variant(iter_ref(types_).map([](const TypeBox *f) { return (*f)->clone(); }));
     }
-    rstd::Box<Variant> clone() const {
-        return rstd::Box<Variant>::_from_raw(_clone());
+    rs::Box<Variant> clone() const {
+        return rs::Box<Variant>::_from_raw(_clone());
     }
 
     virtual size_t id() const override { 
-        rstd::DefaultHasher hasher;
+        rs::DefaultHasher hasher;
         hasher._hash_raw(typeid(Variant).hash_code());
         for (const TypeBox &f : types_) {
             hasher._hash_raw(f->id());
@@ -121,8 +121,8 @@ public:
         return hasher.finish();
     }
 
-    virtual rstd::Option<size_t> size() const override {
-        return rstd::Some(
+    virtual rs::Option<size_t> size() const override {
+        return rs::Some(
             upper_multiple(align(), sizeof(dev_type<ulong>)) +
             upper_multiple(align(),
                 iter_ref(types_)
@@ -155,8 +155,8 @@ public:
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
     }
-    rstd::Box<Instance> load(const uchar *src) const {
-        return rstd::Box<Instance>::_from_raw(_load(src));
+    rs::Box<Instance> load(const uchar *src) const {
+        return rs::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {
@@ -181,7 +181,7 @@ public:
         writeln_(ss, "    }} variants;");
         writeln_(ss, "}} {};", name());
 
-        std::string fname = rstd::to_lower(name());
+        std::string fname = rs::to_lower(name());
         src.insert(fname, ss.str()).unwrap();
         src.set_name(fname);
         

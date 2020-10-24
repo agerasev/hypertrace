@@ -1,6 +1,6 @@
 #include <chrono>
 
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 
 #include <common/geometry/hyperbolic.hh>
 #include <common/object/hyperbolic/plane.hh>
@@ -32,7 +32,7 @@ int main(int argc, const char *argv[]) {
 
     Renderer<Hyperbolic> renderer(
         device,
-        rstd::Rc(cl::Context::create(device).expect("Context create error")),
+        rs::Rc(cl::Context::create(device).expect("Context create error")),
         width, height,
         Box(Plane<Hy>())
     );

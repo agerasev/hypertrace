@@ -51,7 +51,7 @@ rtest_module_(dyntype_tuple) {
             if (i == 0) {
                 dyn_offset = dtup.type_().offsets();
             }
-            darr.append(rstd::Box(std::move(dtup)));
+            darr.append(rs::Box(std::move(dtup)));
 
             datar[i] = r;
             datar3[i] = r3;
@@ -114,7 +114,7 @@ rtest_module_(dyntype_tuple) {
             assert_eq_(datau[i], outu[i]);
             assert_eq_(int(datab[i]), int(outb[i]));
 
-            rstd::Box<Tuple<>::Instance> dtup = std::move(darr.items()[i]);
+            rs::Box<Tuple<>::Instance> dtup = std::move(darr.items()[i]);
             assert_eq_(dev_approx(datar[i]), dtup->fields()[0].template downcast<Primitive<real>::Instance>().unwrap()->value);
             assert_eq_(dev_approx(datar3[i]), dtup->fields()[1].template downcast<Primitive<real3>::Instance>().unwrap()->value);
             assert_eq_(dev_approx(datar16[i]), dtup->fields()[2].template downcast<Primitive<real16>::Instance>().unwrap()->value);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 #include "tuple.hpp"
 
 
@@ -17,8 +17,8 @@ public:
     typedef typename Base::ItemInstance ItemInstance;
 
 protected:
-    typedef rstd::Box<ItemType> ItemTypeBox;
-    typedef rstd::Box<ItemInstance> ItemInstanceBox;
+    typedef rs::Box<ItemType> ItemTypeBox;
+    typedef rs::Box<ItemInstance> ItemInstanceBox;
 
 public:
     class Instance : public BaseInstance {
@@ -49,15 +49,15 @@ public:
 
         Struct type_() const {
             return Struct(
-                rstd::iter_ref(field_names_).zip(rstd::iter_ref(fields()))
-                .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*nf.template get<0>()), (*nf.template get<1>())->type()); })
+                rs::iter_ref(field_names_).zip(rs::iter_ref(fields()))
+                .map([](auto &&nf) { return rs::Tuple<std::string, ItemTypeBox>(rs::clone(*nf.template get<0>()), (*nf.template get<1>())->type()); })
             );
         }
         virtual Struct *_type() const override {
             return new Struct(type_());
         }
-        rstd::Box<Struct> type() const {
-            return rstd::Box<Struct>::_from_raw(_type());
+        rs::Box<Struct> type() const {
+            return rs::Box<Struct>::_from_raw(_type());
         }
     };
 
@@ -89,16 +89,16 @@ public:
 
     virtual Struct *_clone() const override {
         return new Struct(
-            rstd::iter_ref(field_names_).zip(rstd::iter_ref(fields()))
-            .map([](auto &&nf) { return rstd::Tuple<std::string, ItemTypeBox>(rstd::clone(*nf.template get<0>()), (*nf.template get<1>())->clone()); })
+            rs::iter_ref(field_names_).zip(rs::iter_ref(fields()))
+            .map([](auto &&nf) { return rs::Tuple<std::string, ItemTypeBox>(rs::clone(*nf.template get<0>()), (*nf.template get<1>())->clone()); })
         );
     }
-    rstd::Box<Struct> clone() const {
-        return rstd::Box<Struct>::_from_raw(_clone());
+    rs::Box<Struct> clone() const {
+        return rs::Box<Struct>::_from_raw(_clone());
     }
 
     virtual size_t id() const override { 
-        rstd::DefaultHasher hasher;
+        rs::DefaultHasher hasher;
         hasher._hash_raw(Base::id());
         hasher._hash_raw(typeid(Struct).hash_code());
         for (const std::string &n : field_names_) {
@@ -118,8 +118,8 @@ public:
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
     }
-    rstd::Box<Instance> load(const uchar *src) const {
-        return rstd::Box<Instance>::_from_raw(_load(src));
+    rs::Box<Instance> load(const uchar *src) const {
+        return rs::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {

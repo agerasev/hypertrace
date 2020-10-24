@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-#include <rstd/prelude.hpp>
+#include <rstd.hpp>
 #include "static_tuple.hpp"
 
 
@@ -19,39 +19,39 @@ public:
         std::array<std::string, sizeof...(Types)> field_names_;
 
         struct Unzipper {
-            rstd::Tuple<std::array<std::string, sizeof...(Types)>, rstd::Tuple<rstd::Box<typename Types::Instance>...>> operator()(
-                rstd::Tuple<std::string, rstd::Box<typename Types::Instance>> &&...insts
+            rs::Tuple<std::array<std::string, sizeof...(Types)>, rs::Tuple<rs::Box<typename Types::Instance>...>> operator()(
+                rs::Tuple<std::string, rs::Box<typename Types::Instance>> &&...insts
             ) {
-                return rstd::Tuple(
+                return rs::Tuple(
                     std::array{insts.template get<0>()...},
-                    rstd::Tuple(std::forward<rstd::Box<typename Types::Instance>>(insts.template get<1>())...)
+                    rs::Tuple(std::forward<rs::Box<typename Types::Instance>>(insts.template get<1>())...)
                 );
             }
         };
         struct TypeExtractor {
-            rstd::Tuple<rstd::Box<Types>...> operator()(const rstd::Box<typename Types::Instance> &...insts) {
-                return rstd::Tuple(insts->type()...);
+            rs::Tuple<rs::Box<Types>...> operator()(const rs::Box<typename Types::Instance> &...insts) {
+                return rs::Tuple(insts->type()...);
             }
         };
 
     public:
         Instance_() = default;
-        explicit Instance_(rstd::Tuple<rstd::Tuple<std::string, rstd::Box<typename Types::Instance>>...> &&flds) {
+        explicit Instance_(rs::Tuple<rs::Tuple<std::string, rs::Box<typename Types::Instance>>...> &&flds) {
             auto ret = flds.unpack(Unzipper());
             field_names_ = std::move(ret.template get<0>());
             BaseInstance::fields() = std::move(ret.template get<1>());
         }
-        explicit Instance_(rstd::Tuple<std::string, rstd::Box<typename Types::Instance>> &&...flds) :
-            BaseInstance(std::forward<rstd::Box<typename Types::Instance>>(flds.template get<1>())...),
+        explicit Instance_(rs::Tuple<std::string, rs::Box<typename Types::Instance>> &&...flds) :
+            BaseInstance(std::forward<rs::Box<typename Types::Instance>>(flds.template get<1>())...),
             field_names_{flds.template get<0>()...}
         {}
-        Instance_(const std::array<std::string, sizeof...(Types)> &names, rstd::Tuple<rstd::Box<typename Types::Instance>...> &&insts) :
+        Instance_(const std::array<std::string, sizeof...(Types)> &names, rs::Tuple<rs::Box<typename Types::Instance>...> &&insts) :
             BaseInstance(std::move(insts)),
             field_names_(names)
         {}
 
-        rstd::Tuple<rstd::Box<typename Types::Instance>...> &fields() { return BaseInstance::fields(); }
-        const rstd::Tuple<rstd::Box<typename Types::Instance>...> &fields() const { return BaseInstance::fields(); }
+        rs::Tuple<rs::Box<typename Types::Instance>...> &fields() { return BaseInstance::fields(); }
+        const rs::Tuple<rs::Box<typename Types::Instance>...> &fields() const { return BaseInstance::fields(); }
 
         std::array<std::string, sizeof...(Types)> &field_names() {
             return field_names_;
@@ -66,8 +66,8 @@ public:
         virtual StaticStruct *_type() const override {
             return new StaticStruct(type_());
         }
-        rstd::Box<StaticStruct> type() const {
-            return rstd::Box<StaticStruct>::_from_raw(_type());
+        rs::Box<StaticStruct> type() const {
+            return rs::Box<StaticStruct>::_from_raw(_type());
         }
     };
     typedef Instance_ Instance;
@@ -76,34 +76,34 @@ private:
     std::array<std::string, sizeof...(Types)> field_names_;
 
     struct Unzipper {
-        rstd::Tuple<std::array<std::string, sizeof...(Types)>, rstd::Tuple<rstd::Box<Types>...>> operator()(
-            rstd::Tuple<std::string, rstd::Box<Types>> &&...insts
+        rs::Tuple<std::array<std::string, sizeof...(Types)>, rs::Tuple<rs::Box<Types>...>> operator()(
+            rs::Tuple<std::string, rs::Box<Types>> &&...insts
         ) {
-            return rstd::Tuple(
+            return rs::Tuple(
                 std::array{insts.template get<0>()...},
-                rstd::Tuple(std::forward<rstd::Box<Types>>(insts.template get<1>())...)
+                rs::Tuple(std::forward<rs::Box<Types>>(insts.template get<1>())...)
             );
         }
     };
 
 public:
     StaticStruct() = default;
-    explicit StaticStruct(rstd::Tuple<rstd::Tuple<std::string, rstd::Box<Types>>...> &&flds) {
+    explicit StaticStruct(rs::Tuple<rs::Tuple<std::string, rs::Box<Types>>...> &&flds) {
         auto ret = flds.unpack(Unzipper());
         field_names_ = std::move(ret.template get<0>());
         Base::fields() = std::move(ret.template get<1>());
     }
-    explicit StaticStruct(rstd::Tuple<std::string, rstd::Box<Types>> &&...flds) :
-        Base(std::forward<rstd::Box<Types>>(flds.template get<1>())...),
+    explicit StaticStruct(rs::Tuple<std::string, rs::Box<Types>> &&...flds) :
+        Base(std::forward<rs::Box<Types>>(flds.template get<1>())...),
         field_names_{flds.template get<0>()...}
     {}
-    StaticStruct(const std::array<std::string, sizeof...(Types)> &names, rstd::Tuple<rstd::Box<Types>...> &&insts) :
+    StaticStruct(const std::array<std::string, sizeof...(Types)> &names, rs::Tuple<rs::Box<Types>...> &&insts) :
         Base(std::move(insts)),
         field_names_(names)
     {}
 
-    rstd::Tuple<rstd::Box<Types>...> &fields() { return Base::fields(); }
-    const rstd::Tuple<rstd::Box<Types>...> &fields() const { return Base::fields(); }
+    rs::Tuple<rs::Box<Types>...> &fields() { return Base::fields(); }
+    const rs::Tuple<rs::Box<Types>...> &fields() const { return Base::fields(); }
 
     std::array<std::string, sizeof...(Types)> &field_names() {
         return field_names_;
@@ -114,8 +114,8 @@ public:
 
 private:
     struct Cloner {
-        rstd::Tuple<rstd::Box<Types>...> operator()(const rstd::Box<Types> &...types) {
-            return rstd::Tuple(types->clone()...);
+        rs::Tuple<rs::Box<Types>...> operator()(const rs::Box<Types> &...types) {
+            return rs::Tuple(types->clone()...);
         }
     };
 
@@ -123,12 +123,12 @@ public:
     virtual StaticStruct *_clone() const override {
         return new StaticStruct(field_names(), fields().unpack_ref(Cloner()));
     }
-    rstd::Box<StaticStruct> clone() const {
-        return rstd::Box<StaticStruct>::_from_raw(_clone());
+    rs::Box<StaticStruct> clone() const {
+        return rs::Box<StaticStruct>::_from_raw(_clone());
     }
 
     virtual size_t id() const override { 
-        rstd::DefaultHasher hasher;
+        rs::DefaultHasher hasher;
         hasher._hash_raw(Base::id());
         hasher._hash_raw(typeid(StaticStruct).hash_code());
         for (const std::string &n : field_names_) {
@@ -144,8 +144,8 @@ public:
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
     }
-    rstd::Box<Instance> load(const uchar *src) const {
-        return rstd::Box<Instance>::_from_raw(_load(src));
+    rs::Box<Instance> load(const uchar *src) const {
+        return rs::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {

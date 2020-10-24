@@ -51,7 +51,7 @@ rtest_module_(dyntype_struct) {
             if (i == 0) {
                 dyn_offset = dinst.type_().offsets();
             }
-            darr.append(rstd::Box(std::move(dinst)));
+            darr.append(rs::Box(std::move(dinst)));
 
             datar[i] = r;
             datar3[i] = r3;
@@ -114,7 +114,7 @@ rtest_module_(dyntype_struct) {
             assert_eq_(datau[i], outu[i]);
             assert_eq_(int(datab[i]), int(outb[i]));
 
-            rstd::Box<Struct<>::Instance> dinst = std::move(darr.items()[i]);
+            rs::Box<Struct<>::Instance> dinst = std::move(darr.items()[i]);
             assert_eq_(dev_approx(datar[i]), dinst->fields()[0].template downcast<Primitive<real>::Instance>().unwrap()->value);
             assert_eq_(dev_approx(datar3[i]), dinst->fields()[1].template downcast<Primitive<real3>::Instance>().unwrap()->value);
             assert_eq_(dev_approx(datar16[i]), dinst->fields()[2].template downcast<Primitive<real16>::Instance>().unwrap()->value);

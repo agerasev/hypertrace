@@ -61,12 +61,12 @@ private:
         return inc;
     }
 
-    rstd::Rc<cl::Context> context;
+    rs::Rc<cl::Context> context;
     cl::Queue queue;
 
     int width, height;
 
-    rstd::Rc<cl::Program> program;
+    rs::Rc<cl::Program> program;
     cl::Kernel kernel;
 
     cl::Buffer image;
@@ -79,16 +79,16 @@ private:
     bool fresh = true;
 
     View<G> view;
-    rstd::Box<Shape<G>> type;
+    rs::Box<Shape<G>> type;
 
     using duration = std::chrono::duration<double>;
 
 public:
     Renderer(
         cl_device_id device,
-        rstd::Rc<cl::Context> context_,
+        rs::Rc<cl::Context> context_,
         int width_, int height_,
-        rstd::Box<Shape<G>> &&type_,
+        rs::Box<Shape<G>> &&type_,
         const Config &config={}
     ) :
         context(context_),
@@ -105,7 +105,7 @@ public:
             "#include <{}>\n"
             ,
             src.name(),
-            rstd::to_lower(type->name()),
+            rs::to_lower(type->name()),
             RenderFile<G>::path()
         );
         auto prog_and_log = cl::Program::create(
@@ -113,7 +113,7 @@ public:
             make_includer(config, source, src.into_files())
         );
         println_("Render build log: {}", prog_and_log.template get<1>());
-        program = rstd::Rc(prog_and_log.template get<0>().expect("Program create error"));
+        program = rs::Rc(prog_and_log.template get<0>().expect("Program create error"));
         kernel = cl::Kernel::create(program, "render").expect("Kernel create error");
 
         image = cl::Buffer::create(queue, width*height*4).expect("Image buffer create error");

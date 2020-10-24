@@ -31,7 +31,7 @@ rtest_module_(dyntype_vector) {
 
         TypeBox dty = darr.type();
         Source src = dty->source();
-        std::string lname = rstd::to_lower(dty->name());
+        std::string lname = rs::to_lower(dty->name());
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_vector_real16.cl", std::string(format_(
             "#include <{}>\n"
@@ -81,7 +81,7 @@ rtest_module_(dyntype_vector) {
 
         TypeBox dty = darr.type();
         Source src = dty->source();
-        std::string lname = rstd::to_lower(dty->name());
+        std::string lname = rs::to_lower(dty->name());
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("dyntype_vector_uchar.cl", std::string(format_(
             "#include <{}>\n"

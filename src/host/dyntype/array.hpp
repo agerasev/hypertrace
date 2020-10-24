@@ -13,8 +13,8 @@ public:
     typedef typename T::Instance ItemInstance;
 
 private:
-    typedef rstd::Box<ItemType> ItemTypeBox;
-    typedef rstd::Box<ItemInstance> ItemInstanceBox;
+    typedef rs::Box<ItemType> ItemTypeBox;
+    typedef rs::Box<ItemInstance> ItemInstanceBox;
 
 public:
     class Instance : public Type::Instance {
@@ -62,8 +62,8 @@ public:
         virtual Array *_type() const override {
             return new Array(type_());
         }
-        rstd::Box<Array> type() const {
-            return rstd::Box<Array>::_from_raw(_type());
+        rs::Box<Array> type() const {
+            return rs::Box<Array>::_from_raw(_type());
         }
 
         virtual void store(uchar *dst) const override {
@@ -99,20 +99,20 @@ public:
     virtual Array *_clone() const override {
         return new Array(item_type_->clone(), item_count_);
     }
-    rstd::Box<Array> clone() const {
-        return rstd::Box<Array>::_from_raw(_clone());
+    rs::Box<Array> clone() const {
+        return rs::Box<Array>::_from_raw(_clone());
     }
 
     virtual size_t id() const override { 
-        rstd::DefaultHasher hasher;
+        rs::DefaultHasher hasher;
         hasher._hash_raw(typeid(Array).hash_code());
         hasher._hash_raw(item_type_->id());
         hasher.hash(item_count_);
         return hasher.finish();
     }
 
-    virtual rstd::Option<size_t> size() const override {
-        return rstd::Some(item_type_->size().unwrap()*item_count_);
+    virtual rs::Option<size_t> size() const override {
+        return rs::Some(item_type_->size().unwrap()*item_count_);
     }
     virtual size_t align() const override {
         return item_type_->align();
@@ -128,8 +128,8 @@ public:
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
     }
-    rstd::Box<Instance> load(const uchar *src) const {
-        return rstd::Box<Instance>::_from_raw(_load(src));
+    rs::Box<Instance> load(const uchar *src) const {
+        return rs::Box<Instance>::_from_raw(_load(src));
     }
 
     virtual std::string name() const override {
@@ -139,7 +139,7 @@ public:
     }
     virtual Source source() const override {
         Source src = item_type_->source();
-        std::string fname = format_("generated/{}.hxx", rstd::to_lower(name()));
+        std::string fname = format_("generated/{}.hxx", rs::to_lower(name()));
         src.insert(fname, format_(
             "#include <{}>\n"
             "\n"

@@ -54,10 +54,10 @@ int main(int argc, const char *argv[]) {
     std::cout << "Using platform " << platform_no << ", device " << device_no << std::endl;
     cl_device_id device = cl::search_device(platform_no, device_no);
 
-    int width = 1280, height = 720;
+    int width = 1920, height = 1080;
     Renderer renderer(device, width, height, Renderer::Config {
         .path_max_depth = 3,
-        .blur = { .lens = true, .motion = true }
+        .blur = {.lens = true, .motion = true }
     });
     renderer.store_objects(create_scene());
 
@@ -109,11 +109,9 @@ int main(int argc, const char *argv[]) {
         scenario.add_transition(std::make_unique<SquareTransition>(t));
     }
 
-    //controller.view.lens_radius = 1e-1;
-
     int counter = 0;
     double time = 0.0;
-    double frame_time = 0.04;
+    double frame_time = 1.0/60;
     duration time_counter;
     int sample_counter = 0;
     for(;;) {
@@ -124,8 +122,8 @@ int main(int argc, const char *argv[]) {
             scenario.get_view(time),
             scenario.get_view(time - frame_time)
         );
-        sample_counter += renderer.render_for(frame_time, true);
-        //sample_counter += renderer.render_n(100, true);
+        //sample_counter += renderer.render_for(frame_time, true);
+        sample_counter += renderer.render_n(100, true);
         time += frame_time;
 
         auto store = [&](uint8_t *data) {

@@ -16,6 +16,7 @@
 #include <sdl/controller.hpp>
 #include <renderer.hpp>
 #include <color.hpp>
+#include <sdl/image.hpp>
 
 #include "scene.hpp"
 
@@ -40,24 +41,25 @@ int main(int argc, const char *argv[]) {
     std::cout << "Using platform " << platform_no << ", device " << device_no << std::endl;
     cl_device_id device = cl::search_device(platform_no, device_no);
 
-    int width = 800, height = 600;
+    int width = 1600, height = 400;
     Renderer renderer(device, width, height, Renderer::Config {
         .path_max_depth = 3,
         .blur = { .lens = true, .motion = true }
     });
     renderer.store_objects(create_scene());
 
-    Viewer viewer(width, height);
+    Viewer viewer(1600, 400);
     Controller controller;
     controller.grab_mouse(true);
 
     controller.view.position = mo_new(
-        c_new(0.114543, 0.285363),
-        c_new(2.9287, -0.678274),
-        c_new(-0.0461927, -0.0460196),
-        c_new(0.697521, -2.64087)
+        c_new(0.110226, 0.314233),
+        c_new(2.6954, -0.721198),
+        c_new(-0.0271873, -0.0361756),
+        c_new(0.674479, -2.62953)
     );
-    //controller.view.lens_radius = 1e-1;
+    controller.view.lens_radius = 1e-2;
+    controller.view.focal_length = 2.0;
 
     duration time_counter;
     int sample_counter = 0;
@@ -95,6 +97,9 @@ int main(int argc, const char *argv[]) {
         }
     }
 
+    sdl::save_image("output/image.png", width, height, [&](uint8_t *data) {
+        renderer.load_image(data);
+    });
+
     return 0;
 }
-

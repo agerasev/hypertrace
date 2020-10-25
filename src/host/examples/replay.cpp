@@ -61,8 +61,8 @@ int main(int argc, const char *argv[]) {
     });
     renderer.store_objects(create_scene());
 
-    Viewer viewer(width, height);
-    Controller controller;
+    //Viewer viewer(width, height);
+    //Controller controller;
 
     std::vector<View> points {
         view_position(mo_new(
@@ -123,19 +123,19 @@ int main(int argc, const char *argv[]) {
             scenario.get_view(time - frame_time)
         );
         //sample_counter += renderer.render_for(frame_time, true);
-        sample_counter += renderer.render_n(100, true);
+        sample_counter += renderer.render_n(400, true);
         time += frame_time;
 
         auto store = [&](uint8_t *data) {
             renderer.load_image(data);
         };
-        viewer.display(store);
+        //viewer.display(store);
 
-        //std::stringstream ss;
-        //ss << std::setfill('0') << std::setw(5) << "output/" << counter << ".png";
-        //sdl::save_image(ss.str(), width, height, store);
+        std::stringstream ss;
+        ss << std::setfill('0') << std::setw(5) << "output/" << counter << ".png";
+        sdl::save_image(ss.str(), width, height, store);
 
-        if (!controller.handle() || time > scenario.duration()) {
+        if (/*!controller.handle() || */time > scenario.duration()) {
             break;
         }
         counter += 1;

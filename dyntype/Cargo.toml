@@ -1,8 +1,7 @@
 [package]
-name = "raytracer"
-version = "0.1.0"
+name = "dyntype"
+version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-ocl = "0.19"

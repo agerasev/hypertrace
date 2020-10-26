@@ -1,9 +1,6 @@
-[package]
-name = "hypertrace"
-version = "0.0.1"
-authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
-edition = "2018"
+[workspace]
 
-[dependencies]
-raytracer = { path = "./raytracer" }
-sdl2 = "0.32"
+members = [
+    "core",
+    "dyntype"
+]

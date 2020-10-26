@@ -6,14 +6,20 @@
 #include <host/dyntype/static_struct.hpp>
 
 
-template <typename Self, typename Base, typename D>
+template <typename Self, typename Base, typename Data>
 class ImplMaterialModifier : public Base {
 public:
     typedef Base BaseType;
     typedef typename Base::Instance BaseInstance;
     typedef rs::Box<BaseType> BaseTypeBox;
     typedef rs::Box<BaseInstance> BaseInstanceBox;
-    typedef dyn::StaticStruct<Base, dyn::Primitive<D>> InnerType;
+
+    typedef dyn::Primitive<Data> DataType;
+    typedef typename dyn::Primitive<Data>::Instance DataInstance;
+    typedef rs::Box<DataType> DataTypeBox;
+    typedef rs::Box<DataInstance> DataInstanceBox;
+
+    typedef dyn::StaticStruct<BaseType, DataType> InnerType;
     typedef typename InnerType::Instance InnerInstance;
 
 
@@ -22,24 +28,24 @@ public:
         InnerInstance content_;
 
     public:
-        Instance(BaseInstanceBox &&inner, D data) :
+        Instance(BaseInstanceBox &&inner, DataInstanceBox &&data) :
             content_(
                 rs::Tuple(std::string("inner"), std::move(inner)),    
-                rs::Tuple(std::string("data"), dyn::Primitive<D>::Instance(data))
+                rs::Tuple(std::string("data"), std::move(data))
             )
         {}
-        explicit Instance(InnerInstance &&cont) : content_(cont) {}
+        explicit Instance(InnerInstance &&cont) : content_(std::move(cont)) {}
 
-        BaseInstanceBox &inner() { content_.fields().template get<0>(); }
-        const BaseInstanceBox &inner() const { content_.fields().template get<0>(); }
+        BaseInstance &inner() { return content_.fields().template get<0>().get(); }
+        const BaseInstance &inner() const { return content_.fields().template get<0>().get(); }
 
-        D &data() { content_.fields().template get<1>()->value; }
-        const D &data() const { content_.fields().template get<1>()->value; }
+        DataInstance &data() { return content_.fields().template get<1>().get(); }
+        const DataInstance &data() const { return content_.fields().template get<1>().get(); }
 
         Self type_() const {
-            return Self(content_.fields().template get<0>()->type());
+            return Self(content_.type_());
         }
-        virtual Base *_type() const override { return new Self(_type()); }
+        virtual Base *_type() const override { return new Self(type_()); }
         
         virtual void load(const uchar *src) override {
             content_.load(src);
@@ -52,22 +58,36 @@ private:
     InnerType content_;
 
 public:
-    ImplMaterialModifier(BaseTypeBox &&inner) :
+    ImplMaterialModifier(BaseTypeBox &&inner, DataTypeBox &&data) :
         content_(
-            rs::Tuple(std::string("inner"), std::move(inner)),    
-            rs::Tuple(std::string("data"), dyn::Primitive<D>())
+            rs::Tuple(std::string("inner"), std::move(inner)),
+            rs::Tuple(std::string("data"), std::move(data))
         )
     {}
-    const BaseTypeBox &inner() const { return content_.fields().template get<0>(); }
-    virtual Base *_clone() const override { return new Self(inner()->clone()); }
+    ImplMaterialModifier(InnerType &&cont) :
+        content_(std::move(cont))
+    {}
 
-    virtual size_t id() const override { return typeid(Self).hash_code(); }
+    BaseType &inner() { return content_.fields().template get<0>().get(); }
+    const BaseType &inner() const { return content_.fields().template get<0>().get(); }
+
+    DataType &data() { return content_.fields().template get<1>().get(); }
+    const DataType &data() const { return content_.fields().template get<1>().get(); }
+
+    virtual Base *_clone() const override { return new Self(content_.clone_()); }
+
+    virtual size_t id() const override {
+        rs::DefaultHasher hasher;
+        hasher._hash_raw(typeid(Self).hash_code());
+        hasher._hash_raw(content_.id());
+        return hasher.finish();
+    }
 
     virtual size_t align() const override { return content_.align(); };
     virtual rs::Option<size_t> size() const override { return content_.size(); };
 
     Instance load_(const uchar *src) const {
-        return Include(content_.load_(src));
+        return Instance(content_.load_(src));
     }
     virtual Instance *_load(const uchar *src) const override {
         return new Instance(load_(src));
@@ -83,7 +103,7 @@ public:
         dyn::Source src = content_.source();
         
         std::string inner_elem;
-        if (inner()->size().unwrap() > 0) {
+        if (inner().size().unwrap() > 0) {
             inner_elem = "&material->inner";
         } else {
             inner_elem = "NULL";
@@ -91,7 +111,7 @@ public:
         
         src.insert(fname, format_(
             "#include <{}>\n"
-            "typedef {} {}\n"
+            "typedef {} {};\n"
             "\n"
             "bool {}_interact(__global const {} *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {{\n"
             "{}"
@@ -99,9 +119,9 @@ public:
             "}}\n",
             src.name(),
             content_.name(), this->name(),
-            lname,
+            lname, this->name(),
             modifier_code(),
-            inner()->prefix(), inner_elem
+            inner().prefix(), inner_elem
         )).unwrap();
         src.set_name(fname);
         return src;
@@ -109,23 +129,39 @@ public:
 };
 
 class Colored final : public ImplMaterialModifier<Colored, Material, float3> {
+public:
+    Colored() = default;
+    explicit Colored(rs::Box<Material> &&inner, rs::Box<dyn::Primitive<float3>> &&data) :
+        ImplMaterialModifier<Colored, Material, float3>(std::move(inner), std::move(data))
+    {}
+    Colored(dyn::StaticStruct<Material, dyn::Primitive<float3>> &&content) :
+        ImplMaterialModifier<Colored, Material, float3>(std::move(content))
+    {}
     virtual std::string name() const override {
-        return format_("Colored{}", inner()->name());
+        return format_("Colored{}", id());
     }
     virtual std::string modifier_code() const override {
         return std::string(
-            "    light->base->intensity *= material->data;\n"
+            "    light->base.intensity *= material->data;\n"
         );
     }
 };
 
 class Emissive final : public ImplMaterialModifier<Emissive, Material, float3> {
+public:
+    Emissive() = default;
+    explicit Emissive(rs::Box<Material> &&inner, rs::Box<dyn::Primitive<float3>> &&data) :
+        ImplMaterialModifier<Emissive, Material, float3>(std::move(inner), std::move(data))
+    {}
+    Emissive(dyn::StaticStruct<Material, dyn::Primitive<float3>> &&content) :
+        ImplMaterialModifier<Emissive, Material, float3>(std::move(content))
+    {}
     virtual std::string name() const override {
-        return format_("Emissive{}", inner()->name());
+        return format_("Emissive{}", id());
     }
     virtual std::string modifier_code() const override {
         return std::string(
-            "    *emission += light->base->intensity * material->data;\n"
+            "    *emission += light->base.intensity * material->data;\n"
         );
     }
 };

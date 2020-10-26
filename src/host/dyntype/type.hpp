@@ -51,6 +51,7 @@ public:
 
 template <typename Self, typename Base>
 class ImplEmptyType : public Base {
+public:
     class Instance final : public Base::Instance {
     public:
         virtual Base *_type() const override { return new Self(); }
@@ -66,7 +67,7 @@ class ImplEmptyType : public Base {
     virtual size_t id() const override { return typeid(Self).hash_code(); }
 
     virtual rs::Option<size_t> size() const override { return rs::Some<size_t>(0); }
-    virtual size_t align() const override { return 0; }
+    virtual size_t align() const override { return 1; }
 
     virtual Instance *_load(const uchar *) const override { return new Instance(); }
     rs::Box<Instance> load(const uchar *) const { return rs::Box(_load()); }

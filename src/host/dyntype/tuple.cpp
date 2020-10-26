@@ -5,7 +5,7 @@
 #include <test/devtest.hpp>
 #include <common/algebra/vector.hh>
 #include "primitive.hpp"
-#include "array.hpp"
+#include "vector.hpp"
 #include "tuple.hpp"
 
 using namespace dyn;
@@ -33,7 +33,7 @@ rtest_module_(dyntype_tuple) {
         std::vector<ulong_> ssize(1);
         std::vector<ulong_> dyn_offset, offset(5);
 
-        Array<Tuple<>>::Instance darr;
+        Vector<Tuple<>>::Instance darr;
 
         for (size_t i = 0; i < n; ++i) {
             real r = rng.normal();
@@ -78,7 +78,7 @@ rtest_module_(dyntype_tuple) {
             "    __global ulong *offset\n"
             ") {{\n"
             "    int i = get_global_id(0);\n"
-            "    __global const MyTuple *tup = &darr->items[i];\n"
+            "    __global const MyTuple *tup = &(&darr->first)[i];\n"
             "    outr[i] =   tup->field0;\n"
             "    outr3[i] =  tup->field1;\n"
             "    outr16[i] = tup->field2;\n"

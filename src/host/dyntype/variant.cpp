@@ -5,7 +5,7 @@
 #include <test/devtest.hpp>
 #include <common/algebra/vector.hh>
 #include "primitive.hpp"
-#include "array.hpp"
+#include "vector.hpp"
 #include "variant.hpp"
 
 using namespace dyn;
@@ -39,7 +39,7 @@ rtest_module_(dyntype_variant) {
         dty.append_vartype(TypeBox(Primitive<uint>()));
         dty.append_vartype(TypeBox(Primitive<uchar>()));
         
-        Array<Variant<>>::Instance darr;
+        Vector<Variant<>>::Instance darr;
 
         for (size_t i = 0; i < n; ++i) {
             size_t idx = int(5*rng.uniform());
@@ -93,7 +93,7 @@ rtest_module_(dyntype_variant) {
             "    __global ulong *ssize\n"
             ") {{\n"
             "    int i = get_global_id(0);\n"
-            "    __global const MyVar *var = &darr->items[i];\n"
+            "    __global const MyVar *var = &(&darr->first)[i];\n"
             "    index[i] = var->index;\n"
             "    if (var->index == 0) {{\n"
             "        outr[i] = var->variants.variant0;\n"
@@ -170,7 +170,7 @@ rtest_module_(dyntype_variant) {
         dty.append_vartype(TypeBox(Primitive<uint>()));
         dty.append_vartype(TypeBox(Primitive<uchar>()));
         
-        Array<Variant<>>::Instance darr;
+        Vector<Variant<>>::Instance darr;
 
         for (size_t i = 0; i < n; ++i) {
             size_t idx = int(5*rng.uniform());
@@ -223,7 +223,7 @@ rtest_module_(dyntype_variant) {
             "    __global const uchar *inb\n"
             ") {{\n"
             "    int i = get_global_id(0);\n"
-            "    __global MyVar *var = &darr->items[i];\n"
+            "    __global MyVar *var = &(&darr->first)[i];\n"
             "    var->index = index[i];\n"
             "    if (var->index == 0) {{\n"
             "        var->variants.variant0 = inr[i];\n"

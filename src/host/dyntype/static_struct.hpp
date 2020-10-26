@@ -14,7 +14,7 @@ protected:
     typedef typename StaticTuple<Types...>::Instance BaseInstance;
 
 public:
-    class Instance_ : public BaseInstance {
+    class Instance : public BaseInstance {
     private:
         std::array<std::string, sizeof...(Types)> field_names_;
 
@@ -35,17 +35,17 @@ public:
         };
 
     public:
-        Instance_() = default;
-        explicit Instance_(rs::Tuple<rs::Tuple<std::string, rs::Box<typename Types::Instance>>...> &&flds) {
+        Instance() = default;
+        explicit Instance(rs::Tuple<rs::Tuple<std::string, rs::Box<typename Types::Instance>>...> &&flds) {
             auto ret = flds.unpack(Unzipper());
             field_names_ = std::move(ret.template get<0>());
             BaseInstance::fields() = std::move(ret.template get<1>());
         }
-        explicit Instance_(rs::Tuple<std::string, rs::Box<typename Types::Instance>> &&...flds) :
+        explicit Instance(rs::Tuple<std::string, rs::Box<typename Types::Instance>> &&...flds) :
             BaseInstance(std::forward<rs::Box<typename Types::Instance>>(flds.template get<1>())...),
             field_names_{flds.template get<0>()...}
         {}
-        Instance_(const std::array<std::string, sizeof...(Types)> &names, rs::Tuple<rs::Box<typename Types::Instance>...> &&insts) :
+        Instance(const std::array<std::string, sizeof...(Types)> &names, rs::Tuple<rs::Box<typename Types::Instance>...> &&insts) :
             BaseInstance(std::move(insts)),
             field_names_(names)
         {}
@@ -70,7 +70,6 @@ public:
             return rs::Box<StaticStruct>::_from_raw(_type());
         }
     };
-    typedef Instance_ Instance;
 
 private:
     std::array<std::string, sizeof...(Types)> field_names_;
@@ -120,8 +119,11 @@ private:
     };
 
 public:
+    StaticStruct clone_() const {
+        return StaticStruct(field_names(), fields().unpack_ref(Cloner()));
+    }
     virtual StaticStruct *_clone() const override {
-        return new StaticStruct(field_names(), fields().unpack_ref(Cloner()));
+        return new StaticStruct(clone_());
     }
     rs::Box<StaticStruct> clone() const {
         return rs::Box<StaticStruct>::_from_raw(_clone());

@@ -10,15 +10,15 @@ namespace dyn {
 template <typename ...Types>
 class StaticTuple : public Type {
 public:
-    class Instance_ : public Type::Instance {
+    class Instance : public Type::Instance {
     public:
         rs::Tuple<rs::Box<typename Types::Instance>...> fields_;
 
-        Instance_() = default;
-        explicit Instance_(rs::Box<typename Types::Instance> &&...flds) :
+        Instance() = default;
+        explicit Instance(rs::Box<typename Types::Instance> &&...flds) :
             fields_(std::forward<rs::Box<typename Types::Instance>>(flds)...)
         {}
-        explicit Instance_(rs::Tuple<rs::Box<typename Types::Instance>...> flds) :
+        explicit Instance(rs::Tuple<rs::Box<typename Types::Instance>...> flds) :
             fields_(std::move(flds))
         {}
 
@@ -66,7 +66,6 @@ public:
             *this = type_().load_(src);
         }
     };
-    typedef Instance_ Instance;
 
 private:
     rs::Tuple<rs::Box<Types>...> fields_;
@@ -103,8 +102,11 @@ private:
     };
 
 public:
+    StaticTuple clone_() const {
+        return StaticTuple(fields_.unpack_ref(Cloner()));
+    }
     virtual StaticTuple *_clone() const override {
-        return new StaticTuple(fields_.unpack_ref(Cloner()));
+        return new StaticTuple(clone_());
     }
     rs::Box<StaticTuple> clone() const {
         return rs::Box<StaticTuple>::_from_raw(_clone());

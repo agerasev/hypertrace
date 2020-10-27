@@ -6,10 +6,10 @@ The directory contains source code for both host and device.
 
 | Source  | Header  | Can be used by               |
 |---------|---------|------------------------------|
-| `*.c`   | `*.h`   | Host C and device OpenCL C   |
+| `*.cl`  |         | Only device OpenCL           |
 | `*.cc`  | `*.hh`  | Host C++ and device OpenCL C |
 | `*.cpp` | `*.hpp` | Only host C++                |
-| `*.cl`  | `*.cl`  | Only device OpenCL           |
+| `*.cx`  |         | Device OpenCL template       |
 
 ## Flags
 
@@ -20,3 +20,4 @@ The directory contains source code for both host and device.
 | `TEST_UNIT` | Only host C++ | Code is building for unit tests |
 | `TEST_DEV` | Only host C++ with OpenCL installed | Unit testing device code |
 | `DEV_F64` | Host and device OpenCL | Device supports and will use double-precision FP |
+| `DEV_SIZE64` | Host and device OpenCL | Device will use `uint64_t` as `size_t` (instead of `uint32_t`) |

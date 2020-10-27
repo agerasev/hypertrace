@@ -5,6 +5,8 @@ use std::{
 };
 
 
+// Type
+
 /// Runtime type base trait.
 pub trait TypeBase {
     /// Align of dynamic type.
@@ -15,17 +17,17 @@ pub trait TypeBase {
     fn size(&self) -> Option<usize>;
 }
 
-
 /// Runtime type abstract trait.
+/// *Shouldn't be implemented directly for user types, use `TypeSpec` instead.*
 pub trait TypeDyn: TypeBase {
     /// Hash the type with abstract hasher.
     fn hash_dyn(&self, hasher: &mut dyn Hasher);
 
     /// Clones abstract type.
-    fn clone_dyn(&self) -> Box<dyn TypeDyn>;
+    fn clone_dyn(&self) -> TypeBox;
 
     /// Loads the abstract instance.
-    fn load_dyn(&self, src: &mut dyn Read) -> io::Result<Box<dyn InstDyn>>;
+    fn load_dyn(&self, src: &mut dyn Read) -> io::Result<InstBox>;
 }
 
 /// Runtime type trait.
@@ -37,7 +39,7 @@ pub trait Type: TypeBase + TypeDyn + Clone + Hash {
     fn id(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.hash(&mut hasher);
-        return hasher.finish();
+        hasher.finish()
     }
 
     /// Loads the instance from abstract loader.
@@ -47,18 +49,25 @@ pub trait Type: TypeBase + TypeDyn + Clone + Hash {
     fn load<R: Read + ?Sized>(&self, src: &mut R) -> io::Result<Self::Inst>;
 }
 
-impl<T> TypeDyn for T where T: Type + 'static {
+/// Trait for specific runtime type.
+/// *This is the trait to be implemented for your own types.*
+pub trait TypeSpec: Type + 'static {}
+
+impl<T> TypeDyn for T where T: TypeSpec {
     fn hash_dyn(&self, hasher: &mut dyn Hasher) {
         let mut hb = Box::new(hasher);
         self.hash(&mut hb);
     }
-    fn clone_dyn(&self) -> Box<dyn TypeDyn> {
+    fn clone_dyn(&self) -> TypeBox {
         Box::new(self.clone())
     }
-    fn load_dyn(&self, src: &mut dyn Read) -> io::Result<Box<dyn InstDyn>> {
+    fn load_dyn(&self, src: &mut dyn Read) -> io::Result<InstBox> {
         self.load(src).map(|x| Box::new(x) as Box::<dyn InstDyn>)
     }
 }
+
+
+// Instance
 
 /// Instance of a runtime type basic trait.
 pub trait InstBase {
@@ -69,9 +78,10 @@ pub trait InstBase {
 }
 
 /// Instance of a runtime type abstract trait.
+/// *Shouldn't be implemented directly for user type instances, use `InstSpec` instead.*
 pub trait InstDyn: InstBase {
     /// Returns an abstract type of the instance.
-    fn type_dyn(&self) -> Box<dyn TypeDyn>;
+    fn type_dyn(&self) -> TypeBox;
 
     /// Stores the instance to abstract writer.
     /// 
@@ -92,8 +102,12 @@ pub trait Inst: InstBase + InstDyn {
     fn store<W: Write + ?Sized>(&self, dst: &mut W) -> io::Result<()>;
 }
 
-impl<T> InstDyn for T where T: Inst + 'static {
-    fn type_dyn(&self) -> Box<dyn TypeDyn> {
+/// Trait for specific runtime type instance.
+/// *This is the trait to be implemented for your own type instances.*
+pub trait InstSpec: Inst + 'static {}
+
+impl<T> InstDyn for T where T: InstSpec {
+    fn type_dyn(&self) -> TypeBox {
         Box::new(self.type_())
     }
     fn store_dyn(&self, dst: &mut dyn Write) -> io::Result<()> {
@@ -102,7 +116,12 @@ impl<T> InstDyn for T where T: Inst + 'static {
 }
 
 
-impl TypeBase for Box<dyn TypeDyn> {
+// Box
+
+pub type TypeBox = Box<dyn TypeDyn>;
+pub type InstBox = Box<dyn InstDyn>;
+
+impl TypeBase for TypeBox {
     fn align(&self) -> usize {
         self.as_ref().align()
     }
@@ -110,33 +129,52 @@ impl TypeBase for Box<dyn TypeDyn> {
         self.as_ref().size()
     }
 }
-impl Type for Box<dyn TypeDyn> {
-    type Inst = Box<dyn InstDyn>;
+impl TypeDyn for TypeBox {
+    fn hash_dyn(&self, hasher: &mut dyn Hasher) {
+        self.as_ref().hash_dyn(hasher);
+    }
+    fn clone_dyn(&self) -> TypeBox {
+        self.as_ref().clone_dyn()
+    }
+    fn load_dyn(&self, src: &mut dyn Read) -> io::Result<InstBox> {
+        self.as_ref().load_dyn(src)
+    }
+}
+impl Type for TypeBox {
+    type Inst = InstBox;
 
     fn load<R: Read + ?Sized>(&self, src: &mut R) -> io::Result<Self::Inst> {
         let mut rb = Box::new(src) as Box<dyn Read>;
         self.as_ref().load_dyn(&mut rb)
     }
 }
-impl Clone for Box<dyn TypeDyn> {
+impl Clone for TypeBox {
     fn clone(&self) -> Self {
         self.as_ref().clone_dyn()
     }
 }
-impl Hash for Box<dyn TypeDyn> {
+impl Hash for TypeBox {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
         let mut hb = Box::new(hasher);
         self.as_ref().hash_dyn(&mut hb);
     }
 }
 
-impl InstBase for Box<dyn InstDyn> {
+impl InstBase for InstBox {
     fn size(&self) -> usize {
         self.as_ref().size()
     }
 }
-impl Inst for Box<dyn InstDyn> {
-    type Type = Box<dyn TypeDyn>;
+impl InstDyn for InstBox {
+    fn type_dyn(&self) -> TypeBox {
+        self.as_ref().type_dyn()
+    }
+    fn store_dyn(&self, dst: &mut dyn Write) -> io::Result<()> {
+        self.as_ref().store_dyn(dst)
+    }
+}
+impl Inst for InstBox {
+    type Type = TypeBox;
 
     fn type_(&self) -> Self::Type {
         self.as_ref().type_dyn()
@@ -148,8 +186,10 @@ impl Inst for Box<dyn InstDyn> {
 }
 
 
+// Empty
+
 /// Type which instance doesn't store anything.
-pub trait EmptyType: Type {}
+pub trait EmptyType: TypeSpec {}
 
 impl<T> TypeBase for T where T: EmptyType {
     fn align(&self) -> usize {
@@ -160,8 +200,8 @@ impl<T> TypeBase for T where T: EmptyType {
     }
 }
 
-/// Instance doesn't store anything.
-pub trait EmptyInst: Inst {}
+/// Instance that doesn't store anything.
+pub trait EmptyInst: InstSpec {}
 
 impl<T> InstBase for T where T: EmptyInst {
     fn size(&self) -> usize {
@@ -169,12 +209,13 @@ impl<T> InstBase for T where T: EmptyInst {
     }
 }
 
+
+// Tests
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{
-        any::TypeId
-    };
+    use std::any::TypeId;
 
     #[derive(Debug, Clone)]
     struct DummyType {}
@@ -183,6 +224,7 @@ mod tests {
     struct DummyInst {}
 
     impl EmptyType for DummyType {}
+    impl TypeSpec for DummyType {}
     impl Type for DummyType {
         type Inst = DummyInst;
         fn load<R: Read + ?Sized>(&self, _: &mut R) -> io::Result<Self::Inst> {
@@ -196,6 +238,7 @@ mod tests {
     }
 
     impl EmptyInst for DummyInst {}
+    impl InstSpec for DummyInst {}
     impl Inst for DummyInst {
         type Type = DummyType;
         fn type_(&self) -> DummyType {
@@ -216,7 +259,7 @@ mod tests {
     }
     #[test]
     fn empty_dyn() {
-        let (dty, din) = (Box::new(DummyType{}) as Box<dyn TypeDyn>, Box::new(DummyInst{}) as Box<dyn InstDyn>);
+        let (dty, din) = (Box::new(DummyType{}) as TypeBox, Box::new(DummyInst{}) as InstBox);
         assert_eq!(dty.id(), din.type_().id());
     }
 }

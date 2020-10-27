@@ -133,7 +133,7 @@ rtest_module_(linear) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("linear.cl", std::string(
-            "#include <common/algebra/linear.hh>\n"
+            "#include <algebra/linear.hh>\n"
             "__kernel void chain(__global const Linear3 *x, __global const Linear3 *y, __global Linear3 *z) {\n"
             "    int i = get_global_id(0);\n"
             "    z[i] = lin3_chain(x[i], y[i]);\n"

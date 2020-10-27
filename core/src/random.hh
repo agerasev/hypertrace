@@ -1,8 +1,8 @@
 #pragma once
 
-#include <common/types.hh>
-#include <common/algebra/real.hh>
-#include <common/algebra/vector.hh>
+#include <types.hh>
+#include <algebra/real.hh>
+#include <algebra/vector.hh>
 
 
 typedef struct Rng {

@@ -229,7 +229,7 @@ rtest_module_(hyperbolic) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("hyperbolic.cl", std::string(
-            "#include <common/geometry/hyperbolic.hh>\n"
+            "#include <geometry/hyperbolic.hh>\n"
             "__kernel void transform(__global const HyMap *map, __global const HyPos *ipos, __global HyPos *opos) {\n"
             "    int i = get_global_id(0);\n"
             "    opos[i] = hy_apply_pos(map[i/2], ipos[i]);\n"

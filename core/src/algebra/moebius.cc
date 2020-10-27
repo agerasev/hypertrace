@@ -122,7 +122,7 @@ rtest_module_(moebius) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("moebius.cl", std::string(
-            "#include <common/algebra/moebius.hh>\n"
+            "#include <algebra/moebius.hh>\n"
             "__kernel void chain(__global const Moebius *x, __global const Moebius *y, __global Moebius *z) {\n"
             "    int i = get_global_id(0);\n"
             "    z[i] = mo_chain(x[i], y[i]);\n"

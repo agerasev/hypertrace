@@ -12,13 +12,14 @@ project(hypertrace)
 set(CMAKE_C_FLAGS "-g -Wall -Wextra")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17 -fno-exceptions")
 
-add_subdirectory("submodules/rstd")
-include_directories("submodules/rstd/src")
+add_subdirectory("../rstd" "../rstd")
+include_directories("../rstd/src")
 
 add_definitions(
     "-DDEBUG"
     "-DHOST"
     "-DTEST"
+    "-DTEST_UNIT"
 )
 
 
@@ -75,9 +76,9 @@ target_link_libraries(${PROJECT_NAME} pthread rstd)
 
 # Tests
 
-set(PROJECT_TEST ${PROJECT_NAME}_test)
-add_executable(${PROJECT_TEST} "test_unit.cpp")
+set(PROJECT_TEST test)
+add_executable(${PROJECT_TEST} "test/test_unit.cpp")
 if(USE_PCH)
     target_precompile_headers(${PROJECT_TEST} PRIVATE ${PCH})
 endif()
-target_link_libraries(${PROJECT_TEST} ${PROJECT_NAME})
+target_link_libraries(${PROJECT_TEST} ${PROJECT_NAME} pthread rstd)

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <common/algebra/color.hh>
-#include <common/geometry/ray.hh>
+#include <algebra/color.hh>
+#include <geometry/ray.hh>
 
 
 typedef struct LightBase {

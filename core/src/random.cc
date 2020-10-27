@@ -267,7 +267,7 @@ rtest_module_(random) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("real.cl", std::string(
-            "#include <common/random.hh>\n"
+            "#include <random.hh>\n"
             "__kernel void sphere(__global const uint *seed, __global real3 *point) {\n"
             "    int i = get_global_id(0);\n"
             "    Rng rng = rng_init(seed[i]);\n"

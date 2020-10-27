@@ -209,7 +209,7 @@ rtest_module_(rotation) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("rotation.cl", std::string(
-            "#include <common/algebra/rotation.hh>\n"
+            "#include <algebra/rotation.hh>\n"
             "__kernel void chain(__global const Rotation3 *x, __global const Rotation3 *y, __global Rotation3 *z) {\n"
             "    int i = get_global_id(0);\n"
             "    z[i] = rot3_chain(x[i], y[i]);\n"

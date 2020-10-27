@@ -86,7 +86,7 @@ rtest_module_(vector) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("vector.cl", std::string(
-            "#include <common/algebra/vector.hh>\n"
+            "#include <algebra/vector.hh>\n"
             "__kernel void mul_dot(__global const real3 *x, __global const real3 *y, __global real3 *m, __global real *d) {\n"
             "    int i = get_global_id(0);\n"
             "    m[i] = x[i]*y[i];\n"

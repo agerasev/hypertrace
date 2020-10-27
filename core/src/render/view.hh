@@ -1,8 +1,8 @@
 #pragma once
 
-#include <common/types.hh>
-#include <common/geometry/euclidean.hh>
-#include <common/geometry/hyperbolic.hh>
+#include <types.hh>
+#include <geometry/euclidean.hh>
+#include <geometry/hyperbolic.hh>
 
 
 typedef struct ViewEu {

@@ -163,7 +163,7 @@ rtest_module_(quaternion) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("quaternion.cl", std::string(
-            "#include <common/algebra/quaternion.hh>\n"
+            "#include <algebra/quaternion.hh>\n"
             "__kernel void mul_div(__global const quat *x, __global const quat *y, __global quat *m, __global quat *d) {\n"
             "    int i = get_global_id(0);\n"
             "    m[i] = q_mul(x[i], y[i]);\n"

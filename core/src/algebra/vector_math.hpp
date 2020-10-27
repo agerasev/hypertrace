@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/math.hh>
+#include <math.hh>
 
 #include "vector_struct.hpp"
 

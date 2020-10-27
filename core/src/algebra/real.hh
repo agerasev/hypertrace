@@ -1,6 +1,6 @@
 #pragma once
 
-#include <common/types.hh>
+#include <types.hh>
 
 #if defined(HOST) || defined(DEV_F64)
 

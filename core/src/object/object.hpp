@@ -1,7 +1,7 @@
 #pragma once
 
 #include <rstd.hpp>
-#include <common/geometry/geometry.hpp>
+#include <geometry/geometry.hpp>
 #include <host/dyntype/type.hpp>
 
 

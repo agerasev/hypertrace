@@ -110,7 +110,7 @@ rtest_module_(affine) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("moebius.cl", std::string(
-            "#include <common/algebra/affine.hh>\n"
+            "#include <algebra/affine.hh>\n"
             "__kernel void chain(__global const Affine3 *x, __global const Affine3 *y, __global Affine3 *z) {\n"
             "    int i = get_global_id(0);\n"
             "    z[i] = aff3_chain(x[i], y[i]);\n"

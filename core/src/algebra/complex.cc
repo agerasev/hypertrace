@@ -114,7 +114,7 @@ rtest_module_(complex) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("complex.cl", std::string(
-            "#include <common/algebra/complex.hh>\n"
+            "#include <algebra/complex.hh>\n"
             "__kernel void identity(__global const comp *ibuf, __global comp *obuf) {\n"
             "    int i = get_global_id(0);\n"
             "    obuf[i] = ibuf[i];\n"
@@ -142,7 +142,7 @@ rtest_module_(complex) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("complex.cl", std::string(
-            "#include <common/algebra/complex.hh>\n"
+            "#include <algebra/complex.hh>\n"
             "__kernel void mul_div(__global const comp *x, __global const comp *y, __global comp *m, __global comp *d) {\n"
             "    int i = get_global_id(0);\n"
             "    m[i] = c_mul(x[i], y[i]);\n"

@@ -28,7 +28,7 @@ rtest_module_(real) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("real.cl", std::string(
-            "#include <common/algebra/real.hh>\n"
+            "#include <algebra/real.hh>\n"
             "__kernel void square(__global const real *ibuf, __global real *obuf) {\n"
             "    int i = get_global_id(0);\n"
             "    real x = ibuf[i];\n"

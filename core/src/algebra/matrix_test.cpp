@@ -300,7 +300,7 @@ rtest_module_(matrix) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("matrix_real.cl", std::string(
-            "#include <common/algebra/matrix.hh>\n"
+            "#include <algebra/matrix.hh>\n"
             "__kernel void product(__global const real3x3 *xbuf, __global const real3x3 *ybuf, __global real3x3 *obuf) {\n"
             "    int i = get_global_id(0);\n"
             "    obuf[i] = r33_dot(xbuf[i], ybuf[i]);\n"
@@ -330,7 +330,7 @@ rtest_module_(matrix) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("matrix_complex.cl", std::string(
-            "#include <common/algebra/matrix.hh>\n"
+            "#include <algebra/matrix.hh>\n"
             "__kernel void product(__global const comp2x2 *xbuf, __global const comp2x2 *ybuf, __global comp2x2 *obuf) {\n"
             "    int i = get_global_id(0);\n"
             "    obuf[i] = c22_dot(xbuf[i], ybuf[i]);\n"

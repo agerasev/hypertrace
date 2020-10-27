@@ -1,5 +1,5 @@
 #include "euclidean.hh"
-#include <common/algebra/rotation.hh>
+#include <algebra/rotation.hh>
 
 
 EuPos eu_origin() {
@@ -129,7 +129,7 @@ rtest_module_(euclidean) {
         auto queue = target.make_queue();
         auto kernel = devtest::KernelBuilder(target.device_id(), queue)
         .source("euclidean.cl", std::string(
-            "#include <common/geometry/euclidean.hh>\n"
+            "#include <geometry/euclidean.hh>\n"
             "__kernel void transform(__global const EuMap *map, __global const EuPos *ipos, __global EuPos *opos) {\n"
             "    int i = get_global_id(0);\n"
             "    opos[i] = eu_apply_pos(map[i/2], ipos[i]);\n"

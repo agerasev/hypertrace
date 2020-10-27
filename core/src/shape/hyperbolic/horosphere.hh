@@ -1,9 +1,9 @@
 #pragma once
 
-#include <common/algebra/quaternion.hh>
-#include <common/geometry/hyperbolic.hh>
-#include <common/render/light.hh>
-#include <common/render/context.hh>
+#include <algebra/quaternion.hh>
+#include <geometry/hyperbolic.hh>
+#include <render/light.hh>
+#include <render/context.hh>
 
 
 #ifndef DYNTYPE
@@ -13,13 +13,13 @@ real horosphere_detect(__global const Horosphere *shape, Context *context, HyDir
 
 #else // DYNTYPE
 
-#include <common/shape/shape.hpp>
+#include <shape/shape.hpp>
 
 class Horosphere final : public dyn::ImplEmptyType<Horosphere, SurfaceShape<Hy>> {
 public:
     inline virtual bool repeat_allowed() const override { return true; }
     inline virtual std::string name() const override { return "Horosphere"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("common/shape/hyperbolic/horosphere.hh"); };
+    inline virtual dyn::Source source() const override { return dyn::Source("shape/hyperbolic/horosphere.hh"); };
 };
 
 #endif // DYNTYPE

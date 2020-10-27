@@ -1,7 +1,7 @@
 #pragma once
 
-#include <common/algebra/vector.hh>
-#include <common/algebra/affine.hh>
+#include <algebra/vector.hh>
+#include <algebra/affine.hh>
 
 
 typedef real3 EuPos;

@@ -20,4 +20,4 @@ install:
 
 
 script:
-  - python3 -m manage test --cxx-compiler clang++ --cxx-no-pch 
+  - python3 -m manage test --cxx-compiler clang++ --cxx-no-pch

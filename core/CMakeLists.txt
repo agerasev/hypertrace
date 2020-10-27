@@ -12,7 +12,7 @@ project(hypertrace)
 set(CMAKE_C_FLAGS "-g -Wall -Wextra")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17 -fno-exceptions")
 
-add_subdirectory("../rstd" "../rstd")
+add_subdirectory("../rstd" "__/rstd")
 include_directories("../rstd/src")
 
 add_definitions(

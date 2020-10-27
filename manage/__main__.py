@@ -58,7 +58,7 @@ class BuildHandler(LoadHandler):
             parents=[super()._create_parser()], add_help=False,
         )
         parser.add_argument(
-            "-c", "--components", action="append", type=str,
+            "-c", "--components", action="append", nargs="+", type=str,
             choices=list(zip(*components))[0], default=[],
             help="Select components to build. All by default."
         )
@@ -77,6 +77,8 @@ class BuildHandler(LoadHandler):
 
         if not args["components"]:
             args["components"] = list(zip(*components))[0]
+        else:
+            args["components"] = [k for l in args["components"] for k in l]
         log.info("Components selected: {}".format(args["components"]))
 
         return args

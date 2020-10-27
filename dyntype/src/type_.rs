@@ -1,134 +1,175 @@
 use std::{
-    io::{Read, Write},
-    hash::{Hasher}, collections::hash_map::DefaultHasher,
+    io::{self, Read, Write},
+    hash::{Hash, Hasher},
+    collections::hash_map::DefaultHasher,
 };
 
-/// Dynamic type trait.
-pub trait Type {
-    /// Hash the type.
-    fn hash_dyn(&self, hasher: &mut dyn Hasher);
 
-    /// Type unique identifier.
-    fn id(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        self.hash_dyn(&mut hasher);
-        return hasher.finish();
-    }
-
-    /// Clones type.
-    fn clone_dyn(&self) -> Box<dyn Type>;
-
+/// Runtime type base trait.
+pub trait TypeBase {
     /// Align of dynamic type.
     fn align(&self) -> usize;
 
     /// Size of type.
     /// Returns `None` if the type is dynamically sized.
     fn size(&self) -> Option<usize>;
-
-    /// Loads the instance.
-    fn load_dyn(&self, src: &mut dyn Read) -> Box<dyn Instance>;
 }
 
-/// Instance of a dynamic type.
-pub trait Instance {
+
+/// Runtime type abstract trait.
+pub trait TypeDyn: TypeBase {
+    /// Hash the type with abstract hasher.
+    fn hash_dyn(&self, hasher: &mut Box<dyn Hasher>);
+
+    /// Type unique identifier.
+    fn id(&self) -> u64 {
+        let mut hasher: Box<dyn Hasher> = Box::new(DefaultHasher::new());
+        self.hash_dyn(&mut hasher);
+        return hasher.finish();
+    }
+
+    /// Clones abstract type.
+    fn clone_dyn(&self) -> Box<dyn TypeDyn>;
+
+    /// Loads the abstract instance.
+    fn load_dyn(&self, src: &mut Box<dyn Read>) -> io::Result<Box<dyn InstDyn>>;
+}
+
+/// Runtime type trait.
+pub trait Type: 'static + TypeBase + TypeDyn + Clone + Hash {
+    /// Instance of the type.
+    type Inst: Inst;
+
+    /// Loads the instance from abstract loader.
+    /// 
+    /// The amount of bytes to read from `src` always equal to `self.size()` for statically-sized types,
+    /// but may vary for dynamically-sized types.
+    fn load<R: Read>(&self, src: &mut R) -> io::Result<Self::Inst>;
+}
+
+impl<T> TypeDyn for T where T: Type {
+    fn hash_dyn(&self, hasher: &mut Box<dyn Hasher>) {
+        self.hash(hasher);
+    }
+    fn clone_dyn(&self) -> Box<dyn TypeDyn> {
+        Box::new(self.clone())
+    }
+    fn load_dyn(&self, src: &mut Box<dyn Read>) -> io::Result<Box<dyn InstDyn>> {
+        self.load(src).map(|x| Box::new(x) as Box::<dyn InstDyn>)
+    }
+}
+
+/// Instance of a runtime type basic trait.
+pub trait InstBase {
     /// Size of instance.
+    /// 
     /// Should be equal to `self.type_().size().unwrap()` if the instance is statically sized.
     fn size(&self) -> usize;
+}
+
+/// Instance of a runtime type abstract trait.
+pub trait InstDyn: InstBase {
+    /// Returns an abstract type of the instance.
+    fn type_dyn(&self) -> Box<dyn TypeDyn>;
+
+    /// Stores the instance to abstract writer.
+    /// 
+    /// The `dst` should have capacity to store at least `self.size()` bytes.
+    fn store_dyn(&self, dst: &mut Box<dyn Write>) -> io::Result<()>;
+}
+
+/// Instance of a runtime type trait.
+pub trait Inst: 'static + InstBase + InstDyn {
+    /// Type of the instance.
+    type Type: Type;
 
     /// Returns the type of the instance.
-    fn type_dyn(&self) -> Box<dyn Type>;
+    fn type_(&self) -> Self::Type;
 
     /// Stores the instance to bytes.
     /// The bytes should have at least
-    fn store_dyn(&self, dst: &mut dyn Write);
+    fn store<W: Write>(&self, dst: &mut W) -> io::Result<()>;
+}
+
+impl<T> InstDyn for T where T: Inst {
+    fn type_dyn(&self) -> Box<dyn TypeDyn> {
+        Box::new(self.type_())
+    }
+    fn store_dyn(&self, dst: &mut Box<dyn Write>) -> io::Result<()> {
+        self.store(dst)
+    }
 }
 
 
-/// Dynamic type that doesn't store anything.
-pub trait EmptyType: Type {
-    /// Hash the type.
-    fn hash_dyn(&self, hasher: &mut dyn Hasher);
+/// Type which instance doesn't store anything.
+pub trait EmptyType: Type {}
 
-    /// Clones type.
-    fn clone_dyn(&self) -> Box<dyn Type>;
-
-    /// Returns empty instance.
-    fn instantiate_dyn(&self) -> Box<dyn Instance>;
-}
-
-impl<T> Type for T where T: EmptyType {
-    fn hash_dyn(&self, hasher: &mut dyn Hasher) {
-        <Self as EmptyType>::hash_dyn(self, hasher)
-    }
-
-    fn clone_dyn(&self) -> Box<dyn Type> {
-        <Self as EmptyType>::clone_dyn(self)
-    }
-
+impl<T> TypeBase for T where T: EmptyType {
     fn align(&self) -> usize {
         1
     }
     fn size(&self) -> Option<usize> {
         Some(0)
     }
-
-    fn load_dyn(&self, _: &mut dyn Read) -> Box<dyn Instance> {
-        <Self as EmptyType>::instantiate_dyn(self)
-    }
 }
 
-/// Instance of an `EmptyType`.
-pub trait EmptyInstance: Instance {
-    /// Returns the type of the instance.
-    fn type_dyn(&self) -> Box<dyn Type>;
-}
+/// Instance doesn't store anything.
+pub trait EmptyInst: Inst {}
 
-impl<T> Instance for T where T: EmptyInstance {
+impl<T> InstBase for T where T: EmptyInst {
     fn size(&self) -> usize {
         0
     }
-
-    fn type_dyn(&self) -> Box<dyn Type> {
-        <Self as EmptyInstance>::type_dyn(self)
-    }
-
-    fn store_dyn(&self, _: &mut dyn Write) {
-
-    }
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::{
-        any::TypeId,
-        hash::Hash
+        any::TypeId
     };
 
+    #[derive(Debug, Clone)]
     struct DummyType {}
-    struct DummyInstance {}
 
-    impl EmptyType for DummyType {
-        fn hash_dyn(&self, hasher: &mut dyn Hasher) {
-            TypeId::of::<DummyType>().hash(hasher);
+    #[derive(Debug, Clone)]
+    struct DummyInst {}
+
+    impl EmptyType for DummyType {}
+    impl Type for DummyType {
+        type Inst = DummyInst;
+        fn load<R: Read>(&self, _: &mut R) -> io::Result<Self::Inst> {
+            Ok(DummyInst {})
         }
-        fn clone_dyn(&self) -> Box<dyn Type> {
-            Box::new(DummyType {})
-        }
-        fn instantiate_dyn(&self) -> Box<dyn Instance> {
-            Box::new(DummyInstance {})
+    }
+    impl Hash for DummyType {
+        fn hash<H: Hasher>(&self, hasher: &mut H) {
+            TypeId::of::<Self>().hash(hasher);
         }
     }
 
-    impl EmptyInstance for DummyInstance {
-        fn type_dyn(&self) -> Box<dyn Type> {
-            Box::new(DummyType {})
+    impl EmptyInst for DummyInst {}
+    impl Inst for DummyInst {
+        type Type = DummyType;
+        fn type_(&self) -> DummyType {
+            DummyType {}
+        }
+        fn store<W: Write>(&self, _: &mut W) -> io::Result<()> {
+            Ok(())
         }
     }
 
     #[test]
     fn empty() {
-        assert_eq!(DummyType{}.id(), DummyInstance{}.type_dyn().id()); 
+        let (dty, din) = (DummyType{}, DummyInst{});
+        assert_eq!(dty.id(), din.type_().id());
+        assert_eq!(dty.align(), 1);
+        assert_eq!(dty.size().unwrap(), 0);
+        assert_eq!(din.size(), 0);
+    }
+    #[test]
+    fn empty_dyn() {
+        let (dty, din) = (Box::new(DummyType{}) as Box<dyn TypeDyn>, Box::new(DummyInst{}) as Box<dyn InstDyn>);
+        assert_eq!(dty.id(), din.type_dyn().id());
     }
 }

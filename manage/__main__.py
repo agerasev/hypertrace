@@ -1,4 +1,5 @@
 import os, sys
+import shutil
 import subprocess
 import argparse
 
@@ -66,8 +67,8 @@ class BuildHandler(LoadHandler):
             help="Select C++ compiler to build. If not specified then system-default will be used."
         )
         parser.add_argument(
-            "--cxx-use-pch", action="store_true",
-            help="Use C++ precompiled headers. Off by default."
+            "--cxx-no-pch", action="store_true",
+            help="Don't use C++ precompiled headers (e.g. if your CMake < 3.16). On by default."
         )
         return parser
     
@@ -106,7 +107,8 @@ class CleanHandler(Handler):
         return args
 
     def _run(self, args):
-        raise NotImplementedError()
+        shutil.rmtree("build", ignore_errors=True)
+        shutil.rmtree("target", ignore_errors=True)
 
 
 class TestHandler(BuildHandler):

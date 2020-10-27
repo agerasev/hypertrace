@@ -28,9 +28,9 @@ class Cmake(Component):
         if args["cxx_compiler"]:
             env["CXX"] = args["cxx_compiler"]
         
-        defs = {}
-        if args["cxx_use_pch"]:
-            defs["USE_PCH"] = "ON"
+        defs = {
+            "USE_PCH": ("ON", "OFF")[bool(args["cxx_no_pch"])]
+        }
         defargs = ["-D{}={}".format(k, v) for k, v in defs.items()]
 
         gen = []
@@ -54,10 +54,10 @@ class Cargo(Component):
         super().__init__(path)
     
     def build(self, args):
-        raise NotImplementedError()
+        subprocess.run(["cargo", "build"], cwd=self.path, check=True)
     
     def test(self, args):
-        raise NotImplementedError()
+        subprocess.run(["cargo", "test"], cwd=self.path, check=True)
 
 
 components = [

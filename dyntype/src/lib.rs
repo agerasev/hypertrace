@@ -1,5 +1,5 @@
 mod type_;
 pub use type_::*;
 
-//mod array;
-//pub use array::*;
+mod array;
+pub use array::*;

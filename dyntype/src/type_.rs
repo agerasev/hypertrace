@@ -31,7 +31,7 @@ pub trait TypeDyn: TypeBase {
 }
 
 /// Runtime type trait.
-pub trait Type: TypeBase + TypeDyn + Clone + Hash {
+pub trait Type: TypeBase + TypeDyn + Clone + Hash + 'static {
     /// Instance of the type.
     type Inst: Inst;
 
@@ -51,7 +51,7 @@ pub trait Type: TypeBase + TypeDyn + Clone + Hash {
 
 /// Trait for specific runtime type.
 /// *This is the trait to be implemented for your own types.*
-pub trait TypeSpec: Type + 'static {}
+pub trait TypeSpec: Type {}
 
 impl<T> TypeDyn for T where T: TypeSpec {
     fn hash_dyn(&self, hasher: &mut dyn Hasher) {
@@ -90,7 +90,7 @@ pub trait InstDyn: InstBase {
 }
 
 /// Instance of a runtime type trait.
-pub trait Inst: InstBase + InstDyn {
+pub trait Inst: InstBase + InstDyn + 'static {
     /// Type of the instance.
     type Type: Type;
 
@@ -104,7 +104,7 @@ pub trait Inst: InstBase + InstDyn {
 
 /// Trait for specific runtime type instance.
 /// *This is the trait to be implemented for your own type instances.*
-pub trait InstSpec: Inst + 'static {}
+pub trait InstSpec: Inst {}
 
 impl<T> InstDyn for T where T: InstSpec {
     fn type_dyn(&self) -> TypeBox {

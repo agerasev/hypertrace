@@ -1,6 +1,3 @@
-[submodule "submodules/includer"]
-	path = submodules/includer
-	url = ../c-includer.git
 [submodule "submodules/rstd"]
-	path = submodules/rstd
+	path = rstd
 	url = ../cpp-rstd.git

@@ -1,9 +1,11 @@
 use std::{
     io::{self, Read, Write},
     hash::{Hash, Hasher},
-    collections::hash_map::DefaultHasher,
+    any::TypeId,
 };
 use crate::Config;
+
+pub use std::collections::hash_map::DefaultHasher;
 
 // Type
 
@@ -15,14 +17,14 @@ pub trait TypeBase {
     /// Size of type.
     /// Returns `None` if the type is dynamically sized.
     fn size(&self, config: &Config) -> Option<usize>;
+
+    /// Type unique identifier.
+    fn id(&self) -> u64;
 }
 
 /// Runtime type abstract trait.
 /// *Shouldn't be implemented directly for user types, use `TypeSpec` instead.*
 pub trait TypeDyn: TypeBase {
-    /// Hash the type with abstract hasher.
-    fn hash_dyn(&self, hasher: &mut dyn Hasher);
-
     /// Clones abstract type.
     fn clone_dyn(&self) -> TypeBox;
 
@@ -31,16 +33,9 @@ pub trait TypeDyn: TypeBase {
 }
 
 /// Runtime type trait.
-pub trait Type: TypeBase + TypeDyn + Clone + Hash + 'static {
+pub trait Type: TypeBase + TypeDyn + Clone + 'static {
     /// Instance of the type.
     type Inst: Inst;
-
-    /// Type unique identifier.
-    fn id(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        self.hash(&mut hasher);
-        hasher.finish()
-    }
 
     /// Loads the instance from abstract loader.
     /// 
@@ -54,10 +49,6 @@ pub trait Type: TypeBase + TypeDyn + Clone + Hash + 'static {
 pub trait TypeSpec: Type {}
 
 impl<T> TypeDyn for T where T: TypeSpec {
-    fn hash_dyn(&self, hasher: &mut dyn Hasher) {
-        let mut hb = Box::new(hasher);
-        self.hash(&mut hb);
-    }
     fn clone_dyn(&self) -> TypeBox {
         Box::new(self.clone())
     }
@@ -122,6 +113,9 @@ pub type TypeBox = Box<dyn TypeDyn>;
 pub type InstBox = Box<dyn InstDyn>;
 
 impl TypeBase for TypeBox {
+    fn id(&self) -> u64 {
+        self.as_ref().id()
+    }
     fn align(&self, config: &Config) -> usize {
         self.as_ref().align(config)
     }
@@ -130,9 +124,6 @@ impl TypeBase for TypeBox {
     }
 }
 impl TypeDyn for TypeBox {
-    fn hash_dyn(&self, hasher: &mut dyn Hasher) {
-        self.as_ref().hash_dyn(hasher);
-    }
     fn clone_dyn(&self) -> TypeBox {
         self.as_ref().clone_dyn()
     }
@@ -151,12 +142,6 @@ impl Type for TypeBox {
 impl Clone for TypeBox {
     fn clone(&self) -> Self {
         self.as_ref().clone_dyn()
-    }
-}
-impl Hash for TypeBox {
-    fn hash<H: Hasher>(&self, hasher: &mut H) {
-        let mut hb = Box::new(hasher);
-        self.as_ref().hash_dyn(&mut hb);
     }
 }
 
@@ -188,6 +173,13 @@ impl Inst for InstBox {
 
 // Empty
 
+/// Type unique identifier.
+pub fn type_id<T: 'static>() -> u64 {
+    let mut hasher = DefaultHasher::new();
+    TypeId::of::<T>().hash(&mut hasher);
+    hasher.finish()
+}
+
 /// Type which instance doesn't store anything.
 pub trait EmptyType: TypeSpec {}
 
@@ -197,6 +189,9 @@ impl<T> TypeBase for T where T: EmptyType {
     }
     fn size(&self, _: &Config) -> Option<usize> {
         Some(0)
+    }
+    fn id(&self) -> u64 {
+        type_id::<Self>()
     }
 }
 
@@ -215,7 +210,9 @@ impl<T> InstBase for T where T: EmptyInst {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::any::TypeId;
+    use std::{
+        any::TypeId,
+    };
     use crate::{Endianness, AddressWidth};
 
     const CONFIG: Config = Config {

@@ -1,3 +1,5 @@
+#![feature(min_const_generics)]
+
 mod config;
 mod type_;
 mod prim;

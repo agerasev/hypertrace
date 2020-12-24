@@ -1,10 +1,10 @@
 use std::{
     io::{self, Read, Write},
-    hash::Hash,
+    hash::{Hash, Hasher},
 };
 use crate::{Config, type_::*};
 
-#[derive(Clone, Hash)]
+#[derive(Clone)]
 pub struct ArrayType<T: Type> {
     item_type: T,
     item_count: usize,
@@ -20,6 +20,13 @@ impl<T: Type> TypeBase for ArrayType<T> {
     }
     fn size(&self, config: &Config) -> Option<usize> {
         Some(self.item_count * self.item_type.size(config).unwrap())
+    }
+    fn id(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        type_id::<T>().hash(&mut hasher);
+        self.item_type.id().hash(&mut hasher);
+        self.item_count.hash(&mut hasher);
+        hasher.finish()
     }
 }
 impl<T: Type> Type for ArrayType<T> {

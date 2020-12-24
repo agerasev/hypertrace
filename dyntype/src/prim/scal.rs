@@ -6,9 +6,11 @@ use std::{
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use crate::{config::*, type_::*};
 
-
 pub trait PrimType: Type {}
-pub trait PrimInst: Inst {}
+pub trait PrimInst: Inst + Sized {
+    fn align(config: &Config) -> usize;
+    fn load<R: Read + ?Sized>(config: &Config, src: &mut R) -> io::Result<Self>;
+}
 
 trait Transferable: Sized {
     fn align(config: &Config) -> usize {
@@ -45,13 +47,38 @@ macro_rules! impl_transfer_byte {
     ($T:ident, $read:ident, $write:ident) => {
         impl Transferable for $T {
             fn size(_: &Config) -> usize {
-                1
+                size_of::<Self>()
             }
             fn load<R: Read + ?Sized>(_: &Config, src: &mut R) -> io::Result<Self> {
                 src.$read()
             }
             fn store<W: Write + ?Sized>(self, _: &Config, dst: &mut W) -> io::Result<()> {
                 dst.$write(self)
+            }
+        }
+    };
+}
+
+macro_rules! impl_transfer_size {
+    ($T:ident, $T32:ident, $T64:ident) => {
+        impl Transferable for $T {
+            fn size(config: &Config) -> usize {
+                match config.address_width {
+                    AddressWidth::X32 => <$T32 as Transferable>::size(config),
+                    AddressWidth::X64 => <$T64 as Transferable>::size(config),
+                }
+            }
+            fn load<R: Read + ?Sized>(config: &Config, src: &mut R) -> io::Result<Self> {
+                match config.address_width {
+                    AddressWidth::X32 => <$T32 as Transferable>::load(config, src).map(|x| x as $T),
+                    AddressWidth::X64 => <$T64 as Transferable>::load(config, src).map(|x| x as $T),
+                }
+            }
+            fn store<W: Write + ?Sized>(self, config: &Config, dst: &mut W) -> io::Result<()> {
+                match config.address_width {
+                    AddressWidth::X32 => <$T32 as Transferable>::store(self as $T32, config, dst),
+                    AddressWidth::X64 => <$T64 as Transferable>::store(self as $T64, config, dst),
+                }
             }
         }
     };
@@ -66,6 +93,9 @@ impl_transfer_byte!(i8, read_i8, write_i8);
 impl_transfer_native!(i16, read_i16, write_i16);
 impl_transfer_native!(i32, read_i32, write_i32);
 impl_transfer_native!(i64, read_i64, write_i64);
+
+impl_transfer_size!(usize, u32, u64);
+impl_transfer_size!(isize, i32, i64);
 
 impl_transfer_native!(f32, read_f32, write_f32);
 
@@ -101,7 +131,7 @@ impl Transferable for f64 {
 
 macro_rules! impl_prim {
     ($Type:ident, $Inst:ident) => {
-        #[derive(Clone, Copy, Hash)]
+        #[derive(Clone, Copy)]
         pub struct $Type;
 
         impl TypeBase for $Type {
@@ -110,6 +140,9 @@ macro_rules! impl_prim {
             }
             fn size(&self, config: &Config) -> Option<usize> {
                 Some(<$Inst as Transferable>::size(config))
+            }
+            fn id(&self) -> u64 {
+                type_id::<Self>()
             }
         }
         impl Type for $Type {
@@ -138,7 +171,14 @@ macro_rules! impl_prim {
             }
         }
         impl InstSpec for $Inst {}
-        impl PrimInst for $Inst {}
+        impl PrimInst for $Inst {
+            fn align(config: &Config) -> usize {
+                <Self as Transferable>::align(config)
+            }
+            fn load<R: Read + ?Sized>(config: &Config, src: &mut R) -> io::Result<Self> {
+                <Self as Transferable>::load(config, src)
+            }
+        }
     };
 }
 
@@ -151,6 +191,9 @@ impl_prim!(I8Type, i8);
 impl_prim!(I16Type, i16);
 impl_prim!(I32Type, i32);
 impl_prim!(I64Type, i64);
+
+impl_prim!(UsizeType, usize);
+impl_prim!(IsizeType, isize);
 
 impl_prim!(F32Type, f32);
 impl_prim!(F64Type, f64);

@@ -1,7 +1,8 @@
 use std::{
     io::{self, Write},
 };
-use crate::{Config, Type, SizedType};
+use crate::{Config};
+use super::type_::*;
 
 /// Basic abstract instance.
 pub trait BasicInst: 'static {
@@ -17,23 +18,16 @@ pub trait Inst: BasicInst {
     fn size(&self, config: &Config) -> usize;
 
     /// Returns an abstract type of the instance.
-    fn type_(&self) -> Box<dyn Type>;
+    fn type_dyn(&self) -> Box<dyn Type>;
 }
 
 /// Abstract instance of a runtime type.
-pub trait SizedInst: BasicInst {
-    // Methods from Inst
-    fn size(&self, config: &Config) -> usize {
-        self.type_().size(config)
-    }
-
+pub trait SizedInst: Inst {
     /// Returns an abstract type of the instance.
-    fn type_(&self) -> Box<dyn SizedType>;
-
-    // Own methods
+    fn type_sized_dyn(&self) -> Box<dyn SizedType>;
 
     /// Upcast to type.
-    fn into_inst(self: Box<Self>) -> Box<dyn Inst>;
+    fn into_inst_dyn(self: Box<Self>) -> Box<dyn Inst>;
 }
 
 impl<T: SizedInst> Inst for T {
@@ -41,7 +35,7 @@ impl<T: SizedInst> Inst for T {
         self.size(config)
     }
 
-    fn type_(&self) -> Box<dyn Type> {
-        self.type_().into_type()
+    fn type_dyn(&self) -> Box<dyn Type> {
+        self.type_sized_dyn().into_type_dyn()
     }
 }

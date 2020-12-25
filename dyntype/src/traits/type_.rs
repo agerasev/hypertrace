@@ -3,7 +3,8 @@ use std::{
     hash::{Hash, Hasher},
     any::TypeId,
 };
-use crate::{Config, Inst, SizedInst};
+use crate::{Config};
+use super::inst::*;
 
 pub use std::collections::hash_map::DefaultHasher;
 
@@ -16,41 +17,40 @@ pub trait BasicType: 'static {
     fn align(&self, config: &Config) -> usize;
 }
 
+/// Runtime type basic methods.
+pub trait BasicSizedType: BasicType {
+    /// Size of any instance.
+    fn size(&self, config: &Config) -> usize;
+}
+
 /// Abstract runtime type.
 pub trait Type: BasicType {
     /// Clones abstract type.
-    fn clone(&self) -> Box<dyn Type>;
+    fn clone_dyn(&self) -> Box<dyn Type>;
 
     /// Loads the instance of abstract type.
-    fn load(&self, config: &Config, src: &mut dyn Read) -> io::Result<Box<dyn Inst>>;
+    fn load_dyn(&self, config: &Config, src: &mut dyn Read) -> io::Result<Box<dyn Inst>>;
 }
 
 /// Type which instances have the same fixed size.
-pub trait SizedType: BasicType {
-    // Methods from Type
-
+pub trait SizedType: Type + BasicSizedType {
     /// Clones abstract type.
-    fn clone(&self) -> Box<dyn SizedType>;
+    fn clone_sized_dyn(&self) -> Box<dyn SizedType>;
 
     /// Loads the instance of abstract type.
-    fn load(&self, config: &Config, src: &mut dyn Read) -> io::Result<Box<dyn SizedInst>>;
-
-    // Own methods
-
-    /// Size of any instance.
-    fn size(&self, config: &Config) -> usize;
+    fn load_sized_dyn(&self, config: &Config, src: &mut dyn Read) -> io::Result<Box<dyn SizedInst>>;
 
     /// Upcast to type.
-    fn into_type(self: Box<Self>) -> Box<dyn Type>;
+    fn into_type_dyn(self: Box<Self>) -> Box<dyn Type>;
 }
 
 impl<T: SizedType> Type for T {
-    fn clone(&self) -> Box<dyn Type> {
-        self.clone().into_type()
+    fn clone_dyn(&self) -> Box<dyn Type> {
+        self.clone_sized_dyn().into_type_dyn()
     }
 
-    fn load(&self, config: &Config, src: &mut dyn Read) -> io::Result<Box<dyn Inst>> {
-        self.load(config, src).map(|st| st.into_inst())
+    fn load_dyn(&self, config: &Config, src: &mut dyn Read) -> io::Result<Box<dyn Inst>> {
+        self.load_sized_dyn(config, src).map(|st| st.into_inst_dyn())
     }
 }
 

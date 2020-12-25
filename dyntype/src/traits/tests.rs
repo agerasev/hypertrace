@@ -1,5 +1,5 @@
 use std::io::{self, Read, Write};
-use crate::{Config, Endianness, AddressWidth, BasicType, SizedType, BasicInst, SizedInst, type_id};
+use crate::{config::*, traits::*};
 
 const CONFIG: Config = Config {
     endianness: Endianness::Little,
@@ -23,20 +23,22 @@ impl BasicType for DummyType {
     }
 }
 
-impl SizedType for DummyType {
-    fn clone(&self) -> Box<dyn SizedType> {
-        Box::new(DummyType)
-    }
-
-    fn load(&self, _: &Config, _: &mut dyn Read) -> io::Result<Box<dyn SizedInst>> {
-        Ok(Box::new(DummyInst))
-    }
-
+impl BasicSizedType for DummyType {
     fn size(&self, _: &Config) -> usize {
         0
     }
+}
 
-    fn into_type(self: Box<Self>) -> Box<dyn super::Type> {
+impl SizedType for DummyType {
+    fn clone_sized_dyn(&self) -> Box<dyn SizedType> {
+        Box::new(DummyType)
+    }
+
+    fn load_sized_dyn(&self, _: &Config, _: &mut dyn Read) -> io::Result<Box<dyn SizedInst>> {
+        Ok(Box::new(DummyInst))
+    }
+
+    fn into_type_dyn(self: Box<Self>) -> Box<dyn super::Type> {
         self
     }
 }
@@ -48,11 +50,11 @@ impl BasicInst for DummyInst {
 }
 
 impl SizedInst for DummyInst {
-    fn type_(&self) -> Box<dyn SizedType> {
+    fn type_sized_dyn(&self) -> Box<dyn SizedType> {
         Box::new(DummyType)
     }
 
-    fn into_inst(self: Box<Self>) -> Box<dyn super::Inst> {
+    fn into_inst_dyn(self: Box<Self>) -> Box<dyn super::Inst> {
         self
     }
 }
@@ -60,7 +62,7 @@ impl SizedInst for DummyInst {
 #[test]
 fn empty() {
     let (dty, din) = (DummyType{}, DummyInst{});
-    assert_eq!(dty.id(), din.type_().id());
+    assert_eq!(dty.id(), din.type_dyn().id());
     assert_eq!(dty.align(&CONFIG), 1);
     assert_eq!(dty.size(&CONFIG), 0);
     assert_eq!(din.size(&CONFIG), 0);
@@ -68,5 +70,5 @@ fn empty() {
 #[test]
 fn empty_dyn() {
     let (dty, din) = (Box::new(DummyType{}) as Box<dyn SizedType>, Box::new(DummyInst{}) as Box<dyn SizedInst>);
-    assert_eq!(dty.id(), din.type_().id());
+    assert_eq!(dty.id(), din.type_dyn().id());
 }

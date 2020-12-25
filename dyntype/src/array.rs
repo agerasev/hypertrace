@@ -25,7 +25,7 @@ impl<T: Type> TypeBase for ArrayType<T> {
         let mut hasher = DefaultHasher::new();
         type_id::<T>().hash(&mut hasher);
         self.item_type.id().hash(&mut hasher);
-        self.item_count.hash(&mut hasher);
+        self.item_type.hash(&mut hasher);
         hasher.finish()
     }
 }

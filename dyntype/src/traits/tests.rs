@@ -1,5 +1,5 @@
-use std::io::{self, Read, Write};
 use crate::{config::*, traits::*};
+use std::io::{self, Read, Write};
 
 const CONFIG: Config = Config {
     endianness: Endianness::Little,
@@ -7,11 +7,11 @@ const CONFIG: Config = Config {
     double_support: true,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct DummyType;
 
 #[derive(Debug)]
-struct DummyInst;
+struct DummyValue;
 
 impl BasicType for DummyType {
     fn id(&self) -> u64 {
@@ -29,39 +29,39 @@ impl BasicSizedType for DummyType {
     }
 }
 
-impl SizedType for DummyType {
-    fn clone_sized_dyn(&self) -> Box<dyn SizedType> {
-        Box::new(DummyType)
-    }
+impl Type for DummyType {
+    type Value = DummyValue;
 
-    fn load_sized_dyn(&self, _: &Config, _: &mut dyn Read) -> io::Result<Box<dyn SizedInst>> {
-        Ok(Box::new(DummyInst))
-    }
-
-    fn into_type_dyn(self: Box<Self>) -> Box<dyn super::Type> {
-        self
+    fn load<R: Read + ?Sized>(&self, _: &Config, _: &mut R) -> io::Result<DummyValue> {
+        Ok(DummyValue)
     }
 }
 
-impl BasicInst for DummyInst {
-    fn store(&self, _: &Config, _: &mut dyn Write) -> io::Result<()> {
+impl SizedType for DummyType {}
+
+impl BasicValue for DummyValue {
+    fn size(&self, cfg: &Config) -> usize {
+        DummyType.size(cfg)
+    }
+}
+
+impl Value for DummyValue {
+    type Type = DummyType;
+
+    fn type_(&self) -> DummyType {
+        DummyType
+    }
+
+    fn store<W: Write + ?Sized>(&self, _: &Config, _: &mut W) -> io::Result<()> {
         Ok(())
     }
 }
 
-impl SizedInst for DummyInst {
-    fn type_sized_dyn(&self) -> Box<dyn SizedType> {
-        Box::new(DummyType)
-    }
-
-    fn into_inst_dyn(self: Box<Self>) -> Box<dyn super::Inst> {
-        self
-    }
-}
+impl SizedValue for DummyValue {}
 
 #[test]
 fn empty() {
-    let (dty, din) = (DummyType{}, DummyInst{});
+    let (dty, din) = (DummyType {}, DummyValue {});
     assert_eq!(dty.id(), din.type_dyn().id());
     assert_eq!(dty.align(&CONFIG), 1);
     assert_eq!(dty.size(&CONFIG), 0);
@@ -69,6 +69,9 @@ fn empty() {
 }
 #[test]
 fn empty_dyn() {
-    let (dty, din) = (Box::new(DummyType{}) as Box<dyn SizedType>, Box::new(DummyInst{}) as Box<dyn SizedInst>);
+    let (dty, din) = (
+        Box::new(DummyType) as Box<dyn SizedDynType>,
+        Box::new(DummyValue) as Box<dyn SizedDynValue>,
+    );
     assert_eq!(dty.id(), din.type_dyn().id());
 }

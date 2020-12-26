@@ -1,9 +1,9 @@
-mod type_;
-mod inst;
 mod box_;
 #[cfg(test)]
 mod tests;
+mod type_;
+mod value;
 
-pub use type_::*;
-pub use inst::*;
 pub use box_::*;
+pub use type_::*;
+pub use value::*;

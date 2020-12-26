@@ -1,56 +1,102 @@
+use super::value::*;
+use crate::Config;
 use std::{
-    io::{self, Read},
-    hash::{Hash, Hasher},
     any::TypeId,
+    hash::{Hash, Hasher},
+    io::{self, Read},
 };
-use crate::{Config};
-use super::inst::*;
 
 pub use std::collections::hash_map::DefaultHasher;
 
-/// Runtime type basic methods.
+/// Runtime type base.
 pub trait BasicType: 'static {
     /// Type unique identifier.
     fn id(&self) -> u64;
 
     /// Align of dynamic type.
-    fn align(&self, config: &Config) -> usize;
+    fn align(&self, cfg: &Config) -> usize;
 }
 
-/// Runtime type basic methods.
+/// Sized runtime type base.
 pub trait BasicSizedType: BasicType {
     /// Size of any instance.
-    fn size(&self, config: &Config) -> usize;
+    fn size(&self, cfg: &Config) -> usize;
 }
 
-/// Abstract runtime type.
-pub trait Type: BasicType {
-    /// Clones abstract type.
-    fn clone_dyn(&self) -> Box<dyn Type>;
+/// Dynamic runtime type.
+pub trait DynType: BasicType {
+    /// Clones dynamic type.
+    fn clone_dyn(&self) -> Box<dyn DynType>;
 
-    /// Loads the instance of abstract type.
-    fn load_dyn(&self, config: &Config, src: &mut dyn Read) -> io::Result<Box<dyn Inst>>;
+    /// Loads the instance of dynamic type.
+    fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn DynValue>>;
 }
 
-/// Type which instances have the same fixed size.
-pub trait SizedType: Type + BasicSizedType {
-    /// Clones abstract type.
-    fn clone_sized_dyn(&self) -> Box<dyn SizedType>;
+/// Sized dynamic runtime type.
+pub trait SizedDynType: DynType + BasicSizedType {
+    /// Clones dynamic type.
+    fn clone_sized_dyn(&self) -> Box<dyn SizedDynType>;
 
-    /// Loads the instance of abstract type.
-    fn load_sized_dyn(&self, config: &Config, src: &mut dyn Read) -> io::Result<Box<dyn SizedInst>>;
+    /// Loads the instance of dynamic type.
+    fn load_sized_dyn(
+        &self,
+        cfg: &Config,
+        src: &mut dyn Read,
+    ) -> io::Result<Box<dyn SizedDynValue>>;
 
-    /// Upcast to type.
-    fn into_type_dyn(self: Box<Self>) -> Box<dyn Type>;
+    /// Upcast to DynType.
+    fn into_type_dyn(self: Box<Self>) -> Box<dyn DynType>;
 }
 
-impl<T: SizedType> Type for T {
-    fn clone_dyn(&self) -> Box<dyn Type> {
-        self.clone_sized_dyn().into_type_dyn()
+/// Concrete type.
+pub trait Type: BasicType + DynType + Clone {
+    type Value: Value<Type = Self>;
+
+    /// Loads the instance of type.
+    fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
+}
+
+/// Sized runtime type.
+pub trait SizedType: BasicSizedType + SizedDynType + Type
+where
+    Self::Value: SizedValue<Type = Self>,
+{
+}
+
+impl<T> DynType for T
+where
+    T: Type,
+{
+    fn clone_dyn(&self) -> Box<dyn DynType> {
+        Box::new(self.clone())
     }
 
-    fn load_dyn(&self, config: &Config, src: &mut dyn Read) -> io::Result<Box<dyn Inst>> {
-        self.load_sized_dyn(config, src).map(|st| st.into_inst_dyn())
+    fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn DynValue>> {
+        self.load(cfg, src)
+            .map(|v| Box::new(v) as Box<dyn DynValue>)
+    }
+}
+
+impl<T> SizedDynType for T
+where
+    T: SizedType,
+    T::Value: SizedValue,
+{
+    fn clone_sized_dyn(&self) -> Box<dyn SizedDynType> {
+        Box::new(self.clone())
+    }
+
+    fn load_sized_dyn(
+        &self,
+        cfg: &Config,
+        src: &mut dyn Read,
+    ) -> io::Result<Box<dyn SizedDynValue>> {
+        self.load(cfg, src)
+            .map(|v| Box::new(v) as Box<dyn SizedDynValue>)
+    }
+
+    fn into_type_dyn(self: Box<Self>) -> Box<dyn DynType> {
+        self
     }
 }
 

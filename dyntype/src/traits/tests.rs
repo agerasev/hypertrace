@@ -1,8 +1,8 @@
 use crate::{config::*, traits::*};
 use std::io::{self, Read, Write};
 
-const CONFIG: Config = Config {
-    endianness: Endianness::Little,
+const CFG: Config = Config {
+    endianness: Endian::Little,
     address_width: AddressWidth::X64,
     double_support: true,
 };
@@ -63,10 +63,11 @@ impl SizedValue for DummyValue {}
 fn empty() {
     let (dty, din) = (DummyType {}, DummyValue {});
     assert_eq!(dty.id(), din.type_dyn().id());
-    assert_eq!(dty.align(&CONFIG), 1);
-    assert_eq!(dty.size(&CONFIG), 0);
-    assert_eq!(din.size(&CONFIG), 0);
+    assert_eq!(dty.align(&CFG), 1);
+    assert_eq!(dty.size(&CFG), 0);
+    assert_eq!(din.size(&CFG), 0);
 }
+
 #[test]
 fn empty_dyn() {
     let (dty, din) = (

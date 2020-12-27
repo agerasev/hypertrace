@@ -23,33 +23,31 @@ pub trait BasicSizedType: BasicType {
     fn size(&self, cfg: &Config) -> usize;
 }
 
+macro_rules! def_dyn_type {
+    ($T:ident, $V:ident) => {
+        /// Clones dynamic type.
+        fn clone_dyn(&self) -> Box<dyn $T>;
+
+        /// Loads the instance of dynamic type.
+        fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn $V>>;
+    };
+}
+
 /// Dynamic runtime type.
 pub trait DynType: BasicType {
-    /// Clones dynamic type.
-    fn clone_dyn(&self) -> Box<dyn DynType>;
-
-    /// Loads the instance of dynamic type.
-    fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn DynValue>>;
+    def_dyn_type!(DynType, DynValue);
 }
 
 /// Sized dynamic runtime type.
-pub trait SizedDynType: DynType + BasicSizedType {
-    /// Clones dynamic type.
-    fn clone_sized_dyn(&self) -> Box<dyn SizedDynType>;
-
-    /// Loads the instance of dynamic type.
-    fn load_sized_dyn(
-        &self,
-        cfg: &Config,
-        src: &mut dyn Read,
-    ) -> io::Result<Box<dyn SizedDynValue>>;
+pub trait SizedDynType: BasicSizedType {
+    def_dyn_type!(SizedDynType, SizedDynValue);
 
     /// Upcast to DynType.
     fn into_type_dyn(self: Box<Self>) -> Box<dyn DynType>;
 }
 
 /// Concrete type.
-pub trait Type: BasicType + DynType + Clone {
+pub trait Type: BasicType + Clone {
     type Value: Value<Type = Self>;
 
     /// Loads the instance of type.
@@ -57,24 +55,30 @@ pub trait Type: BasicType + DynType + Clone {
 }
 
 /// Sized runtime type.
-pub trait SizedType: BasicSizedType + SizedDynType + Type
+pub trait SizedType: BasicSizedType + Type
 where
     Self::Value: SizedValue<Type = Self>,
 {
+}
+
+macro_rules! impl_dyn_type {
+    ($T:ident, $V:ident) => {
+        fn clone_dyn(&self) -> Box<dyn $T> {
+            Box::new(self.clone())
+        }
+    
+        fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn $V>> {
+            self.load(cfg, src)
+                .map(|v| Box::new(v) as Box<dyn $V>)
+        }
+    };
 }
 
 impl<T> DynType for T
 where
     T: Type,
 {
-    fn clone_dyn(&self) -> Box<dyn DynType> {
-        Box::new(self.clone())
-    }
-
-    fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn DynValue>> {
-        self.load(cfg, src)
-            .map(|v| Box::new(v) as Box<dyn DynValue>)
-    }
+    impl_dyn_type!(DynType, DynValue);
 }
 
 impl<T> SizedDynType for T
@@ -82,18 +86,7 @@ where
     T: SizedType,
     T::Value: SizedValue,
 {
-    fn clone_sized_dyn(&self) -> Box<dyn SizedDynType> {
-        Box::new(self.clone())
-    }
-
-    fn load_sized_dyn(
-        &self,
-        cfg: &Config,
-        src: &mut dyn Read,
-    ) -> io::Result<Box<dyn SizedDynValue>> {
-        self.load(cfg, src)
-            .map(|v| Box::new(v) as Box<dyn SizedDynValue>)
-    }
+    impl_dyn_type!(SizedDynType, SizedDynValue);
 
     fn into_type_dyn(self: Box<Self>) -> Box<dyn DynType> {
         self

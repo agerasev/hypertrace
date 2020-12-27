@@ -45,6 +45,8 @@ impl BasicValue for DummyValue {
     }
 }
 
+impl BasicSizedValue for DummyValue {}
+
 impl Value for DummyValue {
     type Type = DummyType;
 
@@ -62,7 +64,7 @@ impl SizedValue for DummyValue {}
 #[test]
 fn empty() {
     let (dty, din) = (DummyType {}, DummyValue {});
-    assert_eq!(dty.id(), din.type_dyn().id());
+    assert_eq!(dty.id(), din.type_().id());
     assert_eq!(dty.align(&CONFIG), 1);
     assert_eq!(dty.size(&CONFIG), 0);
     assert_eq!(din.size(&CONFIG), 0);
@@ -73,5 +75,5 @@ fn empty_dyn() {
         Box::new(DummyType) as Box<dyn SizedDynType>,
         Box::new(DummyValue) as Box<dyn SizedDynValue>,
     );
-    assert_eq!(dty.id(), din.type_dyn().id());
+    assert_eq!(dty.id(), din.type_().id());
 }

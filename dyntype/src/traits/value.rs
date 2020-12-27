@@ -8,26 +8,34 @@ pub trait BasicValue: 'static {
     fn size(&self, cfg: &Config) -> usize;
 }
 
+/// Instance of a sized runtime type base.
+pub trait BasicSizedValue: BasicValue {}
+
+macro_rules! def_dyn_value {
+    ($T:ident, $V:ident) => {
+        /// Returns the dynamic type of the instance.
+        fn type_dyn(&self) -> Box<dyn $T>;
+
+        /// Stores the instance to abstract writer.
+        fn store_dyn(&self, cfg: &Config, dst: &mut dyn Write) -> io::Result<()>;
+    };
+}
+
 /// Abstract instance of a runtime type.
 pub trait DynValue: BasicValue {
-    /// Returns the dynamic type of the instance.
-    fn type_dyn(&self) -> Box<dyn DynType>;
-
-    /// Stores the instance to abstract writer.
-    fn store_dyn(&self, cfg: &Config, dst: &mut dyn Write) -> io::Result<()>;
+    def_dyn_value!(DynType, DynValue);
 }
 
 /// Instance of a sized runtime type.
-pub trait SizedDynValue: DynValue {
-    /// Returns the sized dynamic type of the instance.
-    fn type_sized_dyn(&self) -> Box<dyn SizedDynType>;
+pub trait SizedDynValue: BasicSizedValue {
+    def_dyn_value!(SizedDynType, SizedDynValue);
 
     /// Upcast to DynValue.
     fn into_value_dyn(self: Box<Self>) -> Box<dyn DynValue>;
 }
 
 /// Instance of a runtime type.
-pub trait Value: BasicValue + DynValue {
+pub trait Value: BasicValue {
     type Type: Type<Value = Self>;
 
     /// Returns the type of the instance.
@@ -38,23 +46,29 @@ pub trait Value: BasicValue + DynValue {
 }
 
 /// Instance of a sized runtime type.
-pub trait SizedValue: SizedDynValue + Value
+pub trait SizedValue: BasicSizedValue + Value
 where
     Self::Type: SizedType<Value = Self>,
 {
+}
+
+macro_rules! impl_dyn_value {
+    ($T:ident, $V:ident) => {
+        fn type_dyn(&self) -> Box<dyn $T> {
+            Box::new(self.type_())
+        }
+    
+        fn store_dyn(&self, cfg: &Config, dst: &mut dyn Write) -> io::Result<()> {
+            self.store(cfg, dst)
+        }
+    };
 }
 
 impl<V> DynValue for V
 where
     V: Value,
 {
-    fn type_dyn(&self) -> Box<dyn DynType> {
-        Box::new(self.type_())
-    }
-
-    fn store_dyn(&self, cfg: &Config, dst: &mut dyn Write) -> io::Result<()> {
-        self.store(cfg, dst)
-    }
+    impl_dyn_value!(DynType, DynValue);
 }
 
 impl<V> SizedDynValue for V
@@ -62,9 +76,7 @@ where
     V: SizedValue,
     V::Type: SizedType,
 {
-    fn type_sized_dyn(&self) -> Box<dyn SizedDynType> {
-        Box::new(self.type_())
-    }
+    impl_dyn_value!(SizedDynType, SizedDynValue);
 
     fn into_value_dyn(self: Box<Self>) -> Box<dyn DynValue> {
         self

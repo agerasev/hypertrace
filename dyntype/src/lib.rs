@@ -3,9 +3,9 @@
 mod config;
 mod traits;
 //mod prim;
-//mod array;
+mod array;
 
 pub use config::*;
 pub use traits::*;
 //pub use prim::*;
-//pub use array::*;
+pub use array::*;

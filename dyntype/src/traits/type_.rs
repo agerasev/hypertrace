@@ -66,10 +66,9 @@ macro_rules! impl_dyn_type {
         fn clone_dyn(&self) -> Box<dyn $T> {
             Box::new(self.clone())
         }
-    
+
         fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn $V>> {
-            self.load(cfg, src)
-                .map(|v| Box::new(v) as Box<dyn $V>)
+            self.load(cfg, src).map(|v| Box::new(v) as Box<dyn $V>)
         }
     };
 }

@@ -57,7 +57,7 @@ macro_rules! impl_dyn_value {
         fn type_dyn(&self) -> Box<dyn $T> {
             Box::new(self.type_())
         }
-    
+
         fn store_dyn(&self, cfg: &Config, dst: &mut dyn Write) -> io::Result<()> {
             self.store(cfg, dst)
         }

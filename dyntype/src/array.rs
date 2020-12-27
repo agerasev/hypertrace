@@ -149,11 +149,7 @@ where
     }
 }
 
-impl<V: SizedValue> SizedValueBase for ArrayValue<V>
-where
-    V::Type: SizedType,
-{
-}
+impl<V: SizedValue> SizedValueBase for ArrayValue<V> where V::Type: SizedType {}
 
 impl<V: SizedValue> Value for ArrayValue<V>
 where

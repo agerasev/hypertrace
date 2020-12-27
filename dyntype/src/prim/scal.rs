@@ -1,9 +1,9 @@
-use std::{
-    mem::size_of,
-    io::{self, Read, Write},
-};
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use crate::{config::*, traits::*};
+use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use std::{
+    io::{self, Read, Write},
+    mem::size_of,
+};
 
 trait Xfer: Sized {
     fn len(cfg: &Config) -> usize;
@@ -119,6 +119,17 @@ impl Xfer for f64 {
     }
 }
 
+pub trait PrimType: SizedType
+where
+    Self::Value: PrimValue<Type = Self>,
+{
+}
+pub trait PrimValue: SizedValue
+where
+    Self::Type: PrimType<Value = Self>,
+{
+}
+
 macro_rules! impl_prim {
     ($T:ident, $V:ident) => {
         #[derive(Clone, Copy)]
@@ -146,7 +157,10 @@ macro_rules! impl_prim {
                 $V::rx(cfg, src)
             }
         }
+
         impl SizedType for $T {}
+
+        impl PrimType for $T {}
 
         impl ValueBase for $V {
             fn size(&self, cfg: &Config) -> usize {
@@ -168,6 +182,8 @@ macro_rules! impl_prim {
         }
 
         impl SizedValue for $V {}
+
+        impl PrimValue for $V {}
     };
 }
 

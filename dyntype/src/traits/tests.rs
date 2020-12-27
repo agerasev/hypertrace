@@ -2,7 +2,7 @@ use crate::{config::*, traits::*};
 use std::io::{self, Read, Write};
 
 const CFG: Config = Config {
-    endianness: Endian::Little,
+    endian: Endian::Little,
     address_width: AddressWidth::X64,
     double_support: true,
 };
@@ -13,7 +13,7 @@ struct DummyType;
 #[derive(Debug)]
 struct DummyValue;
 
-impl BasicType for DummyType {
+impl TypeBase for DummyType {
     fn id(&self) -> u64 {
         type_id::<Self>()
     }
@@ -23,7 +23,7 @@ impl BasicType for DummyType {
     }
 }
 
-impl BasicSizedType for DummyType {
+impl SizedTypeBase for DummyType {
     fn size(&self, _: &Config) -> usize {
         0
     }
@@ -39,13 +39,13 @@ impl Type for DummyType {
 
 impl SizedType for DummyType {}
 
-impl BasicValue for DummyValue {
+impl ValueBase for DummyValue {
     fn size(&self, cfg: &Config) -> usize {
         DummyType.size(cfg)
     }
 }
 
-impl BasicSizedValue for DummyValue {}
+impl SizedValueBase for DummyValue {}
 
 impl Value for DummyValue {
     type Type = DummyType;
@@ -73,8 +73,8 @@ fn empty() {
 #[test]
 fn empty_dyn() {
     let (dty, din) = (
-        Box::new(DummyType) as Box<dyn SizedDynType>,
-        Box::new(DummyValue) as Box<dyn SizedDynValue>,
+        Box::new(DummyType) as Box<dyn SizedTypeDyn>,
+        Box::new(DummyValue) as Box<dyn SizedValueDyn>,
     );
     assert_eq!(dty.id(), din.type_().id());
 }

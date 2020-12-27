@@ -3,13 +3,13 @@ use crate::Config;
 use std::io::{self, Write};
 
 /// Instance of a runtime type base.
-pub trait BasicValue: 'static {
+pub trait ValueBase: 'static {
     /// Size of instance.
     fn size(&self, cfg: &Config) -> usize;
 }
 
 /// Instance of a sized runtime type base.
-pub trait BasicSizedValue: BasicValue {}
+pub trait SizedValueBase: ValueBase {}
 
 macro_rules! def_dyn_value {
     ($T:ident, $V:ident) => {
@@ -22,20 +22,20 @@ macro_rules! def_dyn_value {
 }
 
 /// Abstract instance of a runtime type.
-pub trait DynValue: BasicValue {
-    def_dyn_value!(DynType, DynValue);
+pub trait ValueDyn: ValueBase {
+    def_dyn_value!(TypeDyn, ValueDyn);
 }
 
 /// Instance of a sized runtime type.
-pub trait SizedDynValue: BasicSizedValue {
-    def_dyn_value!(SizedDynType, SizedDynValue);
+pub trait SizedValueDyn: SizedValueBase {
+    def_dyn_value!(SizedTypeDyn, SizedValueDyn);
 
-    /// Upcast to DynValue.
-    fn into_value_dyn(self: Box<Self>) -> Box<dyn DynValue>;
+    /// Upcast to ValueDyn.
+    fn into_value_dyn(self: Box<Self>) -> Box<dyn ValueDyn>;
 }
 
 /// Instance of a runtime type.
-pub trait Value: BasicValue {
+pub trait Value: ValueBase {
     type Type: Type<Value = Self>;
 
     /// Returns the type of the instance.
@@ -46,7 +46,7 @@ pub trait Value: BasicValue {
 }
 
 /// Instance of a sized runtime type.
-pub trait SizedValue: BasicSizedValue + Value
+pub trait SizedValue: SizedValueBase + Value
 where
     Self::Type: SizedType<Value = Self>,
 {
@@ -64,21 +64,21 @@ macro_rules! impl_dyn_value {
     };
 }
 
-impl<V> DynValue for V
+impl<V> ValueDyn for V
 where
     V: Value,
 {
-    impl_dyn_value!(DynType, DynValue);
+    impl_dyn_value!(TypeDyn, ValueDyn);
 }
 
-impl<V> SizedDynValue for V
+impl<V> SizedValueDyn for V
 where
     V: SizedValue,
     V::Type: SizedType,
 {
-    impl_dyn_value!(SizedDynType, SizedDynValue);
+    impl_dyn_value!(SizedTypeDyn, SizedValueDyn);
 
-    fn into_value_dyn(self: Box<Self>) -> Box<dyn DynValue> {
+    fn into_value_dyn(self: Box<Self>) -> Box<dyn ValueDyn> {
         self
     }
 }

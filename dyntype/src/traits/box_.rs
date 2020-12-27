@@ -3,7 +3,7 @@ use std::io::{self, Read, Write};
 
 macro_rules! impl_type_box {
     ($T:ident, $V:ident) => {
-        impl BasicType for Box<dyn $T> {
+        impl TypeBase for Box<dyn $T> {
             fn id(&self) -> u64 {
                 self.as_ref().id()
             }
@@ -16,8 +16,8 @@ macro_rules! impl_type_box {
         impl Type for Box<dyn $T> {
             type Value = Box<dyn $V>;
 
-            fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
-                self.as_ref().load_dyn(cfg, &mut Box::new(src))
+            fn load<R: Read + ?Sized>(&self, cfg: &Config, mut src: &mut R) -> io::Result<Self::Value> {
+                self.as_ref().load_dyn(cfg, &mut src)
             }
         }
 
@@ -31,7 +31,7 @@ macro_rules! impl_type_box {
 
 macro_rules! impl_sized_type_box {
     ($T:ident, $V:ident) => {
-        impl BasicSizedType for Box<dyn $T> {
+        impl SizedTypeBase for Box<dyn $T> {
             fn size(&self, cfg: &Config) -> usize {
                 self.as_ref().size(cfg)
             }
@@ -41,15 +41,15 @@ macro_rules! impl_sized_type_box {
     };
 }
 
-impl_type_box!(DynType, DynValue);
+impl_type_box!(TypeDyn, ValueDyn);
 
-impl_type_box!(SizedDynType, SizedDynValue);
-impl_sized_type_box!(SizedDynType, SizedDynValue);
+impl_type_box!(SizedTypeDyn, SizedValueDyn);
+impl_sized_type_box!(SizedTypeDyn, SizedValueDyn);
 
 
 macro_rules! impl_value_box {
     ($T:ident, $V:ident) => {
-        impl BasicValue for Box<dyn $V> {
+        impl ValueBase for Box<dyn $V> {
             fn size(&self, cfg: &Config) -> usize {
                 self.as_ref().size(cfg)
             }
@@ -62,8 +62,8 @@ macro_rules! impl_value_box {
                 self.as_ref().type_dyn()
             }
         
-            fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-                self.as_ref().store_dyn(cfg, &mut Box::new(dst))
+            fn store<W: Write + ?Sized>(&self, cfg: &Config, mut dst: &mut W) -> io::Result<()> {
+                self.as_ref().store_dyn(cfg, &mut dst)
             }
         }
     };
@@ -71,16 +71,16 @@ macro_rules! impl_value_box {
 
 macro_rules! impl_sized_value_box {
     ($T:ident, $V:ident) => {
-        impl BasicSizedValue for Box<dyn $V> {}
+        impl SizedValueBase for Box<dyn $V> {}
 
         impl SizedValue for Box<dyn $V> {}
     };
 }
 
-impl_value_box!(DynType, DynValue);
+impl_value_box!(TypeDyn, ValueDyn);
 
-impl_value_box!(SizedDynType, SizedDynValue);
-impl_sized_value_box!(SizedDynType, SizedDynValue);
+impl_value_box!(SizedTypeDyn, SizedValueDyn);
+impl_sized_value_box!(SizedTypeDyn, SizedValueDyn);
 
 
 

@@ -9,7 +9,7 @@ use std::{
 pub use std::collections::hash_map::DefaultHasher;
 
 /// Runtime type base.
-pub trait BasicType: 'static {
+pub trait TypeBase: 'static {
     /// Type unique identifier.
     fn id(&self) -> u64;
 
@@ -18,7 +18,7 @@ pub trait BasicType: 'static {
 }
 
 /// Sized runtime type base.
-pub trait BasicSizedType: BasicType {
+pub trait SizedTypeBase: TypeBase {
     /// Size of any instance.
     fn size(&self, cfg: &Config) -> usize;
 }
@@ -34,20 +34,20 @@ macro_rules! def_dyn_type {
 }
 
 /// Dynamic runtime type.
-pub trait DynType: BasicType {
-    def_dyn_type!(DynType, DynValue);
+pub trait TypeDyn: TypeBase {
+    def_dyn_type!(TypeDyn, ValueDyn);
 }
 
 /// Sized dynamic runtime type.
-pub trait SizedDynType: BasicSizedType {
-    def_dyn_type!(SizedDynType, SizedDynValue);
+pub trait SizedTypeDyn: SizedTypeBase {
+    def_dyn_type!(SizedTypeDyn, SizedValueDyn);
 
-    /// Upcast to DynType.
-    fn into_type_dyn(self: Box<Self>) -> Box<dyn DynType>;
+    /// Upcast to TypeDyn.
+    fn into_type_dyn(self: Box<Self>) -> Box<dyn TypeDyn>;
 }
 
 /// Concrete type.
-pub trait Type: BasicType + Clone {
+pub trait Type: TypeBase + Clone {
     type Value: Value<Type = Self>;
 
     /// Loads the instance of type.
@@ -55,7 +55,7 @@ pub trait Type: BasicType + Clone {
 }
 
 /// Sized runtime type.
-pub trait SizedType: BasicSizedType + Type
+pub trait SizedType: SizedTypeBase + Type
 where
     Self::Value: SizedValue<Type = Self>,
 {
@@ -74,21 +74,21 @@ macro_rules! impl_dyn_type {
     };
 }
 
-impl<T> DynType for T
+impl<T> TypeDyn for T
 where
     T: Type,
 {
-    impl_dyn_type!(DynType, DynValue);
+    impl_dyn_type!(TypeDyn, ValueDyn);
 }
 
-impl<T> SizedDynType for T
+impl<T> SizedTypeDyn for T
 where
     T: SizedType,
     T::Value: SizedValue,
 {
-    impl_dyn_type!(SizedDynType, SizedDynValue);
+    impl_dyn_type!(SizedTypeDyn, SizedValueDyn);
 
-    fn into_type_dyn(self: Box<Self>) -> Box<dyn DynType> {
+    fn into_type_dyn(self: Box<Self>) -> Box<dyn TypeDyn> {
         self
     }
 }

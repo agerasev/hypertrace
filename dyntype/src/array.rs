@@ -25,7 +25,7 @@ where
     }
 }
 
-impl<T: SizedType> BasicType for ArrayType<T>
+impl<T: SizedType> TypeBase for ArrayType<T>
 where
     T::Value: SizedValue,
 {
@@ -41,7 +41,7 @@ where
     }
 }
 
-impl<T: SizedType> BasicSizedType for ArrayType<T>
+impl<T: SizedType> SizedTypeBase for ArrayType<T>
 where
     T::Value: SizedValue,
 {
@@ -140,7 +140,7 @@ where
     }
 }
 
-impl<V: SizedValue> BasicValue for ArrayValue<V>
+impl<V: SizedValue> ValueBase for ArrayValue<V>
 where
     V::Type: SizedType,
 {
@@ -149,7 +149,7 @@ where
     }
 }
 
-impl<V: SizedValue> BasicSizedValue for ArrayValue<V>
+impl<V: SizedValue> SizedValueBase for ArrayValue<V>
 where
     V::Type: SizedType,
 {

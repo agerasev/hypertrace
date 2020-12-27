@@ -9,7 +9,7 @@ pub enum AddressWidth {
 }
 
 pub struct Config {
-    pub endianness: Endian,
+    pub endian: Endian,
     pub address_width: AddressWidth,
     pub double_support: bool,
 }

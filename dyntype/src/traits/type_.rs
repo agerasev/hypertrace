@@ -15,12 +15,10 @@ pub trait BasicType: 'static {
 
     /// Align of dynamic type.
     fn align(&self, cfg: &Config) -> usize;
-}
 
-/// Sized runtime type base.
-pub trait BasicSizedType: BasicType {
-    /// Size of any instance.
-    fn size(&self, cfg: &Config) -> usize;
+    /// Size of an instance of a type.
+    /// *If an instance is dynamically sized, then the method should return `None`.*
+    fn size(&self, cfg: &Config) -> Option<usize>;
 }
 
 /// Dynamic runtime type.
@@ -32,35 +30,12 @@ pub trait DynType: BasicType {
     fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn DynValue>>;
 }
 
-/// Sized dynamic runtime type.
-pub trait SizedDynType: DynType + BasicSizedType {
-    /// Clones dynamic type.
-    fn clone_sized_dyn(&self) -> Box<dyn SizedDynType>;
-
-    /// Loads the instance of dynamic type.
-    fn load_sized_dyn(
-        &self,
-        cfg: &Config,
-        src: &mut dyn Read,
-    ) -> io::Result<Box<dyn SizedDynValue>>;
-
-    /// Upcast to DynType.
-    fn into_type_dyn(self: Box<Self>) -> Box<dyn DynType>;
-}
-
 /// Concrete type.
 pub trait Type: BasicType + DynType + Clone {
     type Value: Value<Type = Self>;
 
     /// Loads the instance of type.
     fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
-}
-
-/// Sized runtime type.
-pub trait SizedType: BasicSizedType + SizedDynType + Type
-where
-    Self::Value: SizedValue<Type = Self>,
-{
 }
 
 impl<T> DynType for T
@@ -74,29 +49,6 @@ where
     fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn DynValue>> {
         self.load(cfg, src)
             .map(|v| Box::new(v) as Box<dyn DynValue>)
-    }
-}
-
-impl<T> SizedDynType for T
-where
-    T: SizedType,
-    T::Value: SizedValue,
-{
-    fn clone_sized_dyn(&self) -> Box<dyn SizedDynType> {
-        Box::new(self.clone())
-    }
-
-    fn load_sized_dyn(
-        &self,
-        cfg: &Config,
-        src: &mut dyn Read,
-    ) -> io::Result<Box<dyn SizedDynValue>> {
-        self.load(cfg, src)
-            .map(|v| Box::new(v) as Box<dyn SizedDynValue>)
-    }
-
-    fn into_type_dyn(self: Box<Self>) -> Box<dyn DynType> {
-        self
     }
 }
 

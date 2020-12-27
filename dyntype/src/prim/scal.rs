@@ -4,39 +4,33 @@ use std::{
     hash::Hash,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-use crate::{config::*, type_::*};
+use crate::{config::*, traits::*};
 
-pub trait PrimType: Type {}
-pub trait PrimInst: Inst + Sized {
-    fn align(config: &Config) -> usize;
-    fn load<R: Read + ?Sized>(config: &Config, src: &mut R) -> io::Result<Self>;
-}
+pub trait PrimitiveType: Type {}
+pub trait PrimitiveValue: Value + Sized {}
 
-trait Transferable: Sized {
-    fn align(config: &Config) -> usize {
-        Self::size(config)
-    }
-    fn size(config: &Config) -> usize;
-    fn load<R: Read + ?Sized>(config: &Config, src: &mut R) -> io::Result<Self>;
-    fn store<W: Write + ?Sized>(self, config: &Config, dst: &mut W) -> io::Result<()>;
-}
-
-macro_rules! impl_transfer_native {
-    ($T:ident, $read:ident, $write:ident) => {
-        impl Transferable for $T {
-            fn size(_: &Config) -> usize {
+macro_rules! impl_native {
+    ($T:ident, $V:ident, $read:ident, $write:ident) => {
+        impl BasicType for $T {
+            fn id(&self, _: &Config) -> u64 {
+                type_id::<Self>()
+            }
+            fn align(&self, _: &Config) -> usize {
                 size_of::<Self>()
+            }
+            fn size(_: &Config) -> Option<usize> {
+                Some(size_of::<Self>())
             }
             fn load<R: Read + ?Sized>(config: &Config, src: &mut R) -> io::Result<Self> {
                 match config.endianness {
-                    Endianness::Big => src.$read::<BigEndian>(),
-                    Endianness::Little => src.$read::<LittleEndian>(),
+                    Endian::Big => src.$read::<BigEndian>(),
+                    Endian::Little => src.$read::<LittleEndian>(),
                 }
             }
             fn store<W: Write + ?Sized>(self, config: &Config, dst: &mut W) -> io::Result<()> {
                 match config.endianness {
-                    Endianness::Big => dst.$write::<BigEndian>(self),
-                    Endianness::Little => dst.$write::<LittleEndian>(self),
+                    Endian::Big => dst.$write::<BigEndian>(self),
+                    Endian::Little => dst.$write::<LittleEndian>(self),
                 }
             }
         }
@@ -84,20 +78,20 @@ macro_rules! impl_transfer_size {
     };
 }
 
-impl_transfer_byte!(u8, read_u8, write_u8);
-impl_transfer_native!(u16, read_u16, write_u16);
-impl_transfer_native!(u32, read_u32, write_u32);
-impl_transfer_native!(u64, read_u64, write_u64);
-
-impl_transfer_byte!(i8, read_i8, write_i8);
-impl_transfer_native!(i16, read_i16, write_i16);
-impl_transfer_native!(i32, read_i32, write_i32);
-impl_transfer_native!(i64, read_i64, write_i64);
-
-impl_transfer_size!(usize, u32, u64);
-impl_transfer_size!(isize, i32, i64);
-
-impl_transfer_native!(f32, read_f32, write_f32);
+//impl_byte!(u8, read_u8, write_u8);
+impl_native!(u16, read_u16, write_u16);
+//impl_native!(u32, read_u32, write_u32);
+//impl_native!(u64, read_u64, write_u64);
+//
+//impl_byte!(i8, read_i8, write_i8);
+//impl_native!(i16, read_i16, write_i16);
+//impl_native!(i32, read_i32, write_i32);
+//impl_native!(i64, read_i64, write_i64);
+//
+//impl_size!(usize, u32, u64);
+//impl_size!(isize, i32, i64);
+//
+//impl_native!(f32, read_f32, write_f32);
 
 impl Transferable for f64 {
     fn size(config: &Config) -> usize {
@@ -110,8 +104,8 @@ impl Transferable for f64 {
     fn load<R: Read + ?Sized>(config: &Config, src: &mut R) -> io::Result<Self> {
         if config.double_support {
             match config.endianness {
-                Endianness::Big => src.read_f64::<BigEndian>(),
-                Endianness::Little => src.read_f64::<LittleEndian>(),
+                Endian::Big => src.read_f64::<BigEndian>(),
+                Endian::Little => src.read_f64::<LittleEndian>(),
             }
         } else {
             <f32 as Transferable>::load(config, src).map(|x| x as f64)
@@ -120,8 +114,8 @@ impl Transferable for f64 {
     fn store<W: Write + ?Sized>(self, config: &Config, dst: &mut W) -> io::Result<()> {
         if config.double_support {
             match config.endianness {
-                Endianness::Big => dst.write_f64::<BigEndian>(self),
-                Endianness::Little => dst.write_f64::<LittleEndian>(self),
+                Endian::Big => dst.write_f64::<BigEndian>(self),
+                Endian::Little => dst.write_f64::<LittleEndian>(self),
             }
         } else {
             <f32 as Transferable>::store(self as f32, config, dst)
@@ -130,37 +124,36 @@ impl Transferable for f64 {
 }
 
 macro_rules! impl_prim {
-    ($Type:ident, $Inst:ident) => {
+    ($Type:ident, $Value:ident) => {
         #[derive(Clone, Copy)]
         pub struct $Type;
 
-        impl TypeBase for $Type {
+        impl BasicType for $Type {
             fn align(&self, config: &Config) -> usize {
-                <$Inst as Transferable>::size(config)
+                <$Value as Transferable>::size(config)
             }
             fn size(&self, config: &Config) -> Option<usize> {
-                Some(<$Inst as Transferable>::size(config))
+                Some(<$Value as Transferable>::size(config))
             }
             fn id(&self) -> u64 {
                 type_id::<Self>()
             }
         }
         impl Type for $Type {
-            type Inst = $Inst;
+            type Value = $Value;
 
-            fn load<R: Read + ?Sized>(&self, config: &Config, src: &mut R) -> io::Result<Self::Inst> {
-                <$Inst as Transferable>::load(config, src)
+            fn load<R: Read + ?Sized>(&self, config: &Config, src: &mut R) -> io::Result<Self::Value> {
+                <$Value as Transferable>::load(config, src)
             }
         }
-        impl TypeSpec for $Type {}
-        impl PrimType for $Type {}
+        impl PrimitiveType for $Type {}
 
-        impl InstBase for $Inst {
+        impl BasicValue for $Value {
             fn size(&self, config: &Config) -> usize {
                 <Self as Transferable>::size(config)
             }
         }
-        impl Inst for $Inst {
+        impl Value for $Value {
             type Type = $Type;
 
             fn type_(&self) -> Self::Type {
@@ -170,8 +163,7 @@ macro_rules! impl_prim {
                 <Self as Transferable>::store(*self, config, dst)
             }
         }
-        impl InstSpec for $Inst {}
-        impl PrimInst for $Inst {
+        impl PrimitiveValue for $Value {
             fn align(config: &Config) -> usize {
                 <Self as Transferable>::align(config)
             }

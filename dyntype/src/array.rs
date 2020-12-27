@@ -5,18 +5,12 @@ use std::{
 };
 
 #[derive(Clone, Debug)]
-pub struct ArrayType<T: SizedType>
-where
-    T::Value: SizedValue,
-{
+pub struct ArrayType<T: Type> {
     item_type: T,
     item_count: usize,
 }
 
-impl<T: SizedType> ArrayType<T>
-where
-    T::Value: SizedValue,
-{
+impl<T: Type> ArrayType<T> {
     pub fn new(item_type: T, item_count: usize) -> Self {
         Self {
             item_type,
@@ -25,10 +19,7 @@ where
     }
 }
 
-impl<T: SizedType> BasicType for ArrayType<T>
-where
-    T::Value: SizedValue,
-{
+impl<T: Type> BasicType for ArrayType<T> {
     fn align(&self, cfg: &Config) -> usize {
         self.item_type.align(cfg)
     }
@@ -39,21 +30,12 @@ where
         self.item_count.hash(&mut hasher);
         hasher.finish()
     }
-}
-
-impl<T: SizedType> BasicSizedType for ArrayType<T>
-where
-    T::Value: SizedValue,
-{
-    fn size(&self, cfg: &Config) -> usize {
-        self.item_count * self.item_type.size(cfg)
+    fn size(&self, cfg: &Config) -> Option<usize> {
+        Some(self.item_count * self.item_type.size(cfg).unwrap())
     }
 }
 
-impl<T: SizedType> Type for ArrayType<T>
-where
-    T::Value: SizedValue,
-{
+impl<T: Type> Type for ArrayType<T> {
     type Value = ArrayValue<T::Value>;
 
     fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
@@ -67,20 +49,18 @@ where
     }
 }
 
-impl<T: SizedType> SizedType for ArrayType<T> where T::Value: SizedValue {}
-
 #[derive(Default, Debug)]
-pub struct ArrayValue<V: SizedValue>
+pub struct ArrayValue<V: Value>
 where
-    V::Type: SizedType,
+    V::Type: Type,
 {
     item_type: Option<V::Type>,
     items: Vec<V>,
 }
 
-impl<V: SizedValue> ArrayValue<V>
+impl<V: Value> ArrayValue<V>
 where
-    V::Type: SizedType,
+    V::Type: Type,
 {
     pub fn new() -> Self {
         Self {
@@ -140,18 +120,18 @@ where
     }
 }
 
-impl<V: SizedValue> BasicValue for ArrayValue<V>
+impl<V: Value> BasicValue for ArrayValue<V>
 where
-    V::Type: SizedType,
+    V::Type: Type,
 {
     fn size(&self, cfg: &Config) -> usize {
-        self.type_().size(cfg)
+        self.type_().size(cfg).unwrap()
     }
 }
 
-impl<V: SizedValue> Value for ArrayValue<V>
+impl<V: Value> Value for ArrayValue<V>
 where
-    V::Type: SizedType,
+    V::Type: Type,
 {
     type Type = ArrayType<V::Type>;
 
@@ -166,5 +146,3 @@ where
         Ok(())
     }
 }
-
-impl<V: SizedValue> SizedValue for ArrayValue<V> where V::Type: SizedType {}

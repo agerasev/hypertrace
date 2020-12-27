@@ -21,11 +21,9 @@ impl BasicType for DummyType {
     fn align(&self, _: &Config) -> usize {
         1
     }
-}
 
-impl BasicSizedType for DummyType {
-    fn size(&self, _: &Config) -> usize {
-        0
+    fn size(&self, _: &Config) -> Option<usize> {
+        Some(0)
     }
 }
 
@@ -37,11 +35,9 @@ impl Type for DummyType {
     }
 }
 
-impl SizedType for DummyType {}
-
 impl BasicValue for DummyValue {
     fn size(&self, cfg: &Config) -> usize {
-        DummyType.size(cfg)
+        DummyType.size(cfg).unwrap()
     }
 }
 
@@ -57,8 +53,6 @@ impl Value for DummyValue {
     }
 }
 
-impl SizedValue for DummyValue {}
-
 #[test]
 fn empty() {
     let (dty, din) = (DummyType {}, DummyValue {});
@@ -71,8 +65,8 @@ fn empty() {
 #[test]
 fn empty_dyn() {
     let (dty, din) = (
-        Box::new(DummyType) as Box<dyn SizedDynType>,
-        Box::new(DummyValue) as Box<dyn SizedDynValue>,
+        Box::new(DummyType) as Box<dyn DynType>,
+        Box::new(DummyValue) as Box<dyn DynValue>,
     );
     assert_eq!(dty.id(), din.type_dyn().id());
 }

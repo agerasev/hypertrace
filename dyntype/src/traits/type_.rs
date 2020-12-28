@@ -8,23 +8,14 @@ use std::{
 
 pub use std::collections::hash_map::DefaultHasher;
 
-/// Runtime type base.
-pub trait TypeBase: 'static {
-    /// Type unique identifier.
-    fn id(&self) -> u64;
-
-    /// Align of dynamic type.
-    fn align(&self, cfg: &Config) -> usize;
-}
-
-/// Sized runtime type base.
-pub trait SizedTypeBase: TypeBase {
-    /// Size of any instance.
-    fn size(&self, cfg: &Config) -> usize;
-}
-
 macro_rules! def_dyn_type {
     ($T:ident, $V:ident) => {
+        /// Type unique identifier.
+        fn id_dyn(&self) -> u64;
+
+        /// Align of dynamic type.
+        fn align_dyn(&self, cfg: &Config) -> usize;
+
         /// Clones dynamic type.
         fn clone_dyn(&self) -> Box<dyn $T>;
 
@@ -34,35 +25,55 @@ macro_rules! def_dyn_type {
 }
 
 /// Dynamic runtime type.
-pub trait TypeDyn: TypeBase {
+pub trait TypeDyn {
     def_dyn_type!(TypeDyn, ValueDyn);
 }
 
 /// Sized dynamic runtime type.
-pub trait SizedTypeDyn: SizedTypeBase {
+pub trait SizedTypeDyn {
     def_dyn_type!(SizedTypeDyn, SizedValueDyn);
+
+    /// Size of any instance.
+    fn size_dyn(&self, cfg: &Config) -> usize;
 
     /// Upcast to TypeDyn.
     fn into_type_dyn(self: Box<Self>) -> Box<dyn TypeDyn>;
 }
 
 /// Concrete type.
-pub trait Type: TypeBase + Clone {
+pub trait Type: Clone + 'static {
+    /// Associated dynamic value.
     type Value: Value<Type = Self>;
+
+    /// Type unique identifier.
+    fn id(&self) -> u64;
+
+    /// Align of dynamic type.
+    fn align(&self, cfg: &Config) -> usize;
 
     /// Loads the instance of type.
     fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
 }
 
 /// Sized runtime type.
-pub trait SizedType: SizedTypeBase + Type
+pub trait SizedType: Type
 where
     Self::Value: SizedValue<Type = Self>,
 {
+    /// Size of any instance.
+    fn size(&self, cfg: &Config) -> usize;
 }
 
 macro_rules! impl_dyn_type {
     ($T:ident, $V:ident) => {
+        fn id_dyn(&self) -> u64 {
+            self.id()
+        }
+
+        fn align_dyn(&self, cfg: &Config) -> usize {
+            self.align(cfg)
+        }
+
         fn clone_dyn(&self) -> Box<dyn $T> {
             Box::new(self.clone())
         }
@@ -86,6 +97,10 @@ where
     T::Value: SizedValue,
 {
     impl_dyn_type!(SizedTypeDyn, SizedValueDyn);
+
+    fn size_dyn(&self, cfg: &Config) -> usize {
+        self.size(cfg)
+    }
 
     fn into_type_dyn(self: Box<Self>) -> Box<dyn TypeDyn> {
         self

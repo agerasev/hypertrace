@@ -24,32 +24,19 @@ where
     pub elem: T,
 }
 
-impl<T: PrimType, const N: usize> TypeBase for VecType<T, N>
-where
-    T::Value: PrimValue<Type = T> + Default,
-{
-    fn align(&self, cfg: &Config) -> usize {
-        ceil_pow2(N) * self.elem.align(cfg)
-    }
-    fn id(&self) -> u64 {
-        type_id::<Self>()
-    }
-}
-
-impl<T: PrimType, const N: usize> SizedTypeBase for VecType<T, N>
-where
-    T::Value: PrimValue<Type = T> + Default,
-{
-    fn size(&self, cfg: &Config) -> usize {
-        ceil_pow2(N) * self.elem.size(cfg)
-    }
-}
-
 impl<T: PrimType, const N: usize> Type for VecType<T, N>
 where
     T::Value: PrimValue<Type = T> + Default,
 {
     type Value = Vector<T::Value, N>;
+
+    fn align(&self, cfg: &Config) -> usize {
+        ceil_pow2(N) * self.elem.align(cfg)
+    }
+
+    fn id(&self) -> u64 {
+        type_id::<Self>()
+    }
 
     fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
         let mut v = Self::Value::default();
@@ -66,23 +53,9 @@ where
 impl<T: PrimType, const N: usize> SizedType for VecType<T, N> where
     T::Value: PrimValue<Type = T> + Default
 {
-}
-
-impl<V: PrimValue, const N: usize> ValueBase for Vector<V, N>
-where
-    V: Default,
-    V::Type: PrimType<Value = V>,
-{
     fn size(&self, cfg: &Config) -> usize {
-        self.type_().size(cfg)
+        ceil_pow2(N) * self.elem.size(cfg)
     }
-}
-
-impl<V: PrimValue, const N: usize> SizedValueBase for Vector<V, N>
-where
-    V: Default,
-    V::Type: PrimType<Value = V>,
-{
 }
 
 impl<V: PrimValue, const N: usize> Value for Vector<V, N>
@@ -91,6 +64,10 @@ where
     V::Type: PrimType<Value = V>,
 {
     type Type = VecType<V::Type, N>;
+
+    fn size(&self, cfg: &Config) -> usize {
+        self.type_().size(cfg)
+    }
 
     fn type_(&self) -> Self::Type {
         Self::Type {

@@ -3,18 +3,16 @@ use std::io::{self, Read, Write};
 
 macro_rules! impl_type_box {
     ($T:ident, $V:ident) => {
-        impl TypeBase for Box<dyn $T> {
+        impl Type for Box<dyn $T> {
+            type Value = Box<dyn $V>;
+
             fn id(&self) -> u64 {
-                self.as_ref().id()
+                self.as_ref().id_dyn()
             }
 
             fn align(&self, cfg: &Config) -> usize {
-                self.as_ref().align(cfg)
+                self.as_ref().align_dyn(cfg)
             }
-        }
-
-        impl Type for Box<dyn $T> {
-            type Value = Box<dyn $V>;
 
             fn load<R: Read + ?Sized>(
                 &self,
@@ -35,13 +33,11 @@ macro_rules! impl_type_box {
 
 macro_rules! impl_sized_type_box {
     ($T:ident, $V:ident) => {
-        impl SizedTypeBase for Box<dyn $T> {
+        impl SizedType for Box<dyn $T> {
             fn size(&self, cfg: &Config) -> usize {
-                self.as_ref().size(cfg)
+                self.as_ref().size_dyn(cfg)
             }
         }
-
-        impl SizedType for Box<dyn $T> {}
     };
 }
 
@@ -52,14 +48,12 @@ impl_sized_type_box!(SizedTypeDyn, SizedValueDyn);
 
 macro_rules! impl_value_box {
     ($T:ident, $V:ident) => {
-        impl ValueBase for Box<dyn $V> {
-            fn size(&self, cfg: &Config) -> usize {
-                self.as_ref().size(cfg)
-            }
-        }
-
         impl Value for Box<dyn $V> {
             type Type = Box<dyn $T>;
+
+            fn size(&self, cfg: &Config) -> usize {
+                self.as_ref().size_dyn(cfg)
+            }
 
             fn type_(&self) -> Box<dyn $T> {
                 self.as_ref().type_dyn()
@@ -74,8 +68,6 @@ macro_rules! impl_value_box {
 
 macro_rules! impl_sized_value_box {
     ($T:ident, $V:ident) => {
-        impl SizedValueBase for Box<dyn $V> {}
-
         impl SizedValue for Box<dyn $V> {}
     };
 }

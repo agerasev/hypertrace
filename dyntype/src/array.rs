@@ -25,13 +25,16 @@ where
     }
 }
 
-impl<T: SizedType> TypeBase for ArrayType<T>
+impl<T: SizedType> Type for ArrayType<T>
 where
     T::Value: SizedValue,
 {
+    type Value = ArrayValue<T::Value>;
+
     fn align(&self, cfg: &Config) -> usize {
         self.item_type.align(cfg)
     }
+
     fn id(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         type_id::<Self>().hash(&mut hasher);
@@ -39,22 +42,6 @@ where
         self.item_count.hash(&mut hasher);
         hasher.finish()
     }
-}
-
-impl<T: SizedType> SizedTypeBase for ArrayType<T>
-where
-    T::Value: SizedValue,
-{
-    fn size(&self, cfg: &Config) -> usize {
-        self.item_count * self.item_type.size(cfg)
-    }
-}
-
-impl<T: SizedType> Type for ArrayType<T>
-where
-    T::Value: SizedValue,
-{
-    type Value = ArrayValue<T::Value>;
 
     fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
         let mut inst = Self::Value::new();
@@ -67,7 +54,11 @@ where
     }
 }
 
-impl<T: SizedType> SizedType for ArrayType<T> where T::Value: SizedValue {}
+impl<T: SizedType> SizedType for ArrayType<T> where T::Value: SizedValue {
+    fn size(&self, cfg: &Config) -> usize {
+        self.item_count * self.item_type.size(cfg)
+    }
+}
 
 #[derive(Default, Debug)]
 pub struct ArrayValue<V: SizedValue>
@@ -140,22 +131,15 @@ where
     }
 }
 
-impl<V: SizedValue> ValueBase for ArrayValue<V>
-where
-    V::Type: SizedType,
-{
-    fn size(&self, cfg: &Config) -> usize {
-        self.type_().size(cfg)
-    }
-}
-
-impl<V: SizedValue> SizedValueBase for ArrayValue<V> where V::Type: SizedType {}
-
 impl<V: SizedValue> Value for ArrayValue<V>
 where
     V::Type: SizedType,
 {
     type Type = ArrayType<V::Type>;
+
+    fn size(&self, cfg: &Config) -> usize {
+        self.type_().size(cfg)
+    }
 
     fn type_(&self) -> Self::Type {
         ArrayType::new(self.item_type.as_ref().unwrap().clone(), self.len())

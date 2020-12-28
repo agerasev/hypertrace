@@ -2,17 +2,11 @@ use super::type_::*;
 use crate::Config;
 use std::io::{self, Write};
 
-/// Instance of a runtime type base.
-pub trait ValueBase: 'static {
-    /// Size of instance.
-    fn size(&self, cfg: &Config) -> usize;
-}
-
-/// Instance of a sized runtime type base.
-pub trait SizedValueBase: ValueBase {}
-
 macro_rules! def_dyn_value {
     ($T:ident, $V:ident) => {
+        /// Size of instance.
+        fn size_dyn(&self, cfg: &Config) -> usize;
+
         /// Returns the dynamic type of the instance.
         fn type_dyn(&self) -> Box<dyn $T>;
 
@@ -22,12 +16,12 @@ macro_rules! def_dyn_value {
 }
 
 /// Abstract instance of a runtime type.
-pub trait ValueDyn: ValueBase {
+pub trait ValueDyn {
     def_dyn_value!(TypeDyn, ValueDyn);
 }
 
 /// Instance of a sized runtime type.
-pub trait SizedValueDyn: SizedValueBase {
+pub trait SizedValueDyn {
     def_dyn_value!(SizedTypeDyn, SizedValueDyn);
 
     /// Upcast to ValueDyn.
@@ -35,8 +29,12 @@ pub trait SizedValueDyn: SizedValueBase {
 }
 
 /// Instance of a runtime type.
-pub trait Value: ValueBase {
+pub trait Value: 'static {
+    /// Associated dynamic type.
     type Type: Type<Value = Self>;
+
+    /// Size of instance.
+    fn size(&self, cfg: &Config) -> usize;
 
     /// Returns the type of the instance.
     fn type_(&self) -> Self::Type;
@@ -46,7 +44,7 @@ pub trait Value: ValueBase {
 }
 
 /// Instance of a sized runtime type.
-pub trait SizedValue: SizedValueBase + Value
+pub trait SizedValue: Value
 where
     Self::Type: SizedType<Value = Self>,
 {
@@ -54,6 +52,10 @@ where
 
 macro_rules! impl_dyn_value {
     ($T:ident, $V:ident) => {
+        fn size_dyn(&self, cfg: &Config) -> usize {
+            self.size(cfg)
+        }
+
         fn type_dyn(&self) -> Box<dyn $T> {
             Box::new(self.type_())
         }

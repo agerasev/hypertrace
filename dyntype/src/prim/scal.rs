@@ -135,43 +135,36 @@ macro_rules! impl_prim {
         #[derive(Clone, Copy)]
         pub struct $T;
 
-        impl TypeBase for $T {
+        impl Type for $T {
+            type Value = $V;
+
             fn align(&self, cfg: &Config) -> usize {
                 $V::len(cfg)
             }
+
             fn id(&self) -> u64 {
                 type_id::<Self>()
             }
-        }
-
-        impl SizedTypeBase for $T {
-            fn size(&self, cfg: &Config) -> usize {
-                $V::len(cfg)
-            }
-        }
-
-        impl Type for $T {
-            type Value = $V;
 
             fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
                 $V::rx(cfg, src)
             }
         }
 
-        impl SizedType for $T {}
-
-        impl PrimType for $T {}
-
-        impl ValueBase for $V {
+        impl SizedType for $T {
             fn size(&self, cfg: &Config) -> usize {
-                Self::len(cfg)
+                $V::len(cfg)
             }
         }
 
-        impl SizedValueBase for $V {}
+        impl PrimType for $T {}
 
         impl Value for $V {
             type Type = $T;
+
+            fn size(&self, cfg: &Config) -> usize {
+                Self::len(cfg)
+            }
 
             fn type_(&self) -> Self::Type {
                 $T

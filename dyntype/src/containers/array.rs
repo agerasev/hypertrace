@@ -46,7 +46,7 @@ where
     }
 
     fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
-        let mut value = Self::Value::new();
+        let mut value = Self::Value::new(self.item_type.clone());
         for _ in 0..self.item_count {
             value
                 .push(self.item_type.load(cfg, src)?)
@@ -71,7 +71,7 @@ pub struct ArrayValue<V: SizedValue>
 where
     V::Type: SizedType,
 {
-    item_type: Option<V::Type>,
+    item_type: V::Type,
     items: Vec<V>,
 }
 
@@ -79,40 +79,28 @@ impl<V: SizedValue> ArrayValue<V>
 where
     V::Type: SizedType,
 {
-    pub fn new() -> Self {
+    pub fn new(item_type: V::Type) -> Self {
         Self {
-            item_type: None,
+            item_type,
             items: Vec::new(),
         }
     }
 
-    pub fn new_with_type(type_: V::Type) -> Self {
-        Self {
-            item_type: Some(type_),
-            items: Vec::new(),
-        }
+    pub fn from_items(item_type: V::Type, items: Vec<V>) -> Self {
+        Self { item_type, items }
     }
 
-    pub fn from_array<const N: usize>(arr: [V; N]) -> Self where V: Default {
-        Self {
-            item_type: Some(V::default().type_()),
-            items: Vec::from(arr),
-        }
-    }
-
-    pub fn item_type(&self) -> Option<&V::Type> {
-        self.item_type.as_ref()
+    pub fn item_type(&self) -> &V::Type {
+        &self.item_type
     }
 
     pub fn push(&mut self, item: V) -> Result<(), V> {
-        if self.item_type.is_none() {
-            assert!(self.items.is_empty());
-            self.item_type = Some(item.type_());
-        } else if self.item_type.as_ref().unwrap().id() != item.type_().id() {
-            return Err(item);
+        if self.item_type.id() == item.type_().id() {
+            self.items.push(item);
+            Ok(())
+        } else {
+            Err(item)
         }
-        self.items.push(item);
-        Ok(())
     }
 
     pub fn pop(&mut self) -> Option<V> {
@@ -127,8 +115,11 @@ where
     pub fn update<F: FnOnce(&mut V)>(&mut self, pos: usize, f: F) -> Result<(), ()> {
         let item = self.items.get_mut(pos).ok_or(())?;
         f(item);
-        assert_eq!(item.type_().id(), self.item_type.as_ref().unwrap().id());
-        Ok(())
+        if item.type_().id() == self.item_type.id() {
+            Ok(())
+        } else {
+            Err(())
+        }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &V> {
@@ -159,7 +150,7 @@ where
     }
 
     fn type_(&self) -> Self::Type {
-        ArrayType::new(self.item_type.as_ref().unwrap().clone(), self.len())
+        ArrayType::new(self.item_type.clone(), self.len())
     }
 
     fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
@@ -241,7 +232,7 @@ where
     }
 
     fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        ArrayValue::from_array(self.clone()).store(cfg, dst)
+        ArrayValue::from_items(V::Type::default(), self.clone().into()).store(cfg, dst)
     }
 }
 
@@ -259,7 +250,7 @@ mod tests {
     #[test]
     fn ids() {
         let arr: [i32; 3] = [1, 2, 3];
-        let darr = ArrayValue::from_array(arr);
+        let darr = ArrayValue::from_items(i32::default().type_(), arr.into());
         assert_eq!(arr.type_().id(), darr.type_().id())
     }
 }

@@ -113,3 +113,5 @@ pub fn type_id<T: 'static>() -> u64 {
     TypeId::of::<T>().hash(&mut hasher);
     hasher.finish()
 }
+
+pub trait UnitType: Default {}

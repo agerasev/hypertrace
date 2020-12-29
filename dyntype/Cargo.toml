@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 byteorder = "1"
 vecmat = { path = "../vecmat", features = ["nightly"] }
+num-integer = "0.1"

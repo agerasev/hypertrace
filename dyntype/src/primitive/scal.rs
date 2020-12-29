@@ -119,7 +119,7 @@ impl Xfer for f64 {
     }
 }
 
-pub trait PrimType: SizedType
+pub trait PrimType: SizedType + UnitType
 where
     Self::Value: PrimValue<Type = Self>,
 {
@@ -132,7 +132,7 @@ where
 
 macro_rules! impl_prim {
     ($T:ident, $V:ident) => {
-        #[derive(Clone, Copy)]
+        #[derive(Clone, Copy, Default, Debug)]
         pub struct $T;
 
         impl Type for $T {
@@ -157,6 +157,8 @@ macro_rules! impl_prim {
             }
         }
 
+        impl UnitType for $T {}
+        
         impl PrimType for $T {}
 
         impl Value for $V {

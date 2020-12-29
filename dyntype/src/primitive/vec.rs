@@ -19,6 +19,7 @@ fn ceil_pow2(mut n: usize) -> usize {
 #[derive(Clone, Copy, Debug)]
 pub struct VecType<T: PrimType, const N: usize>
 where
+    T: UnitType,
     T::Value: PrimValue<Type = T> + Default,
 {
     pub elem: T,
@@ -26,6 +27,7 @@ where
 
 impl<T: PrimType, const N: usize> Type for VecType<T, N>
 where
+    T: UnitType,
     T::Value: PrimValue<Type = T> + Default,
 {
     type Value = Vector<T::Value, N>;
@@ -52,6 +54,7 @@ where
 
 impl<T: PrimType, const N: usize> SizedType for VecType<T, N>
 where
+    T: UnitType,
     T::Value: PrimValue<Type = T> + Default,
 {
     fn size(&self, cfg: &Config) -> usize {
@@ -62,7 +65,7 @@ where
 impl<V: PrimValue, const N: usize> Value for Vector<V, N>
 where
     V: Default,
-    V::Type: PrimType<Value = V>,
+    V::Type: PrimType<Value = V> + UnitType,
 {
     type Type = VecType<V::Type, N>;
 
@@ -72,7 +75,7 @@ where
 
     fn type_(&self) -> Self::Type {
         Self::Type {
-            elem: V::default().type_(),
+            elem: V::Type::default(),
         }
     }
 
@@ -90,6 +93,6 @@ where
 impl<V: PrimValue, const N: usize> SizedValue for Vector<V, N>
 where
     V: Default,
-    V::Type: PrimType<Value = V>,
+    V::Type: PrimType<Value = V> + UnitType,
 {
 }

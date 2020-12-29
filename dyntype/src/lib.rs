@@ -1,11 +1,13 @@
 #![feature(min_const_generics)]
 
-mod array;
+mod util;
+mod containers;
 mod config;
-mod prim;
+mod primitive;
 mod traits;
 
-pub use array::*;
+pub use util::*;
+pub use containers::*;
 pub use config::*;
-pub use prim::*;
+pub use primitive::*;
 pub use traits::*;

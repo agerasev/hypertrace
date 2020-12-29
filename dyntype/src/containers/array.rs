@@ -2,6 +2,7 @@ use crate::{traits::*, Config};
 use std::{
     hash::{Hash, Hasher},
     io::{self, Read, Write},
+    marker::PhantomData,
 };
 use vecmat::Vector;
 
@@ -142,7 +143,7 @@ where
         self.items.is_empty()
     }
 
-    pub fn into_vec(self) -> Vec<V> {
+    pub fn into_items(self) -> Vec<V> {
         self.items
     }
 }
@@ -171,35 +172,31 @@ where
 
 impl<V: SizedValue> SizedValue for ArrayValue<V> where V::Type: SizedType {}
 
-#[derive(Clone, Debug)]
-pub struct StaticArrayType<T: SizedType, const N: usize>
+#[derive(Clone, Debug, Default)]
+pub struct StaticArrayType<T: SizedType + UnitType, const N: usize>
 where
     T::Value: SizedValue + Default + Clone,
 {
-    item_type: T,
+    phantom: PhantomData<T>,
 }
 
-impl<T: SizedType, const N: usize> StaticArrayType<T, N>
+impl<T: SizedType + UnitType, const N: usize> StaticArrayType<T, N>
 where
     T::Value: SizedValue + Default + Clone,
 {
-    pub fn new(item_type: T) -> Self {
-        Self { item_type }
-    }
-
     pub fn into_dynamic(self) -> ArrayType<T> {
-        ArrayType::new(self.item_type, N)
+        ArrayType::new(T::default(), N)
     }
 }
 
-impl<T: SizedType, const N: usize> Type for StaticArrayType<T, N>
+impl<T: SizedType + UnitType, const N: usize> Type for StaticArrayType<T, N>
 where
     T::Value: SizedValue + Default + Clone,
 {
     type Value = [T::Value; N];
 
     fn align(&self, cfg: &Config) -> usize {
-        self.item_type.align(cfg)
+        T::default().align(cfg)
     }
 
     fn id(&self) -> u64 {
@@ -208,25 +205,30 @@ where
 
     fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
         let value = self.clone().into_dynamic().load(cfg, src)?;
-        Ok(Vector::try_from_iter(value.into_vec().into_iter())
+        Ok(Vector::try_from_iter(value.into_items().into_iter())
             .unwrap()
             .into_array())
     }
 }
 
-impl<T: SizedType, const N: usize> SizedType for StaticArrayType<T, N>
+impl<T: SizedType + UnitType, const N: usize> SizedType for StaticArrayType<T, N>
 where
     T::Value: SizedValue + Default + Clone,
 {
     fn size(&self, cfg: &Config) -> usize {
-        N * self.item_type.size(cfg)
+        N * T::default().size(cfg)
     }
 }
+
+impl<T: SizedType + UnitType, const N: usize> UnitType for StaticArrayType<T, N>
+where
+    T::Value: SizedValue + Default + Clone,
+{}
 
 impl<V: SizedValue, const N: usize> Value for [V; N]
 where
     V: Default + Clone,
-    V::Type: SizedType,
+    V::Type: SizedType + UnitType,
 {
     type Type = StaticArrayType<V::Type, N>;
 
@@ -235,7 +237,7 @@ where
     }
 
     fn type_(&self) -> Self::Type {
-        StaticArrayType::new(V::default().type_())
+        Self::Type::default()
     }
 
     fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
@@ -246,7 +248,7 @@ where
 impl<V: SizedValue, const N: usize> SizedValue for [V; N]
 where
     V: Default + Clone,
-    V::Type: SizedType,
+    V::Type: SizedType + UnitType,
 {
 }
 

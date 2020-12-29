@@ -3,6 +3,7 @@ use std::{
     hash::{Hash, Hasher},
     io::{self, Read, Write},
 };
+use vecmat::Vector;
 
 #[derive(Clone, Debug)]
 pub struct ArrayType<T: SizedType>
@@ -44,17 +45,21 @@ where
     }
 
     fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
-        let mut inst = Self::Value::new();
+        let mut value = Self::Value::new();
         for _ in 0..self.item_count {
-            inst.push(self.item_type.load(cfg, src)?)
+            value
+                .push(self.item_type.load(cfg, src)?)
                 .map_err(|_| ())
                 .unwrap();
         }
-        Ok(inst)
+        Ok(value)
     }
 }
 
-impl<T: SizedType> SizedType for ArrayType<T> where T::Value: SizedValue {
+impl<T: SizedType> SizedType for ArrayType<T>
+where
+    T::Value: SizedValue,
+{
     fn size(&self, cfg: &Config) -> usize {
         self.item_count * self.item_type.size(cfg)
     }
@@ -84,6 +89,13 @@ where
         Self {
             item_type: Some(type_),
             items: Vec::new(),
+        }
+    }
+
+    pub fn from_array<const N: usize>(arr: [V; N]) -> Self where V: Default {
+        Self {
+            item_type: Some(V::default().type_()),
+            items: Vec::from(arr),
         }
     }
 
@@ -129,6 +141,10 @@ where
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
+
+    pub fn into_vec(self) -> Vec<V> {
+        self.items
+    }
 }
 
 impl<V: SizedValue> Value for ArrayValue<V>
@@ -154,3 +170,94 @@ where
 }
 
 impl<V: SizedValue> SizedValue for ArrayValue<V> where V::Type: SizedType {}
+
+#[derive(Clone, Debug)]
+pub struct StaticArrayType<T: SizedType, const N: usize>
+where
+    T::Value: SizedValue + Default + Clone,
+{
+    item_type: T,
+}
+
+impl<T: SizedType, const N: usize> StaticArrayType<T, N>
+where
+    T::Value: SizedValue + Default + Clone,
+{
+    pub fn new(item_type: T) -> Self {
+        Self { item_type }
+    }
+
+    pub fn into_dynamic(self) -> ArrayType<T> {
+        ArrayType::new(self.item_type, N)
+    }
+}
+
+impl<T: SizedType, const N: usize> Type for StaticArrayType<T, N>
+where
+    T::Value: SizedValue + Default + Clone,
+{
+    type Value = [T::Value; N];
+
+    fn align(&self, cfg: &Config) -> usize {
+        self.item_type.align(cfg)
+    }
+
+    fn id(&self) -> u64 {
+        self.clone().into_dynamic().id()
+    }
+
+    fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+        let value = self.clone().into_dynamic().load(cfg, src)?;
+        Ok(Vector::try_from_iter(value.into_vec().into_iter())
+            .unwrap()
+            .into_array())
+    }
+}
+
+impl<T: SizedType, const N: usize> SizedType for StaticArrayType<T, N>
+where
+    T::Value: SizedValue + Default + Clone,
+{
+    fn size(&self, cfg: &Config) -> usize {
+        N * self.item_type.size(cfg)
+    }
+}
+
+impl<V: SizedValue, const N: usize> Value for [V; N]
+where
+    V: Default + Clone,
+    V::Type: SizedType,
+{
+    type Type = StaticArrayType<V::Type, N>;
+
+    fn size(&self, cfg: &Config) -> usize {
+        self.type_().size(cfg)
+    }
+
+    fn type_(&self) -> Self::Type {
+        StaticArrayType::new(V::default().type_())
+    }
+
+    fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+        ArrayValue::from_array(self.clone()).store(cfg, dst)
+    }
+}
+
+impl<V: SizedValue, const N: usize> SizedValue for [V; N]
+where
+    V: Default + Clone,
+    V::Type: SizedType,
+{
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn ids() {
+        let arr: [i32; 3] = [1, 2, 3];
+        let darr = ArrayValue::from_array(arr);
+        assert_eq!(arr.type_().id(), darr.type_().id())
+    }
+}

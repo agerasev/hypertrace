@@ -50,8 +50,9 @@ where
     }
 }
 
-impl<T: PrimType, const N: usize> SizedType for VecType<T, N> where
-    T::Value: PrimValue<Type = T> + Default
+impl<T: PrimType, const N: usize> SizedType for VecType<T, N>
+where
+    T::Value: PrimValue<Type = T> + Default,
 {
     fn size(&self, cfg: &Config) -> usize {
         ceil_pow2(N) * self.elem.size(cfg)

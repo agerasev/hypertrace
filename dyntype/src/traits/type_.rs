@@ -2,6 +2,7 @@ use super::value::*;
 use crate::Config;
 use std::{
     any::TypeId,
+    fmt::{self, Debug, Formatter},
     hash::{Hash, Hasher},
     io::{self, Read},
 };
@@ -18,6 +19,9 @@ macro_rules! def_dyn_type {
 
         /// Clones dynamic type.
         fn clone_dyn(&self) -> Box<dyn $T>;
+
+        /// Format type information.
+        fn debug_fmt_dyn(&self, f: &mut Formatter) -> fmt::Result;
 
         /// Loads the instance of dynamic type.
         fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn $V>>;
@@ -41,7 +45,7 @@ pub trait SizedTypeDyn {
 }
 
 /// Concrete type.
-pub trait Type: Clone + 'static {
+pub trait Type: Clone + Debug + 'static {
     /// Associated dynamic value.
     type Value: Value<Type = Self>;
 
@@ -64,6 +68,8 @@ where
     fn size(&self, cfg: &Config) -> usize;
 }
 
+pub trait UnitType: Type + Default {}
+
 macro_rules! impl_dyn_type {
     ($T:ident, $V:ident) => {
         fn id_dyn(&self) -> u64 {
@@ -76,6 +82,10 @@ macro_rules! impl_dyn_type {
 
         fn clone_dyn(&self) -> Box<dyn $T> {
             Box::new(self.clone())
+        }
+
+        fn debug_fmt_dyn(&self, f: &mut Formatter) -> fmt::Result {
+            <Self as Debug>::fmt(self, f)
         }
 
         fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn $V>> {
@@ -113,5 +123,3 @@ pub fn type_id<T: 'static>() -> u64 {
     TypeId::of::<T>().hash(&mut hasher);
     hasher.finish()
 }
-
-pub trait UnitType: Default {}

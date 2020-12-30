@@ -1,5 +1,8 @@
 use crate::{config::*, traits::*};
-use std::io::{self, Read, Write};
+use std::{
+    fmt::{self, Debug, Formatter},
+    io::{self, Read, Write},
+};
 
 macro_rules! impl_type_box {
     ($T:ident, $V:ident) => {
@@ -26,6 +29,12 @@ macro_rules! impl_type_box {
         impl Clone for Box<dyn $T> {
             fn clone(&self) -> Self {
                 self.as_ref().clone_dyn()
+            }
+        }
+
+        impl Debug for Box<dyn $T> {
+            fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+                self.as_ref().debug_fmt_dyn(f)
             }
         }
     };

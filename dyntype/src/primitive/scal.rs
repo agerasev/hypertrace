@@ -158,7 +158,7 @@ macro_rules! impl_prim {
         }
 
         impl UnitType for $T {}
-        
+
         impl PrimType for $T {}
 
         impl Value for $V {

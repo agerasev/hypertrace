@@ -1,4 +1,4 @@
-use crate::{traits::*, Config};
+use crate::{traits::*, Config, TypedVec};
 use std::{
     hash::{Hash, Hasher},
     io::{self, Read, Write},
@@ -11,8 +11,8 @@ pub struct ArrayType<T: SizedType>
 where
     T::Value: SizedValue,
 {
-    item_type: T,
-    item_count: usize,
+    pub item_type: T,
+    pub item_count: usize,
 }
 
 impl<T: SizedType> ArrayType<T>
@@ -49,9 +49,18 @@ where
         let mut value = Self::Value::new(self.item_type.clone());
         for _ in 0..self.item_count {
             value
+                .items_mut()
                 .push(self.item_type.load(cfg, src)?)
-                .map_err(|_| ())
-                .unwrap();
+                .map_err(|item| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "Type mismatch: {:?} is expected but {:?} was provided",
+                            value.item_type(),
+                            item.type_()
+                        ),
+                    )
+                })?;
         }
         Ok(value)
     }
@@ -66,13 +75,12 @@ where
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Clone)]
 pub struct ArrayValue<V: SizedValue>
 where
     V::Type: SizedType,
 {
-    item_type: V::Type,
-    items: Vec<V>,
+    inner: TypedVec<V>,
 }
 
 impl<V: SizedValue> ArrayValue<V>
@@ -81,61 +89,26 @@ where
 {
     pub fn new(item_type: V::Type) -> Self {
         Self {
-            item_type,
-            items: Vec::new(),
+            inner: TypedVec::new(item_type),
         }
     }
 
-    pub fn from_items(item_type: V::Type, items: Vec<V>) -> Self {
-        Self { item_type, items }
+    pub fn from_items(item_type: V::Type, items: Vec<V>) -> Option<Self> {
+        TypedVec::from_items(item_type, items).map(|v| Self { inner: v })
     }
 
     pub fn item_type(&self) -> &V::Type {
-        &self.item_type
+        &self.inner.item_type()
     }
-
-    pub fn push(&mut self, item: V) -> Result<(), V> {
-        if self.item_type.id() == item.type_().id() {
-            self.items.push(item);
-            Ok(())
-        } else {
-            Err(item)
-        }
+    pub fn items(&self) -> &TypedVec<V> {
+        &self.inner
     }
-
-    pub fn pop(&mut self) -> Option<V> {
-        self.items.pop()
-    }
-
-    pub fn get(&self, pos: usize) -> Option<&V> {
-        self.items.get(pos)
-    }
-
-    #[allow(clippy::result_unit_err)]
-    pub fn update<F: FnOnce(&mut V)>(&mut self, pos: usize, f: F) -> Result<(), ()> {
-        let item = self.items.get_mut(pos).ok_or(())?;
-        f(item);
-        if item.type_().id() == self.item_type.id() {
-            Ok(())
-        } else {
-            Err(())
-        }
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &V> {
-        self.items.iter()
-    }
-
-    pub fn len(&self) -> usize {
-        self.items.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
+    pub fn items_mut(&mut self) -> &mut TypedVec<V> {
+        &mut self.inner
     }
 
     pub fn into_items(self) -> Vec<V> {
-        self.items
+        self.inner.into_items()
     }
 }
 
@@ -150,11 +123,11 @@ where
     }
 
     fn type_(&self) -> Self::Type {
-        ArrayType::new(self.item_type.clone(), self.len())
+        ArrayType::new(self.item_type().clone(), self.items().len())
     }
 
     fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        for item in self.items.iter() {
+        for item in self.items().iter() {
             item.store(cfg, dst)?;
         }
         Ok(())
@@ -211,10 +184,10 @@ where
     }
 }
 
-impl<T: SizedType + UnitType, const N: usize> UnitType for StaticArrayType<T, N>
-where
-    T::Value: SizedValue + Default + Clone,
-{}
+impl<T: SizedType + UnitType, const N: usize> UnitType for StaticArrayType<T, N> where
+    T::Value: SizedValue + Default + Clone
+{
+}
 
 impl<V: SizedValue, const N: usize> Value for [V; N]
 where
@@ -232,7 +205,9 @@ where
     }
 
     fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        ArrayValue::from_items(V::Type::default(), self.clone().into()).store(cfg, dst)
+        ArrayValue::from_items(V::Type::default(), self.clone().into())
+            .unwrap()
+            .store(cfg, dst)
     }
 }
 
@@ -250,7 +225,7 @@ mod tests {
     #[test]
     fn ids() {
         let arr: [i32; 3] = [1, 2, 3];
-        let darr = ArrayValue::from_items(i32::default().type_(), arr.into());
+        let darr = ArrayValue::from_items(i32::default().type_(), arr.into()).unwrap();
         assert_eq!(arr.type_().id(), darr.type_().id())
     }
 }

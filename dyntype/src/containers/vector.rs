@@ -1,9 +1,9 @@
 use crate::{
+    config::*,
     containers::{array::*, util::*, TypedVec},
     primitive::*,
     traits::*,
     util::*,
-    Config,
 };
 use std::{
     hash::{Hash, Hasher},
@@ -127,14 +127,14 @@ where
 #[derive(Clone, Debug, Default)]
 pub struct StaticVectorType<T: SizedType + UnitType>
 where
-    T::Value: SizedValue + Default + Clone,
+    T::Value: SizedValue + UnitValue + Clone,
 {
     phantom: PhantomData<T>,
 }
 
 impl<T: SizedType + UnitType> StaticVectorType<T>
 where
-    T::Value: SizedValue + Default + Clone,
+    T::Value: SizedValue + UnitValue + Clone,
 {
     pub fn into_dynamic(self) -> VectorType<T> {
         VectorType::new(T::default())
@@ -143,7 +143,7 @@ where
 
 impl<T: SizedType + UnitType> Type for StaticVectorType<T>
 where
-    T::Value: SizedValue + Default + Clone,
+    T::Value: SizedValue + UnitValue + Clone,
 {
     type Value = Vec<T::Value>;
 
@@ -162,13 +162,13 @@ where
 }
 
 impl<T: SizedType + UnitType> UnitType for StaticVectorType<T> where
-    T::Value: SizedValue + Default + Clone
+    T::Value: SizedValue + UnitValue + Clone
 {
 }
 
-impl<V: SizedValue> Value for Vec<V>
+impl<V: SizedValue + UnitValue> Value for Vec<V>
 where
-    V: Default + Clone,
+    V: Clone,
     V::Type: SizedType + UnitType,
 {
     type Type = StaticVectorType<V::Type>;
@@ -188,14 +188,40 @@ where
     }
 }
 
+impl<V: SizedValue + UnitValue> UnitValue for Vec<V>
+where
+    V: Clone,
+    V::Type: SizedType + UnitType,
+{
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const CFG: Config = Config {
+        endian: Endian::Little,
+        address_width: AddressWidth::X64,
+        double_support: true,
+    };
 
     #[test]
     fn ids() {
         let vec: Vec<i32> = vec![1, 2, 3];
         let dvec = VectorValue::from_items(I32Type, vec.clone()).unwrap();
         assert_eq!(vec.type_().id(), dvec.type_().id())
+    }
+
+    #[test]
+    fn store_load() {
+        let vec: Vec<i32> = vec![1, 2, 3, 4, 5];
+        let mut buf = Vec::<u8>::new();
+        vec.store(&CFG, &mut buf).unwrap();
+        assert_eq!(
+            vec,
+            <Vec<i32> as Value>::Type::default()
+                .load(&CFG, &mut &buf[..])
+                .unwrap()
+        );
     }
 }

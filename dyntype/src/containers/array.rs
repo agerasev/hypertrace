@@ -1,4 +1,4 @@
-use crate::{traits::*, Config, TypedVec};
+use crate::{config::*, containers::TypedVec, traits::*};
 use std::{
     hash::{Hash, Hasher},
     io::{self, Read, Write},
@@ -139,14 +139,14 @@ impl<V: SizedValue> SizedValue for ArrayValue<V> where V::Type: SizedType {}
 #[derive(Clone, Debug, Default)]
 pub struct StaticArrayType<T: SizedType + UnitType, const N: usize>
 where
-    T::Value: SizedValue + Default + Clone,
+    T::Value: SizedValue + UnitValue + Clone,
 {
     phantom: PhantomData<T>,
 }
 
 impl<T: SizedType + UnitType, const N: usize> StaticArrayType<T, N>
 where
-    T::Value: SizedValue + Default + Clone,
+    T::Value: SizedValue + UnitValue + Clone,
 {
     pub fn into_dynamic(self) -> ArrayType<T> {
         ArrayType::new(T::default(), N)
@@ -155,7 +155,7 @@ where
 
 impl<T: SizedType + UnitType, const N: usize> Type for StaticArrayType<T, N>
 where
-    T::Value: SizedValue + Default + Clone,
+    T::Value: SizedValue + UnitValue + Clone,
 {
     type Value = [T::Value; N];
 
@@ -177,7 +177,7 @@ where
 
 impl<T: SizedType + UnitType, const N: usize> SizedType for StaticArrayType<T, N>
 where
-    T::Value: SizedValue + Default + Clone,
+    T::Value: SizedValue + UnitValue + Clone,
 {
     fn size(&self, cfg: &Config) -> usize {
         N * T::default().size(cfg)
@@ -185,13 +185,13 @@ where
 }
 
 impl<T: SizedType + UnitType, const N: usize> UnitType for StaticArrayType<T, N> where
-    T::Value: SizedValue + Default + Clone
+    T::Value: SizedValue + UnitValue + Clone
 {
 }
 
-impl<V: SizedValue, const N: usize> Value for [V; N]
+impl<V: SizedValue + UnitValue, const N: usize> Value for [V; N]
 where
-    V: Default + Clone,
+    V: Clone,
     V::Type: SizedType + UnitType,
 {
     type Type = StaticArrayType<V::Type, N>;
@@ -211,9 +211,16 @@ where
     }
 }
 
-impl<V: SizedValue, const N: usize> SizedValue for [V; N]
+impl<V: SizedValue + UnitValue, const N: usize> SizedValue for [V; N]
 where
-    V: Default + Clone,
+    V: Clone,
+    V::Type: SizedType + UnitType,
+{
+}
+
+impl<V: SizedValue + UnitValue, const N: usize> UnitValue for [V; N]
+where
+    V: Clone,
     V::Type: SizedType + UnitType,
 {
 }
@@ -222,10 +229,29 @@ where
 mod tests {
     use super::*;
 
+    const CFG: Config = Config {
+        endian: Endian::Little,
+        address_width: AddressWidth::X64,
+        double_support: true,
+    };
+
     #[test]
     fn ids() {
         let arr: [i32; 3] = [1, 2, 3];
         let darr = ArrayValue::from_items(i32::default().type_(), arr.into()).unwrap();
         assert_eq!(arr.type_().id(), darr.type_().id())
+    }
+
+    #[test]
+    fn store_load() {
+        let arr: [i32; 5] = [1, 2, 3, 4, 5];
+        let mut buf = Vec::<u8>::new();
+        arr.store(&CFG, &mut buf).unwrap();
+        assert_eq!(
+            arr,
+            <[i32; 5] as Value>::Type::default()
+                .load(&CFG, &mut &buf[..])
+                .unwrap()
+        );
     }
 }

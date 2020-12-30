@@ -124,7 +124,7 @@ where
     Self::Value: PrimValue<Type = Self>,
 {
 }
-pub trait PrimValue: SizedValue
+pub trait PrimValue: SizedValue + UnitValue
 where
     Self::Type: PrimType<Value = Self>,
 {
@@ -177,6 +177,8 @@ macro_rules! impl_prim {
         }
 
         impl SizedValue for $V {}
+
+        impl UnitValue for $V {}
 
         impl PrimValue for $V {}
     };

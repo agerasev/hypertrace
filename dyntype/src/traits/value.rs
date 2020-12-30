@@ -50,6 +50,12 @@ where
 {
 }
 
+pub trait UnitValue: Value
+where
+    Self::Type: UnitType<Value = Self>,
+{
+}
+
 macro_rules! impl_dyn_value {
     ($T:ident, $V:ident) => {
         fn size_dyn(&self, cfg: &Config) -> usize {

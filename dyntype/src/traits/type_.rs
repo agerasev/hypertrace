@@ -68,7 +68,11 @@ where
     fn size(&self, cfg: &Config) -> usize;
 }
 
-pub trait UnitType: Type + Default {}
+pub trait UnitType: Type + Default
+where
+    Self::Value: UnitValue<Type = Self>,
+{
+}
 
 macro_rules! impl_dyn_type {
     ($T:ident, $V:ident) => {

@@ -1,20 +1,7 @@
 use super::*;
-use crate::{config::*, traits::*};
-use std::{
-    io::{self, Read, Write},
-    mem::size_of,
-};
+use crate::{config::*, traits::*, utils::*};
+use std::io::{self, Read, Write};
 use vecmat::Vector;
-
-fn ceil_pow2(mut n: usize) -> usize {
-    n -= 1;
-    let mut p = 1;
-    while p < 8 * size_of::<usize>() {
-        n |= n >> p;
-        p *= 2;
-    }
-    n + 1
-}
 
 #[derive(Clone, Copy, Debug)]
 pub struct VecType<T: PrimType, const N: usize>

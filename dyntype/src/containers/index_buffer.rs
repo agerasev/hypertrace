@@ -65,13 +65,6 @@ impl<V: Value> IndexBuffer<V> {
     }
 }
 
-fn vector_size<T: Type>(type_: &IndexBufferType<T>, len: usize, cfg: &Config) -> usize
-where
-    T::Value: Value
-{
-    upper_multiple(UsizeType.size(cfg), type_.align(cfg)) + len * type_.item_type.size(cfg)
-}
-
 impl<V: Value> Value for IndexBuffer<V> {
     type Type = IndexBufferType<V::Type>;
 

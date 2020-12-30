@@ -3,7 +3,7 @@ use crate::{
     containers::{array::*, util::*, TypedVec},
     primitive::*,
     traits::*,
-    util::*,
+    utils::*,
 };
 use std::{
     hash::{Hash, Hasher},

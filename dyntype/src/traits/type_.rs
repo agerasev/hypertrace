@@ -1,10 +1,10 @@
 use super::value::*;
-use crate::Config;
+use crate::{Config, io::*};
 use std::{
     any::TypeId,
     fmt::{self, Debug, Formatter},
     hash::{Hash, Hasher},
-    io::{self, Read},
+    io,
 };
 
 pub use std::collections::hash_map::DefaultHasher;
@@ -24,7 +24,7 @@ macro_rules! def_dyn_type {
         fn debug_fmt_dyn(&self, f: &mut Formatter) -> fmt::Result;
 
         /// Loads the instance of dynamic type.
-        fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn $V>>;
+        fn load_dyn(&self, cfg: &Config, src: &mut dyn CountingRead) -> io::Result<Box<dyn $V>>;
     };
 }
 
@@ -56,7 +56,7 @@ pub trait Type: Clone + Debug + 'static {
     fn align(&self, cfg: &Config) -> usize;
 
     /// Loads the instance of type.
-    fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
+    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
 }
 
 /// Sized runtime type.
@@ -92,7 +92,7 @@ macro_rules! impl_dyn_type {
             <Self as Debug>::fmt(self, f)
         }
 
-        fn load_dyn(&self, cfg: &Config, src: &mut dyn Read) -> io::Result<Box<dyn $V>> {
+        fn load_dyn(&self, cfg: &Config, src: &mut dyn CountingRead) -> io::Result<Box<dyn $V>> {
             self.load(cfg, src).map(|v| Box::new(v) as Box<dyn $V>)
         }
     };

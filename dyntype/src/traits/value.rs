@@ -1,6 +1,6 @@
 use super::type_::*;
-use crate::Config;
-use std::io::{self, Write};
+use crate::{Config, io::*};
+use std::io;
 
 macro_rules! def_dyn_value {
     ($T:ident, $V:ident) => {
@@ -11,7 +11,7 @@ macro_rules! def_dyn_value {
         fn type_dyn(&self) -> Box<dyn $T>;
 
         /// Stores the instance to abstract writer.
-        fn store_dyn(&self, cfg: &Config, dst: &mut dyn Write) -> io::Result<()>;
+        fn store_dyn(&self, cfg: &Config, dst: &mut dyn CountingWrite) -> io::Result<()>;
     };
 }
 
@@ -40,7 +40,7 @@ pub trait Value: 'static {
     fn type_(&self) -> Self::Type;
 
     /// Stores the instance to a writer.
-    fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
+    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
 }
 
 /// Instance of a sized runtime type.
@@ -66,7 +66,7 @@ macro_rules! impl_dyn_value {
             Box::new(self.type_())
         }
 
-        fn store_dyn(&self, cfg: &Config, dst: &mut dyn Write) -> io::Result<()> {
+        fn store_dyn(&self, cfg: &Config, dst: &mut dyn CountingWrite) -> io::Result<()> {
             self.store(cfg, dst)
         }
     };

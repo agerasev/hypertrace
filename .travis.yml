@@ -3,7 +3,7 @@ language: rust
 os: linux
 dist: bionic
 
-rust: stable
+rust: nightly
 
 addons:
   apt:

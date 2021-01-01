@@ -1,11 +1,4 @@
-use crate::{
-    config::*,
-    containers::{array::*, TypedVec},
-    io::*,
-    primitive::*,
-    traits::*,
-    utils::*,
-};
+use crate::{config::*, containers::TypedVec, io::*, primitive::*, traits::*, utils::*};
 use std::{
     hash::{Hash, Hasher},
     io,
@@ -48,10 +41,17 @@ where
 
     fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
         let len = src.read_value(cfg, &UsizeType)?;
-        Ok(Self::Value::from_array_value(src.read_value(
-            cfg,
-            &ArrayType::new(self.item_type.clone(), len),
-        )?))
+        src.align(self.item_type.align(cfg))?;
+        let items = (0..len)
+            .map(|_| src.read_value(cfg, &self.item_type))
+            .collect::<Result<Vec<_>, _>>()?;
+        src.align(self.align(cfg))?;
+        Self::Value::from_items(self.item_type.clone(), items).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                "Item type mismatch while loading Vector",
+            )
+        })
     }
 }
 
@@ -77,10 +77,6 @@ where
         TypedVec::from_items(item_type, items).map(|v| Self { inner: v })
     }
 
-    pub fn from_array_value(array_value: ArrayValue<V>) -> Self {
-        Self::from_items(array_value.item_type().clone(), array_value.into_items()).unwrap()
-    }
-
     pub fn item_type(&self) -> &V::Type {
         &self.inner.item_type()
     }
@@ -96,13 +92,6 @@ where
     }
 }
 
-fn vector_size<T: SizedType>(type_: &VectorType<T>, len: usize, cfg: &Config) -> usize
-where
-    T::Value: SizedValue,
-{
-    upper_multiple(UsizeType.size(cfg), type_.align(cfg)) + len * type_.item_type.size(cfg)
-}
-
 impl<V: SizedValue> Value for VectorValue<V>
 where
     V::Type: SizedType,
@@ -110,7 +99,11 @@ where
     type Type = VectorType<V::Type>;
 
     fn size(&self, cfg: &Config) -> usize {
-        vector_size(&self.type_(), self.items().len(), cfg)
+        upper_multiple(
+            upper_multiple(UsizeType.size(cfg), self.item_type().align(cfg))
+                + self.items().len() * self.item_type().size(cfg),
+            self.type_().align(cfg),
+        )
     }
 
     fn type_(&self) -> Self::Type {
@@ -119,9 +112,11 @@ where
 
     fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         dst.write_value(cfg, &self.items().len())?;
+        dst.align(self.item_type().align(cfg))?;
         for item in self.items().iter() {
-            item.store(cfg, dst)?;
+            dst.write_value(cfg, item)?;
         }
+        dst.align(self.type_().align(cfg))?;
         Ok(())
     }
 }
@@ -150,7 +145,7 @@ where
     type Value = Vec<T::Value>;
 
     fn align(&self, cfg: &Config) -> usize {
-        T::default().align(cfg)
+        self.clone().into_dynamic().align(cfg)
     }
 
     fn id(&self) -> u64 {
@@ -176,7 +171,12 @@ where
     type Type = StaticVectorType<V::Type>;
 
     fn size(&self, cfg: &Config) -> usize {
-        vector_size(&self.type_().into_dynamic(), self.len(), cfg)
+        let item_type = V::Type::default();
+        upper_multiple(
+            upper_multiple(UsizeType.size(cfg), item_type.align(cfg))
+                + self.len() * item_type.size(cfg),
+            self.type_().align(cfg),
+        )
     }
 
     fn type_(&self) -> Self::Type {
@@ -216,13 +216,13 @@ mod tests {
 
     #[test]
     fn store_load() {
-        let vec: Vec<i32> = vec![1, 2, 3, 4, 5];
+        let vec: Vec<i32> = vec![1, 2];
         let mut buf = CountingWrapper::new(Vec::<u8>::new());
-        vec.store(&CFG, &mut buf).unwrap();
+        buf.write_value(&CFG, &vec).unwrap();
         assert_eq!(
             vec,
-            <Vec<i32> as Value>::Type::default()
-                .load(&CFG, &mut CountingWrapper::new(&buf.inner()[..]))
+            CountingWrapper::new(&buf.inner()[..])
+                .read_value(&CFG, &<Vec<i32> as Value>::Type::default())
                 .unwrap()
         );
     }

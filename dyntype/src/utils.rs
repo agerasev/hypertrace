@@ -4,7 +4,7 @@ pub use std::cmp::{max, min};
 use num_integer::div_floor;
 use std::mem::size_of;
 
-pub fn upper_multiple(m: usize, x: usize) -> usize {
+pub fn upper_multiple(x: usize, m: usize) -> usize {
     m * div_floor(x + m - 1, m)
 }
 

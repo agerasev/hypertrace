@@ -1,9 +1,9 @@
 mod array;
+mod index_buffer;
 mod typed_vec;
 mod vector;
-//mod index_buffer;
 
 pub use array::*;
+pub use index_buffer::*;
 pub use typed_vec::*;
 pub use vector::*;
-//pub use index_buffer::*;

@@ -1,22 +1,22 @@
-use crate::{traits::*, primitive::*, Config, util::*, containers::{TypedVec, util::*}};
+use crate::{containers::TypedVec, io::*, primitive::*, traits::*, utils::*, Config};
 use std::{
     hash::{Hash, Hasher},
-    io::{self, Read, Write},
+    io,
 };
 
 #[derive(Clone, Debug)]
-pub struct IndexBufferType<T: Type>{
+pub struct IndexBufferType<T: Type> {
     item_type: T,
 }
 
-impl<T: Type> IndexBufferType<T>{
+impl<T: Type> IndexBufferType<T> {
     pub fn new(item_type: T) -> Self {
         Self { item_type }
     }
 }
 
 impl<T: Type> Type for IndexBufferType<T> {
-    type Value = IndexBuffer<T::Value>;
+    type Value = IndexBufferValue<T::Value>;
 
     fn align(&self, cfg: &Config) -> usize {
         lcm(self.item_type.align(cfg), UsizeType.align(cfg))
@@ -29,17 +29,42 @@ impl<T: Type> Type for IndexBufferType<T> {
         hasher.finish()
     }
 
-    fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
-        unimplemented!()
+    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+        let len = src.read_value(cfg, &UsizeType)?;
+        let poss = (0..len)
+            .map(|_| src.read_value(cfg, &UsizeType))
+            .collect::<Result<Vec<_>, _>>()?;
+        src.align(self.item_type.align(cfg))?;
+        let sp = src.position();
+        let items = poss
+            .into_iter()
+            .map(|vp| {
+                let p = src.position();
+                let ap = sp + vp;
+                if p <= ap {
+                    src.skip(ap - p)?;
+                    src.read_value(cfg, &self.item_type)
+                } else {
+                    Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "IndexBuffer indices are overlapping or not monotonic",
+                    ))
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        src.align(self.align(cfg))?;
+        Self::Value::from_items(self.item_type.clone(), items).ok_or_else(|| {
+            io::Error::new(io::ErrorKind::InvalidData, "IndexBuffer item type mismatch")
+        })
     }
 }
 
 #[derive(Clone)]
-pub struct IndexBuffer<V: Value> {
+pub struct IndexBufferValue<V: Value> {
     inner: TypedVec<V>,
 }
 
-impl<V: Value> IndexBuffer<V> {
+impl<V: Value> IndexBufferValue<V> {
     pub fn new(item_type: V::Type) -> Self {
         Self {
             inner: TypedVec::new(item_type),
@@ -65,22 +90,68 @@ impl<V: Value> IndexBuffer<V> {
     }
 }
 
-impl<V: Value> Value for IndexBuffer<V> {
+impl<V: Value> Value for IndexBufferValue<V> {
     type Type = IndexBufferType<V::Type>;
 
     fn size(&self, cfg: &Config) -> usize {
-        vector_size(&self.type_(), self.items.len(), cfg)
+        upper_multiple(
+            upper_multiple(
+                UsizeType.size(cfg) * (1 + self.items().len()),
+                self.item_type().align(cfg),
+            ) + self.items().iter().fold(0, |st, item| st + item.size(cfg)),
+            self.type_().align(cfg),
+        )
     }
 
     fn type_(&self) -> Self::Type {
-        IndexBufferType::new(self.item_type.clone())
+        IndexBufferType::new(self.item_type().clone())
     }
 
-    fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        write_and_align(&self.items.len(), cfg, self.type_().align(cfg), dst)?;
-        for item in self.items.iter() {
-            item.store(cfg, dst)?;
+    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+        dst.write_value(cfg, &self.items().len())?;
+        for pos in self.items().iter().scan(0, |st, item| {
+            let prev = *st;
+            *st += item.size(cfg);
+            Some(prev)
+        }) {
+            dst.write_value(cfg, &pos)?;
         }
+        dst.align(self.item_type().align(cfg))?;
+        for item in self.items().iter() {
+            dst.write_value(cfg, item)?;
+        }
+        dst.align(self.type_().align(cfg))?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::*;
+
+    const CFG: Config = Config {
+        endian: Endian::Little,
+        address_width: AddressWidth::X64,
+        double_support: true,
+    };
+
+    #[test]
+    fn store_load() {
+        let ivec = IndexBufferValue::from_items(
+            <Vec<i32> as Value>::Type::default(),
+            vec![vec![1], vec![2, 3], vec![4, 5, 6]],
+        )
+        .unwrap();
+        let mut buf = CountingWrapper::new(Vec::<u8>::new());
+        buf.write_value(&CFG, &ivec).unwrap();
+        println!("{:?}", buf.inner());
+        let ovec = CountingWrapper::new(&buf.inner()[..])
+            .read_value(
+                &CFG,
+                &IndexBufferType::new(<Vec<i32> as Value>::Type::default()),
+            )
+            .unwrap();
+        assert_eq!(ivec.into_items(), ovec.into_items(),);
     }
 }

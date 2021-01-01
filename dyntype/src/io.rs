@@ -3,14 +3,15 @@ use std::io::{self, Read, Write};
 
 pub trait CountingRead: Read {
     fn position(&self) -> usize;
-    fn align(&mut self, align: usize) -> io::Result<()> {
-        let mut pos = self.position();
+    fn skip(&mut self, count: usize) -> io::Result<()> {
         let mut buf = [0];
-        while pos % align != 0 {
+        for _ in 0..count {
             self.read_exact(&mut buf)?;
-            pos += 1;
         }
         Ok(())
+    }
+    fn align(&mut self, align: usize) -> io::Result<()> {
+        self.skip((align - (self.position() % align)) % align)
     }
     fn as_dyn_ref(&self) -> &dyn CountingRead;
     fn as_dyn_mut(&mut self) -> &mut dyn CountingRead;
@@ -18,13 +19,14 @@ pub trait CountingRead: Read {
 
 pub trait CountingWrite: Write {
     fn position(&self) -> usize;
-    fn align(&mut self, align: usize) -> io::Result<()> {
-        let mut pos = self.position();
-        while pos % align != 0 {
+    fn skip(&mut self, count: usize) -> io::Result<()> {
+        for _ in 0..count {
             self.write_all(&[0])?;
-            pos += 1;
         }
         Ok(())
+    }
+    fn align(&mut self, align: usize) -> io::Result<()> {
+        self.skip((align - (self.position() % align)) % align)
     }
     fn as_dyn_ref(&self) -> &dyn CountingWrite;
     fn as_dyn_mut(&mut self) -> &mut dyn CountingWrite;
@@ -104,9 +106,10 @@ impl<R: CountingRead + ?Sized> ValueReader for R {
             type_,
             align
         );
-        self.align(align)?;
 
         let pos = self.position();
+        assert!(pos % align == 0, "Stream is not properly aligned (position: {}) for type {:?} (align: {})", pos, type_, align);
+        
         let value = type_.load(cfg, self)?;
         let shift = self.position() - pos;
         let size = value.size(cfg);
@@ -148,9 +151,10 @@ impl<W: CountingWrite + ?Sized> ValueWriter for W {
             align,
             size
         );
-        self.align(align)?;
 
         let pos = self.position();
+        assert!(pos % align == 0, "Stream is not properly aligned (position: {}) for type {:?} (align: {})", pos, type_, align);
+        
         value.store(cfg, self)?;
         let shift = self.position() - pos;
         assert_eq!(

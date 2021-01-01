@@ -12,11 +12,8 @@ pub trait CountingRead: Read {
         }
         Ok(())
     }
-}
-impl<'a, R: CountingRead + ?Sized> CountingRead for &'a mut R {
-    fn position(&self) -> usize {
-        (**self).position()
-    }
+    fn as_dyn_ref(&self) -> &dyn CountingRead;
+    fn as_dyn_mut(&mut self) -> &mut dyn CountingRead;
 }
 
 pub trait CountingWrite: Write {
@@ -29,45 +26,50 @@ pub trait CountingWrite: Write {
         }
         Ok(())
     }
-}
-impl<'a, W: CountingWrite + ?Sized> CountingWrite for &'a mut W {
-    fn position(&self) -> usize {
-        (**self).position()
-    }
+    fn as_dyn_ref(&self) -> &dyn CountingWrite;
+    fn as_dyn_mut(&mut self) -> &mut dyn CountingWrite;
 }
 
-pub struct ReadWrapper<R: Read> {
-    inner: R,
+pub struct CountingWrapper<T> {
+    inner: T,
     pos: usize,
 }
-impl<R: Read> ReadWrapper<R> {
-    pub fn new(read: R) -> Self {
-        Self { inner: read, pos: 0 }
+impl<T> CountingWrapper<T> {
+    pub fn new(read: T) -> Self {
+        Self {
+            inner: read,
+            pos: 0,
+        }
+    }
+    pub fn inner(&self) -> &T {
+        &self.inner
+    }
+    pub fn inner_mut(&mut self) -> &mut T {
+        &mut self.inner
+    }
+    pub fn into_inner(self) -> T {
+        self.inner
     }
 }
-impl<R: Read> Read for ReadWrapper<R> {
+impl<R: Read> Read for CountingWrapper<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let n = self.inner.read(buf)?;
         self.pos += n;
         Ok(n)
     }
 }
-impl<R: Read> CountingRead for ReadWrapper<R> {
+impl<R: Read> CountingRead for CountingWrapper<R> {
     fn position(&self) -> usize {
         self.pos
     }
-}
-
-pub struct WriteWrapper<W: Write> {
-    inner: W,
-    pos: usize,
-}
-impl<W: Write> WriteWrapper<W> {
-    pub fn new(write: W) -> Self {
-        Self { inner: write, pos: 0 }
+    fn as_dyn_ref(&self) -> &dyn CountingRead {
+        self
+    }
+    fn as_dyn_mut(&mut self) -> &mut dyn CountingRead {
+        self
     }
 }
-impl<W: Write> Write for WriteWrapper<W> {
+impl<W: Write> Write for CountingWrapper<W> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let n = self.inner.write(buf)?;
         self.pos += n;
@@ -77,16 +79,22 @@ impl<W: Write> Write for WriteWrapper<W> {
         self.inner.flush()
     }
 }
-impl<W: Write> CountingWrite for WriteWrapper<W> {
+impl<W: Write> CountingWrite for CountingWrapper<W> {
     fn position(&self) -> usize {
         self.pos
+    }
+    fn as_dyn_ref(&self) -> &dyn CountingWrite {
+        self
+    }
+    fn as_dyn_mut(&mut self) -> &mut dyn CountingWrite {
+        self
     }
 }
 
 pub trait ValueReader {
     fn read_value<T: Type>(&mut self, cfg: &Config, type_: &T) -> io::Result<T::Value>;
 }
-impl<R: CountingRead> ValueReader for R {
+impl<R: CountingRead + ?Sized> ValueReader for R {
     fn read_value<T: Type>(&mut self, cfg: &Config, type_: &T) -> io::Result<T::Value> {
         let align = type_.align(cfg);
         assert!(align != 0, "Align of type {:?} ({}) is zero", type_, align);
@@ -121,7 +129,7 @@ impl<R: CountingRead> ValueReader for R {
 pub trait ValueWriter {
     fn write_value<V: Value>(&mut self, cfg: &Config, value: &V) -> io::Result<()>;
 }
-impl<W: CountingWrite> ValueWriter for W {
+impl<W: CountingWrite + ?Sized> ValueWriter for W {
     fn write_value<V: Value>(&mut self, cfg: &Config, value: &V) -> io::Result<()> {
         let type_ = value.type_();
         let align = type_.align(cfg);

@@ -1,6 +1,6 @@
 use super::*;
-use crate::{config::*, traits::*, utils::*};
-use std::io::{self, Read, Write};
+use crate::{config::*, io::*, traits::*, utils::*};
+use std::io;
 use vecmat::Vector;
 
 #[derive(Clone, Copy, Debug)]
@@ -27,7 +27,7 @@ where
         type_id::<Self>()
     }
 
-    fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
         let mut v = Self::Value::default();
         for i in 0..N {
             v[i] = self.elem.load(cfg, src)?;
@@ -66,7 +66,7 @@ where
         }
     }
 
-    fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         for i in 0..N {
             self[i].store(cfg, dst)?;
         }

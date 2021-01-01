@@ -1,7 +1,7 @@
-use crate::{config::*, containers::TypedVec, traits::*};
+use crate::{config::*, containers::TypedVec, io::*, traits::*};
 use std::{
     hash::{Hash, Hasher},
-    io::{self, Read, Write},
+    io,
     marker::PhantomData,
 };
 use vecmat::Vector;
@@ -45,7 +45,7 @@ where
         hasher.finish()
     }
 
-    fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
         let mut value = Self::Value::new(self.item_type.clone());
         for _ in 0..self.item_count {
             value
@@ -126,7 +126,7 @@ where
         ArrayType::new(self.item_type().clone(), self.items().len())
     }
 
-    fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         for item in self.items().iter() {
             item.store(cfg, dst)?;
         }
@@ -167,7 +167,7 @@ where
         self.clone().into_dynamic().id()
     }
 
-    fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
         let value = self.clone().into_dynamic().load(cfg, src)?;
         Ok(Vector::try_from_iter(value.into_items().into_iter())
             .unwrap()
@@ -204,7 +204,7 @@ where
         Self::Type::default()
     }
 
-    fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         ArrayValue::from_items(V::Type::default(), self.clone().into())
             .unwrap()
             .store(cfg, dst)
@@ -245,12 +245,12 @@ mod tests {
     #[test]
     fn store_load() {
         let arr: [i32; 5] = [1, 2, 3, 4, 5];
-        let mut buf = Vec::<u8>::new();
+        let mut buf = CountingWrapper::new(Vec::<u8>::new());
         arr.store(&CFG, &mut buf).unwrap();
         assert_eq!(
             arr,
             <[i32; 5] as Value>::Type::default()
-                .load(&CFG, &mut &buf[..])
+                .load(&CFG, &mut CountingWrapper::new(&buf.inner()[..]))
                 .unwrap()
         );
     }

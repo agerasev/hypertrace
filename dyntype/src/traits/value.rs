@@ -1,5 +1,5 @@
 use super::type_::*;
-use crate::{Config, io::*};
+use crate::{io::*, Config};
 use std::io;
 
 macro_rules! def_dyn_value {

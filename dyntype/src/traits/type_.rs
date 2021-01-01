@@ -1,5 +1,5 @@
 use super::value::*;
-use crate::{Config, io::*};
+use crate::{io::*, Config};
 use std::{
     any::TypeId,
     fmt::{self, Debug, Formatter},

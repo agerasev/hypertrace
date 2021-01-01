@@ -1,4 +1,4 @@
-use crate::{config::*, traits::*, io::*};
+use crate::{config::*, io::*, traits::*};
 use std::{
     fmt::{self, Debug, Formatter},
     io,
@@ -20,9 +20,9 @@ macro_rules! impl_type_box {
             fn load<R: CountingRead + ?Sized>(
                 &self,
                 cfg: &Config,
-                mut src: &mut R,
+                src: &mut R,
             ) -> io::Result<Self::Value> {
-                self.as_ref().load_dyn(cfg, &mut src)
+                self.as_ref().load_dyn(cfg, src.as_dyn_mut())
             }
         }
 
@@ -68,8 +68,12 @@ macro_rules! impl_value_box {
                 self.as_ref().type_dyn()
             }
 
-            fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, mut dst: &mut W) -> io::Result<()> {
-                self.as_ref().store_dyn(cfg, &mut dst)
+            fn store<W: CountingWrite + ?Sized>(
+                &self,
+                cfg: &Config,
+                dst: &mut W,
+            ) -> io::Result<()> {
+                self.as_ref().store_dyn(cfg, dst.as_dyn_mut())
             }
         }
     };

@@ -1,14 +1,11 @@
-use crate::{config::*, traits::*};
+use crate::{config::*, io::*, traits::*};
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-use std::{
-    io::{self, Read, Write},
-    mem::size_of,
-};
+use std::{io, mem::size_of};
 
 trait Xfer: Sized {
     fn len(cfg: &Config) -> usize;
-    fn rx<R: Read + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self>;
-    fn tx<W: Write + ?Sized>(self, cfg: &Config, dst: &mut W) -> io::Result<()>;
+    fn rx<R: CountingRead + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self>;
+    fn tx<W: CountingWrite + ?Sized>(self, cfg: &Config, dst: &mut W) -> io::Result<()>;
 }
 
 macro_rules! impl_xfer_native {
@@ -17,13 +14,13 @@ macro_rules! impl_xfer_native {
             fn len(_: &Config) -> usize {
                 size_of::<Self>()
             }
-            fn rx<R: Read + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+            fn rx<R: CountingRead + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self> {
                 match cfg.endian {
                     Endian::Big => src.$read::<BigEndian>(),
                     Endian::Little => src.$read::<LittleEndian>(),
                 }
             }
-            fn tx<W: Write + ?Sized>(self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+            fn tx<W: CountingWrite + ?Sized>(self, cfg: &Config, dst: &mut W) -> io::Result<()> {
                 match cfg.endian {
                     Endian::Big => dst.$write::<BigEndian>(self),
                     Endian::Little => dst.$write::<LittleEndian>(self),
@@ -39,10 +36,10 @@ macro_rules! impl_xfer_byte {
             fn len(_: &Config) -> usize {
                 1
             }
-            fn rx<R: Read + ?Sized>(_: &Config, src: &mut R) -> io::Result<Self> {
+            fn rx<R: CountingRead + ?Sized>(_: &Config, src: &mut R) -> io::Result<Self> {
                 src.$read()
             }
-            fn tx<W: Write + ?Sized>(self, _: &Config, dst: &mut W) -> io::Result<()> {
+            fn tx<W: CountingWrite + ?Sized>(self, _: &Config, dst: &mut W) -> io::Result<()> {
                 dst.$write(self)
             }
         }
@@ -58,13 +55,13 @@ macro_rules! impl_xfer_size {
                     AddressWidth::X64 => $T64::len(cfg),
                 }
             }
-            fn rx<R: Read + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+            fn rx<R: CountingRead + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self> {
                 match cfg.address_width {
                     AddressWidth::X32 => $T32::rx(cfg, src).map(|x| x as $T),
                     AddressWidth::X64 => $T64::rx(cfg, src).map(|x| x as $T),
                 }
             }
-            fn tx<W: Write + ?Sized>(self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+            fn tx<W: CountingWrite + ?Sized>(self, cfg: &Config, dst: &mut W) -> io::Result<()> {
                 match cfg.address_width {
                     AddressWidth::X32 => $T32::tx(self as $T32, cfg, dst),
                     AddressWidth::X64 => $T64::tx(self as $T64, cfg, dst),
@@ -97,7 +94,7 @@ impl Xfer for f64 {
             f32::len(cfg)
         }
     }
-    fn rx<R: Read + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+    fn rx<R: CountingRead + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         if cfg.double_support {
             match cfg.endian {
                 Endian::Big => src.read_f64::<BigEndian>(),
@@ -107,7 +104,7 @@ impl Xfer for f64 {
             f32::rx(cfg, src).map(|x| x as f64)
         }
     }
-    fn tx<W: Write + ?Sized>(self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+    fn tx<W: CountingWrite + ?Sized>(self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         if cfg.double_support {
             match cfg.endian {
                 Endian::Big => dst.write_f64::<BigEndian>(self),
@@ -146,7 +143,11 @@ macro_rules! impl_prim {
                 type_id::<Self>()
             }
 
-            fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+            fn load<R: CountingRead + ?Sized>(
+                &self,
+                cfg: &Config,
+                src: &mut R,
+            ) -> io::Result<Self::Value> {
                 $V::rx(cfg, src)
             }
         }
@@ -171,7 +172,11 @@ macro_rules! impl_prim {
             fn type_(&self) -> Self::Type {
                 $T
             }
-            fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+            fn store<W: CountingWrite + ?Sized>(
+                &self,
+                cfg: &Config,
+                dst: &mut W,
+            ) -> io::Result<()> {
                 Self::tx(*self, cfg, dst)
             }
         }

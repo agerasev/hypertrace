@@ -1,13 +1,14 @@
 use crate::{
     config::*,
-    containers::{array::*, util::*, TypedVec},
+    containers::{array::*, TypedVec},
+    io::*,
     primitive::*,
     traits::*,
     utils::*,
 };
 use std::{
     hash::{Hash, Hasher},
-    io::{self, Read, Write},
+    io,
     marker::PhantomData,
 };
 
@@ -45,11 +46,12 @@ where
         hasher.finish()
     }
 
-    fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
-        let len = read_and_align(&UsizeType, cfg, self.align(cfg), src)?;
-        Ok(Self::Value::from_array_value(
-            ArrayType::new(self.item_type.clone(), len).load(cfg, src)?,
-        ))
+    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+        let len = src.read_value(cfg, &UsizeType)?;
+        Ok(Self::Value::from_array_value(src.read_value(
+            cfg,
+            &ArrayType::new(self.item_type.clone(), len),
+        )?))
     }
 }
 
@@ -115,8 +117,8 @@ where
         VectorType::new(self.item_type().clone())
     }
 
-    fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        write_and_align(&self.items().len(), cfg, self.type_().align(cfg), dst)?;
+    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+        dst.write_value(cfg, &self.items().len())?;
         for item in self.items().iter() {
             item.store(cfg, dst)?;
         }
@@ -155,7 +157,7 @@ where
         self.clone().into_dynamic().id()
     }
 
-    fn load<R: Read + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
         let value = self.clone().into_dynamic().load(cfg, src)?;
         Ok(value.into_items())
     }
@@ -181,7 +183,7 @@ where
         Self::Type::default()
     }
 
-    fn store<W: Write + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         VectorValue::from_items(V::Type::default(), self.clone())
             .unwrap()
             .store(cfg, dst)
@@ -215,12 +217,12 @@ mod tests {
     #[test]
     fn store_load() {
         let vec: Vec<i32> = vec![1, 2, 3, 4, 5];
-        let mut buf = Vec::<u8>::new();
+        let mut buf = CountingWrapper::new(Vec::<u8>::new());
         vec.store(&CFG, &mut buf).unwrap();
         assert_eq!(
             vec,
             <Vec<i32> as Value>::Type::default()
-                .load(&CFG, &mut &buf[..])
+                .load(&CFG, &mut CountingWrapper::new(&buf.inner()[..]))
                 .unwrap()
         );
     }

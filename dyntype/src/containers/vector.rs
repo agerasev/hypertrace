@@ -102,7 +102,7 @@ where
         upper_multiple(
             upper_multiple(UsizeType.size(cfg), self.item_type().align(cfg))
                 + self.items().len() * self.item_type().size(cfg),
-            self.type_().align(cfg),
+            self.align(cfg),
         )
     }
 
@@ -116,7 +116,7 @@ where
         for item in self.items().iter() {
             dst.write_value(cfg, item)?;
         }
-        dst.align(self.type_().align(cfg))?;
+        dst.align(self.align(cfg))?;
         Ok(())
     }
 }
@@ -175,7 +175,7 @@ where
         upper_multiple(
             upper_multiple(UsizeType.size(cfg), item_type.align(cfg))
                 + self.len() * item_type.size(cfg),
-            self.type_().align(cfg),
+            self.align(cfg),
         )
     }
 
@@ -210,7 +210,7 @@ mod tests {
     #[test]
     fn ids() {
         let vec: Vec<i32> = vec![1, 2, 3];
-        let dvec = Vector::from_items(I32Type, vec.clone()).unwrap();
+        let dvec = Vector::<i32>::new(I32Type);
         assert_eq!(vec.type_().id(), dvec.type_().id())
     }
 

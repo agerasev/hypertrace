@@ -99,7 +99,7 @@ impl<V: Value> Value for IndexBuffer<V> {
                 UsizeType.size(cfg) * (1 + self.items().len()),
                 self.item_type().align(cfg),
             ) + self.items().iter().fold(0, |st, item| st + item.size(cfg)),
-            self.type_().align(cfg),
+            self.align(cfg),
         )
     }
 
@@ -120,7 +120,7 @@ impl<V: Value> Value for IndexBuffer<V> {
         for item in self.items().iter() {
             dst.write_value(cfg, item)?;
         }
-        dst.align(self.type_().align(cfg))?;
+        dst.align(self.align(cfg))?;
         Ok(())
     }
 }

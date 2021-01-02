@@ -50,7 +50,7 @@ where
         for _ in 0..self.item_count {
             value
                 .items_mut()
-                .push(self.item_type.load(cfg, src)?)
+                .push(src.read_value(cfg, &self.item_type)?)
                 .map_err(|item| {
                     io::Error::new(
                         io::ErrorKind::InvalidData,
@@ -128,7 +128,7 @@ where
 
     fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         for item in self.items().iter() {
-            item.store(cfg, dst)?;
+            dst.write_value(cfg, item)?;
         }
         Ok(())
     }

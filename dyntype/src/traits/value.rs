@@ -1,6 +1,6 @@
 use super::type_::*;
 use crate::{io::*, Config};
-use std::io;
+use std::{any::Any, io};
 
 macro_rules! def_dyn_value {
     ($T:ident, $V:ident) => {
@@ -12,16 +12,22 @@ macro_rules! def_dyn_value {
 
         /// Stores the instance to abstract writer.
         fn store_dyn(&self, cfg: &Config, dst: &mut dyn CountingWrite) -> io::Result<()>;
+
+        /// Cast to `Any`.
+        fn as_any(&self) -> &dyn Any;
+
+        /// Cast to mutable `Any`.
+        fn as_mut_any(&mut self) -> &mut dyn Any;
     };
 }
 
 /// Abstract instance of a runtime type.
-pub trait ValueDyn {
+pub trait ValueDyn: 'static {
     def_dyn_value!(TypeDyn, ValueDyn);
 }
 
 /// Instance of a sized runtime type.
-pub trait SizedValueDyn {
+pub trait SizedValueDyn: 'static {
     def_dyn_value!(SizedTypeDyn, SizedValueDyn);
 
     /// Upcast to ValueDyn.
@@ -35,6 +41,11 @@ pub trait Value: 'static {
 
     /// Size of instance.
     fn size(&self, cfg: &Config) -> usize;
+
+    /// Align of the instance. *Must be equal to the align of type.*
+    fn align(&self, cfg: &Config) -> usize {
+        self.type_().align(cfg)
+    }
 
     /// Returns the type of the instance.
     fn type_(&self) -> Self::Type;
@@ -68,6 +79,14 @@ macro_rules! impl_dyn_value {
 
         fn store_dyn(&self, cfg: &Config, dst: &mut dyn CountingWrite) -> io::Result<()> {
             self.store(cfg, dst)
+        }
+
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn as_mut_any(&mut self) -> &mut dyn Any {
+            self
         }
     };
 }

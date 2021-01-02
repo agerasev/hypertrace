@@ -1,7 +1,7 @@
 use super::value::*;
 use crate::{io::*, Config};
 use std::{
-    any::TypeId,
+    any::{Any, TypeId},
     fmt::{self, Debug, Formatter},
     hash::{Hash, Hasher},
     io,
@@ -25,16 +25,22 @@ macro_rules! def_dyn_type {
 
         /// Loads the instance of dynamic type.
         fn load_dyn(&self, cfg: &Config, src: &mut dyn CountingRead) -> io::Result<Box<dyn $V>>;
+
+        /// Cast to `Any`.
+        fn as_any(&self) -> &dyn Any;
+
+        /// Cast to mutable `Any`.
+        fn as_mut_any(&mut self) -> &mut dyn Any;
     };
 }
 
 /// Dynamic runtime type.
-pub trait TypeDyn {
+pub trait TypeDyn: 'static {
     def_dyn_type!(TypeDyn, ValueDyn);
 }
 
 /// Sized dynamic runtime type.
-pub trait SizedTypeDyn {
+pub trait SizedTypeDyn: 'static {
     def_dyn_type!(SizedTypeDyn, SizedValueDyn);
 
     /// Size of any instance.
@@ -94,6 +100,14 @@ macro_rules! impl_dyn_type {
 
         fn load_dyn(&self, cfg: &Config, src: &mut dyn CountingRead) -> io::Result<Box<dyn $V>> {
             self.load(cfg, src).map(|v| Box::new(v) as Box<dyn $V>)
+        }
+
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+
+        fn as_mut_any(&mut self) -> &mut dyn Any {
+            self
         }
     };
 }

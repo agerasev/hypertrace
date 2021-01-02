@@ -31,7 +31,7 @@ impl<T: SizedType> Type for ArrayType<T>
 where
     T::Value: SizedValue,
 {
-    type Value = ArrayValue<T::Value>;
+    type Value = Array<T::Value>;
 
     fn align(&self, cfg: &Config) -> usize {
         self.item_type.align(cfg)
@@ -76,14 +76,14 @@ where
 }
 
 #[derive(Clone)]
-pub struct ArrayValue<V: SizedValue>
+pub struct Array<V: SizedValue>
 where
     V::Type: SizedType,
 {
     inner: TypedVec<V>,
 }
 
-impl<V: SizedValue> ArrayValue<V>
+impl<V: SizedValue> Array<V>
 where
     V::Type: SizedType,
 {
@@ -112,7 +112,7 @@ where
     }
 }
 
-impl<V: SizedValue> Value for ArrayValue<V>
+impl<V: SizedValue> Value for Array<V>
 where
     V::Type: SizedType,
 {
@@ -134,7 +134,7 @@ where
     }
 }
 
-impl<V: SizedValue> SizedValue for ArrayValue<V> where V::Type: SizedType {}
+impl<V: SizedValue> SizedValue for Array<V> where V::Type: SizedType {}
 
 #[derive(Clone, Debug, Default)]
 pub struct StaticArrayType<T: SizedType + UnitType, const N: usize>
@@ -205,7 +205,7 @@ where
     }
 
     fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        ArrayValue::from_items(V::Type::default(), self.clone().into())
+        Array::from_items(V::Type::default(), self.clone().into())
             .unwrap()
             .store(cfg, dst)
     }
@@ -238,7 +238,7 @@ mod tests {
     #[test]
     fn ids() {
         let arr: [i32; 3] = [1, 2, 3];
-        let darr = ArrayValue::from_items(i32::default().type_(), arr.into()).unwrap();
+        let darr = Array::from_items(i32::default().type_(), arr.into()).unwrap();
         assert_eq!(arr.type_().id(), darr.type_().id())
     }
 

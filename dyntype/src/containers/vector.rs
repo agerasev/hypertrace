@@ -26,7 +26,7 @@ impl<T: SizedType> Type for VectorType<T>
 where
     T::Value: SizedValue,
 {
-    type Value = VectorValue<T::Value>;
+    type Value = Vector<T::Value>;
 
     fn align(&self, cfg: &Config) -> usize {
         lcm(self.item_type.align(cfg), UsizeType.align(cfg))
@@ -56,14 +56,14 @@ where
 }
 
 #[derive(Clone)]
-pub struct VectorValue<V: SizedValue>
+pub struct Vector<V: SizedValue>
 where
     V::Type: SizedType,
 {
     inner: TypedVec<V>,
 }
 
-impl<V: SizedValue> VectorValue<V>
+impl<V: SizedValue> Vector<V>
 where
     V::Type: SizedType,
 {
@@ -92,7 +92,7 @@ where
     }
 }
 
-impl<V: SizedValue> Value for VectorValue<V>
+impl<V: SizedValue> Value for Vector<V>
 where
     V::Type: SizedType,
 {
@@ -184,7 +184,7 @@ where
     }
 
     fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        VectorValue::from_items(V::Type::default(), self.clone())
+        Vector::from_items(V::Type::default(), self.clone())
             .unwrap()
             .store(cfg, dst)
     }
@@ -210,12 +210,12 @@ mod tests {
     #[test]
     fn ids() {
         let vec: Vec<i32> = vec![1, 2, 3];
-        let dvec = VectorValue::from_items(I32Type, vec.clone()).unwrap();
+        let dvec = Vector::from_items(I32Type, vec.clone()).unwrap();
         assert_eq!(vec.type_().id(), dvec.type_().id())
     }
 
     #[test]
-    fn store_load() {
+    fn store_load_static() {
         let vec: Vec<i32> = vec![1, 2];
         let mut buf = CountingWrapper::new(Vec::<u8>::new());
         buf.write_value(&CFG, &vec).unwrap();
@@ -224,6 +224,20 @@ mod tests {
             CountingWrapper::new(&buf.inner()[..])
                 .read_value(&CFG, &<Vec<i32> as Value>::Type::default())
                 .unwrap()
+        );
+    }
+
+    #[test]
+    fn store_load() {
+        let vec = Vector::<i32>::from_items(I32Type, vec![1, 2]).unwrap();
+        let mut buf = CountingWrapper::new(Vec::<u8>::new());
+        buf.write_value(&CFG, &vec).unwrap();
+        assert_eq!(
+            vec.into_items(),
+            CountingWrapper::new(&buf.inner()[..])
+                .read_value(&CFG, &VectorType::new(I32Type))
+                .unwrap()
+                .into_items()
         );
     }
 }

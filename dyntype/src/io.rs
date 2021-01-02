@@ -104,12 +104,18 @@ impl<R: CountingRead + ?Sized> ValueReader for R {
             is_pow2(type_.align(cfg)),
             "Align of type {:?} ({}) is not a power of 2",
             type_,
-            align
+            align,
         );
 
         let pos = self.position();
-        assert!(pos % align == 0, "Stream is not properly aligned (position: {}) for type {:?} (align: {})", pos, type_, align);
-        
+        assert!(
+            pos % align == 0,
+            "Stream is not properly aligned (position: {}) for type {:?} (align: {})",
+            pos,
+            type_,
+            align,
+        );
+
         let value = type_.load(cfg, self)?;
         let shift = self.position() - pos;
         let size = value.size(cfg);
@@ -118,12 +124,12 @@ impl<R: CountingRead + ?Sized> ValueReader for R {
             "Align of type {:?} ({}) is not a multiple of its value size ({})",
             type_,
             align,
-            size
+            size,
         );
         assert_eq!(
             size, shift,
             "Size of a value of type {:?} ({}) differs from a count of actually read bytes ({})",
-            type_, size, shift
+            type_, size, shift,
         );
         Ok(value)
     }
@@ -153,8 +159,14 @@ impl<W: CountingWrite + ?Sized> ValueWriter for W {
         );
 
         let pos = self.position();
-        assert!(pos % align == 0, "Stream is not properly aligned (position: {}) for type {:?} (align: {})", pos, type_, align);
-        
+        assert!(
+            pos % align == 0,
+            "Stream is not properly aligned (position: {}) for type {:?} (align: {})",
+            pos,
+            type_,
+            align
+        );
+
         value.store(cfg, self)?;
         let shift = self.position() - pos;
         assert_eq!(

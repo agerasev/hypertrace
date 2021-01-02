@@ -5,18 +5,18 @@ use std::{
 };
 
 #[derive(Clone, Debug)]
-pub struct IndexBufferType<T: Type> {
+pub struct IndexVectorType<T: Type> {
     item_type: T,
 }
 
-impl<T: Type> IndexBufferType<T> {
+impl<T: Type> IndexVectorType<T> {
     pub fn new(item_type: T) -> Self {
         Self { item_type }
     }
 }
 
-impl<T: Type> Type for IndexBufferType<T> {
-    type Value = IndexBufferValue<T::Value>;
+impl<T: Type> Type for IndexVectorType<T> {
+    type Value = IndexBuffer<T::Value>;
 
     fn align(&self, cfg: &Config) -> usize {
         lcm(self.item_type.align(cfg), UsizeType.align(cfg))
@@ -60,11 +60,11 @@ impl<T: Type> Type for IndexBufferType<T> {
 }
 
 #[derive(Clone)]
-pub struct IndexBufferValue<V: Value> {
+pub struct IndexBuffer<V: Value> {
     inner: TypedVec<V>,
 }
 
-impl<V: Value> IndexBufferValue<V> {
+impl<V: Value> IndexBuffer<V> {
     pub fn new(item_type: V::Type) -> Self {
         Self {
             inner: TypedVec::new(item_type),
@@ -90,8 +90,8 @@ impl<V: Value> IndexBufferValue<V> {
     }
 }
 
-impl<V: Value> Value for IndexBufferValue<V> {
-    type Type = IndexBufferType<V::Type>;
+impl<V: Value> Value for IndexBuffer<V> {
+    type Type = IndexVectorType<V::Type>;
 
     fn size(&self, cfg: &Config) -> usize {
         upper_multiple(
@@ -104,7 +104,7 @@ impl<V: Value> Value for IndexBufferValue<V> {
     }
 
     fn type_(&self) -> Self::Type {
-        IndexBufferType::new(self.item_type().clone())
+        IndexVectorType::new(self.item_type().clone())
     }
 
     fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn store_load() {
-        let ivec = IndexBufferValue::from_items(
+        let ivec = IndexBuffer::from_items(
             <Vec<i32> as Value>::Type::default(),
             vec![vec![1], vec![2, 3], vec![4, 5, 6]],
         )
@@ -149,7 +149,7 @@ mod tests {
         let ovec = CountingWrapper::new(&buf.inner()[..])
             .read_value(
                 &CFG,
-                &IndexBufferType::new(<Vec<i32> as Value>::Type::default()),
+                &IndexVectorType::new(<Vec<i32> as Value>::Type::default()),
             )
             .unwrap();
         assert_eq!(ivec.into_items(), ovec.into_items(),);

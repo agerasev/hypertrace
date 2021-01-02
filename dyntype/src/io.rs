@@ -177,3 +177,22 @@ impl<W: CountingWrite + ?Sized> ValueWriter for W {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[derive(Clone, Default, Debug)]
+pub struct TestBuffer {
+    vec: Vec<u8>,
+}
+
+#[cfg(test)]
+impl TestBuffer {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn reader(&self) -> CountingWrapper<&[u8]> {
+        CountingWrapper::new(self.vec.as_ref())
+    }
+    pub fn writer(&mut self) -> CountingWrapper<&mut Vec<u8>> {
+        CountingWrapper::new(&mut self.vec)
+    }
+}

@@ -201,12 +201,6 @@ where
 mod tests {
     use super::*;
 
-    const CFG: Config = Config {
-        endian: Endian::Little,
-        address_width: AddressWidth::X64,
-        double_support: true,
-    };
-
     #[test]
     fn ids() {
         let vec: Vec<i32> = vec![1, 2, 3];
@@ -217,12 +211,12 @@ mod tests {
     #[test]
     fn store_load_static() {
         let vec: Vec<i32> = vec![1, 2];
-        let mut buf = CountingWrapper::new(Vec::<u8>::new());
-        buf.write_value(&CFG, &vec).unwrap();
+        let mut buf = TestBuffer::new();
+        buf.writer().write_value(&HOST_CONFIG, &vec).unwrap();
         assert_eq!(
             vec,
-            CountingWrapper::new(&buf.inner()[..])
-                .read_value(&CFG, &<Vec<i32> as Value>::Type::default())
+            buf.reader()
+                .read_value(&HOST_CONFIG, &<Vec<i32> as Value>::Type::default())
                 .unwrap()
         );
     }
@@ -230,12 +224,12 @@ mod tests {
     #[test]
     fn store_load() {
         let vec = Vector::<i32>::from_items(I32Type, vec![1, 2]).unwrap();
-        let mut buf = CountingWrapper::new(Vec::<u8>::new());
-        buf.write_value(&CFG, &vec).unwrap();
+        let mut buf = TestBuffer::new();
+        buf.writer().write_value(&HOST_CONFIG, &vec).unwrap();
         assert_eq!(
             vec.into_items(),
-            CountingWrapper::new(&buf.inner()[..])
-                .read_value(&CFG, &VectorType::new(I32Type))
+            buf.reader()
+                .read_value(&HOST_CONFIG, &VectorType::new(I32Type))
                 .unwrap()
                 .into_items()
         );

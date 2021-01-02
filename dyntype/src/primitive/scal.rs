@@ -1,4 +1,9 @@
-use crate::{config::*, io::*, traits::*};
+use crate::{
+    config::*,
+    io::*,
+    primitive::{PrimType, PrimValue},
+    traits::*,
+};
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{io, mem::size_of};
 
@@ -114,17 +119,6 @@ impl Xfer for f64 {
             f32::tx(self as f32, cfg, dst)
         }
     }
-}
-
-pub trait PrimType: SizedType + UnitType
-where
-    Self::Value: PrimValue<Type = Self>,
-{
-}
-pub trait PrimValue: SizedValue + UnitValue
-where
-    Self::Type: PrimType<Value = Self>,
-{
 }
 
 macro_rules! impl_prim {

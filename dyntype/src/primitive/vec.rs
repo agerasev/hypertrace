@@ -3,19 +3,17 @@ use crate::{config::*, io::*, traits::*, utils::*};
 use std::io;
 use vecmat::Vector;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Default, Debug)]
 pub struct VecType<T: PrimType, const N: usize>
 where
-    T: UnitType,
-    T::Value: PrimValue<Type = T> + Default,
+    T::Value: PrimValue + Default,
 {
     pub elem: T,
 }
 
 impl<T: PrimType, const N: usize> Type for VecType<T, N>
 where
-    T: UnitType,
-    T::Value: PrimValue<Type = T> + Default,
+    T::Value: PrimValue + Default,
 {
     type Value = Vector<T::Value, N>;
 
@@ -41,18 +39,20 @@ where
 
 impl<T: PrimType, const N: usize> SizedType for VecType<T, N>
 where
-    T: UnitType,
-    T::Value: PrimValue<Type = T> + Default,
+    T::Value: PrimValue + Default,
 {
     fn size(&self, cfg: &Config) -> usize {
         ceil_pow2(N) * self.elem.size(cfg)
     }
 }
 
-impl<V: PrimValue, const N: usize> Value for Vector<V, N>
+impl<T: PrimType, const N: usize> UnitType for VecType<T, N> where T::Value: PrimValue + Default {}
+
+impl<T: PrimType, const N: usize> PrimType for VecType<T, N> where T::Value: PrimValue + Default {}
+
+impl<V: PrimValue + Default, const N: usize> Value for Vector<V, N>
 where
-    V: Default,
-    V::Type: PrimType<Value = V> + UnitType,
+    V::Type: PrimType,
 {
     type Type = VecType<V::Type, N>;
 
@@ -77,9 +77,25 @@ where
     }
 }
 
-impl<V: PrimValue, const N: usize> SizedValue for Vector<V, N>
-where
-    V: Default,
-    V::Type: PrimType<Value = V> + UnitType,
-{
+impl<V: PrimValue + Default, const N: usize> SizedValue for Vector<V, N> where V::Type: PrimType {}
+
+impl<V: PrimValue + Default, const N: usize> UnitValue for Vector<V, N> where V::Type: PrimType {}
+
+impl<V: PrimValue + Default, const N: usize> PrimValue for Vector<V, N> where V::Type: PrimType {}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test() {
+        let mut buf = TestBuffer::new();
+        let sv = Vector::<i32, 3>::from([1, 2, 3]);
+        buf.writer().write_value(&HOST_CONFIG, &sv).unwrap();
+        let dv = buf
+            .reader()
+            .read_value(&HOST_CONFIG, &VecType::<I32Type, 3>::default())
+            .unwrap();
+        assert_eq!(sv, dv);
+    }
 }

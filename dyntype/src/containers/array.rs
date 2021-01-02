@@ -229,12 +229,6 @@ where
 mod tests {
     use super::*;
 
-    const CFG: Config = Config {
-        endian: Endian::Little,
-        address_width: AddressWidth::X64,
-        double_support: true,
-    };
-
     #[test]
     fn ids() {
         let arr: [i32; 3] = [1, 2, 3];
@@ -245,12 +239,12 @@ mod tests {
     #[test]
     fn store_load() {
         let arr: [i32; 5] = [1, 2, 3, 4, 5];
-        let mut buf = CountingWrapper::new(Vec::<u8>::new());
-        arr.store(&CFG, &mut buf).unwrap();
+        let mut buf = TestBuffer::new();
+        buf.writer().write_value(&HOST_CONFIG, &arr).unwrap();
         assert_eq!(
             arr,
-            <[i32; 5] as Value>::Type::default()
-                .load(&CFG, &mut CountingWrapper::new(&buf.inner()[..]))
+            buf.reader()
+                .read_value(&HOST_CONFIG, &<[i32; 5] as Value>::Type::default())
                 .unwrap()
         );
     }

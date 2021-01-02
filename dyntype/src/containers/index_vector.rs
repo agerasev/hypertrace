@@ -130,12 +130,6 @@ mod tests {
     use super::*;
     use crate::config::*;
 
-    const CFG: Config = Config {
-        endian: Endian::Little,
-        address_width: AddressWidth::X64,
-        double_support: true,
-    };
-
     #[test]
     fn store_load() {
         let ivec = IndexBuffer::from_items(
@@ -143,12 +137,12 @@ mod tests {
             vec![vec![1], vec![2, 3], vec![4, 5, 6]],
         )
         .unwrap();
-        let mut buf = CountingWrapper::new(Vec::<u8>::new());
-        buf.write_value(&CFG, &ivec).unwrap();
-        println!("{:?}", buf.inner());
-        let ovec = CountingWrapper::new(&buf.inner()[..])
+        let mut buf = TestBuffer::new();
+        buf.writer().write_value(&HOST_CONFIG, &ivec).unwrap();
+        let ovec = buf
+            .reader()
             .read_value(
-                &CFG,
+                &HOST_CONFIG,
                 &IndexVectorType::new(<Vec<i32> as Value>::Type::default()),
             )
             .unwrap();

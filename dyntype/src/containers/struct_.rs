@@ -218,6 +218,11 @@ macro_rules! def_struct {
             }
         }
 
+        impl $crate::UnitType for $T
+        where
+            $( <$I as $crate::Value>::Type: $crate::UnitType ),*
+        {}
+
         #[derive(Clone, Debug, PartialEq)]
         pub struct $V {
             $( pub $f: $I, )*
@@ -250,6 +255,11 @@ macro_rules! def_struct {
         }
 
         impl $crate::SizedValue for $V {}
+
+        impl $crate::UnitValue for $V
+        where
+            $( $I: $crate::UnitValue ),*
+        {}
     };
 }
 
@@ -264,12 +274,6 @@ mod tests {
         two: i32,
         three: usize,
     });
-
-    const CFG: Config = Config {
-        endian: Endian::Little,
-        address_width: AddressWidth::X64,
-        double_support: true,
-    };
 
     #[test]
     fn ids() {
@@ -290,12 +294,12 @@ mod tests {
             two: 2,
             three: 3,
         };
-        let mut buf = CountingWrapper::new(Vec::<u8>::new());
-        buf.write_value(&CFG, &st).unwrap();
+        let mut buf = TestBuffer::new();
+        buf.writer().write_value(&HOST_CONFIG, &st).unwrap();
         assert_eq!(
             st,
-            CountingWrapper::new(&buf.inner()[..])
-                .read_value(&CFG, &TestStructType::default())
+            buf.reader()
+                .read_value(&HOST_CONFIG, &TestStructType::default())
                 .unwrap()
         );
     }
@@ -315,8 +319,8 @@ mod tests {
             (Box::<usize>::new(3), "three".into()),
         ])
         .unwrap();
-        let mut buf = CountingWrapper::new(Vec::<u8>::new());
-        buf.write_value(&CFG, &st).unwrap();
+        let mut buf = TestBuffer::new();
+        buf.writer().write_value(&HOST_CONFIG, &st).unwrap();
         let ty = StructType::<Box<dyn SizedTypeDyn>>::new(vec![
             (Box::new(U8Type), "one".into()),
             (Box::new(I32Type), "two".into()),
@@ -327,8 +331,8 @@ mod tests {
             .into_fields()
             .into_iter()
             .zip(
-                CountingWrapper::new(&buf.inner()[..])
-                    .read_value(&CFG, &ty)
+                buf.reader()
+                    .read_value(&HOST_CONFIG, &ty)
                     .unwrap()
                     .into_fields()
                     .into_iter(),

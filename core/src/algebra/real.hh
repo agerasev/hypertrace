@@ -2,25 +2,21 @@
 
 #include <types.hh>
 
-#if defined(HOST) || defined(DEV_F64)
-
-typedef double real;
+#ifdef DOUBLE_SUPPORT
 
 #define PI 3.14159265358979323846
 #define EPS 1e-8
 #define R0 0.0
 #define R1 1.0
 
-#else // !(HOST || DEV_F64)
-
-typedef float real;
+#else
 
 #define PI 3.14159265358979323846f
 #define EPS 1e-6f
 #define R0 0.0f
 #define R1 1.0f
 
-#endif // HOST || DEV_F64
+#endif
 
 
 #ifdef TEST

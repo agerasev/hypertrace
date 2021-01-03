@@ -6,7 +6,7 @@ else()
     message(STATUS "Precompiled headers OFF")
 endif()
 
-project(hypertrace)
+project(kernel)
 
 
 set(CMAKE_C_FLAGS "-g -Wall -Wextra")
@@ -20,6 +20,7 @@ add_definitions(
     "-DHOST"
     "-DTEST"
     "-DTEST_UNIT"
+    "-DDOUBLE_SUPPORT"
 )
 
 
@@ -41,30 +42,30 @@ set(SRC
     "src/algebra/vector.cc"
     "src/algebra/complex.cc"
     "src/algebra/quaternion.cc"
-    "src/algebra/matrix_real.cc"
-    "src/algebra/matrix_complex.cc"
-    "src/algebra/matrix_test.cpp"
-    "src/algebra/moebius.cc"
-    "src/algebra/linear.cc"
-    "src/algebra/affine.cc"
-    "src/algebra/rotation.cc"
-    "src/algebra/color.cc"
+    #"src/algebra/matrix_real.cc"
+    #"src/algebra/matrix_complex.cc"
+    #"src/algebra/matrix_test.cpp"
+    #"src/algebra/moebius.cc"
+    #"src/algebra/linear.cc"
+    #"src/algebra/affine.cc"
+    #"src/algebra/rotation.cc"
+    #"src/algebra/color.cc"
 
-    "src/random.cc"
+    #"src/random.cc"
 
-    "src/geometry/euclidean.cc"
-    "src/geometry/hyperbolic.cc"
-    "src/geometry/ray.cc"
+    #"src/geometry/euclidean.cc"
+    #"src/geometry/hyperbolic.cc"
+    #"src/geometry/ray.cc"
 
-    "src/shape/euclidean/shapes.cc"
-    "src/shape/hyperbolic/plane.cc"
-    "src/shape/hyperbolic/horosphere.cc"
+    #"src/shape/euclidean/shapes.cc"
+    #"src/shape/hyperbolic/plane.cc"
+    #"src/shape/hyperbolic/horosphere.cc"
 
-    "src/material/material.cc"
-    "src/material/modifier.cpp"
+    #"src/material/material.cc"
+    #"src/material/modifier.cpp"
 
-    "src/render/view.cc"
-    "src/render/light.cc"
+    #"src/render/view.cc"
+    #"src/render/light.cc"
 )
 
 add_library(${PROJECT_NAME} OBJECT ${SRC})
@@ -76,9 +77,12 @@ target_link_libraries(${PROJECT_NAME} pthread rstd)
 
 # Tests
 
-set(PROJECT_TEST test)
-add_executable(${PROJECT_TEST} "test/test_unit.cpp")
+set(PROJECT_TEST "${PROJECT_NAME}_test")
+add_executable(${PROJECT_TEST} "test/unittest.cpp")
 if(USE_PCH)
     target_precompile_headers(${PROJECT_TEST} PRIVATE ${PCH})
 endif()
-target_link_libraries(${PROJECT_TEST} ${PROJECT_NAME} pthread rstd)
+target_link_libraries(${PROJECT_TEST} ${PROJECT_NAME} gtest pthread rstd)
+
+enable_testing()
+add_test(${PROJECT_NAME} ${PROJECT_TEST})

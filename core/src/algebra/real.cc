@@ -2,14 +2,12 @@
 
 #ifdef TEST
 
-#include <rtest.hpp>
+#include <gtest/gtest.h>
 
 #ifdef TEST_UNIT
 
-rtest_module_(real) {
-    rtest_(approx) {
-        assert_eq_(R1 + EPS/2, approx(R1));
-    }
+TEST(RealTest, approx) {
+    EXPECT_EQ(R1 + EPS/2, approx(R1));
 }
 
 #endif // TEST_UNIT

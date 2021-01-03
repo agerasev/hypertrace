@@ -146,7 +146,7 @@ T abs(T a) {
 
 
 template <typename T, typename U>
-std::common_type_t<T, U> upper_multiple(T m, U x) {
+std::common_type_t<T, U> upper_multiple(U x, T m) {
     return ((x + m - 1)/m)*m;
 }
 

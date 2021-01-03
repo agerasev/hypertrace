@@ -45,7 +45,7 @@ VECTOR_ALL(T, A, 16)
 VECTOR_ALL_N(uchar,  uchar)
 VECTOR_ALL_N(ushort, ushort)
 VECTOR_ALL_N(uint,   uint)
-VECTOR_ALL_N(ulong_, ulong)
+VECTOR_ALL_N(ulong,  ulong)
 VECTOR_ALL_N(char,   char)
 VECTOR_ALL_N(short,  short)
 VECTOR_ALL_N(int,    int)
@@ -59,71 +59,23 @@ VECTOR_ALL_N(real,   real)
 
 #define MAKE(x) x
 
-#ifdef INTEROP
-
-#include <CL/cl.h>
-
-#define VECTOR_INTEROP(T, S, A, N) \
-template <> \
-struct Interop<vec<T, N>> { \
-    typedef vec<T, N> Host; \
-    typedef S##N Dev; \
-    inline static const char *const name = #A #N; \
-    static void load(Host *dst, const Dev *src) { \
-        for (size_t i = 0; i < N; ++i) { \
-            (*dst)[i] = (T)src->s[i]; \
-        } \
-    } \
-    static void store(Dev *dst, const Host *src) { \
-        for (size_t i = 0; i < N; ++i) { \
-            dst->s[i] = (S)(*src)[i]; \
-        } \
-    } \
-};
-
-#define VECTOR_INTEROP_N(T, S, A) \
-VECTOR_INTEROP(T, S, A, 2) \
-VECTOR_INTEROP(T, S, A, 3) \
-VECTOR_INTEROP(T, S, A, 4) \
-VECTOR_INTEROP(T, S, A, 8) \
-VECTOR_INTEROP(T, S, A, 16)
-
-VECTOR_INTEROP_N(uchar,  cl_uchar,  uchar )
-VECTOR_INTEROP_N(ushort, cl_ushort, ushort)
-VECTOR_INTEROP_N(uint,   cl_uint,   uint  )
-VECTOR_INTEROP_N(ulong_, cl_ulong,  ulong )
-VECTOR_INTEROP_N(char,   cl_char,   char  )
-VECTOR_INTEROP_N(short,  cl_short,  short )
-VECTOR_INTEROP_N(int,    cl_int,    int   )
-VECTOR_INTEROP_N(long_,  cl_long,   long  )
-
-VECTOR_INTEROP_N(float,  cl_float,  float )
-#ifdef DEV_F64
-VECTOR_INTEROP_N(double, cl_double, double)
-VECTOR_INTEROP_N(real,   cl_double, double)
-#else // DEV_F64
-VECTOR_INTEROP_N(real,   cl_float,  float )
-#endif // DEV_F64
-
-#endif // INTEROP
-
 #else // !HOST
 
 #define MAKE(x) (x)
 
-#ifdef DEV_F64
+#ifdef DOUBLE_SUPPORT
 typedef double2  real2;
 typedef double3  real3;
 typedef double4  real4;
 typedef double8  real8;
 typedef double16 real16;
-#else // !DEV_F64
+#else
 typedef float2  real2;
 typedef float3  real3;
 typedef float4  real4;
 typedef float8  real8;
 typedef float16 real16;
-#endif // DEV_F64
+#endif
 
 #endif // HOST
 

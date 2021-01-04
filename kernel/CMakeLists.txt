@@ -31,8 +31,8 @@ set(SRC
 
     "src/random.cc"
 
-    #"src/geometry/euclidean.cc"
-    #"src/geometry/hyperbolic.cc"
+    "src/geometry/euclidean.cc"
+    "src/geometry/hyperbolic.cc"
     #"src/geometry/ray.cc"
 
     #"src/shape/euclidean/shapes.cc"

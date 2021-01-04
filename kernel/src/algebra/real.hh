@@ -4,7 +4,7 @@
 
 #ifdef DOUBLE_SUPPORT
 
-#define PI 3.14159265358979323846
+#define PI 3.141592653589793
 #define EPS 1e-12
 //#define EPS 1e-8
 #define R0 0.0
@@ -12,7 +12,7 @@
 
 #else
 
-#define PI 3.14159265358979323846f
+#define PI 3.1415927f
 #define EPS 1e-6f
 #define R0 0.0f
 #define R1 1.0f

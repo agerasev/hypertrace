@@ -23,9 +23,10 @@ real3 random_hemisphere_cosine(Rng *rng);
 real3 random_sphere_cap(Rng *rng, real cos_alpha);
 
 
-#ifdef TEST
+#ifdef UNITTEST
 
-#include <rstd.hpp>
+#include <vector>
+#include <cassert>
 
 template <typename T>
 class Grid {
@@ -41,7 +42,7 @@ public:
 
     real &operator[](T x) {
         size_t i = index(x);
-        assert_(i < cells.size());
+        assert(i < cells.size());
         return cells[i];
     }
     std::vector<real> total(real norm) const {
@@ -52,12 +53,16 @@ public:
         }
         return total;
     }
-    void assert_all(real norm, real eps) const {
+    [[nodiscard]]
+    bool check_all(real norm, real eps) const {
         std::vector<real> total = this->total(norm);
         std::vector<real> sizes = this->sizes();
         for (size_t i = 0; i < total.size(); ++i) {
-            assert_eq_(total[i], approx(1).epsilon(eps/sizes[i]));
+            if (total[i] != approx(1).epsilon(eps/sizes[i])) {
+                return false;
+            }
         }
+        return true;
     }
 };
 
@@ -97,7 +102,7 @@ public:
     {}
 };
 
-#endif // TEST
+#endif // UNITTEST
 
 #ifndef HOST
 #include "random.cc"

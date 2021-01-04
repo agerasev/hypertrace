@@ -29,7 +29,7 @@ set(SRC
     "src/algebra/rotation.cc"
     "src/algebra/color.cc"
 
-    #"src/random.cc"
+    "src/random.cc"
 
     #"src/geometry/euclidean.cc"
     #"src/geometry/hyperbolic.cc"

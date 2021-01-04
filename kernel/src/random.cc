@@ -1,6 +1,5 @@
 #include "random.hh"
 
-
 Rng rng_init(uint seed) {
     Rng rng;
     rng.state = seed;
@@ -11,7 +10,7 @@ uint rng_next(Rng *rng) {
 }
 
 real random_uniform(Rng *rng) {
-    return (real)rng_next(rng)/(real)0x100000000l;
+    return (real)rng_next(rng)/(real)((ulong)1 << 32);
 }
 real2 random_uniform2(Rng *rng) {
     return MAKE(real2)(
@@ -40,8 +39,9 @@ static real3 _sphere_point(real cos_theta, real sin_theta, real phi) {
 }
 real3 random_sphere(Rng *rng) {
     real phi = 2*PI*random_uniform(rng);
-    real cos_theta = R1 - 2*random_uniform(rng);
-    real sin_theta = sqrt(1 - cos_theta*cos_theta);
+    real zeta = 2*random_uniform(rng);
+    real cos_theta = 1 - zeta;
+    real sin_theta = sqrt((2 - zeta)*zeta);
     return _sphere_point(cos_theta, sin_theta, phi);
 }
 real3 random_hemisphere(Rng *rng) {
@@ -59,19 +59,19 @@ real3 random_hemisphere_cosine(Rng *rng) {
 }
 real3 random_sphere_cap(Rng *rng, real cos_alpha) {
     real phi = 2*PI*random_uniform(rng);
-    real cos_theta = 1 - (1 - cos_alpha)*random_uniform(rng);
-    real sin_theta = sqrt(1 - cos_theta*cos_theta);
+    real zeta = (R1 - cos_alpha)*random_uniform(rng);
+    real cos_theta = 1 - zeta;
+    real sin_theta = sqrt((2 - zeta)*zeta);
     return _sphere_point(cos_theta, sin_theta, phi);
 }
 
 
-#ifdef TEST
+#ifdef UNITTEST
 
-#include <rtest.hpp>
+#include <gtest/gtest.h>
 
 // Monte Carlo confidence interval
 static const real CONF = 3.0/sqrt(real(TEST_ATTEMPTS));
-
 
 std::vector<real> SphereGrid::sizes() const {
     std::vector<real> s(P*T);
@@ -87,7 +87,7 @@ std::vector<real> SphereGrid::sizes() const {
 }
 size_t SphereGrid::index(real3 x) const {
     real phi = atan2(x.y, x.x);
-    if (phi < 0.0) {
+    if (phi < R0) {
         phi += 2*PI;
     }
     real theta = atan2(length(x.xy), x.z);
@@ -113,7 +113,7 @@ std::vector<real> DiskGrid::sizes() const {
 }
 size_t DiskGrid::index(real2 x) const {
     real phi = atan2(x.y, x.x);
-    if (phi < 0.0) {
+    if (phi < R0) {
         phi += 2*PI;
     }
     real rad = length(x);
@@ -124,180 +124,126 @@ size_t DiskGrid::index(real2 x) const {
     return p + r*P;
 }
 
-#ifdef TEST_UNIT
-
-rtest_module_(random) {
-    rtest_(uniform) {
-        Rng rng = rng_init(0xdeadbeef);
-        real mean = 0.0;
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            mean += sin(2*PI*random_uniform(&rng));
-        }
-        mean /= TEST_ATTEMPTS;
-        assert_eq_(mean, approx(0).epsilon(2*CONF));
+TEST(RandomTest, uniform) {
+    Rng rng = rng_init(0xdeadbeef);
+    real mean = 0.0;
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        mean += sin(2*PI*random_uniform(&rng));
     }
-    rtest_(uniform2) {
-        Rng rng = rng_init(0xdeadbeef);
-        real mean = 0.0;
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            real2 v = 2*PI*random_uniform2(&rng);
-            mean += sin(v.x)*sin(v.y);
-        }
-        mean /= TEST_ATTEMPTS;
-        assert_eq_(mean, approx(0).epsilon(2*CONF));
+    mean /= TEST_ATTEMPTS;
+    EXPECT_EQ(mean, approx(0).epsilon(2*CONF));
+}
+TEST(RandomTest, uniform2) {
+    Rng rng = rng_init(0xdeadbeef);
+    real mean = 0.0;
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        real2 v = 2*PI*random_uniform2(&rng);
+        mean += sin(v.x)*sin(v.y);
     }
-    rtest_(uniform3) {
-        Rng rng = rng_init(0xdeadbeef);
-        real mean = 0.0;
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            real3 v = 2*PI*random_uniform3(&rng);
-            mean += sin(v.x)*sin(v.y)*sin(v.z);
-        }
-        mean /= TEST_ATTEMPTS;
-        assert_eq_(mean, approx(0).epsilon(2*CONF));
+    mean /= TEST_ATTEMPTS;
+    EXPECT_EQ(mean, approx(0).epsilon(2*CONF));
+}
+TEST(RandomTest, uniform3) {
+    Rng rng = rng_init(0xdeadbeef);
+    real mean = 0.0;
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        real3 v = 2*PI*random_uniform3(&rng);
+        mean += sin(v.x)*sin(v.y)*sin(v.z);
     }
-    rtest_(uniform4) {
-        Rng rng = rng_init(0xdeadbeef);
-        real mean = 0.0;
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            real4 v = 2*PI*random_uniform4(&rng);
-            mean += sin(v.x)*sin(v.y)*sin(v.z)*sin(v.w);
-        }
-        mean /= TEST_ATTEMPTS;
-        assert_eq_(mean, approx(0).epsilon(2*CONF));
+    mean /= TEST_ATTEMPTS;
+    EXPECT_EQ(mean, approx(0).epsilon(2*CONF));
+}
+TEST(RandomTest, uniform4) {
+    Rng rng = rng_init(0xdeadbeef);
+    real mean = 0.0;
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        real4 v = 2*PI*random_uniform4(&rng);
+        mean += sin(v.x)*sin(v.y)*sin(v.z)*sin(v.w);
+    }
+    mean /= TEST_ATTEMPTS;
+    EXPECT_EQ(mean, approx(0).epsilon(2*CONF));
+}
+
+TEST(RandomTest, sphere) {
+    Rng rng = rng_init(0xdeadbeef);
+
+    real3 sum = real3(R0);
+    size_t P = 16, T = 32;
+    SphereGrid grid(P, T);
+
+    const size_t N = P*T*TEST_ATTEMPTS;
+    for (size_t i = 0; i < N; ++i) {
+        real3 v = random_sphere(&rng);
+        EXPECT_EQ(length(v), approx(1));
+        sum += v;
+        grid[v] += 1.0;
     }
 
-    rtest_(sphere) {
-        Rng rng = rng_init(0xdeadbeef);
+    EXPECT_EQ(sum/N, approx(real3(R0)).epsilon(2*CONF));
+    ASSERT_TRUE(grid.check_all(N, CONF));
+}
+TEST(RandomTest, hemisphere) {
+    Rng rng = rng_init(0xdeadbeef);
 
-        real3 sum = real3(R0);
-        size_t P = 16, T = 32;
-        SphereGrid grid(P, T);
+    real3 sum = real3(R0);
+    size_t P = 16, T = 16;
+    SphereGrid grid(P, T, PI/2);
 
-        const size_t N = P*T*TEST_ATTEMPTS;
-        for (size_t i = 0; i < N; ++i) {
-            real3 v = random_sphere(&rng);
-            assert_eq_(length(v), approx(1));
-            sum += v;
-            grid[v] += 1.0;
-        }
-
-        assert_eq_(sum/N, approx(real3(R0)).epsilon(2*CONF));
-        grid.assert_all(N, CONF);
+    const size_t N = P*T*TEST_ATTEMPTS;
+    for (size_t i = 0; i < N; ++i) {
+        real3 v = random_hemisphere(&rng);
+        EXPECT_EQ(length(v), approx(1));
+        ASSERT_TRUE(v.z > -EPS);
+        sum += v;
+        grid[v] += 1.0;
     }
-    rtest_(hemisphere) {
-        Rng rng = rng_init(0xdeadbeef);
+
+    EXPECT_EQ(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
+    ASSERT_TRUE(grid.check_all(N, CONF));
+}
+TEST(RandomTest, hemisphere_cosine) {
+    Rng rng = rng_init(0xdeadbeef);
+
+    real3 sum = real3(R0);
+    size_t P = 16, R = 16;
+    DiskGrid grid(P, R);
+
+    const size_t N = P*R*TEST_ATTEMPTS;
+    for (size_t i = 0; i < N; ++i) {
+        real3 v = random_hemisphere_cosine(&rng);
+        EXPECT_EQ(length(v), approx(1));
+        ASSERT_TRUE(v.z > -EPS);
+        sum += v;
+        grid[v.xy] += 1.0;
+    }
+
+    EXPECT_EQ(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
+    ASSERT_TRUE(grid.check_all(N, CONF));
+}
+TEST(RandomTest, sphere_cap) {
+    Rng rng = rng_init(0xdeadbeef);
+    size_t C = 16;
+
+    for (size_t j = 0; j < C; ++j) {
+        real t = PI*random_uniform(&rng);
+        real ct = cos(t);
 
         real3 sum = real3(R0);
         size_t P = 16, T = 16;
-        SphereGrid grid(P, T, PI/2);
+        SphereGrid grid(P, T, t);
 
-        const size_t N = P*T*TEST_ATTEMPTS;
+        const size_t N = P*T*TEST_ATTEMPTS/C;
         for (size_t i = 0; i < N; ++i) {
-            real3 v = random_hemisphere(&rng);
-            assert_eq_(length(v), approx(1));
-            assert_(v.z > -EPS);
+            real3 v = random_sphere_cap(&rng, ct);
+            EXPECT_EQ(length(v), approx(1));
+            ASSERT_TRUE(v.z > ct - EPS);
             sum += v;
             grid[v] += 1.0;
         }
 
-        assert_eq_(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
-        grid.assert_all(N, CONF);
-    }
-    rtest_(hemisphere_cosine) {
-        Rng rng = rng_init(0xdeadbeef);
-
-        real3 sum = real3(R0);
-        size_t P = 16, R = 16;
-        DiskGrid grid(P, R);
-
-        const size_t N = P*R*TEST_ATTEMPTS;
-        for (size_t i = 0; i < N; ++i) {
-            real3 v = random_hemisphere_cosine(&rng);
-            assert_eq_(length(v), approx(1));
-            assert_(v.z > -EPS);
-            sum += v;
-            grid[v.xy] += 1.0;
-        }
-
-        assert_eq_(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
-        grid.assert_all(N, CONF);
-    }
-    rtest_(sphere_cap) {
-        Rng rng = rng_init(0xdeadbeef);
-        size_t C = 16;
-
-        for (size_t j = 0; j < C; ++j) {
-            real t = PI*random_uniform(&rng);
-            real ct = cos(t);
-
-            real3 sum = real3(R0);
-            size_t P = 16, T = 16;
-            SphereGrid grid(P, T, t);
-
-            const size_t N = P*T*TEST_ATTEMPTS/C;
-            for (size_t i = 0; i < N; ++i) {
-                real3 v = random_sphere_cap(&rng, ct);
-                assert_eq_(length(v), approx(1));
-                assert_(v.z > ct - EPS);
-                sum += v;
-                grid[v] += 1.0;
-            }
-
-            assert_eq_(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
-            grid.assert_all(N, CONF);
-        }
+        EXPECT_EQ(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
+        ASSERT_TRUE(grid.check_all(N, CONF));
     }
 }
 
-#endif // TEST_UNIT
-
-#ifdef TEST_DEV
-
-#include <vector>
-#include <random>
-
-#include <test/devtest.hpp>
-
-extern devtest::Target devtest_make_target();
-
-rtest_module_(random) {
-    rtest_(sphere) {
-        devtest::Target target = devtest_make_target();
-        auto queue = target.make_queue();
-        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("real.cl", std::string(
-            "#include <random.hh>\n"
-            "__kernel void sphere(__global const uint *seed, __global real3 *point) {\n"
-            "    int i = get_global_id(0);\n"
-            "    Rng rng = rng_init(seed[i]);\n"
-            "    point[i] = random_sphere(&rng);\n"
-            "}\n"
-        ))
-        .build("sphere").expect("Kernel build error");
-
-        const int n = TEST_ATTEMPTS;
-        std::vector<uint> seed(n);
-        std::vector<real3> point(n);
-        std::mt19937 rng(0xdeadbeef);
-        for (size_t i = 0; i < n; ++i) {
-            seed[i] = rng();
-        }
-
-        devtest::KernelRunner(queue, std::move(kernel))
-        .run(n, seed, point).expect("Kernel run error");
-
-        real3 sum = real3(R0);
-        const size_t N = TEST_ATTEMPTS;
-        for (size_t i = 0; i < N; ++i) {
-            real3 v = point[i];
-            assert_eq_(length(v), dev_approx(1));
-            sum += v;
-        }
-        assert_eq_(sum/N, dev_approx(real3(R0)).epsilon(2*CONF));
-    }
-}
-
-#endif // TEST_DEV
-
-#endif // TEST
+#endif // UNITTEST

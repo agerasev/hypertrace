@@ -5,7 +5,8 @@
 #ifdef DOUBLE_SUPPORT
 
 #define PI 3.14159265358979323846
-#define EPS 1e-8
+//#define EPS 1e-8
+#define EPS 1e-12
 #define R0 0.0
 #define R1 1.0
 
@@ -21,7 +22,8 @@
 
 #ifdef TEST
 
-#define TEST_ATTEMPTS 1024
+//#define TEST_ATTEMPTS 1024
+#define TEST_ATTEMPTS 16
 
 #include <random>
 

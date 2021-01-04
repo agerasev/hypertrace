@@ -126,6 +126,7 @@ TEST_F(QuaternionTest, derivation) {
         )
     };
     
+    const real DEPS = pow(EPS, (real)2/3);
     for (auto p : cases) {
         auto f = p.first;
         auto dfdv = p.second;
@@ -135,8 +136,8 @@ TEST_F(QuaternionTest, derivation) {
             quat deriv = dfdv(p, v);
             real dabs = q_abs(deriv);
             EXPECT_EQ(
-                approx(deriv).epsilon(1e3*EPS*dabs),
-                (f(p + EPS*v) - f(p))/EPS
+                (f(p + DEPS*v) - f(p))/DEPS,
+                approx(deriv).epsilon(sqrt(DEPS)*dabs)
             );
         }
     }

@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 TEST(RealTest, approx) {
-    EXPECT_EQ(R1 + EPS/2, approx(R1));
+    ASSERT_EQ(R1 + EPS/2, approx(R1));
 }
 
 #endif // UNITTEST

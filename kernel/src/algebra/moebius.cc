@@ -58,7 +58,7 @@ TEST_F(MoebiusTest, chaining) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         Moebius a = trng.normal(), b = trng.normal();
         quat c = qrng.normal();
-        EXPECT_EQ(
+        ASSERT_EQ(
             mo_apply_q(mo_chain(a, b), c), 
             approx(mo_apply_q(a, mo_apply_q(b, c)))
         );
@@ -74,7 +74,7 @@ TEST_F(MoebiusTest, complex_derivation) {
         const real DEPS = sqrt(EPS);
         comp deriv = mo_deriv_c(a, p);
         real dabs = c_abs(deriv);
-        EXPECT_EQ(
+        ASSERT_EQ(
             c_div(mo_apply_c(a, p + DEPS*v) - mo_apply_c(a, p), DEPS*v),
             approx(deriv).epsilon(sqrt(DEPS)*dabs)
         );
@@ -89,7 +89,7 @@ TEST_F(MoebiusTest, quaternion_directional_derivation) {
         const real DEPS = sqrt(EPS);
         quat deriv = mo_deriv_q(a, p, v);
         real dabs = q_abs(deriv);
-        EXPECT_EQ(
+        ASSERT_EQ(
             (mo_apply_q(a, p + DEPS*v) - mo_apply_q(a, p))/DEPS,
             approx(deriv).epsilon(sqrt(DEPS)*dabs)
         );

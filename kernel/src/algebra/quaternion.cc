@@ -70,36 +70,36 @@ protected:
 };
 
 TEST_F(QuaternionTest, imaginary_units) {
-    EXPECT_EQ(q_mul(QI, QI), approx(-Q1));
-    EXPECT_EQ(q_mul(QJ, QJ), approx(-Q1));
-    EXPECT_EQ(q_mul(QK, QK), approx(-Q1));
-    EXPECT_EQ(q_mul(q_mul(QI, QJ), QK), approx(-Q1));
+    ASSERT_EQ(q_mul(QI, QI), approx(-Q1));
+    ASSERT_EQ(q_mul(QJ, QJ), approx(-Q1));
+    ASSERT_EQ(q_mul(QK, QK), approx(-Q1));
+    ASSERT_EQ(q_mul(q_mul(QI, QJ), QK), approx(-Q1));
 
-    EXPECT_EQ(q_mul(QI, QJ), approx(QK));
-    EXPECT_EQ(q_mul(QJ, QK), approx(QI));
-    EXPECT_EQ(q_mul(QK, QI), approx(QJ));
+    ASSERT_EQ(q_mul(QI, QJ), approx(QK));
+    ASSERT_EQ(q_mul(QJ, QK), approx(QI));
+    ASSERT_EQ(q_mul(QK, QI), approx(QJ));
     
-    EXPECT_EQ(q_mul(QJ, QI), approx(-QK));
-    EXPECT_EQ(q_mul(QK, QJ), approx(-QI));
-    EXPECT_EQ(q_mul(QI, QK), approx(-QJ));
+    ASSERT_EQ(q_mul(QJ, QI), approx(-QK));
+    ASSERT_EQ(q_mul(QK, QJ), approx(-QI));
+    ASSERT_EQ(q_mul(QI, QK), approx(-QJ));
 }
 TEST_F(QuaternionTest, inversion) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         quat a = qrng.nonzero();
-        EXPECT_EQ(q_div(a, a), approx(Q1));
+        ASSERT_EQ(q_div(a, a), approx(Q1));
     }
 }
 TEST_F(QuaternionTest, law_of_cosines) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         quat a = qrng.normal(), b = qrng.normal();
-        EXPECT_EQ(q_abs2(a) + q_abs2(b) + 2*dot(a, b), Approx(q_abs2(a + b)));
+        ASSERT_EQ(q_abs2(a) + q_abs2(b) + 2*dot(a, b), Approx(q_abs2(a + b)));
     }
 }
 TEST_F(QuaternionTest, conjugation) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         quat a = qrng.normal();
-        EXPECT_EQ(q_mul(a, q_conj(a)), approx(q_abs2(a)*Q1));
-        EXPECT_EQ(q_mul(q_conj(a), a), approx(q_abs2(a)*Q1));
+        ASSERT_EQ(q_mul(a, q_conj(a)), approx(q_abs2(a)*Q1));
+        ASSERT_EQ(q_mul(q_conj(a), a), approx(q_abs2(a)*Q1));
     }
 }
 TEST_F(QuaternionTest, derivation) {
@@ -133,7 +133,7 @@ TEST_F(QuaternionTest, derivation) {
             quat v = qrng.unit();
             quat deriv = dfdv(p, v);
             real dabs = q_abs(deriv);
-            EXPECT_EQ(
+            ASSERT_EQ(
                 (f(p + DEPS*v) - f(p))/DEPS,
                 approx(deriv).epsilon(sqrt(DEPS)*dabs)
             );

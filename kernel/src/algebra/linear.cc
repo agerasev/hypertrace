@@ -70,8 +70,8 @@ TEST_F(LinearTest, linearity) {
         real a = rng.normal();
         real3 x = vrng.normal();
 
-        EXPECT_EQ(lin3_apply(a*m, x), approx(lin3_apply(m, a*x)));
-        EXPECT_EQ(lin3_apply(a*m, x), approx(a*lin3_apply(m, x)));
+        ASSERT_EQ(lin3_apply(a*m, x), approx(lin3_apply(m, a*x)));
+        ASSERT_EQ(lin3_apply(a*m, x), approx(a*lin3_apply(m, x)));
     }
 }
 TEST_F(LinearTest, chaining) {
@@ -80,9 +80,9 @@ TEST_F(LinearTest, chaining) {
         Linear3 b = mrng.normal();
         real3 c = vrng.normal();
 
-        EXPECT_EQ(lin3_chain(a, lin3_identity()), approx(a));
-        EXPECT_EQ(lin3_chain(lin3_identity(), b), approx(b));
-        EXPECT_EQ(lin3_apply(lin3_chain(a, b), c), approx(lin3_apply(a, lin3_apply(b, c))));
+        ASSERT_EQ(lin3_chain(a, lin3_identity()), approx(a));
+        ASSERT_EQ(lin3_chain(lin3_identity(), b), approx(b));
+        ASSERT_EQ(lin3_apply(lin3_chain(a, b), c), approx(lin3_apply(a, lin3_apply(b, c))));
     }
 }
 TEST_F(LinearTest, inversion) {
@@ -90,10 +90,10 @@ TEST_F(LinearTest, inversion) {
         Linear3 a = mrng.invertible();
         real3 x = vrng.normal();
 
-        EXPECT_EQ(lin3_chain(a, lin3_inverse(a)), approx(lin3_identity()));
-        EXPECT_EQ(lin3_chain(lin3_inverse(a), a), approx(lin3_identity()));
-        EXPECT_EQ(lin3_apply(lin3_inverse(a), lin3_apply(a, x)), approx(x));
-        EXPECT_EQ(lin3_apply(a, lin3_apply(lin3_inverse(a), x)), approx(x));
+        ASSERT_EQ(lin3_chain(a, lin3_inverse(a)), approx(lin3_identity()));
+        ASSERT_EQ(lin3_chain(lin3_inverse(a), a), approx(lin3_identity()));
+        ASSERT_EQ(lin3_apply(lin3_inverse(a), lin3_apply(a, x)), approx(x));
+        ASSERT_EQ(lin3_apply(a, lin3_apply(lin3_inverse(a), x)), approx(x));
     }
 }
 TEST_F(LinearTest, look_to_the_direction) {
@@ -101,7 +101,7 @@ TEST_F(LinearTest, look_to_the_direction) {
         real3 d = vrng.unit();
         Linear3 m = lin3_look_to(d);
 
-        EXPECT_EQ(lin3_apply(m, d), approx(r3_new(R0, R0, R1)));
+        ASSERT_EQ(lin3_apply(m, d), approx(r3_new(R0, R0, R1)));
     }
 }
 

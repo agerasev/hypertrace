@@ -56,20 +56,20 @@ protected:
 
 TEST_F(ComplexTest, constructor) {
     comp a = c_new(R0, R1);
-    EXPECT_EQ(a.x, Approx(R0));
-    EXPECT_EQ(a.y, Approx(R1));
+    ASSERT_EQ(a.x, Approx(R0));
+    ASSERT_EQ(a.y, Approx(R1));
 }
 TEST_F(ComplexTest, inversion) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         comp a = crng.nonzero();
-        EXPECT_EQ(c_div(a, a), approx(C1));
+        ASSERT_EQ(c_div(a, a), approx(C1));
     }
 }
 TEST_F(ComplexTest, square_root) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         comp a = crng.normal();
         comp b = c_sqrt(a);
-        EXPECT_EQ(c_mul(b, b), approx(a));
+        ASSERT_EQ(c_mul(b, b), approx(a));
     }
 }
 TEST_F(ComplexTest, power) {
@@ -81,12 +81,12 @@ TEST_F(ComplexTest, power) {
         for (int i = 0; i < n; ++i) {
             c = c_mul(c, b);
         }
-        EXPECT_EQ(c, approx(a));
+        ASSERT_EQ(c, approx(a));
     }
 }
 TEST_F(ComplexTest, norm) {
-    EXPECT_EQ(c_norm_l1(c_new(-1, 2)), approx(3));
-    EXPECT_EQ(length(c_new(3, -4)), approx(5));
+    ASSERT_EQ(c_norm_l1(c_new(-1, 2)), approx(3));
+    ASSERT_EQ(length(c_new(3, -4)), approx(5));
 }
 
 #endif // UNITTEST

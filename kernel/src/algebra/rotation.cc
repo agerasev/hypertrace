@@ -91,8 +91,8 @@ TEST_F(Rotation2Test, mapping) {
         Rotation2 r = rot2_from_angle(angle);
         real2 a = r2rng.normal();
         real2 b = rot2_apply(r, a);
-        EXPECT_EQ(length(a), approx(length(b)));
-        EXPECT_EQ(dot(a, b)/length2(a), approx(cos(angle)));
+        ASSERT_EQ(length(a), approx(length(b)));
+        ASSERT_EQ(dot(a, b)/length2(a), approx(cos(angle)));
     }
 }
 TEST_F(Rotation2Test, chaining) {
@@ -100,7 +100,7 @@ TEST_F(Rotation2Test, chaining) {
         Rotation2 a = rot2rng.uniform();
         Rotation2 b = rot2rng.uniform();
         real2 v = r2rng.normal();
-        EXPECT_EQ(
+        ASSERT_EQ(
             rot2_apply(rot2_chain(a, b), v), 
             approx(rot2_apply(a, rot2_apply(b, v)))
         );
@@ -109,7 +109,7 @@ TEST_F(Rotation2Test, chaining) {
 TEST_F(Rotation2Test, inversion) {
     for (int k = 0; k < TEST_ATTEMPTS; ++k) {
         Rotation2 r = rot2rng.uniform();
-        EXPECT_EQ(rot2_chain(r, rot2_inverse(r)), approx(rot2_identity()));
+        ASSERT_EQ(rot2_chain(r, rot2_inverse(r)), approx(rot2_identity()));
     }
 }
 TEST_F(Rotation2Test, to_linear) {
@@ -117,8 +117,8 @@ TEST_F(Rotation2Test, to_linear) {
         Rotation2 a = rot2rng.uniform();
         Rotation2 b = rot2rng.uniform();
         real2 x = r2rng.normal();
-        EXPECT_EQ(lin2_apply(rot2_to_linear(a), x), approx(rot2_apply(a, x)));
-        EXPECT_EQ(
+        ASSERT_EQ(lin2_apply(rot2_to_linear(a), x), approx(rot2_apply(a, x)));
+        ASSERT_EQ(
             lin2_chain(rot2_to_linear(a), rot2_to_linear(b)),
             approx(rot2_to_linear(rot2_chain(a, b)))
         );
@@ -139,12 +139,12 @@ TEST_F(Rotation3Test, mapping) {
         Rotation3 r = rot3_from_axis(axis, angle);
         real3 a = r3rng.normal();
         real3 b = rot3_apply(r, a);
-        EXPECT_EQ(length(a), approx(length(b)));
+        ASSERT_EQ(length(a), approx(length(b)));
         a -= dot(a, axis)*axis;
         b -= dot(b, axis)*axis;
         real aa = length2(a);
-        EXPECT_EQ(dot(a, b)/aa, approx(cos(angle)));
-        EXPECT_EQ(cross(a, b)/aa, approx(axis*sin(angle)));
+        ASSERT_EQ(dot(a, b)/aa, approx(cos(angle)));
+        ASSERT_EQ(cross(a, b)/aa, approx(axis*sin(angle)));
     }
 }
 TEST_F(Rotation3Test, chaining) {
@@ -152,7 +152,7 @@ TEST_F(Rotation3Test, chaining) {
         Rotation3 a = rot3rng.uniform();
         Rotation3 b = rot3rng.uniform();
         real3 v = r3rng.normal();
-        EXPECT_EQ(
+        ASSERT_EQ(
             rot3_apply(rot3_chain(a, b), v),
             approx(rot3_apply(a, rot3_apply(b, v)))
         );
@@ -161,7 +161,7 @@ TEST_F(Rotation3Test, chaining) {
 TEST_F(Rotation3Test, inversion) {
     for (int k = 0; k < TEST_ATTEMPTS; ++k) {
         Rotation3 r = rot3rng.uniform();
-        EXPECT_EQ(rot3_chain(r, rot3_inverse(r)), approx(rot3_identity()));
+        ASSERT_EQ(rot3_chain(r, rot3_inverse(r)), approx(rot3_identity()));
     }
 }
 TEST_F(Rotation3Test, to_linear) {
@@ -169,8 +169,8 @@ TEST_F(Rotation3Test, to_linear) {
         Rotation3 a = rot3rng.uniform();
         Rotation3 b = rot3rng.uniform();
         real3 x = r3rng.normal();
-        EXPECT_EQ(lin3_apply(rot3_to_linear(a), x), approx(rot3_apply(a, x)));
-        EXPECT_EQ(
+        ASSERT_EQ(lin3_apply(rot3_to_linear(a), x), approx(rot3_apply(a, x)));
+        ASSERT_EQ(
             lin3_chain(rot3_to_linear(a), rot3_to_linear(b)),
             approx(rot3_to_linear(rot3_chain(a, b)))
         );

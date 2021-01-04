@@ -69,8 +69,8 @@ TEST_F(AffineTest, chaining) {
         Affine3 b = arng.normal();
         real3 c = vrng.normal();
 
-        EXPECT_EQ(aff3_apply_pos(aff3_chain(a, b), c), approx(aff3_apply_pos(a, aff3_apply_pos(b, c))));
-        EXPECT_EQ(aff3_apply_dir(aff3_chain(a, b), c), approx(aff3_apply_dir(a, aff3_apply_dir(b, c))));
+        ASSERT_EQ(aff3_apply_pos(aff3_chain(a, b), c), approx(aff3_apply_pos(a, aff3_apply_pos(b, c))));
+        ASSERT_EQ(aff3_apply_dir(aff3_chain(a, b), c), approx(aff3_apply_dir(a, aff3_apply_dir(b, c))));
     }
 }
 TEST_F(AffineTest, inversion) {
@@ -79,19 +79,19 @@ TEST_F(AffineTest, inversion) {
         real3 x = vrng.normal();
         
         const real IEPS = sqrt(EPS);
-        EXPECT_EQ(
+        ASSERT_EQ(
             aff3_apply_pos(aff3_inverse(a), aff3_apply_pos(a, x)),
             approx(x).epsilon(IEPS)
         );
-        EXPECT_EQ(
+        ASSERT_EQ(
             aff3_apply_pos(a, aff3_apply_pos(aff3_inverse(a), x)),
             approx(x).epsilon(IEPS)
         );
-        EXPECT_EQ(
+        ASSERT_EQ(
             aff3_apply_dir(aff3_inverse(a), aff3_apply_dir(a, x)),
             approx(x).epsilon(IEPS)
         );
-        EXPECT_EQ(
+        ASSERT_EQ(
             aff3_apply_dir(a, aff3_apply_dir(aff3_inverse(a), x)),
             approx(x).epsilon(IEPS)
         );

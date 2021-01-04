@@ -131,7 +131,7 @@ TEST(RandomTest, uniform) {
         mean += sin(2*PI*random_uniform(&rng));
     }
     mean /= TEST_ATTEMPTS;
-    EXPECT_EQ(mean, approx(0).epsilon(2*CONF));
+    ASSERT_EQ(mean, approx(0).epsilon(2*CONF));
 }
 TEST(RandomTest, uniform2) {
     Rng rng = rng_init(0xdeadbeef);
@@ -141,7 +141,7 @@ TEST(RandomTest, uniform2) {
         mean += sin(v.x)*sin(v.y);
     }
     mean /= TEST_ATTEMPTS;
-    EXPECT_EQ(mean, approx(0).epsilon(2*CONF));
+    ASSERT_EQ(mean, approx(0).epsilon(2*CONF));
 }
 TEST(RandomTest, uniform3) {
     Rng rng = rng_init(0xdeadbeef);
@@ -151,7 +151,7 @@ TEST(RandomTest, uniform3) {
         mean += sin(v.x)*sin(v.y)*sin(v.z);
     }
     mean /= TEST_ATTEMPTS;
-    EXPECT_EQ(mean, approx(0).epsilon(2*CONF));
+    ASSERT_EQ(mean, approx(0).epsilon(2*CONF));
 }
 TEST(RandomTest, uniform4) {
     Rng rng = rng_init(0xdeadbeef);
@@ -161,7 +161,7 @@ TEST(RandomTest, uniform4) {
         mean += sin(v.x)*sin(v.y)*sin(v.z)*sin(v.w);
     }
     mean /= TEST_ATTEMPTS;
-    EXPECT_EQ(mean, approx(0).epsilon(2*CONF));
+    ASSERT_EQ(mean, approx(0).epsilon(2*CONF));
 }
 
 TEST(RandomTest, sphere) {
@@ -174,12 +174,12 @@ TEST(RandomTest, sphere) {
     const size_t N = P*T*TEST_ATTEMPTS;
     for (size_t i = 0; i < N; ++i) {
         real3 v = random_sphere(&rng);
-        EXPECT_EQ(length(v), approx(1));
+        ASSERT_EQ(length(v), approx(1));
         sum += v;
         grid[v] += 1.0;
     }
 
-    EXPECT_EQ(sum/N, approx(real3(R0)).epsilon(2*CONF));
+    ASSERT_EQ(sum/N, approx(real3(R0)).epsilon(2*CONF));
     ASSERT_TRUE(grid.check_all(N, CONF));
 }
 TEST(RandomTest, hemisphere) {
@@ -192,13 +192,13 @@ TEST(RandomTest, hemisphere) {
     const size_t N = P*T*TEST_ATTEMPTS;
     for (size_t i = 0; i < N; ++i) {
         real3 v = random_hemisphere(&rng);
-        EXPECT_EQ(length(v), approx(1));
+        ASSERT_EQ(length(v), approx(1));
         ASSERT_TRUE(v.z > -EPS);
         sum += v;
         grid[v] += 1.0;
     }
 
-    EXPECT_EQ(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
+    ASSERT_EQ(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
     ASSERT_TRUE(grid.check_all(N, CONF));
 }
 TEST(RandomTest, hemisphere_cosine) {
@@ -211,13 +211,13 @@ TEST(RandomTest, hemisphere_cosine) {
     const size_t N = P*R*TEST_ATTEMPTS;
     for (size_t i = 0; i < N; ++i) {
         real3 v = random_hemisphere_cosine(&rng);
-        EXPECT_EQ(length(v), approx(1));
+        ASSERT_EQ(length(v), approx(1));
         ASSERT_TRUE(v.z > -EPS);
         sum += v;
         grid[v.xy] += 1.0;
     }
 
-    EXPECT_EQ(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
+    ASSERT_EQ(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
     ASSERT_TRUE(grid.check_all(N, CONF));
 }
 TEST(RandomTest, sphere_cap) {
@@ -235,13 +235,13 @@ TEST(RandomTest, sphere_cap) {
         const size_t N = P*T*TEST_ATTEMPTS/C;
         for (size_t i = 0; i < N; ++i) {
             real3 v = random_sphere_cap(&rng, ct);
-            EXPECT_EQ(length(v), approx(1));
+            ASSERT_EQ(length(v), approx(1));
             ASSERT_TRUE(v.z > ct - EPS);
             sum += v;
             grid[v] += 1.0;
         }
 
-        EXPECT_EQ(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
+        ASSERT_EQ(sum.xy/N, approx(real2(R0)).epsilon(2*CONF));
         ASSERT_TRUE(grid.check_all(N, CONF));
     }
 }

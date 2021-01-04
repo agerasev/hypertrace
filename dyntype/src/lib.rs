@@ -1,5 +1,3 @@
-#![feature(min_const_generics)]
-
 mod config;
 mod containers;
 mod io;

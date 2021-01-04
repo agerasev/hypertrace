@@ -16,10 +16,9 @@ class Component:
         raise NotImplementedError()
 
 class Cmake(Component):
-    def __init__(self, path, test="test"):
+    def __init__(self, path):
         super().__init__(path)
         self.build_dir = os.path.join("build", self.path)
-        self.test_exec = test
     
     def build(self, args):
         os.makedirs(self.build_dir, exist_ok=True)
@@ -46,15 +45,21 @@ class Cmake(Component):
             subprocess.run(cmd, env=env, cwd=self.build_dir, check=True)
     
     def test(self, args):
-        subprocess.run(["./" + self.test_exec] + args["args"], cwd=self.build_dir, check=True)
+        subprocess.run(["ctest", "-V"] + args["args"], cwd=self.build_dir, check=True)
 
 
 class Cargo(Component):
-    def __init__(self, path):
+    def __init__(self, path, features=None):
         super().__init__(path)
+        self.features = features
     
+    def _features_args(self):
+        if self.features is not None:
+            return ["--features=" + ",".join(self.features)]
+        return []
+
     def build(self, args):
-        subprocess.run(["cargo", "build"], cwd=self.path, check=True)
+        subprocess.run(["cargo", "build"] + self._features_args(), cwd=self.path, check=True)
     
     def test(self, args):
-        subprocess.run(["cargo", "test"], cwd=self.path, check=True)
+        subprocess.run(["cargo", "test"] + self._features_args(), cwd=self.path, check=True)

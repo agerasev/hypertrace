@@ -46,7 +46,7 @@ struct Group<Moebius> {
 #endif // HOST
 
 
-#ifdef TEST
+#ifdef UNITTEST
 
 class TestRngMoebius {
 private:
@@ -57,7 +57,7 @@ public:
     Moebius normal();
 };
 
-#endif // TEST
+#endif // UNITTEST
 
 
 #ifndef HOST

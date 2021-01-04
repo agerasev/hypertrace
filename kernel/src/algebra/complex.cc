@@ -44,11 +44,9 @@ comp c_sqrt(comp a) {
 }
 
 
-#ifdef TEST
+#ifdef UNITTEST
 
 #include <gtest/gtest.h>
-
-#ifdef TEST_UNIT
 
 class ComplexTest : public testing::Test {
 protected:
@@ -91,83 +89,4 @@ TEST_F(ComplexTest, norm) {
     EXPECT_EQ(length(c_new(3, -4)), approx(5));
 }
 
-#endif // TEST_UNIT
-
-#ifdef TEST_DEV
-
-#include <rtest.hpp>
-
-#include <vector>
-
-#include <test/devtest.hpp>
-
-extern devtest::Target devtest_make_target();
-
-rtest_module_(complex) {
-    rtest_(to_dev_and_back) {
-        TestRng<comp> crng(0xbeef);
-
-        devtest::Target target = devtest_make_target();
-        auto queue = target.make_queue();
-        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("complex.cl", std::string(
-            "#include <algebra/complex.hh>\n"
-            "__kernel void identity(__global const comp *ibuf, __global comp *obuf) {\n"
-            "    int i = get_global_id(0);\n"
-            "    obuf[i] = ibuf[i];\n"
-            "}\n"
-        ))
-        .build("identity").expect("Kernel build error");
-
-        const int n = TEST_ATTEMPTS;
-        std::vector<comp> ibuf(n), obuf(n);
-        for (size_t i = 0; i < n; ++i) {
-            ibuf[i] = crng.normal();
-        }
-
-        devtest::KernelRunner(queue, std::move(kernel))
-        .run(n, ibuf, obuf).expect("Kernel run error");
-
-        for(size_t i = 0; i < obuf.size(); ++i) {
-            assert_eq_(dev_approx(ibuf[i]), obuf[i]);
-        }
-    }
-    rtest_(mul_div) {
-        TestRng<comp> crng(0xbeef);
-
-        devtest::Target target = devtest_make_target();
-        auto queue = target.make_queue();
-        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("complex.cl", std::string(
-            "#include <algebra/complex.hh>\n"
-            "__kernel void mul_div(__global const comp *x, __global const comp *y, __global comp *m, __global comp *d) {\n"
-            "    int i = get_global_id(0);\n"
-            "    m[i] = c_mul(x[i], y[i]);\n"
-            "    d[i] = c_div(x[i], y[i]);\n"
-            "}\n"
-        ))
-        .build("mul_div").expect("Kernel build error");
-
-        const int n = TEST_ATTEMPTS;
-        std::vector<comp> xbuf(n), ybuf(n), mbuf(n), dbuf(n);
-        for (size_t i = 0; i < n; ++i) {
-            xbuf[i] = crng.normal();
-            ybuf[i] = crng.normal();
-        }
-
-        devtest::KernelRunner(queue, std::move(kernel))
-        .run(n, xbuf, ybuf, mbuf, dbuf).expect("Kernel run error");
-
-        for(size_t i = 0; i < n; ++i) {
-            comp m = c_mul(xbuf[i], ybuf[i]);
-            assert_eq_(dev_approx(m), mbuf[i]);
-
-            comp d = c_div(xbuf[i], ybuf[i]);
-            assert_eq_(dev_approx(d), dbuf[i]);
-        }
-    }
-}
-
-#endif // TEST_DEV
-
-#endif // TEST
+#endif // UNITTEST

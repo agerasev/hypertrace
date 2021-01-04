@@ -7,8 +7,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17 -fno-exceptions")
 add_definitions(
     "-DDEBUG"
     "-DHOST"
-    "-DTEST"
-    "-DTEST_UNIT"
+    "-DUNITTEST"
 )
 
 include_directories("src")
@@ -48,16 +47,16 @@ set(SRC
 )
 
 enable_testing()
-find_package(GTest REQUIRED)
+add_subdirectory("/usr/src/gtest" ${CMAKE_BINARY_DIR}/gtest)
 include_directories(${GTEST_INCLUDE_DIR})
 
 set(PROJECT_FLOAT "${PROJECT_NAME}_float")
 add_executable(${PROJECT_FLOAT} ${SRC} "test/unittest.cpp")
-target_link_libraries(${PROJECT_FLOAT} pthread ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
+target_link_libraries(${PROJECT_FLOAT} pthread gtest gtest_main)
 add_test(${PROJECT_FLOAT} ${PROJECT_FLOAT})
 
 set(PROJECT_DOUBLE "${PROJECT_NAME}_double")
 add_executable(${PROJECT_DOUBLE} ${SRC} "test/unittest.cpp")
 target_compile_definitions(${PROJECT_DOUBLE} PUBLIC "DOUBLE_SUPPORT")
-target_link_libraries(${PROJECT_DOUBLE} pthread ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
+target_link_libraries(${PROJECT_DOUBLE} pthread gtest gtest_main)
 add_test(${PROJECT_DOUBLE} ${PROJECT_DOUBLE})

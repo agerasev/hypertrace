@@ -1,4 +1,4 @@
-#ifdef TEST
+#ifdef UNITTEST
 
 #include "matrix.hh"
 
@@ -41,8 +41,6 @@ real4x4 TestRngReal4x4::uniform() {
 }
 
 #include <gtest/gtest.h>
-
-#ifdef TEST_UNIT
 
 class MatrixTest : public testing::Test {
 protected:
@@ -264,81 +262,4 @@ TEST_F(ComplexMatrixTest, power_of_almost_identity_transformation) {
     }
 }
 
-#endif // TEST_UNIT
-
-#ifdef TEST_DEV
-
-#include <rtest.hpp>
-
-#include <vector>
-
-#include <test/devtest.hpp>
-
-extern devtest::Target devtest_make_target();
-
-rtest_module_(matrix) {
-    TEST_F(ComplexMatrixTest, product_real) {
-        TestRngReal3x3 mrng(0xdead);
-
-        devtest::Target target = devtest_make_target();
-        auto queue = target.make_queue();
-        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("matrix_real.cl", std::string(
-            "#include <algebra/matrix.hh>\n"
-            "__kernel void product(__global const real3x3 *xbuf, __global const real3x3 *ybuf, __global real3x3 *obuf) {\n"
-            "    int i = get_global_id(0);\n"
-            "    obuf[i] = r33_dot(xbuf[i], ybuf[i]);\n"
-            "}\n"
-        ))
-        .build("product").expect("Kernel build error");
-
-        const int n = TEST_ATTEMPTS;
-        std::vector<real3x3> xbuf(n), ybuf(n), obuf(n);
-        for (size_t i = 0; i < n; ++i) {
-            xbuf[i] = mrng.invertible();
-            ybuf[i] = mrng.invertible();
-        }
-
-        devtest::KernelRunner(queue, std::move(kernel))
-        .run(n, xbuf, ybuf, obuf).expect("Kernel run error");
-
-        for(size_t i = 0; i < n; ++i) {
-            real3x3 z = r33_dot(xbuf[i], ybuf[i]);
-            assert_eq_(dev_approx(z), obuf[i]);
-        }
-    }
-    TEST_F(ComplexMatrixTest, product_complex) {
-        TestRngComp2x2 mrng(0xdead);
-
-        devtest::Target target = devtest_make_target();
-        auto queue = target.make_queue();
-        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("matrix_complex.cl", std::string(
-            "#include <algebra/matrix.hh>\n"
-            "__kernel void product(__global const comp2x2 *xbuf, __global const comp2x2 *ybuf, __global comp2x2 *obuf) {\n"
-            "    int i = get_global_id(0);\n"
-            "    obuf[i] = c22_dot(xbuf[i], ybuf[i]);\n"
-            "}\n"
-        ))
-        .build("product").expect("Kernel build error");
-
-        const int n = TEST_ATTEMPTS;
-        std::vector<comp2x2> xbuf(n), ybuf(n), obuf(n);
-        for (size_t i = 0; i < n; ++i) {
-            xbuf[i] = mrng.invertible();
-            ybuf[i] = mrng.invertible();
-        }
-
-        devtest::KernelRunner(queue, std::move(kernel))
-        .run(n, xbuf, ybuf, obuf).expect("Kernel run error");
-
-        for(size_t i = 0; i < n; ++i) {
-            comp2x2 z = c22_dot(xbuf[i], ybuf[i]);
-            assert_eq_(dev_approx(z), obuf[i]);
-        }
-    }
-}
-
-#endif // TEST_DEV
-
-#endif // TEST
+#endif // UNITTEST

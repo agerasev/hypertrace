@@ -56,11 +56,9 @@ quat cq_div(comp a, quat b) {
 }
 
 
-#ifdef TEST
+#ifdef UNITTEST
 
 #include <gtest/gtest.h>
-
-#ifdef TEST_UNIT
 
 #include <vector>
 #include <utility>
@@ -143,55 +141,4 @@ TEST_F(QuaternionTest, derivation) {
     }
 }
 
-#endif // TEST_UNIT
-
-#ifdef TEST_DEV
-
-#include <rtest.hpp>
-
-#include <vector>
-
-#include <test/devtest.hpp>
-
-extern devtest::Target devtest_make_target();
-
-rtest_module_(quaternion) {
-    rtest_(mul_div) {
-        TestRng<quat> crng(0xbeef);
-
-        devtest::Target target = devtest_make_target();
-        auto queue = target.make_queue();
-        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("quaternion.cl", std::string(
-            "#include <algebra/quaternion.hh>\n"
-            "__kernel void mul_div(__global const quat *x, __global const quat *y, __global quat *m, __global quat *d) {\n"
-            "    int i = get_global_id(0);\n"
-            "    m[i] = q_mul(x[i], y[i]);\n"
-            "    d[i] = q_div(x[i], y[i]);\n"
-            "}\n"
-        ))
-        .build("mul_div").expect("Kernel build error");
-
-        const int n = TEST_ATTEMPTS;
-        std::vector<quat> xbuf(n), ybuf(n), mbuf(n), dbuf(n);
-        for (size_t i = 0; i < n; ++i) {
-            xbuf[i] = crng.normal();
-            ybuf[i] = crng.normal();
-        }
-
-        devtest::KernelRunner(queue, std::move(kernel))
-        .run(n, xbuf, ybuf, mbuf, dbuf).expect("Kernel run error");
-
-        for(size_t i = 0; i < n; ++i) {
-            quat m = q_mul(xbuf[i], ybuf[i]);
-            assert_eq_(approx(m), mbuf[i]);
-
-            quat d = q_div(xbuf[i], ybuf[i]);
-            assert_eq_(dev_approx(d), dbuf[i]);
-        }
-    }
-}
-
-#endif // TEST_DEV
-
-#endif // TEST
+#endif // UNITTEST

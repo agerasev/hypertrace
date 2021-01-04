@@ -126,7 +126,7 @@ TEST_F(QuaternionTest, derivation) {
         )
     };
     
-    const real DEPS = pow(EPS, (real)2/3);
+    const real DEPS = sqrt(EPS);
     for (auto p : cases) {
         auto f = p.first;
         auto dfdv = p.second;

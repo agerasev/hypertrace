@@ -1,6 +1,5 @@
 #include "moebius.hh"
 
-
 comp mo_apply_c(Moebius m, comp p) {
     return c_div(
         c_mul(m.s01, p) + m.s23,
@@ -46,61 +45,58 @@ Moebius TestRngMoebius::normal() {
     return c22_normalize(rng.normal());
 }
 
-#include <rtest.hpp>
+#include <gtest/gtest.h>
 
 #ifdef TEST_UNIT
 
-rtest_module_(moebius) {
-    static_thread_local_(TestRng<comp>, crng) {
-        return TestRng<comp>();
-    }
-    static_thread_local_(TestRng<quat>, qrng) {
-        return TestRng<quat>();
-    }
-    static_thread_local_(TestRngMoebius, trng) {
-        return TestRngMoebius();
-    }
-
-    rtest_(chaining) {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng->normal(), b = trng->normal();
-            quat c = qrng->normal();
-            assert_eq_(
-                mo_apply_q(mo_chain(a, b), c), 
-                approx(mo_apply_q(a, mo_apply_q(b, c)))
-            );
-        }
-    }
-
-    rtest_(complex_derivation) {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng->normal();
-            comp p = crng->normal();
-            comp v = crng->unit();
-            
-            comp deriv = mo_deriv_c(a, p);
-            real dabs = c_abs(deriv);
-            assert_eq_(
-                c_div(mo_apply_c(a, p + EPS*v) - mo_apply_c(a, p), EPS*v),
-                approx(deriv).epsilon(1e4*EPS*dabs)
-            );
-        }
-    }
-    rtest_(quaternion_directional_derivation) {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Moebius a = trng->normal();
-            quat p = qrng->normal();
-            quat v = qrng->unit();
-            
-            quat deriv = mo_deriv_q(a, p, v);
-            real dabs = q_abs(deriv);
-            assert_eq_(
-                approx(deriv).epsilon(1e4*EPS*dabs),
-                (mo_apply_q(a, p + EPS*v) - mo_apply_q(a, p))/EPS
-            );
-        }
-    }
+class MoebiusTest : public testing::Test {
+protected:
+    TestRng<comp> crng = TestRng<comp>();
+    TestRng<quat> qrng = TestRng<quat>();
+    TestRngMoebius trng = TestRngMoebius();
 };
+
+TEST_F(MoebiusTest, chaining) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        Moebius a = trng.normal(), b = trng.normal();
+        quat c = qrng.normal();
+        EXPECT_EQ(
+            mo_apply_q(mo_chain(a, b), c), 
+            approx(mo_apply_q(a, mo_apply_q(b, c)))
+        );
+    }
+}
+
+TEST_F(MoebiusTest, complex_derivation) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        Moebius a = trng.normal();
+        comp p = crng.normal();
+        comp v = crng.unit();
+        
+        const real DEPS = sqrt(EPS);
+        comp deriv = mo_deriv_c(a, p);
+        real dabs = c_abs(deriv);
+        EXPECT_EQ(
+            c_div(mo_apply_c(a, p + DEPS*v) - mo_apply_c(a, p), DEPS*v),
+            approx(deriv).epsilon(sqrt(DEPS)*dabs)
+        );
+    }
+}
+TEST_F(MoebiusTest, quaternion_directional_derivation) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        Moebius a = trng.normal();
+        quat p = qrng.normal();
+        quat v = qrng.unit();
+        
+        const real DEPS = sqrt(EPS);
+        quat deriv = mo_deriv_q(a, p, v);
+        real dabs = q_abs(deriv);
+        EXPECT_EQ(
+            (mo_apply_q(a, p + DEPS*v) - mo_apply_q(a, p))/DEPS,
+            approx(deriv).epsilon(sqrt(DEPS)*dabs)
+        );
+    }
+}
 
 #endif // TEST_UNIT
 

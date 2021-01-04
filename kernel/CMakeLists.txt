@@ -48,14 +48,16 @@ set(SRC
 )
 
 enable_testing()
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIR})
 
 set(PROJECT_FLOAT "${PROJECT_NAME}_float")
 add_executable(${PROJECT_FLOAT} ${SRC} "test/unittest.cpp")
-target_link_libraries(${PROJECT_FLOAT} gtest pthread)
+target_link_libraries(${PROJECT_FLOAT} pthread ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
 add_test(${PROJECT_FLOAT} ${PROJECT_FLOAT})
 
 set(PROJECT_DOUBLE "${PROJECT_NAME}_double")
 add_executable(${PROJECT_DOUBLE} ${SRC} "test/unittest.cpp")
 target_compile_definitions(${PROJECT_DOUBLE} PUBLIC "DOUBLE_SUPPORT")
-target_link_libraries(${PROJECT_DOUBLE} gtest pthread)
+target_link_libraries(${PROJECT_DOUBLE} pthread ${GTEST_LIBRARY} ${GTEST_MAIN_LIBRARY})
 add_test(${PROJECT_DOUBLE} ${PROJECT_DOUBLE})

@@ -27,17 +27,12 @@ class Cmake(Component):
         if args["cxx_compiler"]:
             env["CXX"] = args["cxx_compiler"]
         
-        defs = {
-            "USE_PCH": ("ON", "OFF")[bool(args["cxx_no_pch"])]
-        }
-        defargs = ["-D{}={}".format(k, v) for k, v in defs.items()]
-
         gen = []
         if "mingw" in sysconfig.get_platform().lower():
             gen = ["-G", "MinGW Makefiles"]
 
         cmds = [
-            ["cmake"] + gen + ["../../{}".format(self.path)] + defargs,
+            ["cmake"] + gen + ["../../{}".format(self.path)],
             ["make", "-j", "{}".format(os.cpu_count())]
         ]
         for cmd in cmds:

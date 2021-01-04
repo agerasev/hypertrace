@@ -66,10 +66,6 @@ class BuildHandler(LoadHandler):
             "--cxx-compiler", type=str, default=None,
             help="Select C++ compiler to build. If not specified then system-default will be used."
         )
-        parser.add_argument(
-            "--cxx-no-pch", action="store_true",
-            help="Don't use C++ precompiled headers (e.g. if your CMake < 3.16). On by default."
-        )
         return parser
     
     def _handle_args(self, args):

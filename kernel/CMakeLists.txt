@@ -24,8 +24,8 @@ set(SRC
     "src/algebra/matrix_complex.cc"
     "src/algebra/matrix_test.cpp"
     "src/algebra/moebius.cc"
-    #"src/algebra/linear.cc"
-    #"src/algebra/affine.cc"
+    "src/algebra/linear.cc"
+    "src/algebra/affine.cc"
     #"src/algebra/rotation.cc"
     #"src/algebra/color.cc"
 

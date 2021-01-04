@@ -53,111 +53,56 @@ Linear3 lin3_inverse(Linear3 m) {
     return r33_inverse(m);
 }
 
+#ifdef UNITTEST
 
-#ifdef TEST
+#include <gtest/gtest.h>
 
-#include <rtest.hpp>
-
-#ifdef TEST_UNIT
-
-rtest_module_(linear) {
-    static_thread_local_(TestRng<real>, rng) {
-        return TestRng<real>(0xABBA);
-    }
-    static_thread_local_(TestRng<real3>, vrng) {
-        return TestRng<real3>(0xBAAB);
-    }
-    static_thread_local_(TestRngReal3x3, mrng) {
-        return TestRngReal3x3(0xBEEB);
-    }
-
-    rtest_(linearity) {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Linear3 m = mrng->normal();
-            real a = rng->normal();
-            real3 x = vrng->normal();
-
-            assert_eq_(lin3_apply(a*m, x), approx(lin3_apply(m, a*x)));
-            assert_eq_(lin3_apply(a*m, x), approx(a*lin3_apply(m, x)));
-        }
-    }
-    rtest_(chaining) {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Linear3 a = mrng->normal();
-            Linear3 b = mrng->normal();
-            real3 c = vrng->normal();
-
-            assert_eq_(lin3_chain(a, lin3_identity()), approx(a));
-            assert_eq_(lin3_chain(lin3_identity(), b), approx(b));
-            assert_eq_(lin3_apply(lin3_chain(a, b), c), approx(lin3_apply(a, lin3_apply(b, c))));
-        }
-    }
-    rtest_(inversion) {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Linear3 a = mrng->invertible();
-            real3 x = vrng->normal();
-
-            assert_eq_(lin3_chain(a, lin3_inverse(a)), approx(lin3_identity()));
-            assert_eq_(lin3_chain(lin3_inverse(a), a), approx(lin3_identity()));
-            assert_eq_(lin3_apply(lin3_inverse(a), lin3_apply(a, x)), approx(x));
-            assert_eq_(lin3_apply(a, lin3_apply(lin3_inverse(a), x)), approx(x));
-        }
-    }
-    rtest_(look_to_the_direction) {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            real3 d = vrng->unit();
-            Linear3 m = lin3_look_to(d);
-
-            assert_eq_(lin3_apply(m, d), approx(r3_new(R0, R0, R1)));
-        }
-    }
+class LinearTest : public testing::Test {
+protected:
+    TestRng<real> rng = TestRng<real>(0xABBA);
+    TestRng<real3> vrng = TestRng<real3>(0xBAAB);
+    TestRngReal3x3 mrng = TestRngReal3x3(0xBEEB);
 };
 
-#endif // TEST_UNIT
+TEST_F(LinearTest, linearity) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        Linear3 m = mrng.normal();
+        real a = rng.normal();
+        real3 x = vrng.normal();
 
-#ifdef TEST_DEV
+        EXPECT_EQ(lin3_apply(a*m, x), approx(lin3_apply(m, a*x)));
+        EXPECT_EQ(lin3_apply(a*m, x), approx(a*lin3_apply(m, x)));
+    }
+}
+TEST_F(LinearTest, chaining) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        Linear3 a = mrng.normal();
+        Linear3 b = mrng.normal();
+        real3 c = vrng.normal();
 
-#include <rtest.hpp>
+        EXPECT_EQ(lin3_chain(a, lin3_identity()), approx(a));
+        EXPECT_EQ(lin3_chain(lin3_identity(), b), approx(b));
+        EXPECT_EQ(lin3_apply(lin3_chain(a, b), c), approx(lin3_apply(a, lin3_apply(b, c))));
+    }
+}
+TEST_F(LinearTest, inversion) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        Linear3 a = mrng.invertible();
+        real3 x = vrng.normal();
 
-#include <vector>
+        EXPECT_EQ(lin3_chain(a, lin3_inverse(a)), approx(lin3_identity()));
+        EXPECT_EQ(lin3_chain(lin3_inverse(a), a), approx(lin3_identity()));
+        EXPECT_EQ(lin3_apply(lin3_inverse(a), lin3_apply(a, x)), approx(x));
+        EXPECT_EQ(lin3_apply(a, lin3_apply(lin3_inverse(a), x)), approx(x));
+    }
+}
+TEST_F(LinearTest, look_to_the_direction) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        real3 d = vrng.unit();
+        Linear3 m = lin3_look_to(d);
 
-#include <test/devtest.hpp>
-
-extern devtest::Target devtest_make_target();
-
-rtest_module_(linear) {
-    rtest_(chain) {
-        TestRngReal3x3 mrng(0xcafe);
-
-        devtest::Target target = devtest_make_target();
-        auto queue = target.make_queue();
-        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("linear.cl", std::string(
-            "#include <algebra/linear.hh>\n"
-            "__kernel void chain(__global const Linear3 *x, __global const Linear3 *y, __global Linear3 *z) {\n"
-            "    int i = get_global_id(0);\n"
-            "    z[i] = lin3_chain(x[i], y[i]);\n"
-            "}\n"
-        ))
-        .build("chain").expect("Kernel build error");
-
-        const int n = TEST_ATTEMPTS;
-        std::vector<Linear3> xbuf(n), ybuf(n), zbuf(n);
-        for (size_t i = 0; i < n; ++i) {
-            xbuf[i] = mrng.normal();
-            ybuf[i] = mrng.normal();
-        }
-
-        devtest::KernelRunner(queue, std::move(kernel))
-        .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
-
-        for(size_t i = 0; i < n; ++i) {
-            Linear3 z = lin3_chain(xbuf[i], ybuf[i]);
-            assert_eq_(dev_approx(z), zbuf[i]);
-        }
+        EXPECT_EQ(lin3_apply(m, d), approx(r3_new(R0, R0, R1)));
     }
 }
 
-#endif // TEST_DEV
-
-#endif // TEST
+#endif // UNITTEST

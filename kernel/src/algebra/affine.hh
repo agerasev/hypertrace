@@ -21,20 +21,8 @@ Affine3 aff3_inverse(Affine3 m);
 
 Affine3 aff3_interpolate(Affine3 a, Affine3 b, real t);
 
-#ifdef HOST
 
-#include "traits.hpp"
-
-template <>
-struct Group<Affine3> {
-    static Affine3 chain(Affine3 a, Affine3 b) {
-        return aff3_chain(a, b);
-    }
-};
-
-#endif // HOST
-
-#ifdef TEST
+#ifdef UNITTEST
 
 class TestRngAffine3 {
 private:
@@ -50,7 +38,7 @@ public:
     Affine3 invertible();
 };
 
-#endif // TEST
+#endif // UNITTEST
 
 
 #ifndef HOST

@@ -43,7 +43,7 @@ Affine3 aff3_interpolate(Affine3 a, Affine3 b, real t) {
 }
 
 
-#ifdef TEST
+#ifdef UNITTEST
 
 Affine3 TestRngAffine3::normal() {
     return aff3_from_ls(lrng.normal(), srng.normal());
@@ -55,86 +55,47 @@ Affine3 TestRngAffine3::invertible() {
     return aff3_from_ls(lrng.invertible(), srng.normal());
 }
 
-#include <rtest.hpp>
+#include <gtest/gtest.h>
 
-#ifdef TEST_UNIT
-
-rtest_module_(affine) {
-    static_thread_local_(TestRngAffine3, arng) {
-        return TestRngAffine3(0xAFFE);
-    }
-    static_thread_local_(TestRng<real3>, vrng) {
-        return TestRng<real3>(0xAFFE);
-    }
-
-    rtest_(chaining) {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Affine3 a = arng->normal();
-            Affine3 b = arng->normal();
-            real3 c = vrng->normal();
-
-            assert_eq_(aff3_apply_pos(aff3_chain(a, b), c), approx(aff3_apply_pos(a, aff3_apply_pos(b, c))));
-            assert_eq_(aff3_apply_dir(aff3_chain(a, b), c), approx(aff3_apply_dir(a, aff3_apply_dir(b, c))));
-        }
-    }
-    rtest_(inversion) {
-        for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-            Affine3 a = arng->invertible();
-            real3 x = vrng->normal();
-            
-            assert_eq_(aff3_apply_pos(aff3_inverse(a), aff3_apply_pos(a, x)), approx(x));
-            assert_eq_(aff3_apply_pos(a, aff3_apply_pos(aff3_inverse(a), x)), approx(x));
-            assert_eq_(aff3_apply_dir(aff3_inverse(a), aff3_apply_dir(a, x)), approx(x));
-            assert_eq_(aff3_apply_dir(a, aff3_apply_dir(aff3_inverse(a), x)), approx(x));
-        }
-    }
+class AffineTest : public testing::Test {
+protected:
+    TestRngAffine3 arng = TestRngAffine3(0xAFFE);
+    TestRng<real3> vrng = TestRng<real3>(0xAFFE);
 };
 
-#endif // TEST_UNIT
+TEST_F(AffineTest, chaining) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        Affine3 a = arng.normal();
+        Affine3 b = arng.normal();
+        real3 c = vrng.normal();
 
-#ifdef TEST_DEV
-
-#include <rtest.hpp>
-
-#include <vector>
-
-#include <test/devtest.hpp>
-
-extern devtest::Target devtest_make_target();
-
-rtest_module_(affine) {
-    rtest_(chain) {
-        TestRngAffine3 arng(0xcafe);
-
-        devtest::Target target = devtest_make_target();
-        auto queue = target.make_queue();
-        auto kernel = devtest::KernelBuilder(target.device_id(), queue)
-        .source("moebius.cl", std::string(
-            "#include <algebra/affine.hh>\n"
-            "__kernel void chain(__global const Affine3 *x, __global const Affine3 *y, __global Affine3 *z) {\n"
-            "    int i = get_global_id(0);\n"
-            "    z[i] = aff3_chain(x[i], y[i]);\n"
-            "}\n"
-        ))
-        .build("chain").expect("Kernel build error");
-
-        const int n = TEST_ATTEMPTS;
-        std::vector<Affine3> xbuf(n), ybuf(n), zbuf(n);
-        for (size_t i = 0; i < n; ++i) {
-            xbuf[i] = arng.normal();
-            ybuf[i] = arng.normal();
-        }
-
-        devtest::KernelRunner(queue, std::move(kernel))
-        .run(n, xbuf, ybuf, zbuf).expect("Kernel run error");
-
-        for(size_t i = 0; i < n; ++i) {
-            Affine3 z = aff3_chain(xbuf[i], ybuf[i]);
-            assert_eq_(dev_approx(z), zbuf[i]);
-        }
+        EXPECT_EQ(aff3_apply_pos(aff3_chain(a, b), c), approx(aff3_apply_pos(a, aff3_apply_pos(b, c))));
+        EXPECT_EQ(aff3_apply_dir(aff3_chain(a, b), c), approx(aff3_apply_dir(a, aff3_apply_dir(b, c))));
+    }
+}
+TEST_F(AffineTest, inversion) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        Affine3 a = arng.invertible();
+        real3 x = vrng.normal();
+        
+        const real IEPS = sqrt(EPS);
+        EXPECT_EQ(
+            aff3_apply_pos(aff3_inverse(a), aff3_apply_pos(a, x)),
+            approx(x).epsilon(IEPS)
+        );
+        EXPECT_EQ(
+            aff3_apply_pos(a, aff3_apply_pos(aff3_inverse(a), x)),
+            approx(x).epsilon(IEPS)
+        );
+        EXPECT_EQ(
+            aff3_apply_dir(aff3_inverse(a), aff3_apply_dir(a, x)),
+            approx(x).epsilon(IEPS)
+        );
+        EXPECT_EQ(
+            aff3_apply_dir(a, aff3_apply_dir(aff3_inverse(a), x)),
+            approx(x).epsilon(IEPS)
+        );
     }
 }
 
-#endif // TEST_DEV
-
-#endif // TEST
+#endif // UNITTEST

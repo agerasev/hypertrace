@@ -87,11 +87,7 @@ bool operator!=(T a, Approx<T> b) {
 }
 template <typename T>
 std::ostream &operator<<(std::ostream &s, const Approx<T> &a) {
-    s << "approx(" << a._value;
-    if (a._epsilon != APPROX_EPS) {
-        s << ", eps=" << a._epsilon;
-    }
-    return s << ")";
+    return s << "approx(" << a._value << ", eps=" << a._epsilon << ")";
 }
 
 template <typename T, typename X=std::enable_if_t<!std::is_integral_v<T>, void>>

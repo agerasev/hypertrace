@@ -26,8 +26,8 @@ set(SRC
     "src/algebra/moebius.cc"
     "src/algebra/linear.cc"
     "src/algebra/affine.cc"
-    #"src/algebra/rotation.cc"
-    #"src/algebra/color.cc"
+    "src/algebra/rotation.cc"
+    "src/algebra/color.cc"
 
     #"src/random.cc"
 

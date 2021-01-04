@@ -28,7 +28,7 @@ Rotation3 rot3_chain(Rotation3 a, Rotation3 b);
 Rotation3 rot3_inverse(Rotation3 m);
 Linear3 rot3_to_linear(Rotation3 m);
 
-#ifdef TEST
+#ifdef UNITTEST
 
 class TestRngRotation2 {
 private:
@@ -51,7 +51,7 @@ public:
     Rotation3 uniform();
 };
 
-#endif // TEST
+#endif // UNITTEST
 
 
 #ifndef HOST

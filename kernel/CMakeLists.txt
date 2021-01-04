@@ -14,6 +14,7 @@ include_directories("src")
 
 set(SRC
     "src/types.cc"
+    "src/macros.cc"
     "src/math.cc"
 
     "src/algebra/real.cc"

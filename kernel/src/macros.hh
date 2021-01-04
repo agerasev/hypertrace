@@ -1,25 +1,25 @@
 #pragma once
 
-// Concatenate `A` and `B` without macro expansion.
-#define _CONCAT_2(A, B) A##B
+#define _CONCAT_1(A)               A
+#define _CONCAT_2(A,B)             A##B
+#define _CONCAT_3(A,B,C)           A##B##C
+#define _CONCAT_4(A,B,C,D)         A##B##C##D
+#define _CONCAT_5(A,B,C,D,E)       A##B##C##D##E
+#define _CONCAT_6(A,B,C,D,E,F)     A##B##C##D##E##F
+#define _CONCAT_7(A,B,C,D,E,F,G)   A##B##C##D##E##F##G
+#define _CONCAT_8(A,B,C,D,E,F,G,H) A##B##C##D##E##F##G##H
 
-// Expand `A` and `B` and concatenate the results.
-#define CONCAT_2(A, B) _CONCAT_2(A, B)
-
-#define CONCAT_1(A) A
-
-#define EVAL(...) __VA_ARGS__
-#define _VA_COUNT(_8,_7,_6,_5,_4,_3,_2,_1,_N,...) _N
-#define VA_COUNT(...) _VA_COUNT(__VA_ARGS__,8,7,6,5,4,3,2,1)
-
-#define CONCAT_3(X, ...) CONCAT_2(X, CONCAT_2(__VA_ARGS__))
-#define CONCAT_4(X, ...) CONCAT_2(X, CONCAT_3(__VA_ARGS__))
-#define CONCAT_5(X, ...) CONCAT_2(X, CONCAT_4(__VA_ARGS__))
-#define CONCAT_6(X, ...) CONCAT_2(X, CONCAT_5(__VA_ARGS__))
-#define CONCAT_7(X, ...) CONCAT_2(X, CONCAT_6(__VA_ARGS__))
-#define CONCAT_8(X, ...) CONCAT_2(X, CONCAT_7(__VA_ARGS__))
-
-#define CONCAT(...) CONCAT_2(CONCAT_, VA_COUNT(__VA_ARGS__))(__VA_ARGS__)
+#define _CONCAT(_1,_2,_3,_4,_5,_6,_7,_8,_N,...) _N
+#define CONCAT(...) _CONCAT(__VA_ARGS__,\
+        _CONCAT_8,\
+        _CONCAT_7,\
+        _CONCAT_6,\
+        _CONCAT_5,\
+        _CONCAT_4,\
+        _CONCAT_3,\
+        _CONCAT_2,\
+        _CONCAT_1,\
+    )(__VA_ARGS__)
 
 #define $(...) CONCAT(__VA_ARGS__)
 

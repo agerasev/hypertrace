@@ -34,7 +34,7 @@ set(SRC
 
     "src/geometry/euclidean.cc"
     "src/geometry/hyperbolic.cc"
-    #"src/geometry/ray.cc"
+    "src/geometry/ray_test.cpp"
 
     #"src/shape/euclidean/shapes.cc"
     #"src/shape/hyperbolic/plane.cc"

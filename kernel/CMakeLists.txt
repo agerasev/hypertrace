@@ -42,7 +42,7 @@ set(SRC
     "src/shape/hy/plane.cc"
     "src/shape/hy/horosphere.cc"
 
-    #"src/material/material.cc"
+    "src/material/material.cc"
     #"src/material/modifier.cpp"
 )
 

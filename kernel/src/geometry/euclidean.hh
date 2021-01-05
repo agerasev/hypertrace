@@ -16,8 +16,6 @@ real eu_distance(EuPos a, EuPos b);
 
 EuPos eu_apply_pos(EuMap m, EuPos p);
 EuDir eu_apply_dir(EuMap m, EuPos p, EuDir d);
-#define eu_chain aff3_chain
-#define eu_inverse aff3_inverse
 
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
@@ -37,6 +35,8 @@ EuMap eu_look_at(EuPos pos);
 EuMap eu_move_at(EuPos pos);
 EuMap eu_move_to(EuDir dir, real dist);
 
+#define eu_chain aff3_chain
+#define eu_inverse aff3_inverse
 
 #ifndef HOST
 #include "euclidean.cc"

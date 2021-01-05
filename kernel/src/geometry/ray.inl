@@ -10,6 +10,7 @@ typedef struct {
     $($Geo,Dir) direction;
 } $(Ray,$Geo);
 
+_ALLOW_MULTIPLE_DEFINITIONS_
 $(Ray,$Geo) $(ray_,$geo,_map)($(Ray,$Geo) ray, $($Geo,Map) map) {
     $(Ray,$Geo) r;
     r.start = $($geo,_apply_pos)(map, ray.start);
@@ -17,6 +18,7 @@ $(Ray,$Geo) $(ray_,$geo,_map)($(Ray,$Geo) ray, $($Geo,Map) map) {
     return r;
 }
 
+_ALLOW_MULTIPLE_DEFINITIONS_
 $(Ray,$Geo) $(ray_,$geo,_advance)($(Ray,$Geo) ray, real l) {
     $($Geo,Map) map = $($geo,_move_to)(ray.direction, -l);
     return $(ray_,$geo,_map)(ray, map);

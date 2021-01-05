@@ -6,26 +6,9 @@
 #include <render/context.hh>
 
 
-#ifndef DYNTYPE
-
 typedef void PlaneHy;
-real planehy_detect(__global const PlaneHy *shape, Context *context, HyDir *normal, LightHy *light);
+real plane_hy_detect(__global const PlaneHy *shape, Context *context, HyDir *normal, LightHy *light);
 
-#else // DYNTYPE
-
-#include <shape/shape.hpp>
-
-template <typename G>
-class Plane;
-template <>
-class Plane<Hy> final : public dyn::ImplEmptyType<Plane<Hy>, SurfaceShape<Hy>> {
-public:
-    inline virtual bool repeat_allowed() const override { return false; }
-    inline virtual std::string name() const override { return "PlaneHy"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("shape/hyperbolic/plane.hh"); };
-};
-
-#endif // !DYNTYPE
 
 /*
 typedef struct {

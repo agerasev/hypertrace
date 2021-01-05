@@ -6,23 +6,8 @@
 #include <render/context.hh>
 
 
-#ifndef DYNTYPE
-
 typedef void Horosphere;
 real horosphere_detect(__global const Horosphere *shape, Context *context, HyDir *normal, LightHy *light);
-
-#else // DYNTYPE
-
-#include <shape/shape.hpp>
-
-class Horosphere final : public dyn::ImplEmptyType<Horosphere, SurfaceShape<Hy>> {
-public:
-    inline virtual bool repeat_allowed() const override { return true; }
-    inline virtual std::string name() const override { return "Horosphere"; };
-    inline virtual dyn::Source source() const override { return dyn::Source("shape/hyperbolic/horosphere.hh"); };
-};
-
-#endif // DYNTYPE
 
 
 /*

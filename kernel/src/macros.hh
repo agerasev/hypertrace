@@ -22,7 +22,3 @@
     )(__VA_ARGS__)
 
 #define $(...) CONCAT(__VA_ARGS__)
-
-#ifndef HOST
-#include "macros.cc"
-#endif // HOST

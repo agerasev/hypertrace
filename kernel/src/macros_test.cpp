@@ -1,6 +1,6 @@
-#include "macros.hh"
-
 #ifdef UNITTEST
+
+#include "macros.hh"
 
 #include <gtest/gtest.h>
 #include <string>

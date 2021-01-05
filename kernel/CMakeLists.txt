@@ -14,8 +14,8 @@ include_directories("src")
 
 set(SRC
     "src/types.cc"
-    "src/macros.cc"
     "src/math.cc"
+    "src/macros_test.cpp"
 
     "src/algebra/real.cc"
     "src/algebra/vector.cc"
@@ -36,15 +36,14 @@ set(SRC
     "src/geometry/hyperbolic.cc"
     "src/geometry/ray_test.cpp"
 
-    #"src/shape/euclidean/shapes.cc"
-    #"src/shape/hyperbolic/plane.cc"
-    #"src/shape/hyperbolic/horosphere.cc"
+    "src/render/light.cc"
+
+    "src/shape/eu/shapes.cc"
+    "src/shape/hy/plane.cc"
+    "src/shape/hy/horosphere.cc"
 
     #"src/material/material.cc"
     #"src/material/modifier.cpp"
-
-    #"src/render/view.cc"
-    #"src/render/light.cc"
 )
 
 enable_testing()

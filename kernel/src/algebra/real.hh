@@ -58,7 +58,7 @@ public:
 #include <iostream>
 #include <type_traits>
 
-#define APPROX_EPS 100*EPS
+#define APPROX_EPS pow(EPS, (real)2/3)
 
 template <typename T>
 class Approx {

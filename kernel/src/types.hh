@@ -60,6 +60,8 @@ typedef double real;
 
 #ifdef HOST
 #define _ALLOW_UNUSED_PARAMETERS_ _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"");
+#define _ALLOW_MULTIPLE_DEFINITIONS_ inline
 #else // !HOST
 #define _ALLOW_UNUSED_PARAMETERS_
+#define _ALLOW_MULTIPLE_DEFINITIONS_
 #endif // HOST

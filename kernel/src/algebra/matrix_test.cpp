@@ -107,8 +107,8 @@ TEST_F(RealMatrixTest, inversion) {
     for (int k = 0; k < TEST_ATTEMPTS; ++k) {
         real4x4 m = r3rng.invertible();
 
-        ASSERT_EQ(r33_dot(m, r33_inverse(m)), approx(r33_one()));
-        ASSERT_EQ(r33_dot(r33_inverse(m), m), approx(r33_one()));
+        ASSERT_EQ(r33_dot(m, r33_inverse(m)), approx(r33_one()).epsilon(sqrt(EPS)));
+        ASSERT_EQ(r33_dot(r33_inverse(m), m), approx(r33_one()).epsilon(sqrt(EPS)));
     }
 }
 TEST_F(RealMatrixTest, outer_product) {

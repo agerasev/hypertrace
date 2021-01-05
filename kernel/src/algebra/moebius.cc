@@ -73,7 +73,7 @@ TEST_F(MoebiusTest, complex_derivation) {
         
         const real DEPS = sqrt(EPS);
         comp deriv = mo_deriv_c(a, p);
-        real dabs = c_abs(deriv);
+        real dabs = 4*c_abs(deriv);
         ASSERT_EQ(
             c_div(mo_apply_c(a, p + DEPS*v) - mo_apply_c(a, p), DEPS*v),
             approx(deriv).epsilon(sqrt(DEPS)*dabs)

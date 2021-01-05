@@ -91,29 +91,29 @@ typedef float16 real16;
 
 #ifdef UNITTEST
 
-template <int N>
-class TestRng<vec<real, N>> {
+template <typename T, int N>
+class TestRng<vec<T, N>> {
 private:
-    TestRng<real> rng;
+    TestRng<T> rng;
 
 public:
     inline TestRng() = default;
     inline explicit TestRng(uint32_t seed) : rng(seed) {}
 
-    vec<real, N> normal() {
-        return vec<real, N>::map([this]() { return rng.normal(); });
+    vec<T, N> normal() {
+        return vec<T, N>::map([this]() { return rng.normal(); });
     }
-    vec<real, N> uniform() {
-        return vec<real, N>::map([this]() { return rng.uniform(); });
+    vec<T, N> uniform() {
+        return vec<T, N>::map([this]() { return rng.uniform(); });
     }
-    vec<real, N> nonzero() {
-        vec<real, N> a;
+    vec<T, N> nonzero() {
+        vec<T, N> a;
         do {
             a = normal();
         } while(length2(a) < EPS);
         return a;
     }
-    vec<real, N> unit() {
+    vec<T, N> unit() {
         return normalize(nonzero());
     }
 };

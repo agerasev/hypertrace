@@ -34,22 +34,19 @@
 #include <random>
 
 template <typename T>
-class TestRng;
-
-template <>
-class TestRng<real> {
+class TestRng {
 private:
     std::minstd_rand rng;
-    std::uniform_real_distribution<> unif;
-    std::normal_distribution<> norm;
+    std::uniform_real_distribution<T> unif;
+    std::normal_distribution<T> norm;
 
 public:
     inline explicit TestRng(uint32_t seed=0xdeadbeef) : rng(seed) {}
 
-    inline real uniform() {
+    inline T uniform() {
         return unif(rng);
     }
-    inline real normal() {
+    inline T normal() {
         return norm(rng);
     }
 };

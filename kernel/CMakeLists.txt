@@ -43,7 +43,7 @@ set(SRC
     "src/shape/hy/horosphere.cc"
 
     "src/material/material.cc"
-    #"src/material/modifier.cpp"
+    "src/material/modifier_test.cpp"
 )
 
 enable_testing()

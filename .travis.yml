@@ -11,13 +11,11 @@ addons:
       - clang
       - cmake
       - make
-      - python3
 
 before_install:
   - sudo apt-get update
 install:
-  - sudo apt-get install -y libgtest-dev ocl-icd-opencl-dev pocl-opencl-icd libpocl-dev
-
+  - sudo apt-get install -y googletest ocl-icd-opencl-dev pocl-opencl-icd libpocl-dev
 
 script:
-  - python3 -m manage test --cxx-compiler clang++
+  - cargo test

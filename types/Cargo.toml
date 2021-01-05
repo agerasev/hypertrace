@@ -1,5 +1,5 @@
 [package]
-name = "dyntype"
+name = "hypertrace-types"
 version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"

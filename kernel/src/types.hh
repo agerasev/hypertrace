@@ -45,6 +45,9 @@ typedef int   isize;
 #elif ADDRESS_WIDTH == 64
 typedef ulong usize;
 typedef long  isize;
+#else
+// TODO: show ADDRESS_WIDTH value in the error message
+#error "Undefined or unsupported ADDRESS_WIDTH"
 #endif
 
 #ifdef DOUBLE_SUPPORT

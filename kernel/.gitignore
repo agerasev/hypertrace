@@ -1,9 +1,3 @@
 /build
-/output
-.coverage.info
-*.png
-*.mp4
-*.stackdump
-
-/.vscode
-*.code-workspace
+/target
+Cargo.lock

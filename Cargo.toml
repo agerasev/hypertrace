@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    #"core",
     "vecmat",
-    "dyntype",
+    "kernel",
+    "types",
 ]

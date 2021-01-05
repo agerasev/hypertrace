@@ -1,0 +1,8 @@
+[package]
+name = "hypertrace-kernel"
+version = "0.0.0"
+authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
+edition = "2018"
+
+[lib]
+path = "rust/lib.rs"

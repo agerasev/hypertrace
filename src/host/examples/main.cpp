@@ -43,7 +43,9 @@ int main(int argc, const char *argv[]) {
     int width = 800, height = 600;
     Renderer renderer(device, width, height, Renderer::Config {
         .path_max_depth = 3,
-        .blur = { .lens = true, .motion = true }
+        .path_max_diffuse_depth = 2,
+        .blur = { .lens = true, .motion = true, .object_motion = false },
+        .gamma = 2.2
     });
     renderer.store_objects(create_scene());
 

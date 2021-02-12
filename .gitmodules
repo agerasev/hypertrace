@@ -1,9 +1,0 @@
-[submodule "submodules/rstd"]
-	path = rstd
-	url = ../cpp-rstd.git
-[submodule "vecmat-rs"]
-	path = vecmat
-	url = ../vecmat-rs.git
-[submodule "hcomplex"]
-	path = hcomplex
-	url = ../hcomplex.git

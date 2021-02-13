@@ -1,0 +1,10 @@
+[package]
+name = "hypertrace-viewer"
+version = "0.0.0"
+authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+sdl2 = "0.34"
+rental = "0.5.5"
+base = { package = "hypertrace-base", path = "../base" }

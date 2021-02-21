@@ -1,0 +1,6 @@
+[submodule "vecmat"]
+	path = vecmat
+	url = ../vecmat-rs.git
+[submodule "ccgeom"]
+	path = ccgeom
+	url = ../ccgeom.git

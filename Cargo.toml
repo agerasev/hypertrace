@@ -1,6 +1,8 @@
 [workspace]
 
 members = [
+    "vecmat",
+    "ccgeom",
     "kernel",
     "types",
     "base",

@@ -6,5 +6,5 @@ edition = "2018"
 
 [dependencies]
 byteorder = "1"
-vecmat = "0.6"
+vecmat = { path = "../vecmat" }
 num-integer = "0.1"

@@ -55,6 +55,7 @@ std::vector<Object> create_scene() {
             .material_count = 2,
             .tiling = {
                 .type = HYPLANE_TILING_PENTASTAR,
+                .cell_size = 0.5,
                 .border_width = 0.01,
                 .border_material = Material {border_color, 0.0, 0, float3(1.0)},
             },
@@ -69,6 +70,7 @@ std::vector<Object> create_scene() {
             .material_count = 2,
             .tiling = {
                 .type = HYPLANE_TILING_PENTAGONAL,
+                .cell_size = 0.95,
                 .border_width = 0.02,
                 .border_material = Material {border_color, 0.0, 0, float3(1.0)},
             },

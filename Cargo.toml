@@ -7,4 +7,5 @@ members = [
     "types",
     "base",
     "viewer",
+    "samples",
 ]

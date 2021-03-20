@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 ocl = "0.19.3"
-hypertrace-types = { path = "../types" }
+types = { package = "hypertrace-types", path = "../types" }

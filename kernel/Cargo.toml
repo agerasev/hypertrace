@@ -4,9 +4,6 @@ version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
 
-[lib]
-path = "rust/lib.rs"
-
 [dev-dependencies]
 cmake = "0.1"
 num_cpus = "1.0"

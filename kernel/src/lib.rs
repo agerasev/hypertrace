@@ -17,6 +17,6 @@ fn kernel_test() {
     cfg.build_arg(format!("-j{}", num_cpus::get()));
     cfg.build();
 
-    run_bin("kernel_float");
-    run_bin("kernel_double");
+    run_bin("kernel_f32");
+    run_bin("kernel_f64");
 }

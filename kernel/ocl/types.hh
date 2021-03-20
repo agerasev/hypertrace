@@ -29,7 +29,7 @@ static_assert(sizeof(ulong) == 8);
 typedef std::size_t    usize;
 typedef std::ptrdiff_t isize;
 
-#ifdef DOUBLE_SUPPORT
+#ifdef DOUBLE_PRECISION
 typedef double real;
 #else
 typedef float real;
@@ -50,7 +50,7 @@ typedef long  isize;
 #error "Undefined or unsupported ADDRESS_WIDTH"
 #endif
 
-#ifdef DOUBLE_SUPPORT
+#ifdef DOUBLE_PRECISION
 typedef float real;
 #else
 typedef double real;

@@ -63,7 +63,7 @@ VECTOR_ALL_N(real,   real)
 
 #define MAKE(x) (x)
 
-#ifdef DOUBLE_SUPPORT
+#ifdef DOUBLE_PRECISION
 typedef double2  real2;
 typedef double3  real3;
 typedef double4  real4;

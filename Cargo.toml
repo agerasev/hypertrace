@@ -6,7 +6,7 @@ members = [
     "kernel",
     "types",
     "base",
-    "render",
+    "proc",
     "viewer",
     "samples",
 ]

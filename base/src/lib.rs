@@ -1,5 +1,5 @@
-pub mod geometry;
+pub mod image;
 pub mod error;
 
-pub use geometry::*;
+pub use image::*;
 pub use error::*;

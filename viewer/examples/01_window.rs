@@ -8,10 +8,11 @@ use std::{
 use viewer::Window;
 
 fn main() -> base::Result<()> {
+    let shape = (800, 600);
     let context = Rc::new(sdl2::init()?);
-    let mut window = Window::new(context, (800, 600), "Empty window")?;
+    let mut window = Window::new(context, shape, "Empty window")?;
 
-    window.draw()?;
+    window.draw(&base::Image::new(shape))?;
     sleep(Duration::from_millis(1000));
 
     Ok(())

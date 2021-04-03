@@ -8,6 +8,7 @@ use sdl2::{
     keyboard::{Keycode, Scancode},
     mouse::{MouseState, RelativeMouseState},
 };
+use base::Image;
 
 rental! { mod rent {
     use sdl2::{
@@ -45,7 +46,7 @@ impl Window {
             Box::new(texture_creator),
             |tc| {
                 tc.create_texture(
-                    PixelFormatEnum::RGB24,
+                    PixelFormatEnum::RGBA32,
                     TextureAccess::Streaming,
                     size.0 as u32,
                     size.1 as u32,
@@ -65,8 +66,8 @@ impl Window {
         self.size
     }
 
-    pub fn draw(&mut self/*, img: &Image*/) -> base::Result<()> {
-        //let mut texture = self.texture.take().unwrap();
+    pub fn draw(&mut self, image: &Image<u8, 4>) -> base::Result<()> {
+        let mut texture = self.texture.take().unwrap();
 
         /*
         if let Some(ll) = self.state.screenshot {
@@ -79,26 +80,15 @@ impl Window {
         }
         */
 
-        /*
-        let res = img.read()
-        .and_then(|data| {
-            texture.rent_mut(|texture| {
-                texture.update(None, &data, 3*img.dims().0)
-            }).map_err(|e| base::Error::from(e.to_string()))
-        })
-        .and_then(|()| {
-            //self.canvas.clear();
-            texture.rent(|texture| {
-                self.canvas.copy(texture, None, None)
-                .map_err(|e| base::Error::from(e))
-            })
-            .map(|()| self.canvas.present())
-        });
-        */
+        texture.rent_mut(|tex| tex.update(None, image.data(), 4 * image.width()).map_err(|e| e.to_string()))?;
 
-        //assert!(self.texture.replace(texture).is_none());
+        //self.canvas.clear();
+        texture.rent(|tex| self.canvas.copy(tex, None, None))?;
 
-        //res
+        self.canvas.present();
+
+        assert!(self.texture.replace(texture).is_none());
+
         Ok(())
     }
 } 

@@ -9,6 +9,9 @@ name = "main"
 path = "src/main.rs"
 
 [dependencies]
-base = { package = "hypertrace-base", path = "../base" }
-viewer = { package = "hypertrace-viewer", path = "../viewer" }
 sdl2 = "0.34"
+ocl = "0.19"
+base = { package = "hypertrace-base", path = "../base" }
+view = { package = "hypertrace-viewer", path = "../viewer" }
+proc = { package = "hypertrace-processing", path = "../proc" }
+clap = "2.33"

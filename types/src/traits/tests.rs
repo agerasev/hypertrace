@@ -69,4 +69,5 @@ fn empty_dyn() {
         Box::new(DummyValue) as Box<dyn SizedValueDyn>,
     );
     assert_eq!(dty.id(), din.type_().id());
+    assert_eq!(dty.into_type_dyn().id(), din.into_value_dyn().type_().id());
 }

@@ -1,8 +1,4 @@
-use crate::{config::*, io::*, traits::*};
-use std::{
-    fmt::{self, Debug, Formatter},
-    io,
-};
+use crate::traits::*;
 
 macro_rules! impl_type_box {
     ($T:ident, $V:ident) => {
@@ -13,15 +9,15 @@ macro_rules! impl_type_box {
                 self.as_ref().id_dyn()
             }
 
-            fn align(&self, cfg: &Config) -> usize {
+            fn align(&self, cfg: &$crate::Config) -> usize {
                 self.as_ref().align_dyn(cfg)
             }
 
-            fn load<R: CountingRead + ?Sized>(
+            fn load<R: $crate::CountingRead + ?Sized>(
                 &self,
-                cfg: &Config,
+                cfg: &$crate::Config,
                 src: &mut R,
-            ) -> io::Result<Self::Value> {
+            ) -> std::io::Result<Self::Value> {
                 self.as_ref().load_dyn(cfg, src.as_dyn_mut())
             }
         }
@@ -32,8 +28,8 @@ macro_rules! impl_type_box {
             }
         }
 
-        impl Debug for Box<dyn $T> {
-            fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        impl std::fmt::Debug for Box<dyn $T> {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
                 self.as_ref().debug_fmt_dyn(f)
             }
         }
@@ -43,7 +39,7 @@ macro_rules! impl_type_box {
 macro_rules! impl_sized_type_box {
     ($T:ident, $V:ident) => {
         impl SizedType for Box<dyn $T> {
-            fn size(&self, cfg: &Config) -> usize {
+            fn size(&self, cfg: &$crate::Config) -> usize {
                 self.as_ref().size_dyn(cfg)
             }
         }
@@ -60,7 +56,7 @@ macro_rules! impl_value_box {
         impl Value for Box<dyn $V> {
             type Type = Box<dyn $T>;
 
-            fn size(&self, cfg: &Config) -> usize {
+            fn size(&self, cfg: &$crate::Config) -> usize {
                 self.as_ref().size_dyn(cfg)
             }
 
@@ -68,11 +64,11 @@ macro_rules! impl_value_box {
                 self.as_ref().type_dyn()
             }
 
-            fn store<W: CountingWrite + ?Sized>(
+            fn store<W: $crate::CountingWrite + ?Sized>(
                 &self,
-                cfg: &Config,
+                cfg: &$crate::Config,
                 dst: &mut W,
-            ) -> io::Result<()> {
+            ) -> std::io::Result<()> {
                 self.as_ref().store_dyn(cfg, dst.as_dyn_mut())
             }
         }

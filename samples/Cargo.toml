@@ -13,5 +13,5 @@ sdl2 = "0.34"
 ocl = "0.19"
 base = { package = "hypertrace-base", path = "../base" }
 view = { package = "hypertrace-viewer", path = "../viewer" }
-proc = { package = "hypertrace-processing", path = "../proc" }
+proc = { package = "hypertrace-processing", path = "../processing" }
 clap = "2.33"

@@ -1,38 +1,6 @@
 use super::type_::*;
 use crate::{io::*, Config};
-use std::{any::Any, io};
-
-macro_rules! def_dyn_value {
-    ($T:ident, $V:ident) => {
-        /// Size of instance.
-        fn size_dyn(&self, cfg: &Config) -> usize;
-
-        /// Returns the dynamic type of the instance.
-        fn type_dyn(&self) -> Box<dyn $T>;
-
-        /// Stores the instance to abstract writer.
-        fn store_dyn(&self, cfg: &Config, dst: &mut dyn CountingWrite) -> io::Result<()>;
-
-        /// Cast to `Any`.
-        fn as_any(&self) -> &dyn Any;
-
-        /// Cast to mutable `Any`.
-        fn as_mut_any(&mut self) -> &mut dyn Any;
-    };
-}
-
-/// Abstract instance of a runtime type.
-pub trait ValueDyn: 'static {
-    def_dyn_value!(TypeDyn, ValueDyn);
-}
-
-/// Instance of a sized runtime type.
-pub trait SizedValueDyn: 'static {
-    def_dyn_value!(SizedTypeDyn, SizedValueDyn);
-
-    /// Upcast to ValueDyn.
-    fn into_value_dyn(self: Box<Self>) -> Box<dyn ValueDyn>;
-}
+use std::io;
 
 /// Instance of a runtime type.
 pub trait Value: 'static {
@@ -67,9 +35,50 @@ where
 {
 }
 
-macro_rules! impl_dyn_value {
+
+macro_rules! def_value_dyn {
     ($T:ident, $V:ident) => {
-        fn size_dyn(&self, cfg: &Config) -> usize {
+        /// Size of instance.
+        fn size_dyn(&self, cfg: &$crate::Config) -> usize;
+
+        /// Returns the dynamic type of the instance.
+        fn type_dyn(&self) -> Box<dyn $T>;
+
+        /// Stores the instance to abstract writer.
+        fn store_dyn(&self, cfg: &$crate::Config, dst: &mut dyn $crate::CountingWrite) -> std::io::Result<()>;
+
+        /// Cast to `Any`.
+        fn as_any(&self) -> &dyn std::any::Any;
+
+        /// Cast to mutable `Any`.
+        fn as_mut_any(&mut self) -> &mut dyn std::any::Any;
+
+        /// Upcast to ValueDyn.
+        fn into_value_dyn(self: Box<Self>) -> Box<dyn ValueDyn>;
+    };
+}
+
+macro_rules! def_sized_value_dyn {
+    ($T:ident, $V:ident) => {
+        /// Upcast to SizedValueDyn.
+        fn into_sized_value_dyn(self: Box<Self>) -> Box<dyn SizedValueDyn>;
+    };
+}
+
+/// Abstract instance of a runtime type.
+pub trait ValueDyn: 'static {
+    def_value_dyn!(TypeDyn, ValueDyn);
+}
+
+/// Instance of a sized runtime type.
+pub trait SizedValueDyn: 'static {
+    def_value_dyn!(SizedTypeDyn, SizedValueDyn);
+    def_sized_value_dyn!(SizedTypeDyn, SizedValueDyn);
+}
+
+macro_rules! impl_value_dyn {
+    ($T:ident, $V:ident) => {
+        fn size_dyn(&self, cfg: &$crate::Config) -> usize {
             self.size(cfg)
         }
 
@@ -77,15 +86,27 @@ macro_rules! impl_dyn_value {
             Box::new(self.type_())
         }
 
-        fn store_dyn(&self, cfg: &Config, dst: &mut dyn CountingWrite) -> io::Result<()> {
+        fn store_dyn(&self, cfg: &$crate::Config, dst: &mut dyn $crate::CountingWrite) -> std::io::Result<()> {
             self.store(cfg, dst)
         }
 
-        fn as_any(&self) -> &dyn Any {
+        fn as_any(&self) -> &dyn std::any::Any {
             self
         }
 
-        fn as_mut_any(&mut self) -> &mut dyn Any {
+        fn as_mut_any(&mut self) -> &mut dyn std::any::Any {
+            self
+        }
+
+        fn into_value_dyn(self: Box<Self>) -> Box<dyn ValueDyn> {
+            self
+        }
+    };
+}
+
+macro_rules! impl_sized_value_dyn {
+    ($T:ident, $V:ident) => {
+        fn into_sized_value_dyn(self: Box<Self>) -> Box<dyn SizedValueDyn> {
             self
         }
     };
@@ -95,7 +116,7 @@ impl<V> ValueDyn for V
 where
     V: Value,
 {
-    impl_dyn_value!(TypeDyn, ValueDyn);
+    impl_value_dyn!(TypeDyn, ValueDyn);
 }
 
 impl<V> SizedValueDyn for V
@@ -103,9 +124,6 @@ where
     V: SizedValue,
     V::Type: SizedType,
 {
-    impl_dyn_value!(SizedTypeDyn, SizedValueDyn);
-
-    fn into_value_dyn(self: Box<Self>) -> Box<dyn ValueDyn> {
-        self
-    }
+    impl_value_dyn!(SizedTypeDyn, SizedValueDyn);
+    impl_sized_value_dyn!(SizedTypeDyn, SizedValueDyn);
 }

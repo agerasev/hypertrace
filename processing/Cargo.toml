@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 ocl = "0.19"
 base = { package = "hypertrace-base", path = "../base" }
+types = { package = "hypertrace-types", path = "../types" }

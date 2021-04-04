@@ -1,17 +1,17 @@
 use base::Image;
 use ocl::OclPrm;
 
-pub struct DeviceImage<T: Copy + Default + OclPrm, const N: usize> {
+pub struct ImageBuffer<T: Copy + Default + OclPrm, const N: usize> {
     buffer: ocl::Buffer<T>,
     shape: (usize, usize),
 }
 
 pub struct Canvas {
-    image: DeviceImage<f32, 4>,
+    image: ImageBuffer<f32, 4>,
     passes: usize,
 }
 
-impl<T: Copy + Default + OclPrm, const N: usize> DeviceImage<T, N> {
+impl<T: Copy + Default + OclPrm, const N: usize> ImageBuffer<T, N> {
     pub fn new(context: &ocl::Context, (width, height): (usize, usize)) -> base::Result<Self> {
         Ok(Self {
             buffer: ocl::Buffer::builder()
@@ -56,7 +56,7 @@ impl<T: Copy + Default + OclPrm, const N: usize> DeviceImage<T, N> {
 impl Canvas {
     pub fn new(context: &ocl::Context, shape: (usize, usize)) -> base::Result<Self> {
         Ok(Self {
-            image: DeviceImage::new(context, shape)?,
+            image: ImageBuffer::new(context, shape)?,
             passes: 0,
         })
     }
@@ -81,17 +81,17 @@ impl Canvas {
         self.passes = 0;
     }
 
-    pub fn image(&self) -> &DeviceImage<f32, 4> {
+    pub fn image(&self) -> &ImageBuffer<f32, 4> {
         &self.image
     }
-    pub fn image_mut(&mut self) -> &mut DeviceImage<f32, 4> {
+    pub fn image_mut(&mut self) -> &mut ImageBuffer<f32, 4> {
         &mut self.image
     }
 }
 
 pub struct Converter {
     kernel: ocl::Kernel,
-    image: DeviceImage<u8, 4>,
+    image: ImageBuffer<u8, 4>,
 }
 
 impl Converter {
@@ -119,7 +119,7 @@ impl Converter {
             .arg_named("image", None::<&ocl::Buffer<u8>>)
             .build()?;
         
-        let image = DeviceImage::new(context, shape)?;
+        let image = ImageBuffer::new(context, shape)?;
 
         Ok(Self {
             kernel,

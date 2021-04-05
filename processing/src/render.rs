@@ -12,7 +12,9 @@ impl<T: ObjectType> Render<T> where T::Value: Object {
             {}
 
             typedef {} Object;
-            typedef {}_render object_render;
+            float4 object_render(__global const Object *object, float2 pos) {{
+                return {}_render(object, pos);
+            }}
 
             __kernel void render(
                 const uint2 shape,

@@ -6,7 +6,38 @@ use std::{
 };
 use base::Image;
 use view::{Window, Handler, DummyController};
-use proc::{Render, Canvas, Converter};
+use proc::{Render, Canvas, Converter, Buffer};
+use types::{
+    Config, AddressWidth, Endian,
+    ObjectType, Object,
+    wrap_def, wrap_impl, wrap_impl_sized, wrap_impl_unit,
+};
+use vecmat::Vector;
+
+type ColorMap = [Vector<f32, 4>; 2];
+wrap_def!(DummyType, Dummy, ColorMap);
+wrap_impl!(DummyType, Dummy, ColorMap);
+wrap_impl_sized!(DummyType, Dummy, ColorMap);
+wrap_impl_unit!(DummyType, Dummy, ColorMap);
+
+impl ObjectType for DummyType {
+    fn name(&self) -> String {
+        String::from("dummy")
+    }
+    fn source(&self) -> String {
+        String::from(r#"
+        typedef struct {
+            float4 colors[2];
+        } dummy;
+        float4 dummy_render(__global const dummy *object, float2 pos) {
+            return object->colors[0] * pos.x + object->colors[1] * pos.y;
+        }
+        "#)
+    }
+}
+
+impl Object for Dummy {}
+
 
 fn main() -> base::Result<()> {
     let matches = clap::App::new("Sample")
@@ -44,7 +75,18 @@ fn main() -> base::Result<()> {
 
     let ocl_context = ocl::Context::builder().platform(platform).devices(device).build()?;
     let ocl_queue = ocl::Queue::new(&ocl_context, device, None)?;
-    let render = Render::new(&ocl_context)?;
+
+    let config = Config {
+        address_width: AddressWidth::X32,
+        endian: Endian::Little,
+        double_support: false,
+    };
+    let object = Dummy([
+        Vector::from((0.0, 0.0, 1.0, 1.0)),
+        Vector::from((0.0, 1.0, 0.0, 1.0)),
+    ]);
+    let buffer = Buffer::new(&ocl_context, &config, &object)?;
+    let render = Render::new(&ocl_context, DummyType::default())?;
     let converter = Converter::new(&ocl_context, shape)?;
 
     let sdl_context = Rc::new(sdl2::init()?);
@@ -58,7 +100,7 @@ fn main() -> base::Result<()> {
         if handler.poll()? {
             break Ok(());
         }
-        render.render(&ocl_queue, &mut canvas)?;
+        render.render(&ocl_queue, &buffer, &mut canvas)?;
         converter.convert_canvas_to_image(&ocl_queue, &canvas, &mut image)?;
         window.draw(&image)?;
         sleep(Duration::from_millis(40));

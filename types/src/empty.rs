@@ -7,51 +7,49 @@ use crate::{
 use std::{io, fmt::Debug};
 
 
-pub trait EmptyType: Clone + Debug + Default + 'static {
-    type EmptyValue: EmptyValue<EmptyType = Self>;
-}
+#[derive(Clone, Debug, Default)]
+pub struct EmptyType;
 
-impl<T> Type for T where T: EmptyType {
-    type Value = T::EmptyValue;
+impl Type for EmptyType {
+    type Value = EmptyValue;
 
     fn id(&self) -> u64 {
-        type_id::<Self::Value>()
+        type_id::<Self>()
     }
     fn align(&self, _: &Config) -> usize {
         1
     }
     fn load<R: CountingRead + ?Sized>(&self, _: &Config, _: &mut R) -> io::Result<Self::Value> {
-        Ok(Self::Value::default())
+        Ok(EmptyValue::default())
     }
 }
 
-impl<T> SizedType for T where T: EmptyType {
+impl SizedType for EmptyType {
     fn size(&self, _: &Config) -> usize {
         0
     }
 }
 
-impl<T> UnitType for T where T: EmptyType {}
+impl UnitType for EmptyType {}
 
 
-pub trait EmptyValue: Clone + Debug + Default + 'static {
-    type EmptyType: EmptyType<EmptyValue = Self>;
-}
+#[derive(Clone, Debug, Default)]
+pub struct EmptyValue;
 
-impl<V> Value for V where V: EmptyValue {
-    type Type = V::EmptyType;
+impl Value for EmptyValue {
+    type Type = EmptyType;
 
     fn size(&self, _: &Config) -> usize {
         0
     }
     fn type_(&self) -> Self::Type {
-        Self::Type::default()
+        EmptyType::default()
     }
     fn store<W: CountingWrite + ?Sized>(&self, _: &Config, _: &mut W) -> io::Result<()> {
         Ok(())
     }
 }
 
-impl<V> SizedValue for V where V: EmptyValue {}
+impl SizedValue for EmptyValue {}
 
-impl<V> UnitValue for V where V: EmptyValue {}
+impl UnitValue for EmptyValue {}

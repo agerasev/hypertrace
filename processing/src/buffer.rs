@@ -6,7 +6,7 @@ pub struct Buffer<T: Type> {
 }
 
 impl<T: Type> Buffer<T> {
-    pub fn new(context: &ocl::Context, cfg: &Config, value: T::Value) -> base::Result<Self> {
+    pub fn new(context: &ocl::Context, cfg: &Config, value: &T::Value) -> base::Result<Self> {
         let size = value.size(cfg);
         let mut buffer = Vec::with_capacity(size);
         value.store(cfg, &mut CountingWrapper::new(&mut buffer))?;

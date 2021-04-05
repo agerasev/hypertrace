@@ -7,6 +7,7 @@ mod traits;
 mod utils;
 mod object;
 mod empty;
+#[macro_use]
 mod wrap;
 
 pub use config::*;

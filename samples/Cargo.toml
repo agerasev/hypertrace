@@ -12,6 +12,8 @@ path = "src/main.rs"
 sdl2 = "0.34"
 ocl = "0.19"
 base = { package = "hypertrace-base", path = "../base" }
+types = { package = "hypertrace-types", path = "../types" }
 view = { package = "hypertrace-viewer", path = "../viewer" }
 proc = { package = "hypertrace-processing", path = "../processing" }
 clap = "2.33"
+vecmat = { path = "../vecmat" }

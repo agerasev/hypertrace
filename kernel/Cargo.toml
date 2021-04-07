@@ -1,9 +1,16 @@
 [package]
 name = "hypertrace-kernel"
-version = "0.0.0"
+version = "0.0.1"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
+
+[dependencies]
+lazy_static = "1.4"
+ocl-include = { path = "../includer" }
 
 [dev-dependencies]
 cmake = "0.1"
 num_cpus = "1.0"
+
+[build-dependencies]
+walkdir = "2"

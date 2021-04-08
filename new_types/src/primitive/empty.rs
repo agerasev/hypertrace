@@ -1,5 +1,5 @@
 use crate::{
-    io::{CountingRead, CountingWrite},
+    io::{CntRead, CntWrite},
     Config, Entity, SizedEntity, SourceInfo,
 };
 use std::io;
@@ -9,7 +9,7 @@ impl Entity for () {
         1
     }
 
-    fn load<R: CountingRead>(_: &Config, _: &mut R) -> io::Result<Self> {
+    fn load<R: CntRead>(_: &Config, _: &mut R) -> io::Result<Self> {
         Ok(())
     }
 
@@ -17,7 +17,7 @@ impl Entity for () {
         0
     }
 
-    fn store<W: CountingWrite>(&self, _: &Config, _: &mut W) -> io::Result<()> {
+    fn store<W: CntWrite>(&self, _: &Config, _: &mut W) -> io::Result<()> {
         Ok(())
     }
 

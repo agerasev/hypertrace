@@ -1,4 +1,4 @@
-use crate::{io::CountingWrite, Config, Entity, EntityType, SizedEntity, SizedType, Type};
+use crate::{io::CntWrite, Config, Entity, EntityType, SizedEntity, SizedType, Type};
 use ref_cast::RefCast;
 use std::io;
 
@@ -19,7 +19,7 @@ pub trait Value: 'static {
     fn type_of(&self) -> Self::Type;
 
     /// Stores the instance to a writer.
-    fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
+    fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
 }
 
 /// Sized dynamic entity value.
@@ -72,7 +72,7 @@ impl<E: Entity> Value for EntityValue<E> {
         EntityType::new()
     }
 
-    fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+    fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         self.0.store(cfg, dst)
     }
 }

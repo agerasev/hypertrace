@@ -9,3 +9,4 @@ byteorder = "1"
 vecmat = { path = "../vecmat" }
 num-integer = "0.1"
 ref-cast = "1.0"
+fxhash = "0.2"

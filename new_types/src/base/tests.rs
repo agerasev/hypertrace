@@ -1,4 +1,4 @@
-use crate::{config::*, EntityType, EntityValue, SizedType, Type, Value};
+use crate::{config::*, Entity, EntityType, EntityValue, SizedType, Type, Value};
 
 const CFG: Config = Config {
     endian: Endian::Little,
@@ -12,7 +12,8 @@ type DummyValue = EntityValue<()>;
 #[test]
 fn dummy_type() {
     let (dty, din) = (DummyType::new(), DummyValue::new(()));
-    assert_eq!(dty.id(&CFG), din.type_of().id(&CFG));
+    assert_eq!(<()>::type_id(), dty.id());
+    assert_eq!(dty.id(), din.type_of().id());
     assert_eq!(dty.align(&CFG), 1);
     assert_eq!(dty.size(&CFG), 0);
     assert_eq!(din.size(&CFG), 0);

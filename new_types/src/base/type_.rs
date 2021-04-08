@@ -1,5 +1,7 @@
 use crate::{
-    io::CountingRead, Config, Entity, EntityValue, SizedEntity, SizedValue, SourceInfo, Value,
+    base::{Entity, EntityValue, SizedEntity, SizedValue, Value},
+    io::CntRead,
+    Config, SourceInfo,
 };
 use std::{
     any::type_name,
@@ -14,13 +16,13 @@ pub trait Type: Clone + Debug + 'static {
     type Value: Value<Type = Self>;
 
     /// Type unique identifier.
-    fn id(&self, cfg: &Config) -> u64;
+    fn id(&self) -> u64;
 
     /// Align of dynamic type.
     fn align(&self, cfg: &Config) -> usize;
 
     /// Loads the instance of type.
-    fn load<R: CountingRead>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
+    fn load<R: CntRead>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
 
     /// Returns a kernel source info of the type.
     fn source(&self, cfg: &Config) -> SourceInfo;
@@ -65,15 +67,15 @@ impl<E: Entity> Debug for EntityType<E> {
 impl<E: Entity> Type for EntityType<E> {
     type Value = EntityValue<E>;
 
-    fn id(&self, cfg: &Config) -> u64 {
-        E::type_id(cfg)
+    fn id(&self) -> u64 {
+        E::type_id()
     }
 
     fn align(&self, cfg: &Config) -> usize {
         E::align(cfg)
     }
 
-    fn load<R: CountingRead>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+    fn load<R: CntRead>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
         E::load(cfg, src).map(EntityValue::new)
     }
 

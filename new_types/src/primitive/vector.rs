@@ -1,5 +1,5 @@
 use crate::{
-    io::{CountingRead, CountingWrite},
+    io::{CntRead, CntWrite},
     primitive::PrimScal,
     Config, Entity, SizedEntity, SourceInfo,
 };
@@ -18,14 +18,14 @@ macro_rules! impl_entity {
             fn size(&self, cfg: &Config) -> usize {
                 Self::type_size(cfg)
             }
-            fn load<R: CountingRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+            fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
                 let mut v = Self::default();
                 for i in 0..$N {
                     v[i] = T::load(cfg, src)?;
                 }
                 Ok(v)
             }
-            fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+            fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
                 for i in 0..$N {
                     self[i].store(cfg, dst)?;
                 }
@@ -60,7 +60,7 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
     }
-    fn load<R: CountingRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+    fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let mut v = Self::default();
         for i in 0..3 {
             v[i] = T::load(cfg, src)?;
@@ -68,7 +68,7 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
         let _ = T::load(cfg, src)?;
         Ok(v)
     }
-    fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+    fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         for i in 0..3 {
             self[i].store(cfg, dst)?;
         }
@@ -77,10 +77,7 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
     }
     fn source(cfg: &Config) -> SourceInfo {
         let src = T::source(cfg);
-        SourceInfo::new(
-            format!("{}3", src.name),
-            format!("{}3", src.prefix),
-        )
+        SourceInfo::new(format!("{}3", src.name), format!("{}3", src.prefix))
     }
 }
 impl<T: PrimScal> SizedEntity for Vector<T, 3> {

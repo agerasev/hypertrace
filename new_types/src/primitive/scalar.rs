@@ -1,6 +1,6 @@
 use crate::{
     config::{AddressWidth, Config, Endian},
-    io::{CountingRead, CountingWrite},
+    io::{CntRead, CntWrite},
     Entity, SizedEntity, SourceInfo,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
@@ -18,13 +18,13 @@ macro_rules! impl_entity_native {
             fn size(&self, cfg: &Config) -> usize {
                 Self::type_size(cfg)
             }
-            fn load<R: CountingRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+            fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
                 match cfg.endian {
                     Endian::Big => src.$read::<BigEndian>(),
                     Endian::Little => src.$read::<LittleEndian>(),
                 }
             }
-            fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+            fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
                 match cfg.endian {
                     Endian::Big => dst.$write::<BigEndian>(*self),
                     Endian::Little => dst.$write::<LittleEndian>(*self),
@@ -52,10 +52,10 @@ macro_rules! impl_entity_byte {
             fn size(&self, cfg: &Config) -> usize {
                 Self::type_size(cfg)
             }
-            fn load<R: CountingRead>(_cfg: &Config, src: &mut R) -> io::Result<Self> {
+            fn load<R: CntRead>(_cfg: &Config, src: &mut R) -> io::Result<Self> {
                 src.$read()
             }
-            fn store<W: CountingWrite>(&self, _cfg: &Config, dst: &mut W) -> io::Result<()> {
+            fn store<W: CntWrite>(&self, _cfg: &Config, dst: &mut W) -> io::Result<()> {
                 dst.$write(*self)
             }
             fn source(_: &Config) -> SourceInfo {
@@ -80,13 +80,13 @@ macro_rules! impl_entity_size {
             fn size(&self, cfg: &Config) -> usize {
                 Self::type_size(cfg)
             }
-            fn load<R: CountingRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+            fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
                 match cfg.address_width {
                     AddressWidth::X32 => $T32::load(cfg, src).map(|x| x as $T),
                     AddressWidth::X64 => $T64::load(cfg, src).map(|x| x as $T),
                 }
             }
-            fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+            fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
                 match cfg.address_width {
                     AddressWidth::X32 => (*self as $T32).store(cfg, dst),
                     AddressWidth::X64 => (*self as $T64).store(cfg, dst),
@@ -133,7 +133,7 @@ impl Entity for f64 {
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
     }
-    fn load<R: CountingRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+    fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         if cfg.double_support {
             match cfg.endian {
                 Endian::Big => src.read_f64::<BigEndian>(),
@@ -143,7 +143,7 @@ impl Entity for f64 {
             f32::load(cfg, src).map(|x| x as f64)
         }
     }
-    fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+    fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         if cfg.double_support {
             match cfg.endian {
                 Endian::Big => dst.write_f64::<BigEndian>(*self),

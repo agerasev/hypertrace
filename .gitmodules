@@ -6,4 +6,4 @@
 	url = ../ccgeom.git
 [submodule "includer"]
 	path = includer
-	url = git@github.com:agerasev/ocl-include.git
+	url = ../ocl-include.git

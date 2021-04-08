@@ -1,5 +1,5 @@
 use crate::{
-    io::CountingRead, Config, Entity, EntityValue, SizedEntity, SizedValue, SourceTree, Value,
+    io::CountingRead, Config, Entity, EntityValue, SizedEntity, SizedValue, SourceInfo, Value,
 };
 use std::{
     any::type_name,
@@ -22,8 +22,8 @@ pub trait Type: Clone + Debug + 'static {
     /// Loads the instance of type.
     fn load<R: CountingRead>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
 
-    /// Returns a source tree of the type.
-    fn source(&self, cfg: &Config) -> Option<SourceTree>;
+    /// Returns a kernel source info of the type.
+    fn source(&self, cfg: &Config) -> SourceInfo;
 }
 
 /// Sized dynamic entity type.
@@ -77,7 +77,7 @@ impl<E: Entity> Type for EntityType<E> {
         E::load(cfg, src).map(EntityValue::new)
     }
 
-    fn source(&self, cfg: &Config) -> Option<SourceTree> {
+    fn source(&self, cfg: &Config) -> SourceInfo {
         E::source(cfg)
     }
 }

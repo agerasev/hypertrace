@@ -1,6 +1,6 @@
 use crate::{
     io::{CountingRead, CountingWrite},
-    Config, Entity, SizedEntity, SourceTree,
+    Config, Entity, SizedEntity, SourceInfo,
 };
 use std::io;
 
@@ -21,8 +21,8 @@ impl Entity for () {
         Ok(())
     }
 
-    fn source(_: &Config) -> Option<SourceTree> {
-        None
+    fn source(_: &Config) -> SourceInfo {
+        SourceInfo::new("void".into(), "empty".into())
     }
 }
 

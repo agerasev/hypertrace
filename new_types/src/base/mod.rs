@@ -10,16 +10,9 @@ pub use value::*;
 
 use std::{
     any::TypeId,
-    collections::hash_map::{DefaultHasher, HashMap},
+    collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
 };
-
-pub struct SourceTree {
-    pub name: String,
-    pub prefix: String,
-    pub root: String,
-    pub tree: HashMap<String, String>,
-}
 
 /// Type unique identifier.
 pub fn type_id<T: 'static>() -> u64 {

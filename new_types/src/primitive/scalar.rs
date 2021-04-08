@@ -1,7 +1,7 @@
 use crate::{
     config::{AddressWidth, Config, Endian},
     io::{CountingRead, CountingWrite},
-    Entity, SizedEntity, SourceTree,
+    Entity, SizedEntity, SourceInfo,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{fmt::Debug, io, mem::size_of};
@@ -9,7 +9,7 @@ use std::{fmt::Debug, io, mem::size_of};
 pub trait PrimScal: SizedEntity + Copy + Default + Debug + 'static {}
 
 macro_rules! impl_entity_native {
-    ($T:ident, $read:ident, $write:ident) => {
+    ($T:ident, $K:expr, $read:ident, $write:ident) => {
         impl PrimScal for $T {}
         impl Entity for $T {
             fn align(cfg: &Config) -> usize {
@@ -30,8 +30,8 @@ macro_rules! impl_entity_native {
                     Endian::Little => dst.$write::<LittleEndian>(*self),
                 }
             }
-            fn source(_: &Config) -> Option<SourceTree> {
-                None
+            fn source(_: &Config) -> SourceInfo {
+                SourceInfo::new($K.into(), $K.into())
             }
         }
         impl SizedEntity for $T {
@@ -43,7 +43,7 @@ macro_rules! impl_entity_native {
 }
 
 macro_rules! impl_entity_byte {
-    ($T:ident, $read:ident, $write:ident) => {
+    ($T:ident, $K:expr, $read:ident, $write:ident) => {
         impl PrimScal for $T {}
         impl Entity for $T {
             fn align(cfg: &Config) -> usize {
@@ -58,8 +58,8 @@ macro_rules! impl_entity_byte {
             fn store<W: CountingWrite>(&self, _cfg: &Config, dst: &mut W) -> io::Result<()> {
                 dst.$write(*self)
             }
-            fn source(_: &Config) -> Option<SourceTree> {
-                None
+            fn source(_: &Config) -> SourceInfo {
+                SourceInfo::new($K.into(), $K.into())
             }
         }
         impl SizedEntity for $T {
@@ -92,8 +92,11 @@ macro_rules! impl_entity_size {
                     AddressWidth::X64 => (*self as $T64).store(cfg, dst),
                 }
             }
-            fn source(_: &Config) -> Option<SourceTree> {
-                None
+            fn source(cfg: &Config) -> SourceInfo {
+                match cfg.address_width {
+                    AddressWidth::X32 => $T32::source(cfg),
+                    AddressWidth::X64 => $T64::source(cfg),
+                }
             }
         }
         impl SizedEntity for $T {
@@ -107,20 +110,20 @@ macro_rules! impl_entity_size {
     };
 }
 
-impl_entity_byte!(u8, read_u8, write_u8);
-impl_entity_native!(u16, read_u16, write_u16);
-impl_entity_native!(u32, read_u32, write_u32);
-impl_entity_native!(u64, read_u64, write_u64);
+impl_entity_byte!(u8, "uchar", read_u8, write_u8);
+impl_entity_native!(u16, "ushort", read_u16, write_u16);
+impl_entity_native!(u32, "uint", read_u32, write_u32);
+impl_entity_native!(u64, "ulong", read_u64, write_u64);
 
-impl_entity_byte!(i8, read_i8, write_i8);
-impl_entity_native!(i16, read_i16, write_i16);
-impl_entity_native!(i32, read_i32, write_i32);
-impl_entity_native!(i64, read_i64, write_i64);
+impl_entity_byte!(i8, "char", read_i8, write_i8);
+impl_entity_native!(i16, "short", read_i16, write_i16);
+impl_entity_native!(i32, "int", read_i32, write_i32);
+impl_entity_native!(i64, "long", read_i64, write_i64);
 
 impl_entity_size!(usize, u32, u64);
 impl_entity_size!(isize, i32, i64);
 
-impl_entity_native!(f32, read_f32, write_f32);
+impl_entity_native!(f32, "float", read_f32, write_f32);
 
 impl PrimScal for f64 {}
 impl Entity for f64 {
@@ -150,8 +153,12 @@ impl Entity for f64 {
             (*self as f32).store(cfg, dst)
         }
     }
-    fn source(_: &Config) -> Option<SourceTree> {
-        None
+    fn source(cfg: &Config) -> SourceInfo {
+        if cfg.double_support {
+            SourceInfo::new("double".into(), "double".into())
+        } else {
+            f32::source(cfg)
+        }
     }
 }
 impl SizedEntity for f64 {

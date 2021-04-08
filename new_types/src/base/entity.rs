@@ -1,6 +1,6 @@
 use crate::{
     io::{CountingRead, CountingWrite},
-    type_id, Config, SourceTree,
+    type_id, Config, SourceInfo,
 };
 use std::io;
 
@@ -23,8 +23,8 @@ pub trait Entity: 'static + Sized {
     /// Stores the instance to a writer.
     fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
 
-    /// Returns a source tree of the type.
-    fn source(cfg: &Config) -> Option<SourceTree>;
+    /// Returns a kernel source info of the type.
+    fn source(cfg: &Config) -> SourceInfo;
 }
 
 /// Sized static entity.

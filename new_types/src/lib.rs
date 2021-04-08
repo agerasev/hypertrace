@@ -1,4 +1,4 @@
-pub mod base;
+pub mod entity;
 pub mod config;
 pub mod containers;
 pub mod hash;
@@ -8,7 +8,7 @@ pub mod primitive;
 pub mod source;
 //pub mod object;
 
-pub use base::*;
+pub use entity::*;
 pub use config::Config;
 pub use containers::*;
 pub use primitive::*;

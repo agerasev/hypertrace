@@ -11,9 +11,6 @@ use std::{
 
 /// Static entity type.
 pub trait Entity: 'static + Sized {
-    /// Align of type.
-    fn align(cfg: &Config) -> usize;
-
     /// Type identifier.
     fn type_id() -> u64 {
         let mut hasher = DefaultHasher::default();
@@ -21,11 +18,14 @@ pub trait Entity: 'static + Sized {
         hasher.finish()
     }
 
-    /// Loads the instance of type.
-    fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self>;
+    /// Align of type.
+    fn align(cfg: &Config) -> usize;
 
-    /// Size of instance.
+    /// Size of the instance.
     fn size(&self, cfg: &Config) -> usize;
+
+    /// Loads the instance of the type.
+    fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self>;
 
     /// Stores the instance to a writer.
     fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;

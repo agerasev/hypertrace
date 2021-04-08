@@ -1,15 +1,15 @@
 mod entity;
-mod type_;
-mod value;
 #[cfg(test)]
 mod tests;
+mod type_;
+mod value;
 
 pub use entity::*;
 pub use type_::*;
 pub use value::*;
 
 use std::{
-    any::{TypeId},
+    any::TypeId,
     collections::hash_map::{DefaultHasher, HashMap},
     hash::{Hash, Hasher},
 };

@@ -1,9 +1,5 @@
 use crate::{
-    io::CountingRead,
-    Config,
-    Entity, SizedEntity,
-    SourceTree, Value, SizedValue,
-    EntityValue, type_id,
+    io::CountingRead, Config, Entity, EntityValue, SizedEntity, SizedValue, SourceTree, Value,
 };
 use std::{
     any::type_name,
@@ -18,13 +14,13 @@ pub trait Type: Clone + Debug + 'static {
     type Value: Value<Type = Self>;
 
     /// Type unique identifier.
-    fn id(&self) -> u64;
+    fn id(&self, cfg: &Config) -> u64;
 
     /// Align of dynamic type.
     fn align(&self, cfg: &Config) -> usize;
 
     /// Loads the instance of type.
-    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
+    fn load<R: CountingRead>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value>;
 
     /// Returns a source tree of the type.
     fn source(&self, cfg: &Config) -> Option<SourceTree>;
@@ -39,18 +35,12 @@ where
     fn size(&self, cfg: &Config) -> usize;
 }
 
-
-
 /// Wrapper that created `Type` from `Entity` type.
-pub struct EntityType<E: Entity> {
-    phantom: PhantomData<E>,
-}
+pub struct EntityType<E: Entity>(PhantomData<E>);
 
 impl<E: Entity> EntityType<E> {
     pub fn new() -> Self {
-        Self {
-            phantom: PhantomData,
-        }
+        Self(PhantomData)
     }
 }
 
@@ -75,16 +65,16 @@ impl<E: Entity> Debug for EntityType<E> {
 impl<E: Entity> Type for EntityType<E> {
     type Value = EntityValue<E>;
 
-    fn id(&self) -> u64 {
-        type_id::<E>()
+    fn id(&self, cfg: &Config) -> u64 {
+        E::type_id(cfg)
     }
 
     fn align(&self, cfg: &Config) -> usize {
         E::align(cfg)
     }
 
-    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
-        E::load(cfg, src)
+    fn load<R: CountingRead>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
+        E::load(cfg, src).map(EntityValue::new)
     }
 
     fn source(&self, cfg: &Config) -> Option<SourceTree> {

@@ -1,5 +1,9 @@
-use crate::{primitive::PrimScal, Entity, SizedEntity, io::{CountingRead, CountingWrite}, Config, SourceTree};
-use std::{io, fmt::Debug};
+use crate::{
+    io::{CountingRead, CountingWrite},
+    primitive::PrimScal,
+    Config, Entity, SizedEntity, SourceTree,
+};
+use std::{fmt::Debug, io};
 use vecmat::Vector;
 
 pub trait PrimVec: SizedEntity + Copy + Default + Debug + 'static {}
@@ -14,14 +18,14 @@ macro_rules! impl_entity {
             fn size(&self, cfg: &Config) -> usize {
                 Self::type_size(cfg)
             }
-            fn load<R: CountingRead + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+            fn load<R: CountingRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
                 let mut v = Self::default();
                 for i in 0..$N {
                     v[i] = T::load(cfg, src)?;
                 }
                 Ok(v)
             }
-            fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+            fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
                 for i in 0..$N {
                     self[i].store(cfg, dst)?;
                 }
@@ -52,7 +56,7 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
     }
-    fn load<R: CountingRead + ?Sized>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+    fn load<R: CountingRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let mut v = Self::default();
         for i in 0..3 {
             v[i] = T::load(cfg, src)?;
@@ -60,7 +64,7 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
         let _ = T::load(cfg, src)?;
         Ok(v)
     }
-    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+    fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         for i in 0..3 {
             self[i].store(cfg, dst)?;
         }
@@ -80,17 +84,17 @@ impl<T: PrimScal> SizedEntity for Vector<T, 3> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{config::HOST_CONFIG, io::{TestBuffer, EntityWriter, EntityReader}};
+    use crate::{
+        config::HOST_CONFIG,
+        io::{EntityReader, EntityWriter, TestBuffer},
+    };
 
     #[test]
     fn test() {
         let mut buf = TestBuffer::new();
         let sv = Vector::<i32, 3>::from([1, 2, 3]);
         buf.writer().write_entity(&HOST_CONFIG, &sv).unwrap();
-        let dv = buf
-            .reader()
-            .read_entity(&HOST_CONFIG)
-            .unwrap();
+        let dv = buf.reader().read_entity(&HOST_CONFIG).unwrap();
         assert_eq!(sv, dv);
     }
 }

@@ -8,3 +8,4 @@ edition = "2018"
 byteorder = "1"
 vecmat = { path = "../vecmat" }
 num-integer = "0.1"
+ref-cast = "1.0"

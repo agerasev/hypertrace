@@ -1,7 +1,5 @@
-use crate::{
-    io::CountingWrite,
-    Config, Entity, SizedEntity, Type, SizedType, EntityType,
-};
+use crate::{io::CountingWrite, Config, Entity, EntityType, SizedEntity, SizedType, Type};
+use ref_cast::RefCast;
 use std::io;
 
 /// Dynamic entity value.
@@ -21,7 +19,7 @@ pub trait Value: 'static {
     fn type_of(&self) -> Self::Type;
 
     /// Stores the instance to a writer.
-    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
+    fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
 }
 
 /// Sized dynamic entity value.
@@ -31,24 +29,51 @@ where
 {
 }
 
-
 /// Wrapper that created `Value` from `Entity` instance.
-/// Now this is just simply an alias to `Entity`.
-pub type EntityValue<E> = E;
+
+#[derive(RefCast)]
+#[repr(transparent)]
+pub struct EntityValue<E: Entity>(E);
+
+impl<E: Entity> EntityValue<E> {
+    pub fn new(entity: E) -> Self {
+        EntityValue(entity)
+    }
+
+    pub fn new_ref(entity: &E) -> &Self {
+        EntityValue::ref_cast(entity)
+    }
+
+    pub fn new_mut(entity: &mut E) -> &mut Self {
+        EntityValue::ref_cast_mut(entity)
+    }
+
+    pub fn into_entity(self) -> E {
+        self.0
+    }
+
+    pub fn entity(&self) -> &E {
+        &self.0
+    }
+
+    pub fn entity_mut(&mut self) -> &mut E {
+        &mut self.0
+    }
+}
 
 impl<E: Entity> Value for EntityValue<E> {
     type Type = EntityType<E>;
 
     fn size(&self, cfg: &Config) -> usize {
-        self.size(cfg)
+        self.0.size(cfg)
     }
 
     fn type_of(&self) -> Self::Type {
         EntityType::new()
     }
 
-    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        self.store(cfg, dst)
+    fn store<W: CountingWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+        self.0.store(cfg, dst)
     }
 }
 

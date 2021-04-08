@@ -7,11 +7,11 @@ mod primitive;
 //mod wrap;
 mod base;
 
+pub mod config;
 pub mod io;
 pub mod utils;
-pub mod config;
 
-pub use config::{Config};
+pub use config::Config;
 //pub use containers::*;
 pub use primitive::*;
 //pub use traits::*;

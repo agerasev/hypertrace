@@ -96,7 +96,7 @@ impl<W: Write> CountingWrite for CountingWrapper<W> {
 pub trait ValueReader {
     fn read_value<T: Type>(&mut self, cfg: &Config, type_: &T) -> io::Result<T::Value>;
 }
-impl<R: CountingRead + ?Sized> ValueReader for R {
+impl<R: CountingRead> ValueReader for R {
     fn read_value<T: Type>(&mut self, cfg: &Config, type_: &T) -> io::Result<T::Value> {
         let align = type_.align(cfg);
         assert!(align != 0, "Align of type {:?} ({}) is zero", type_, align);
@@ -140,13 +140,14 @@ pub trait EntityReader {
 impl<R: ValueReader> EntityReader for R {
     fn read_entity<E: Entity>(&mut self, cfg: &Config) -> io::Result<E> {
         self.read_value(cfg, &EntityType::<E>::new())
+            .map(|v| v.into_entity())
     }
 }
 
 pub trait ValueWriter {
     fn write_value<V: Value>(&mut self, cfg: &Config, value: &V) -> io::Result<()>;
 }
-impl<W: CountingWrite + ?Sized> ValueWriter for W {
+impl<W: CountingWrite> ValueWriter for W {
     fn write_value<V: Value>(&mut self, cfg: &Config, value: &V) -> io::Result<()> {
         let type_ = value.type_of();
         let align = type_.align(cfg);
@@ -190,7 +191,7 @@ pub trait EntityWriter {
 }
 impl<R: ValueWriter> EntityWriter for R {
     fn write_entity<E: Entity>(&mut self, cfg: &Config, entity: &E) -> io::Result<()> {
-        self.write_value(cfg, entity)
+        self.write_value(cfg, EntityValue::new_ref(entity))
     }
 }
 

@@ -60,6 +60,7 @@ impl<T: SizedEntity, const N: usize> SizedEntity for [T; N] {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{
         config::HOST_CONFIG,
         io::{EntityReader, EntityWriter, TestBuffer},
@@ -70,6 +71,7 @@ mod tests {
         let arr: [i32; 5] = [1, 2, 3, 4, 5];
         let mut buf = TestBuffer::new();
         buf.writer().write_entity(&HOST_CONFIG, &arr).unwrap();
+        assert_eq!(buf.vec.len(), arr.size(&HOST_CONFIG));
         assert_eq!(
             arr,
             buf.reader().read_entity::<[i32; 5]>(&HOST_CONFIG).unwrap()

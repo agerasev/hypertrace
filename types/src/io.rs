@@ -164,7 +164,7 @@ impl<W: CntWrite> EntityWriter for W {
 #[cfg(test)]
 #[derive(Clone, Default, Debug)]
 pub struct TestBuffer {
-    vec: Vec<u8>,
+    pub vec: Vec<u8>,
 }
 
 #[cfg(test)]

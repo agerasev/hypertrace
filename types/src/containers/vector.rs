@@ -59,6 +59,7 @@ mod tests {
         let vec: Vec<i32> = vec![1, 2, 3];
         let mut buf = TestBuffer::new();
         buf.writer().write_entity(&HOST_CONFIG, &vec).unwrap();
+        assert_eq!(buf.vec.len(), vec.size(&HOST_CONFIG));
         assert_eq!(
             vec,
             buf.reader().read_entity::<Vec<i32>>(&HOST_CONFIG).unwrap()

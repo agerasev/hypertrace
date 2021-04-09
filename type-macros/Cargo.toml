@@ -1,10 +1,16 @@
 [package]
-name = "hypertrace-objects"
+name = "hypertrace-type-macros"
 version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
 
+[lib]
+proc-macro = true
+
 [dependencies]
-base = { package = "hypertrace-base", path = "../base" }
+proc-macro2 = "1.0"
+quote = "1.0"
+synstructure = "0.12"
+
+[dev-dependencies]
 types = { package = "hypertrace-types", path = "../types" }
-type-macros = { package = "hypertrace-type-macros", path = "../type-macros" }

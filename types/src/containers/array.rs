@@ -1,251 +1,78 @@
-use crate::{config::*, containers::TypedVec, io::*, traits::*};
-use std::{
-    hash::{Hash, Hasher},
-    io,
-    marker::PhantomData,
+use crate::{
+    Entity, SizedEntity,
+    hash::DefaultHasher,
+    io::{CntRead, CntWrite},
+    Config, SourceInfo,
 };
+use std::{hash::Hasher, io, iter};
 use vecmat::Vector;
 
-#[derive(Clone, Debug)]
-pub struct ArrayType<T: SizedType>
-where
-    T::Value: SizedValue,
-{
-    pub item_type: T,
-    pub item_count: usize,
-}
-
-impl<T: SizedType> ArrayType<T>
-where
-    T::Value: SizedValue,
-{
-    pub fn new(item_type: T, item_count: usize) -> Self {
-        Self {
-            item_type,
-            item_count,
-        }
-    }
-}
-
-impl<T: SizedType> Type for ArrayType<T>
-where
-    T::Value: SizedValue,
-{
-    type Value = Array<T::Value>;
-
-    fn align(&self, cfg: &Config) -> usize {
-        self.item_type.align(cfg)
+impl<T: SizedEntity, const N: usize> Entity for [T; N] {
+    fn align(cfg: &Config) -> usize {
+        T::align(cfg)
     }
 
-    fn id(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        type_id::<Self>().hash(&mut hasher);
-        self.item_type.id().hash(&mut hasher);
-        self.item_count.hash(&mut hasher);
+    fn type_id() -> u64 {
+        let mut hasher = DefaultHasher::default();
+        hasher.write_u64(T::type_id());
+        hasher.write_usize(N);
         hasher.finish()
     }
 
-    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
-        let mut value = Self::Value::new(self.item_type.clone());
-        for _ in 0..self.item_count {
-            value
-                .items_mut()
-                .push(src.read_value(cfg, &self.item_type)?)
-                .map_err(|item| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        format!(
-                            "Type mismatch: {:?} is expected but {:?} was provided",
-                            value.item_type(),
-                            item.type_()
-                        ),
-                    )
-                })?;
-        }
-        Ok(value)
+    fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+        let mut err: Option<io::Error> = None;
+        Vector::try_from_iter(iter::from_fn(|| match T::load(cfg, src) {
+            Ok(x) => Some(x),
+            Err(e) => {
+                err = Some(e);
+                None
+            }
+        }))
+        .map(|vec| vec.into_array())
+        .ok_or_else(|| err.unwrap())
     }
-}
-
-impl<T: SizedType> SizedType for ArrayType<T>
-where
-    T::Value: SizedValue,
-{
-    fn size(&self, cfg: &Config) -> usize {
-        self.item_count * self.item_type.size(cfg)
-    }
-}
-
-#[derive(Clone)]
-pub struct Array<V: SizedValue>
-where
-    V::Type: SizedType,
-{
-    inner: TypedVec<V>,
-}
-
-impl<V: SizedValue> Array<V>
-where
-    V::Type: SizedType,
-{
-    pub fn new(item_type: V::Type) -> Self {
-        Self {
-            inner: TypedVec::new(item_type),
-        }
-    }
-
-    pub fn from_items(item_type: V::Type, items: Vec<V>) -> Option<Self> {
-        TypedVec::from_items(item_type, items).map(|v| Self { inner: v })
-    }
-
-    pub fn item_type(&self) -> &V::Type {
-        &self.inner.item_type()
-    }
-    pub fn items(&self) -> &TypedVec<V> {
-        &self.inner
-    }
-    pub fn items_mut(&mut self) -> &mut TypedVec<V> {
-        &mut self.inner
-    }
-
-    pub fn into_items(self) -> Vec<V> {
-        self.inner.into_items()
-    }
-}
-
-impl<V: SizedValue> Value for Array<V>
-where
-    V::Type: SizedType,
-{
-    type Type = ArrayType<V::Type>;
 
     fn size(&self, cfg: &Config) -> usize {
-        self.type_().size(cfg)
+        Self::type_size(cfg)
     }
 
-    fn type_(&self) -> Self::Type {
-        ArrayType::new(self.item_type().clone(), self.items().len())
-    }
-
-    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        for item in self.items().iter() {
-            dst.write_value(cfg, item)?;
+    fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+        for x in self {
+            x.store(cfg, dst)?;
         }
         Ok(())
     }
-}
 
-impl<V: SizedValue> SizedValue for Array<V> where V::Type: SizedType {}
-
-#[derive(Clone, Debug, Default)]
-pub struct StaticArrayType<T: SizedType + UnitType, const N: usize>
-where
-    T::Value: SizedValue + UnitValue + Clone,
-{
-    phantom: PhantomData<T>,
-}
-
-impl<T: SizedType + UnitType, const N: usize> StaticArrayType<T, N>
-where
-    T::Value: SizedValue + UnitValue + Clone,
-{
-    pub fn into_dynamic(self) -> ArrayType<T> {
-        ArrayType::new(T::default(), N)
+    fn source(cfg: &Config) -> SourceInfo {
+        let src = T::source(cfg);
+        SourceInfo::new(
+            format!("Array_{}_{}", src.name, N),
+            format!("array_{}_{}", src.prefix, N),
+        )
     }
 }
 
-impl<T: SizedType + UnitType, const N: usize> Type for StaticArrayType<T, N>
-where
-    T::Value: SizedValue + UnitValue + Clone,
-{
-    type Value = [T::Value; N];
-
-    fn align(&self, cfg: &Config) -> usize {
-        T::default().align(cfg)
+impl<T: SizedEntity, const N: usize> SizedEntity for [T; N] {
+    fn type_size(cfg: &Config) -> usize {
+        T::type_size(cfg) * N
     }
-
-    fn id(&self) -> u64 {
-        self.clone().into_dynamic().id()
-    }
-
-    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
-        let value = self.clone().into_dynamic().load(cfg, src)?;
-        Ok(Vector::try_from_iter(value.into_items().into_iter())
-            .unwrap()
-            .into_array())
-    }
-}
-
-impl<T: SizedType + UnitType, const N: usize> SizedType for StaticArrayType<T, N>
-where
-    T::Value: SizedValue + UnitValue + Clone,
-{
-    fn size(&self, cfg: &Config) -> usize {
-        N * T::default().size(cfg)
-    }
-}
-
-impl<T: SizedType + UnitType, const N: usize> UnitType for StaticArrayType<T, N> where
-    T::Value: SizedValue + UnitValue + Clone
-{
-}
-
-impl<V: SizedValue + UnitValue, const N: usize> Value for [V; N]
-where
-    V: Clone,
-    V::Type: SizedType + UnitType,
-{
-    type Type = StaticArrayType<V::Type, N>;
-
-    fn size(&self, cfg: &Config) -> usize {
-        self.type_().size(cfg)
-    }
-
-    fn type_(&self) -> Self::Type {
-        Self::Type::default()
-    }
-
-    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        Array::from_items(V::Type::default(), self.clone().into())
-            .unwrap()
-            .store(cfg, dst)
-    }
-}
-
-impl<V: SizedValue + UnitValue, const N: usize> SizedValue for [V; N]
-where
-    V: Clone,
-    V::Type: SizedType + UnitType,
-{
-}
-
-impl<V: SizedValue + UnitValue, const N: usize> UnitValue for [V; N]
-where
-    V: Clone,
-    V::Type: SizedType + UnitType,
-{
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    #[test]
-    fn ids() {
-        let arr: [i32; 3] = [1, 2, 3];
-        let darr = Array::from_items(i32::default().type_(), arr.into()).unwrap();
-        assert_eq!(arr.type_().id(), darr.type_().id())
-    }
+    use crate::{
+        config::HOST_CONFIG,
+        io::{EntityReader, EntityWriter, TestBuffer},
+    };
 
     #[test]
     fn store_load() {
         let arr: [i32; 5] = [1, 2, 3, 4, 5];
         let mut buf = TestBuffer::new();
-        buf.writer().write_value(&HOST_CONFIG, &arr).unwrap();
+        buf.writer().write_entity(&HOST_CONFIG, &arr).unwrap();
         assert_eq!(
             arr,
-            buf.reader()
-                .read_value(&HOST_CONFIG, &<[i32; 5] as Value>::Type::default())
-                .unwrap()
+            buf.reader().read_entity::<[i32; 5]>(&HOST_CONFIG).unwrap()
         );
     }
 }

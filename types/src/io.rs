@@ -1,7 +1,7 @@
-use crate::{traits::*, utils::*, Config};
-use std::io::{self, Read, Write};
+use crate::{Entity, math, Config};
+use std::{io::{self, Read, Write}, any::type_name};
 
-pub trait CountingRead: Read {
+pub trait CntRead: Read {
     fn position(&self) -> usize;
     fn skip(&mut self, count: usize) -> io::Result<()> {
         let mut buf = [0];
@@ -13,11 +13,9 @@ pub trait CountingRead: Read {
     fn align(&mut self, align: usize) -> io::Result<()> {
         self.skip((align - (self.position() % align)) % align)
     }
-    fn as_dyn_ref(&self) -> &dyn CountingRead;
-    fn as_dyn_mut(&mut self) -> &mut dyn CountingRead;
 }
 
-pub trait CountingWrite: Write {
+pub trait CntWrite: Write {
     fn position(&self) -> usize;
     fn skip(&mut self, count: usize) -> io::Result<()> {
         for _ in 0..count {
@@ -28,15 +26,13 @@ pub trait CountingWrite: Write {
     fn align(&mut self, align: usize) -> io::Result<()> {
         self.skip((align - (self.position() % align)) % align)
     }
-    fn as_dyn_ref(&self) -> &dyn CountingWrite;
-    fn as_dyn_mut(&mut self) -> &mut dyn CountingWrite;
 }
 
-pub struct CountingWrapper<T> {
+pub struct CntWrapper<T> {
     inner: T,
     pos: usize,
 }
-impl<T> CountingWrapper<T> {
+impl<T> CntWrapper<T> {
     pub fn new(read: T) -> Self {
         Self {
             inner: read,
@@ -53,25 +49,19 @@ impl<T> CountingWrapper<T> {
         self.inner
     }
 }
-impl<R: Read> Read for CountingWrapper<R> {
+impl<R: Read> Read for CntWrapper<R> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let n = self.inner.read(buf)?;
         self.pos += n;
         Ok(n)
     }
 }
-impl<R: Read> CountingRead for CountingWrapper<R> {
+impl<R: Read> CntRead for CntWrapper<R> {
     fn position(&self) -> usize {
         self.pos
     }
-    fn as_dyn_ref(&self) -> &dyn CountingRead {
-        self
-    }
-    fn as_dyn_mut(&mut self) -> &mut dyn CountingRead {
-        self
-    }
 }
-impl<W: Write> Write for CountingWrapper<W> {
+impl<W: Write> Write for CntWrapper<W> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let n = self.inner.write(buf)?;
         self.pos += n;
@@ -81,29 +71,23 @@ impl<W: Write> Write for CountingWrapper<W> {
         self.inner.flush()
     }
 }
-impl<W: Write> CountingWrite for CountingWrapper<W> {
+impl<W: Write> CntWrite for CntWrapper<W> {
     fn position(&self) -> usize {
         self.pos
     }
-    fn as_dyn_ref(&self) -> &dyn CountingWrite {
-        self
-    }
-    fn as_dyn_mut(&mut self) -> &mut dyn CountingWrite {
-        self
-    }
 }
 
-pub trait ValueReader {
-    fn read_value<T: Type>(&mut self, cfg: &Config, type_: &T) -> io::Result<T::Value>;
+pub trait EntityReader {
+    fn read_entity<T: Entity>(&mut self, cfg: &Config) -> io::Result<T>;
 }
-impl<R: CountingRead + ?Sized> ValueReader for R {
-    fn read_value<T: Type>(&mut self, cfg: &Config, type_: &T) -> io::Result<T::Value> {
-        let align = type_.align(cfg);
-        assert!(align != 0, "Align of type {:?} ({}) is zero", type_, align);
+impl<R: CntRead> EntityReader for R {
+    fn read_entity<T: Entity>(&mut self, cfg: &Config) -> io::Result<T> {
+        let align = T::align(cfg);
+        assert!(align != 0, "Align of type {:?} ({}) is zero", type_name::<T>(), align);
         assert!(
-            is_pow2(type_.align(cfg)),
+            math::is_pow2(T::align(cfg)),
             "Align of type {:?} ({}) is not a power of 2",
-            type_,
+            type_name::<T>(),
             align,
         );
 
@@ -112,48 +96,47 @@ impl<R: CountingRead + ?Sized> ValueReader for R {
             pos % align == 0,
             "Stream is not properly aligned (position: {}) for type {:?} (align: {})",
             pos,
-            type_,
+            type_name::<T>(),
             align,
         );
 
-        let value = type_.load(cfg, self)?;
+        let value = T::load(cfg, self)?;
         let shift = self.position() - pos;
         let size = value.size(cfg);
         assert!(
             size % align == 0,
             "Align of type {:?} ({}) is not a multiple of its value size ({})",
-            type_,
+            type_name::<T>(),
             align,
             size,
         );
         assert_eq!(
             size, shift,
             "Size of a value of type {:?} ({}) differs from a count of actually read bytes ({})",
-            type_, size, shift,
+            type_name::<T>(), size, shift,
         );
         Ok(value)
     }
 }
 
-pub trait ValueWriter {
-    fn write_value<V: Value>(&mut self, cfg: &Config, value: &V) -> io::Result<()>;
+pub trait EntityWriter {
+    fn write_entity<T: Entity>(&mut self, cfg: &Config, entity: &T) -> io::Result<()>;
 }
-impl<W: CountingWrite + ?Sized> ValueWriter for W {
-    fn write_value<V: Value>(&mut self, cfg: &Config, value: &V) -> io::Result<()> {
-        let type_ = value.type_();
-        let align = type_.align(cfg);
-        let size = value.size(cfg);
-        assert!(align != 0, "Align of type {:?} ({}) is zero", type_, align);
+impl<W: CntWrite> EntityWriter for W {
+    fn write_entity<T: Entity>(&mut self, cfg: &Config, entity: &T) -> io::Result<()> {
+        let align = T::align(cfg);
+        let size = entity.size(cfg);
+        assert!(align != 0, "Align of type {:?} ({}) is zero", type_name::<T>(), align);
         assert!(
-            is_pow2(type_.align(cfg)),
+            math::is_pow2(T::align(cfg)),
             "Align of type {:?} ({}) is not a power of 2",
-            type_,
+            type_name::<T>(),
             align
         );
         assert!(
             size % align == 0,
             "Align of type {:?} ({}) is not a multiple of its value size ({})",
-            type_,
+            type_name::<T>(),
             align,
             size
         );
@@ -163,16 +146,16 @@ impl<W: CountingWrite + ?Sized> ValueWriter for W {
             pos % align == 0,
             "Stream is not properly aligned (position: {}) for type {:?} (align: {})",
             pos,
-            type_,
+            type_name::<T>(),
             align
         );
 
-        value.store(cfg, self)?;
+        entity.store(cfg, self)?;
         let shift = self.position() - pos;
         assert_eq!(
             size, shift,
             "Size of a value of type {:?} ({}) differs from a count of actually written bytes ({})",
-            type_, size, shift
+            type_name::<T>(), size, shift
         );
         Ok(())
     }
@@ -189,10 +172,10 @@ impl TestBuffer {
     pub fn new() -> Self {
         Self::default()
     }
-    pub fn reader(&self) -> CountingWrapper<&[u8]> {
-        CountingWrapper::new(self.vec.as_ref())
+    pub fn reader(&self) -> CntWrapper<&[u8]> {
+        CntWrapper::new(self.vec.as_ref())
     }
-    pub fn writer(&mut self) -> CountingWrapper<&mut Vec<u8>> {
-        CountingWrapper::new(&mut self.vec)
+    pub fn writer(&mut self) -> CntWrapper<&mut Vec<u8>> {
+        CntWrapper::new(&mut self.vec)
     }
 }

@@ -45,7 +45,7 @@ fn write_test_defs() {
 fn embed_kernel_source() {
     let mut dict = BTreeMap::new();
     let src_path = kernel_src_path();
-    let dst_path = PathBuf::from("/src/kernel");
+    let dst_path = PathBuf::from("src/");
     for entry in WalkDir::new(&src_path).into_iter().filter_map(|e| e.ok()) {
         if entry.file_type().is_file() {
             let r = dict.insert(

@@ -1,3 +1,7 @@
+mod derived;
+#[cfg(test)]
+mod tests;
+
 pub mod entity;
 pub mod config;
 pub mod containers;
@@ -6,9 +10,8 @@ pub mod io;
 pub mod math;
 pub mod primitive;
 pub mod source;
-#[cfg(test)]
-pub mod tests;
 
+pub use derived::*;
 pub use entity::*;
 pub use config::Config;
 pub use containers::*;

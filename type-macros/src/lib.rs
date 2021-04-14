@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
-use proc_macro2::{TokenStream as TokenStream2};
+use proc_macro2::{TokenStream as TokenStream2, Span};
 use quote::quote;
-use syn::{self, parse_macro_input, DeriveInput, Data, Fields, Field};
+use syn::{self, parse_macro_input, DeriveInput, Data, Fields, Field, Ident, Index};
 use std::iter::{self, Iterator};
 
 
@@ -113,7 +113,7 @@ fn make_load(input: &DeriveInput) -> TokenStream2 {
                 src.align(Self::type_size(cfg))?;
                 match index {
                     #matches
-                    _ => return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Enum index is out of range"));
+                    _ => { return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Enum index is out of range")); },
                 }
             }
         },
@@ -126,17 +126,18 @@ fn make_load(input: &DeriveInput) -> TokenStream2 {
     }
 }
 
-fn make_store_fields(fields: &Fields, instance: TokenStream2) -> TokenStream2 {
+fn make_store_fields(fields: &Fields, prefix: TokenStream2) -> TokenStream2 {
     fields_iter(fields).enumerate().fold(quote!{}, |accum, (index, field)| {
         let ty = &field.ty;
+        let tuple_index = Index { index: index as u32, span: Span::call_site() };
         let field_name = match &field.ident {
             Some(ident) => quote!{ #ident },
-            None => quote!{ #index },
+            None => quote!{ #tuple_index },
         };
         let command = quote!{
             {
                 dst.align(<#ty as types::Entity>::align(cfg))?;
-                <#ty as types::Entity>::store(&#instance.#field_name, cfg, dst)?;
+                <#ty as types::Entity>::store(#prefix #field_name, cfg, dst)?;
             }
         };
         quote!{
@@ -146,22 +147,63 @@ fn make_store_fields(fields: &Fields, instance: TokenStream2) -> TokenStream2 {
     })
 }
 
+struct StoreBindings {
+    bindings: TokenStream2,
+    wrapper: TokenStream2,
+    prefix: TokenStream2,
+}
+
+fn make_store_bindings(fields: &Fields) -> StoreBindings {
+    match fields {
+        Fields::Named(named_fields) => {
+            let bindings = named_fields.named.iter().fold(quote!{}, |accum, field| {
+                let ident = field.ident.as_ref().unwrap();
+                quote!{ #accum #ident, }
+            });
+            StoreBindings {
+                bindings: quote!{ { #bindings } },
+                wrapper: quote!{},
+                prefix: quote!{},
+            }
+        },
+        Fields::Unnamed(unnamed_fields) => {
+            let bindings = unnamed_fields.unnamed.iter().enumerate().fold(quote!{}, |accum, (index, _)| {
+                let ident = Ident::new(&format!("b{}", index), Span::call_site());
+                quote!{ #accum #ident, }
+            });
+            StoreBindings {
+                bindings: quote!{ (#bindings) },
+                wrapper: quote!{ let wrapper = (#bindings); },
+                prefix: quote!{ wrapper. },
+            }
+        },
+        Fields::Unit => StoreBindings {
+            bindings: quote!{},
+            wrapper: quote!{},
+            prefix: quote!{},
+        },
+    }
+}
+
 fn make_store(input: &DeriveInput) -> TokenStream2 {
     let ty = &input.ident;
     let unaligned_store = match &input.data {
         Data::Struct(struct_data) => {
-            make_store_fields(&struct_data.fields, quote!{ self })
+            make_store_fields(&struct_data.fields, quote!{ &self. })
         },
         Data::Enum(enum_data) => {
             let matches = enum_data.variants.iter().enumerate().fold(quote!{}, |accum, (index, variant)| {
                 let var = &variant.ident;
-                let variant_store = make_store_fields(&variant.fields, quote!{ variant });
+                let bs = make_store_bindings(&variant.fields);
+                let (bindings, wrapper) = (bs.bindings, bs.wrapper);
+                let store = make_store_fields(&variant.fields, bs.prefix);
                 quote!{
                     #accum
-                    #ty::#var() => {
+                    #ty::#var #bindings => {
+                        #wrapper
                         <usize as types::Entity>::store(&#index, cfg, dst)?;
                         dst.align(Self::type_size(cfg))?;
-                        #variant_store
+                        #store
                     },
                 }
             });

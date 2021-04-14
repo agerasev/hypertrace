@@ -93,8 +93,8 @@ impl<T: Entity> Entity for IndexVector<T> {
         Ok(())
     }
 
-    fn source(cfg: &Config) -> SourceInfo {
-        let src = T::source(cfg);
+    fn entity_source(cfg: &Config) -> SourceInfo {
+        let src = T::entity_source(cfg);
         SourceInfo::new(
             format!("IndexVector_{}", src.name),
             format!("index_vector_{}", src.prefix),

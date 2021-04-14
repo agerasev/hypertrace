@@ -31,7 +31,7 @@ pub trait Entity: 'static + Sized {
     fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
 
     /// Returns a kernel source info of the type.
-    fn source(cfg: &Config) -> SourceInfo;
+    fn entity_source(cfg: &Config) -> SourceInfo;
 }
 
 /// Sized static entity.

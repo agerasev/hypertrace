@@ -221,6 +221,37 @@ fn make_store(input: &DeriveInput) -> TokenStream2 {
         Ok(())
     }
 }
+/*
+fn make_source_fields(fields: &Fields, name: TokenStream2) -> TokenStream2 {
+    let content = fields_iter(fields).enumerate().fold(quote!{}, |accum, (index, field)| {
+        let ty = &field.ty;
+        let fname = match &field.ident {
+            Some(x) => quote!{ std::stringify!(#x) },
+            None => quote!{ format!("field_{}", #index) },
+        };
+        quote!{
+            #accum
+            {
+                let src = <#ty as types::Entity>::entity_source(cfg);
+                struct_src += format!("    {} {};\n", &src.name, #fname);
+            }
+        }
+    });
+    quote!{
+        let mut struct_src = format!("typedef struct {{\n");
+        #content
+        struct_src += format!("}} {};\n", #name);
+    }
+}
+*/
+fn make_source(_input: &DeriveInput) -> TokenStream2 {
+    quote!{
+        types::SourceInfo::new(
+            format!("DerivedSizedEntity{}", <Self as types::Entity>::type_id()),
+            format!("derived_sized_entity_{}", <Self as types::Entity>::type_id()),
+        )
+    }
+}
 
 #[proc_macro_derive(SizedEntity)]
 pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
@@ -231,6 +262,7 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
     let type_size = make_type_size(&input);
     let load = make_load(&input);
     let store = make_store(&input);
+    let source = make_source(&input);
 
     let expanded = quote! {
         impl types::Entity for #ty {
@@ -250,8 +282,8 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
                 #store
             }
 
-            fn source(cfg: &types::Config) -> types::SourceInfo {
-                types::SourceInfo::new(String::new(), String::new())
+            fn entity_source(cfg: &types::Config) -> types::SourceInfo {
+                #source
             }
         }
 

@@ -40,8 +40,8 @@ impl<T: SizedEntity> Entity for Vec<T> {
         Ok(())
     }
 
-    fn source(cfg: &Config) -> SourceInfo {
-        let src = T::source(cfg);
+    fn entity_source(cfg: &Config) -> SourceInfo {
+        let src = T::entity_source(cfg);
         SourceInfo::new(
             format!("Vector_{}", src.name),
             format!("vector_{}", src.prefix),

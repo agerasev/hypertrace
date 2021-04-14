@@ -31,8 +31,8 @@ macro_rules! impl_entity {
                 }
                 Ok(())
             }
-            fn source(cfg: &Config) -> SourceInfo {
-                let src = T::source(cfg);
+            fn entity_source(cfg: &Config) -> SourceInfo {
+                let src = T::entity_source(cfg);
                 SourceInfo::new(
                     format!("{}{}", src.name, $N),
                     format!("{}{}", src.prefix, $N),
@@ -75,8 +75,8 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
         dst.skip(T::type_size(cfg))?;
         Ok(())
     }
-    fn source(cfg: &Config) -> SourceInfo {
-        let src = T::source(cfg);
+    fn entity_source(cfg: &Config) -> SourceInfo {
+        let src = T::entity_source(cfg);
         SourceInfo::new(format!("{}3", src.name), format!("{}3", src.prefix))
     }
 }

@@ -43,8 +43,8 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
         Ok(())
     }
 
-    fn source(cfg: &Config) -> SourceInfo {
-        let src = T::source(cfg);
+    fn entity_source(cfg: &Config) -> SourceInfo {
+        let src = T::entity_source(cfg);
         SourceInfo::new(
             format!("Array_{}_{}", src.name, N),
             format!("array_{}_{}", src.prefix, N),

@@ -17,3 +17,4 @@ pub use config::Config;
 pub use containers::*;
 pub use primitive::*;
 pub use source::*;
+pub use derived::{Shape};

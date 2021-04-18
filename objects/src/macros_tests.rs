@@ -8,6 +8,15 @@ const CONFIG: Config = Config {
 };
 
 #[derive(SizedEntity)]
+struct Unit0;
+
+#[test]
+fn unit0() {
+    assert_eq!(Unit0::align(&CONFIG), 1);
+    assert_eq!(Unit0::type_size(&CONFIG), 0);
+}
+
+#[derive(SizedEntity)]
 struct Struct0 {
     pub x: u8,
     pub y: i32,
@@ -19,7 +28,6 @@ struct Struct0 {
 fn struct0() {
     assert_eq!(Struct0::align(&CONFIG), 4);
     assert_eq!(Struct0::type_size(&CONFIG), 12);
-    
 }
 
 #[derive(SizedEntity)]
@@ -29,7 +37,6 @@ struct Tuple0(u8, i32, (), [u8; 3]);
 fn tuple0() {
     assert_eq!(Tuple0::align(&CONFIG), 4);
     assert_eq!(Tuple0::type_size(&CONFIG), 12);
-    
 }
 
 #[derive(SizedEntity)]

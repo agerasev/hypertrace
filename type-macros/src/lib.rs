@@ -57,7 +57,7 @@ fn make_type_size(input: &DeriveInput) -> TokenStream2 {
             enum_data.variants.iter().fold(quote!{ 0usize }, |accum, variant| {
                 let variant_type_size = make_type_size_fields(
                     &variant.fields,
-                    quote!{ usize::type_size(cfg) },
+                    quote!{ <usize as types::SizedEntity>::type_size(cfg) },
                 );
                 quote!{ std::cmp::max(#accum, #variant_type_size) }
             })
@@ -110,7 +110,7 @@ fn make_load(input: &DeriveInput) -> TokenStream2 {
             });
             quote!{
                 let index = usize::load(cfg, src)?;
-                src.align(Self::type_size(cfg))?;
+                src.align(<Self as types::Entity>::align(cfg))?;
                 match index {
                     #matches
                     _ => { return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Enum index is out of range")); },
@@ -121,7 +121,7 @@ fn make_load(input: &DeriveInput) -> TokenStream2 {
     };
     quote!{
         let self_ = { #unaligned_load };
-        src.align(Self::type_size(cfg))?;
+        src.align(<Self as types::Entity>::align(cfg))?;
         Ok(self_)
     }
 }
@@ -202,7 +202,7 @@ fn make_store(input: &DeriveInput) -> TokenStream2 {
                     #ty::#var #bindings => {
                         #wrapper
                         <usize as types::Entity>::store(&#index, cfg, dst)?;
-                        dst.align(Self::type_size(cfg))?;
+                        dst.align(<Self as types::Entity>::align(cfg))?;
                         #store
                     },
                 }
@@ -217,7 +217,7 @@ fn make_store(input: &DeriveInput) -> TokenStream2 {
     };
     quote!{
         #unaligned_store
-        dst.align(Self::type_size(cfg))?;
+        dst.align(<Self as types::Entity>::align(cfg))?;
         Ok(())
     }
 }

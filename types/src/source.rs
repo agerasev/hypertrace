@@ -1,4 +1,9 @@
 use std::collections::HashMap;
+use crate::Config;
+
+pub trait Sourced {
+    fn source(cfg: &Config) -> SourceInfo;
+}
 
 pub struct SourceInfo {
     pub name: String,

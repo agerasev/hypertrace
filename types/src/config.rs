@@ -1,5 +1,6 @@
 use byteorder::{BigEndian, LittleEndian, NativeEndian};
 
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Endian {
     Little,
     Big,
@@ -14,9 +15,19 @@ impl ToEndian for BigEndian {
     const ENDIAN: Endian = Endian::Big;
 }
 
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum AddressWidth {
     X32,
     X64,
+}
+
+impl AddressWidth {
+    pub fn num_value(&self) -> usize {
+        match self {
+            AddressWidth::X32 => 32,
+            AddressWidth::X64 => 64,
+        }
+    }
 }
 
 #[cfg(target_pointer_width = "32")]

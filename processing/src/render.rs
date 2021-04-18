@@ -1,8 +1,8 @@
 use crate::{Canvas, Buffer, Context};
-use types::Shape;
+use types::{Shape, Config};
 use ccgeom::Geometry3;
 use std::{marker::PhantomData, fs};
-use ocl_include::{Parser, source};
+use ocl_include::{Parser, Index, source};
 use uni_path::PathBuf;
 use regex::{Regex, Captures};
 
@@ -12,21 +12,19 @@ pub struct Render<G: Geometry3, T: Shape<G>> {
 }
 
 impl<G: Geometry3, T: Shape<G>> Render<G, T> {
-    pub fn new(context: &Context) -> base::Result<Self> {
-        let source_info = T::source(&context.config);
-        
+    fn source(config: &Config) -> base::Result<(String, Index)> {
+        let source_info = T::source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
         
-        let mut memfs = source::Mem::builder();
-        let object_link = if let Some(src) = source_info.source_tree {
-            for (k, v) in src.tree {
-                println!("Add file: {}, {}", k, v);
-                memfs = memfs.add_file(&PathBuf::from(k), v)?;
-            }
-            format!("#include <{}>", src.root)
+        let object_link = if let Some(root) = source_info.tree.root() {
+            format!("#include <{}>", root)
         } else {
             String::new()
         };
+        let mut memfs = source::Mem::builder();
+        for (k, v) in source_info.tree.into_iter() {
+            memfs = memfs.add_file(&k, v)?;
+        }
 
         let root = PathBuf::from("render.ocl");
         memfs = memfs.add_file(&root, format!(
@@ -40,7 +38,7 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
 
                 #include <render/render.cc>
             "#,
-            context.config.address_width.num_value(),
+            config.address_width.num_value(),
             object_link,
             source_info.name,
             source_info.prefix,
@@ -50,26 +48,31 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
             .add_flag("HOST".into(), false)
             .add_flag("UNITTEST".into(), false)
             .add_flag("VARIADIC_MACROS".into(), false)
-            .add_flag("DOUBLE_PRECISION".into(), context.config.double_support)
+            .add_flag("DOUBLE_PRECISION".into(), config.double_support)
             .build();
         let node = parser.parse(&root)?;
-        let (text, index) = node.collect();
+        Ok(node.collect())
+    }
 
+    fn map_error(index: &Index, err: ocl::Error) -> ocl::Error {
+        ocl::Error::from(ocl::OclCoreError::from(
+            Regex::new(r#"([\w.:_\-/<>]*):([\d]+):([\d]+)"#).unwrap().replace_all(
+                &String::from(err),
+                |cap: &Captures| {
+                    let line = cap[2].parse::<usize>().unwrap();
+                    let (file, line) = index.search(line).map(|(f, l)| (String::from(f), l)).unwrap_or((cap[1].into(), line));
+                    format!("{}:{}:{}", file, line, &cap[3])
+                }
+            ).into_owned()
+        ))
+    }
+
+    pub fn new(context: &Context) -> base::Result<Self> {
+        let (text, index) = Self::source(&context.config)?;
         fs::write("render.ocl", Regex::new(r#"\n\n+"#).unwrap().replace_all(&text, "\n\n").into_owned())?;
 
         let program = ocl::Program::builder().source(text).build(&context.ocl)
-            .map_err(|e| {
-                ocl::Error::from(ocl::OclCoreError::from(
-                    Regex::new(r#"([\w.:_\-/<>]*):([\d]+):([\d]+)"#).unwrap().replace_all(
-                        &String::from(e),
-                        |cap: &Captures| {
-                            let line = cap[2].parse::<usize>().unwrap();
-                            let (file, line) = index.search(line).map(|(f, l)| (String::from(f), l)).unwrap_or((cap[1].into(), line));
-                            format!("{}:{}:{}", file, line, &cap[3])
-                        }
-                    ).into_owned()
-                ))
-            })?;
+            .map_err(|e| Self::map_error(&index, e))?;
         let kernel = ocl::Kernel::builder()
             .program(&program)
             .name("render")
@@ -77,6 +80,7 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
             .arg_named("object", None::<&ocl::Buffer<u8>>)
             .arg_named("canvas", None::<&ocl::Buffer<f32>>)
             .build()?;
+
         Ok(Self { kernel, phantom: PhantomData })
     }
 

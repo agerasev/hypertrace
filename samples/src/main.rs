@@ -10,7 +10,7 @@ use proc::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objs::shapes::eu::Sphere;
+use objs::shapes::eu as shapes;
 
 fn main() -> base::Result<()> {
     let matches = clap::App::new("Sample")
@@ -59,8 +59,8 @@ fn main() -> base::Result<()> {
         ocl: ocl_context
     };
 
-    let sphere = Sphere::default();
-    let buffer = Buffer::new(&context, &sphere)?;
+    let object = shapes::Sphere::default();
+    let buffer = Buffer::new(&context, &object)?;
     let render = Render::new(&context)?;
     let converter = Converter::new(&context.ocl, shape)?;
 

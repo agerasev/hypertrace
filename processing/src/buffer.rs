@@ -1,28 +1,30 @@
-use types::{Config, Type, Value, CountingWrapper};
+use types::{Entity, io::CntWrapper};
+use std::{marker::PhantomData};
+use crate::Context;
 
-pub struct Buffer<T: Type> {
-    type_: T,
+pub struct Buffer<T: Entity> {
     buffer: ocl::Buffer<u8>,
+    phantom: PhantomData<T>,
 }
 
-impl<T: Type> Buffer<T> {
-    pub fn new(context: &ocl::Context, cfg: &Config, value: &T::Value) -> base::Result<Self> {
-        let size = value.size(cfg);
+impl<T: Entity> Buffer<T> {
+    pub fn new(context: &Context, value: &T) -> base::Result<Self> {
+        let size = value.size(&context.config);
         let mut buffer = Vec::with_capacity(size);
-        value.store(cfg, &mut CountingWrapper::new(&mut buffer))?;
+        if size == 0 {
+            buffer.push(0);
+        }
+        value.store(&context.config, &mut CntWrapper::new(&mut buffer))?;
         Ok(Self {
-            type_: value.type_(),
             buffer: ocl::Buffer::builder()
-                .context(context)
+                .context(&context.ocl)
                 .copy_host_slice(&buffer)
-                .len(size)
+                .len(buffer.len())
                 .build()?,
+            phantom: PhantomData,
         })
     }
 
-    pub fn type_(&self) -> &T {
-        &self.type_
-    }
     pub fn buffer(&self) -> &ocl::Buffer<u8> {
         &self.buffer
     }

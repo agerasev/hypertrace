@@ -9,3 +9,6 @@ ocl = "0.19"
 base = { package = "hypertrace-base", path = "../base" }
 types = { package = "hypertrace-types", path = "../types" }
 ocl-include = { path = "../includer" }
+vecmat = { path = "../vecmat" }
+ccgeom = { path = "../ccgeom" }
+uni-path = "1"

@@ -31,8 +31,8 @@ macro_rules! impl_entity {
                 }
                 Ok(())
             }
-            fn source(cfg: &Config) -> SourceInfo {
-                let src = T::source(cfg);
+            fn entity_source(cfg: &Config) -> SourceInfo {
+                let src = T::entity_source(cfg);
                 SourceInfo::new(
                     format!("{}{}", src.name, $N),
                     format!("{}{}", src.prefix, $N),
@@ -65,18 +65,18 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
         for i in 0..3 {
             v[i] = T::load(cfg, src)?;
         }
-        let _ = T::load(cfg, src)?;
+        src.skip(T::type_size(cfg))?;
         Ok(v)
     }
     fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         for i in 0..3 {
             self[i].store(cfg, dst)?;
         }
-        T::default().store(cfg, dst)?;
+        dst.skip(T::type_size(cfg))?;
         Ok(())
     }
-    fn source(cfg: &Config) -> SourceInfo {
-        let src = T::source(cfg);
+    fn entity_source(cfg: &Config) -> SourceInfo {
+        let src = T::entity_source(cfg);
         SourceInfo::new(format!("{}3", src.name), format!("{}3", src.prefix))
     }
 }

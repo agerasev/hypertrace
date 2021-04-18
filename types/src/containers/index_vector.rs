@@ -1,40 +1,60 @@
-use crate::{containers::TypedVec, io::*, primitive::*, traits::*, utils::*, Config};
-use std::{
-    hash::{Hash, Hasher},
-    io,
-};
+use crate::{Entity, SizedEntity, math, Config, io::{CntRead, CntWrite, EntityReader, EntityWriter}, SourceInfo};
+use std::io;
 
 #[derive(Clone, Debug)]
-pub struct IndexVectorType<T: Type> {
-    item_type: T,
+pub struct IndexVector<T: Entity> {
+    items: Vec<T>,
 }
 
-impl<T: Type> IndexVectorType<T> {
-    pub fn new(item_type: T) -> Self {
-        Self { item_type }
+impl<T: Entity> IndexVector<T> {
+    pub fn new() -> Self {
+        Self { items: Vec::new() }
+    }
+
+    pub fn from_items(items: Vec<T>) -> Self {
+        Self { items }
+    }
+
+    pub fn items(&self) -> &Vec<T> {
+        &self.items
+    }
+
+    pub fn items_mut(&mut self) -> &mut Vec<T> {
+        &mut self.items
+    }
+
+    pub fn into_items(self) -> Vec<T> {
+        self.items
     }
 }
 
-impl<T: Type> Type for IndexVectorType<T> {
-    type Value = IndexBuffer<T::Value>;
+impl<T: Entity> Default for IndexVector<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
-    fn align(&self, cfg: &Config) -> usize {
-        lcm(self.item_type.align(cfg), UsizeType.align(cfg))
+impl<T: Entity> Entity for IndexVector<T> {
+    fn align(cfg: &Config) -> usize {
+        math::lcm(T::align(cfg), usize::align(cfg))
     }
 
-    fn id(&self) -> u64 {
-        let mut hasher = DefaultHasher::new();
-        type_id::<Self>().hash(&mut hasher);
-        self.item_type.id().hash(&mut hasher);
-        hasher.finish()
+    fn size(&self, cfg: &Config) -> usize {
+        math::upper_multiple(
+            math::upper_multiple(
+                usize::type_size(cfg) * (1 + self.items().len()),
+                T::align(cfg),
+            ) + self.items().iter().fold(0, |st, item| st + item.size(cfg)),
+            Self::align(cfg),
+        )
     }
 
-    fn load<R: CountingRead + ?Sized>(&self, cfg: &Config, src: &mut R) -> io::Result<Self::Value> {
-        let len = src.read_value(cfg, &UsizeType)?;
+    fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
+        let len = src.read_entity::<usize>(cfg)?;
         let poss = (0..len)
-            .map(|_| src.read_value(cfg, &UsizeType))
+            .map(|_| src.read_entity::<usize>(cfg))
             .collect::<Result<Vec<_>, _>>()?;
-        src.align(self.item_type.align(cfg))?;
+        src.align(T::align(cfg))?;
         let sp = src.position();
         let items = poss
             .into_iter()
@@ -43,109 +63,63 @@ impl<T: Type> Type for IndexVectorType<T> {
                 let ap = sp + vp;
                 if p <= ap {
                     src.skip(ap - p)?;
-                    src.read_value(cfg, &self.item_type)
+                    src.read_entity::<T>(cfg)
                 } else {
                     Err(io::Error::new(
                         io::ErrorKind::InvalidData,
-                        "IndexBuffer indices are overlapping or not monotonic",
+                        "IndexVector indices are overlapping or not monotonic",
                     ))
                 }
             })
             .collect::<Result<Vec<_>, _>>()?;
-        src.align(self.align(cfg))?;
-        Self::Value::from_items(self.item_type.clone(), items).ok_or_else(|| {
-            io::Error::new(io::ErrorKind::InvalidData, "IndexBuffer item type mismatch")
-        })
-    }
-}
-
-#[derive(Clone)]
-pub struct IndexBuffer<V: Value> {
-    inner: TypedVec<V>,
-}
-
-impl<V: Value> IndexBuffer<V> {
-    pub fn new(item_type: V::Type) -> Self {
-        Self {
-            inner: TypedVec::new(item_type),
-        }
+        src.align(Self::align(cfg))?;
+        Ok(Self::from_items(items))
     }
 
-    pub fn from_items(item_type: V::Type, items: Vec<V>) -> Option<Self> {
-        TypedVec::from_items(item_type, items).map(|v| Self { inner: v })
-    }
-
-    pub fn item_type(&self) -> &V::Type {
-        &self.inner.item_type()
-    }
-    pub fn items(&self) -> &TypedVec<V> {
-        &self.inner
-    }
-    pub fn items_mut(&mut self) -> &mut TypedVec<V> {
-        &mut self.inner
-    }
-
-    pub fn into_items(self) -> Vec<V> {
-        self.inner.into_items()
-    }
-}
-
-impl<V: Value> Value for IndexBuffer<V> {
-    type Type = IndexVectorType<V::Type>;
-
-    fn size(&self, cfg: &Config) -> usize {
-        upper_multiple(
-            upper_multiple(
-                UsizeType.size(cfg) * (1 + self.items().len()),
-                self.item_type().align(cfg),
-            ) + self.items().iter().fold(0, |st, item| st + item.size(cfg)),
-            self.align(cfg),
-        )
-    }
-
-    fn type_(&self) -> Self::Type {
-        IndexVectorType::new(self.item_type().clone())
-    }
-
-    fn store<W: CountingWrite + ?Sized>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        dst.write_value(cfg, &self.items().len())?;
+    fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
+        dst.write_entity::<usize>(cfg, &self.items().len())?;
         for pos in self.items().iter().scan(0, |st, item| {
             let prev = *st;
             *st += item.size(cfg);
             Some(prev)
         }) {
-            dst.write_value(cfg, &pos)?;
+            dst.write_entity::<usize>(cfg, &pos)?;
         }
-        dst.align(self.item_type().align(cfg))?;
+        dst.align(T::align(cfg))?;
         for item in self.items().iter() {
-            dst.write_value(cfg, item)?;
+            dst.write_entity::<T>(cfg, item)?;
         }
-        dst.align(self.align(cfg))?;
+        dst.align(Self::align(cfg))?;
         Ok(())
+    }
+
+    fn entity_source(cfg: &Config) -> SourceInfo {
+        let src = T::entity_source(cfg);
+        SourceInfo::new(
+            format!("IndexVector_{}", src.name),
+            format!("index_vector_{}", src.prefix),
+        )
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::*;
+    use crate::{config::HOST_CONFIG, io::TestBuffer};
 
     #[test]
     fn store_load() {
-        let ivec = IndexBuffer::from_items(
-            <Vec<i32> as Value>::Type::default(),
-            vec![vec![1], vec![2, 3], vec![4, 5, 6]],
-        )
-        .unwrap();
+        let ivec = IndexVector::from_items(
+            vec![vec![1], vec![2, 3], vec![], vec![4, 5, 6]],
+        );
         let mut buf = TestBuffer::new();
-        buf.writer().write_value(&HOST_CONFIG, &ivec).unwrap();
+        buf.writer().write_entity(&HOST_CONFIG, &ivec).unwrap();
+        assert_eq!(buf.vec.len(), ivec.size(&HOST_CONFIG));
+
         let ovec = buf
             .reader()
-            .read_value(
-                &HOST_CONFIG,
-                &IndexVectorType::new(<Vec<i32> as Value>::Type::default()),
-            )
+            .read_entity::<IndexVector<Vec<i32>>>(&HOST_CONFIG)
             .unwrap();
-        assert_eq!(ivec.into_items(), ovec.into_items(),);
+        assert_eq!(ivec.into_items(), ovec.into_items());
     }
 }

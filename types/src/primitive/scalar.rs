@@ -30,7 +30,7 @@ macro_rules! impl_entity_native {
                     Endian::Little => dst.$write::<LittleEndian>(*self),
                 }
             }
-            fn source(_: &Config) -> SourceInfo {
+            fn entity_source(_: &Config) -> SourceInfo {
                 SourceInfo::new($K.into(), $K.into())
             }
         }
@@ -58,7 +58,7 @@ macro_rules! impl_entity_byte {
             fn store<W: CntWrite>(&self, _cfg: &Config, dst: &mut W) -> io::Result<()> {
                 dst.$write(*self)
             }
-            fn source(_: &Config) -> SourceInfo {
+            fn entity_source(_: &Config) -> SourceInfo {
                 SourceInfo::new($K.into(), $K.into())
             }
         }
@@ -92,10 +92,10 @@ macro_rules! impl_entity_size {
                     AddressWidth::X64 => (*self as $T64).store(cfg, dst),
                 }
             }
-            fn source(cfg: &Config) -> SourceInfo {
+            fn entity_source(cfg: &Config) -> SourceInfo {
                 match cfg.address_width {
-                    AddressWidth::X32 => $T32::source(cfg),
-                    AddressWidth::X64 => $T64::source(cfg),
+                    AddressWidth::X32 => $T32::entity_source(cfg),
+                    AddressWidth::X64 => $T64::entity_source(cfg),
                 }
             }
         }
@@ -153,11 +153,11 @@ impl Entity for f64 {
             (*self as f32).store(cfg, dst)
         }
     }
-    fn source(cfg: &Config) -> SourceInfo {
+    fn entity_source(cfg: &Config) -> SourceInfo {
         if cfg.double_support {
             SourceInfo::new("double".into(), "double".into())
         } else {
-            f32::source(cfg)
+            f32::entity_source(cfg)
         }
     }
 }

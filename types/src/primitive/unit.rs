@@ -21,7 +21,7 @@ impl Entity for () {
         Ok(())
     }
 
-    fn source(_: &Config) -> SourceInfo {
+    fn entity_source(_: &Config) -> SourceInfo {
         SourceInfo::new("void".into(), "empty".into())
     }
 }

@@ -7,3 +7,6 @@ edition = "2018"
 [dependencies]
 base = { package = "hypertrace-base", path = "../base" }
 types = { package = "hypertrace-types", path = "../types" }
+type-macros = { package = "hypertrace-type-macros", path = "../type-macros" }
+vecmat = { path = "../vecmat" }
+ccgeom = { path = "../ccgeom" }

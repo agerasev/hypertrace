@@ -7,7 +7,7 @@ members = [
     "kernel",
     "base",
     "types",
-    "new_types",
+    "type-macros",
     "objects",
     "processing",
     "viewer",

@@ -2,9 +2,9 @@
 
 
 _ALLOW_UNUSED_PARAMETERS_
-real sphereeu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light) {
-    real3 pos = light->ray.start;
-    real3 dir = light->ray.direction;
+real sphere_eu_detect(__global const void *shape, Context *context, real3 *normal, RayEu *ray) {
+    real3 pos = ray->start;
+    real3 dir = ray->direction;
     real b = -dot(dir, pos);
     real c = dot(pos, pos) - R1;
     real d = b*b - c;
@@ -18,11 +18,11 @@ real sphereeu_detect(__global const void *shape, Context *context, real3 *normal
     }
     real3 h = pos + dir*e;
     *normal = h;
-    light->ray.start = h;
+    ray->start = h;
     return e;
 }
 
-static real cubeeu_detect_nearest(real3 near, real3 *normal) {
+static real cube_eu_detect_nearest(real3 near, real3 *normal) {
     bool xy = near.x > near.y;
     bool yz = near.y > near.z;
     bool xz = near.x > near.z;
@@ -42,31 +42,31 @@ static real cubeeu_detect_nearest(real3 near, real3 *normal) {
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-real cubeeu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light) {
+real cube_eu_detect(__global const void *shape, Context *context, real3 *normal, RayEu *ray) {
     const real3 cmax = MAKE(real3)(R1);
     const real3 cmin = MAKE(real3)(-R1);
 
-    real3 inv_dir = R1/light->ray.direction;
+    real3 inv_dir = R1/ray->direction;
 
-    real3 vmin = (cmin - light->ray.start)*inv_dir;
-    real3 vmax = (cmax - light->ray.start)*inv_dir;
+    real3 vmin = (cmin - ray->start)*inv_dir;
+    real3 vmax = (cmax - ray->start)*inv_dir;
 
     real3 near = fmin(vmin, vmax);
     real3 far = fmax(vmin, vmax);
 
     real3 norm_in = MAKE(real3)(R0);
-    float dist_in = cubeeu_detect_nearest(near, &norm_in);
-    norm_in *= -sign(light->ray.direction);
+    float dist_in = cube_eu_detect_nearest(near, &norm_in);
+    norm_in *= -sign(ray->direction);
 
     real3 norm_out = MAKE(real3)(R0);
-    float dist_out = -cubeeu_detect_nearest(-far, &norm_out);
-    norm_out *= sign(light->ray.direction);
+    float dist_out = -cube_eu_detect_nearest(-far, &norm_out);
+    norm_out *= sign(ray->direction);
 
     if (dist_in < EPS*context->repeat || dist_in > dist_out) {
         return -R1;
     }
 
-    light->ray.start += dist_in*light->ray.direction;
+    ray->start += dist_in*ray->direction;
     *normal = norm_in;
     return dist_in;
 }
@@ -104,11 +104,10 @@ TEST_F(ShapeEuTest, sphere) {
     ctx.repeat = false;
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         real3 start = vrng.normal(), dir = vrng.unit();
-        LightEu light;
-        light.ray = RayEu { start, dir };
+        RayEu ray { start, dir };
         real3 normal;
         
-        real dist = sphereeu_detect(nullptr, &ctx, &normal, &light);
+        real dist = sphere_eu_detect(nullptr, &ctx, &normal, &ray);
 
         if (length(start) < 1 - EPS) {
             // TODO: Update on refraction
@@ -117,8 +116,8 @@ TEST_F(ShapeEuTest, sphere) {
         if (length(start) > 1 + EPS) {
             real proj = -dot(start, dir);
             if (proj > EPS && length(start + proj*dir) < 1 - EPS) {
-                ASSERT_EQ(length2(light.ray.start), approx(1));
-                ASSERT_EQ(light.ray.start, approx(normal));
+                ASSERT_EQ(length2(ray.start), approx(1));
+                ASSERT_EQ(ray.start, approx(normal));
                 ASSERT_TRUE(dist > -EPS);
             } else {
                 ASSERT_EQ(dist, approx(-1));
@@ -132,11 +131,10 @@ TEST_F(ShapeEuTest, cube) {
     ctx.repeat = false;
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         real3 start = vrng.normal(), dir = vrng.unit();
-        LightEu light;
-        light.ray = RayEu { start, dir };
+        RayEu ray { start, dir };
         real3 normal;
 
-        real dist = cubeeu_detect(nullptr, &ctx, &normal, &light);
+        real dist = cube_eu_detect(nullptr, &ctx, &normal, &ray);
         
         if (max_comp(fabs(start)) < 1 - EPS) {
             // TODO: Update on refraction
@@ -146,9 +144,9 @@ TEST_F(ShapeEuTest, cube) {
             real proj = -dot(start, dir);
             bool sph = proj > EPS && length(start + proj*dir) < 1 - EPS;
             if (sph || dist > EPS) {
-                ASSERT_EQ(max_comp(fabs(light.ray.start)), approx(1).epsilon(sqrt(EPS)));
-                int idx = max_comp_idx(fabs(light.ray.start));
-                ASSERT_EQ(normal[idx], approx(sign(light.ray.start[idx])));
+                ASSERT_EQ(max_comp(fabs(ray.start)), approx(1).epsilon(sqrt(EPS)));
+                int idx = max_comp_idx(fabs(ray.start));
+                ASSERT_EQ(normal[idx], approx(sign(ray.start[idx])));
                 normal[idx] = 0;
                 ASSERT_EQ(normal, approx(real3(0)));
                 ASSERT_TRUE(dist > -EPS);

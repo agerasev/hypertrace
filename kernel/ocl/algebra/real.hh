@@ -17,8 +17,8 @@
 
 #else
 
-#define PI CONCAT(C_PI, f)
-#define E CONCAT(C_E, f)
+#define PI CONCAT_2(C_PI, f)
+#define E CONCAT_2(C_E, f)
 #define EPS 1e-6f
 #define R0 0.0f
 #define R1 1.0f

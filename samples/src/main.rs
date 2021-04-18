@@ -58,11 +58,10 @@ fn main() -> base::Result<()> {
         config,
         ocl: ocl_context
     };
-    let source = Box::new(&*kernel::SOURCE);
 
     let sphere = Sphere::default();
     let buffer = Buffer::new(&context, &sphere)?;
-    let render = Render::new(&context, Some(source))?;
+    let render = Render::new(&context)?;
     let converter = Converter::new(&context.ocl, shape)?;
 
     let sdl_context = Rc::new(sdl2::init()?);

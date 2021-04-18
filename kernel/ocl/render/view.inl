@@ -7,11 +7,11 @@
 #endif
 
 typedef struct {
-    $($Geo,Map) position;
+    $2($Geo,Map) position;
     real field_of_view;
     real lens_radius;
     real focal_length;
-} $(View,$Geo);
+} $2(View,$Geo);
 
 //#ifndef HOST
 //#include "view.cc"

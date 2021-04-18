@@ -8,7 +8,9 @@ edition = "2018"
 ocl = "0.19"
 base = { package = "hypertrace-base", path = "../base" }
 types = { package = "hypertrace-types", path = "../types" }
+kernel = { package = "hypertrace-kernel", path = "../kernel" }
 ocl-include = { path = "../includer" }
 vecmat = { path = "../vecmat" }
 ccgeom = { path = "../ccgeom" }
 uni-path = "1"
+regex = "1"

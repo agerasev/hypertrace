@@ -13,7 +13,6 @@ sdl2 = "0.34"
 ocl = "0.19"
 ocl-include = { path = "../includer" }
 base = { package = "hypertrace-base", path = "../base" }
-kernel = { package = "hypertrace-kernel", path = "../kernel" }
 types = { package = "hypertrace-types", path = "../types" }
 view = { package = "hypertrace-viewer", path = "../viewer" }
 objs = { package = "hypertrace-objects", path = "../objects" }

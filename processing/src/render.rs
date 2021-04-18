@@ -1,9 +1,10 @@
 use crate::{Canvas, Buffer, Context};
 use types::Shape;
 use ccgeom::Geometry3;
-use std::{marker::PhantomData};
-use ocl_include::{Parser, Source, source};
+use std::{marker::PhantomData, fs};
+use ocl_include::{Parser, source};
 use uni_path::PathBuf;
+use regex::{Regex, Captures};
 
 pub struct Render<G: Geometry3, T: Shape<G>> {
     kernel: ocl::Kernel,
@@ -11,62 +12,64 @@ pub struct Render<G: Geometry3, T: Shape<G>> {
 }
 
 impl<G: Geometry3, T: Shape<G>> Render<G, T> {
-    pub fn new(context: &Context, source: Option<Box<dyn Source>>) -> base::Result<Self> {
+    pub fn new(context: &Context) -> base::Result<Self> {
         let source_info = T::source(&context.config);
-        let mut pb = Parser::builder();
-        let text = if let Some(tree) = source_info.source_tree {
-            if let Some(outer_src) = source {
-                println!("Outer src");
-                pb = pb.add_source(outer_src);
-            }
-            let mut msb = source::Mem::builder();
-            for (k, v) in tree.tree {
+        
+        let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
+        
+        let mut memfs = source::Mem::builder();
+        let object_link = if let Some(src) = source_info.source_tree {
+            for (k, v) in src.tree {
                 println!("Add file: {}, {}", k, v);
-                msb = msb.add_file(&PathBuf::from(k), v)?;
+                memfs = memfs.add_file(&PathBuf::from(k), v)?;
             }
-            let parser = pb.add_source(msb.build())
-                .add_flag("HOST".into(), false)
-                .add_flag("UNITTEST".into(), false)
-                .add_flag("DOUBLE_SUPPORT".into(), context.config.double_support)
-                .build();
-            let node = parser.parse(&PathBuf::from(tree.root))?;
-            let (text, _index) = node.collect();
-            text
+            format!("#include <{}>", src.root)
         } else {
             String::new()
         };
 
-        let src = format!(r#"
-            #define ADDRESS_WIDTH {}
-            {}
+        let root = PathBuf::from("render.ocl");
+        memfs = memfs.add_file(&root, format!(
+            r#"
+                #define ADDRESS_WIDTH {}
 
-            typedef {} Shape;
-            float4 object_render(__global const Shape *object, float2 pos) {{
-                return {}_render(object, pos);
-            }}
+                {}
 
-            __kernel void render(
-                const uint2 shape,
-                __global const Shape *object,
-                __global float4 *canvas
-            ) {{
-                uint2 pos = (uint2)(
-                    get_global_id(0),
-                    get_global_id(1)
-                );
-                uint idx = pos.x + shape.x * pos.y;
-                float2 fpos = convert_float2(pos) / convert_float2(shape);
-                float4 color = object_render(object, fpos);
-                (float4)(
-                    1.0f - 0.5f * (fpos.x + fpos.y),
-                    fpos.x,
-                    fpos.y,
-                    1.0f
-                );
-                canvas[idx] += color;
-            }}
-        "#, context.config.address_width.num_value(), text, source_info.name, source_info.prefix);
-        let program = ocl::Program::builder().source(src).build(&context.ocl)?;
+                typedef {} Shape;
+                #define shape_detect {}_detect
+
+                #include <render/render.cc>
+            "#,
+            context.config.address_width.num_value(),
+            object_link,
+            source_info.name,
+            source_info.prefix,
+        ))?;
+
+        let parser = parser_builder.add_source(memfs.build())
+            .add_flag("HOST".into(), false)
+            .add_flag("UNITTEST".into(), false)
+            .add_flag("VARIADIC_MACROS".into(), false)
+            .add_flag("DOUBLE_PRECISION".into(), context.config.double_support)
+            .build();
+        let node = parser.parse(&root)?;
+        let (text, index) = node.collect();
+
+        fs::write("render.ocl", Regex::new(r#"\n\n+"#).unwrap().replace_all(&text, "\n\n").into_owned())?;
+
+        let program = ocl::Program::builder().source(text).build(&context.ocl)
+            .map_err(|e| {
+                ocl::Error::from(ocl::OclCoreError::from(
+                    Regex::new(r#"([\w.:_\-/<>]*):([\d]+):([\d]+)"#).unwrap().replace_all(
+                        &String::from(e),
+                        |cap: &Captures| {
+                            let line = cap[2].parse::<usize>().unwrap();
+                            let (file, line) = index.search(line).map(|(f, l)| (String::from(f), l)).unwrap_or((cap[1].into(), line));
+                            format!("{}:{}:{}", file, line, &cap[3])
+                        }
+                    ).into_owned()
+                ))
+            })?;
         let kernel = ocl::Kernel::builder()
             .program(&program)
             .name("render")

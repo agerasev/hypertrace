@@ -6,20 +6,20 @@
 #endif
 
 typedef struct {
-    $($Geo,Pos) start;
-    $($Geo,Dir) direction;
-} $(Ray,$Geo);
+    $2($Geo,Pos) start;
+    $2($Geo,Dir) direction;
+} $2(Ray,$Geo);
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-$(Ray,$Geo) $(ray_,$geo,_map)($(Ray,$Geo) ray, $($Geo,Map) map) {
-    $(Ray,$Geo) r;
-    r.start = $($geo,_apply_pos)(map, ray.start);
-    r.direction = normalize($($geo,_apply_dir)(map, ray.start, ray.direction));
+$2(Ray,$Geo) $3(ray_,$geo,_map)($2(Ray,$Geo) ray, $2($Geo,Map) map) {
+    $2(Ray,$Geo) r;
+    r.start = $2($geo,_apply_pos)(map, ray.start);
+    r.direction = normalize($2($geo,_apply_dir)(map, ray.start, ray.direction));
     return r;
 }
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-$(Ray,$Geo) $(ray_,$geo,_advance)($(Ray,$Geo) ray, real l) {
-    $($Geo,Map) map = $($geo,_move_to)(ray.direction, -l);
-    return $(ray_,$geo,_map)(ray, map);
+$2(Ray,$Geo) $3(ray_,$geo,_advance)($2(Ray,$Geo) ray, real l) {
+    $2($Geo,Map) map = $2($geo,_move_to)(ray.direction, -l);
+    return $3(ray_,$geo,_map)(ray, map);
 }

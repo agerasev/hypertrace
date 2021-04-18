@@ -7,10 +7,10 @@
 
 
 typedef void SphereEu;
-real sphere_eu_detect(__global const SphereEu *shape, Context *context, real3 *normal, LightEu *light);
+real sphere_eu_detect(__global const SphereEu *shape, Context *context, real3 *normal, RayEu *ray);
 
 typedef void CubeEu;
-real cube_eu_detect(__global const CubeEu *shape, Context *context, real3 *normal, LightEu *light);
+real cube_eu_detect(__global const CubeEu *shape, Context *context, real3 *normal, RayEu *ray);
 
 
 #ifndef HOST

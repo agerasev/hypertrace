@@ -1,9 +1,17 @@
 #pragma once
 
+#ifdef DOUBLE_PRECISION
+typedef double real;
+#else
+typedef float real;
+#endif
+
 #ifdef HOST
 
 #include <cstdint>
 #include <cstdbool>
+
+#define __kernel
 
 #define __global
 #define __local
@@ -29,12 +37,6 @@ static_assert(sizeof(ulong) == 8);
 typedef std::size_t    usize;
 typedef std::ptrdiff_t isize;
 
-#ifdef DOUBLE_PRECISION
-typedef double real;
-#else
-typedef float real;
-#endif
-
 #else // !HOST
 
 #define NULL 0
@@ -48,12 +50,6 @@ typedef long  isize;
 #else
 // TODO: show ADDRESS_WIDTH value in the error message
 #error "Undefined or unsupported ADDRESS_WIDTH"
-#endif
-
-#ifdef DOUBLE_PRECISION
-typedef float real;
-#else
-typedef double real;
 #endif
 
 #define offsetof(st, m) \

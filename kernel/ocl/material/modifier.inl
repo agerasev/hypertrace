@@ -12,7 +12,7 @@ typedef struct {
     $Material inner;
 #endif
     color3 color;
-} $(Colored,$Material);
+} $2(Colored,$Material);
 
 
 typedef struct {
@@ -20,15 +20,15 @@ typedef struct {
     $Material inner;
 #endif
     color3 emission;
-} $(Emissive,$Material);
+} $2(Emissive,$Material);
 
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-bool $(colored_,$material,_interact)(__global const $(Colored,$Material) *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool $3(colored_,$material,_interact)(__global const $2(Colored,$Material) *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     
     light->base.intensity *= material->color;
 
-    return $($material,_interact)(
+    return $2($material,_interact)(
 #if $Material != void
         &material->inner,
 #else
@@ -39,11 +39,11 @@ bool $(colored_,$material,_interact)(__global const $(Colored,$Material) *materi
 
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-bool $(emissive_,$material,_interact)(__global const $(Emissive,$Material) *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool $3(emissive_,$material,_interact)(__global const $2(Emissive,$Material) *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     
     *emission += light->base.intensity * material->emission;
 
-    return $($material,_interact)(
+    return $2($material,_interact)(
 #if $Material != void
         &material->inner,
 #else

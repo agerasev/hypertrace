@@ -84,6 +84,20 @@ typedef float16 real16;
 #define r3_new MAKE(real3)
 #define r4_new MAKE(real4)
 
+#ifdef DOUBLE_PRECISION
+#define convert_real2  convert_double2
+#define convert_real3  convert_double3
+#define convert_real4  convert_double4
+#define convert_real8  convert_double8
+#define convert_real16 convert_double16
+#else
+#define convert_real2  convert_float2
+#define convert_real3  convert_float3
+#define convert_real4  convert_float4
+#define convert_real8  convert_float8
+#define convert_real16 convert_float16
+#endif
+
 // Shortcuts
 
 #define length2(x) dot((x), (x))

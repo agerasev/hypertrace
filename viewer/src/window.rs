@@ -8,7 +8,7 @@ use sdl2::{
     keyboard::{Keycode, Scancode},
     mouse::{MouseState, RelativeMouseState},
 };
-use base::Image;
+use hy_base::{self as base, Image};
 
 rental! { mod rent {
     use sdl2::{

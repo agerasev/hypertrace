@@ -1,5 +1,5 @@
 [package]
-name = "hypertrace-type-macros"
+name = "hy-type-macros"
 version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
@@ -13,4 +13,4 @@ quote = "1.0"
 proc-macro2 = "1.0"
 
 [dev-dependencies]
-types = { package = "hypertrace-types", path = "../types" }
+hy-types = { path = "../types" }

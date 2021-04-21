@@ -1,5 +1,6 @@
 use crate::{Canvas, Buffer, Context};
-use types::{Shape, Config};
+use hy_base as base;
+use hy_types::{Shape, Config};
 use ccgeom::Geometry3;
 use std::{marker::PhantomData, fs};
 use ocl_include::{Parser, Index, source};
@@ -14,7 +15,7 @@ pub struct Render<G: Geometry3, T: Shape<G>> {
 impl<G: Geometry3, T: Shape<G>> Render<G, T> {
     fn source(config: &Config) -> base::Result<(String, Index)> {
         let source_info = T::source(config);
-        let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
+        let parser_builder = Parser::builder().add_source(&*hy_kernel::SOURCE);
         
         let object_link = if let Some(root) = source_info.tree.root() {
             format!("#include <{}>", root)

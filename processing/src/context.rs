@@ -1,4 +1,4 @@
-use types::Config;
+use hy_types::Config;
 
 pub struct Context {
     pub ocl: ocl::Context,

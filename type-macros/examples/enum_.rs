@@ -1,4 +1,4 @@
-use hypertrace_type_macros::{SizedEntity};
+use hy_type_macros::{SizedEntity};
 
 #[derive(SizedEntity)]
 enum E {

@@ -1,4 +1,5 @@
-use types::{Entity, io::CntWrapper};
+use hy_base as base;
+use hy_types::{Entity, io::CntWrapper};
 use std::{marker::PhantomData};
 use crate::Context;
 

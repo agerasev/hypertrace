@@ -1,5 +1,5 @@
-use type_macros::SizedEntity;
-use types::{Entity, SizedEntity, config::{self, Config}};
+use hy_type_macros::SizedEntity;
+use hy_types::{Entity, SizedEntity, config::{self, Config}};
 
 const CONFIG: Config = Config {
     endian: config::Endian::Little,

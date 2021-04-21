@@ -1,4 +1,5 @@
-use hypertrace_viewer as viewer;
+use hy_viewer as viewer;
+use hy_base as base;
 
 use std::{
     rc::Rc,

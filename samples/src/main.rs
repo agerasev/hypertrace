@@ -4,13 +4,13 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use base::Image;
-use view::{Window, Handler, DummyController};
-use proc::{Context, Render, Canvas, Converter, Buffer};
-use types::{
+use hy_base::{self as base, Image};
+use hy_viewer::{Window, Handler, DummyController};
+use hy_processing::{Context, Render, Canvas, Converter, Buffer};
+use hy_types::{
     Config, config::{AddressWidth, Endian},
 };
-use objs::shapes::eu as shapes;
+use hy_objects::shapes::eu as shapes;
 
 fn main() -> base::Result<()> {
     let matches = clap::App::new("Sample")

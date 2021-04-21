@@ -22,7 +22,7 @@ fn fields_iter<'a>(fields: &'a Fields) -> Box<dyn Iterator<Item=&'a Field> + 'a>
 fn make_align_fields(fields: &Fields) -> TokenStream2 {
     fields_iter(fields).fold(quote!{ 1usize }, |accum, field| {
         let ty = &field.ty;
-        quote!{ types::math::lcm(#accum, <#ty as types::Entity>::align(cfg)) }
+        quote!{ hy_types::math::lcm(#accum, <#ty as hy_types::Entity>::align(cfg)) }
     })
 }
 
@@ -34,7 +34,7 @@ fn make_align(input: &DeriveInput) -> TokenStream2 {
         Data::Enum(enum_data) => {
             enum_data.variants.iter().fold(quote!{ usize::align(cfg) }, |accum, variant| {
                 let variant_align = make_align_fields(&variant.fields);
-                quote!{ types::math::lcm(#accum, #variant_align) }
+                quote!{ hy_types::math::lcm(#accum, #variant_align) }
             })
         },
         Data::Union(_) => panic!("Union derive is not supported yet"),
@@ -44,7 +44,7 @@ fn make_align(input: &DeriveInput) -> TokenStream2 {
 fn make_type_size_fields(fields: &Fields, init: TokenStream2) -> TokenStream2 {
     fields_iter(fields).fold(init, |accum, field| {
         let ty = &field.ty;
-        quote!{ types::math::upper_multiple(#accum, <#ty as types::Entity>::align(cfg)) + <#ty as types::SizedEntity>::type_size(cfg) }
+        quote!{ hy_types::math::upper_multiple(#accum, <#ty as hy_types::Entity>::align(cfg)) + <#ty as hy_types::SizedEntity>::type_size(cfg) }
     })
 }
 
@@ -57,14 +57,14 @@ fn make_type_size(input: &DeriveInput) -> TokenStream2 {
             enum_data.variants.iter().fold(quote!{ 0usize }, |accum, variant| {
                 let variant_type_size = make_type_size_fields(
                     &variant.fields,
-                    quote!{ <usize as types::SizedEntity>::type_size(cfg) },
+                    quote!{ <usize as hy_types::SizedEntity>::type_size(cfg) },
                 );
                 quote!{ std::cmp::max(#accum, #variant_type_size) }
             })
         },
         Data::Union(_) => panic!("Union derive is not supported yet"),
     };
-    quote!{ types::math::upper_multiple(#unaligned_type_size, <Self as types::Entity>::align(cfg)) }
+    quote!{ hy_types::math::upper_multiple(#unaligned_type_size, <Self as hy_types::Entity>::align(cfg)) }
 }
 
 fn make_load_fields(fields: &Fields, ident: TokenStream2) -> TokenStream2 {
@@ -72,8 +72,8 @@ fn make_load_fields(fields: &Fields, ident: TokenStream2) -> TokenStream2 {
         let ty = &field.ty;
         let value = quote!{
             {
-                src.align(<#ty as types::Entity>::align(cfg))?;
-                <#ty as types::Entity>::load(cfg, src)?
+                src.align(<#ty as hy_types::Entity>::align(cfg))?;
+                <#ty as hy_types::Entity>::load(cfg, src)?
             }
         };
         let named_value = match &field.ident {
@@ -110,7 +110,7 @@ fn make_load(input: &DeriveInput) -> TokenStream2 {
             });
             quote!{
                 let index = usize::load(cfg, src)?;
-                src.align(<Self as types::Entity>::align(cfg))?;
+                src.align(<Self as hy_types::Entity>::align(cfg))?;
                 match index {
                     #matches
                     _ => { return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Enum index is out of range")); },
@@ -121,7 +121,7 @@ fn make_load(input: &DeriveInput) -> TokenStream2 {
     };
     quote!{
         let self_ = { #unaligned_load };
-        src.align(<Self as types::Entity>::align(cfg))?;
+        src.align(<Self as hy_types::Entity>::align(cfg))?;
         Ok(self_)
     }
 }
@@ -136,8 +136,8 @@ fn make_store_fields(fields: &Fields, prefix: TokenStream2) -> TokenStream2 {
         };
         let command = quote!{
             {
-                dst.align(<#ty as types::Entity>::align(cfg))?;
-                <#ty as types::Entity>::store(#prefix #field_name, cfg, dst)?;
+                dst.align(<#ty as hy_types::Entity>::align(cfg))?;
+                <#ty as hy_types::Entity>::store(#prefix #field_name, cfg, dst)?;
             }
         };
         quote!{
@@ -201,8 +201,8 @@ fn make_store(input: &DeriveInput) -> TokenStream2 {
                     #accum
                     #ty::#var #bindings => {
                         #wrapper
-                        <usize as types::Entity>::store(&#index, cfg, dst)?;
-                        dst.align(<Self as types::Entity>::align(cfg))?;
+                        <usize as hy_types::Entity>::store(&#index, cfg, dst)?;
+                        dst.align(<Self as hy_types::Entity>::align(cfg))?;
                         #store
                     },
                 }
@@ -217,7 +217,7 @@ fn make_store(input: &DeriveInput) -> TokenStream2 {
     };
     quote!{
         #unaligned_store
-        dst.align(<Self as types::Entity>::align(cfg))?;
+        dst.align(<Self as hy_types::Entity>::align(cfg))?;
         Ok(())
     }
 }
@@ -232,7 +232,7 @@ fn make_source_fields(fields: &Fields, name: TokenStream2) -> TokenStream2 {
         quote!{
             #accum
             {
-                let src = <#ty as types::Entity>::entity_source(cfg);
+                let src = <#ty as hy_types::Entity>::entity_source(cfg);
                 struct_src += format!("    {} {};\n", &src.name, #fname);
             }
         }
@@ -246,9 +246,9 @@ fn make_source_fields(fields: &Fields, name: TokenStream2) -> TokenStream2 {
 */
 fn make_source(_input: &DeriveInput) -> TokenStream2 {
     quote!{
-        types::SourceInfo::new(
-            format!("DerivedSizedEntity{}", <Self as types::Entity>::type_id()),
-            format!("derived_sized_entity_{}", <Self as types::Entity>::type_id()),
+        hy_types::SourceInfo::new(
+            format!("DerivedSizedEntity{}", <Self as hy_types::Entity>::type_id()),
+            format!("derived_sized_entity_{}", <Self as hy_types::Entity>::type_id()),
         )
     }
 }
@@ -265,30 +265,30 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
     let source = make_source(&input);
 
     let expanded = quote! {
-        impl types::Entity for #ty {
-            fn align(cfg: &types::Config) -> usize {
+        impl hy_types::Entity for #ty {
+            fn align(cfg: &hy_types::Config) -> usize {
                 #align
             }
 
-            fn size(&self, cfg: &types::Config) -> usize {
-                <Self as types::SizedEntity>::type_size(cfg)
+            fn size(&self, cfg: &hy_types::Config) -> usize {
+                <Self as hy_types::SizedEntity>::type_size(cfg)
             }
 
-            fn load<R: types::io::CntRead>(cfg: &types::Config, src: &mut R) -> std::io::Result<Self> {
+            fn load<R: hy_types::io::CntRead>(cfg: &hy_types::Config, src: &mut R) -> std::io::Result<Self> {
                 #load
             }
 
-            fn store<W: types::io::CntWrite>(&self, cfg: &types::Config, dst: &mut W) -> std::io::Result<()> {
+            fn store<W: hy_types::io::CntWrite>(&self, cfg: &hy_types::Config, dst: &mut W) -> std::io::Result<()> {
                 #store
             }
 
-            fn entity_source(cfg: &types::Config) -> types::SourceInfo {
+            fn entity_source(cfg: &hy_types::Config) -> hy_types::SourceInfo {
                 #source
             }
         }
 
-        impl types::SizedEntity for #ty {
-            fn type_size(cfg: &types::Config) -> usize {
+        impl hy_types::SizedEntity for #ty {
+            fn type_size(cfg: &hy_types::Config) -> usize {
                 #type_size
             }
         }

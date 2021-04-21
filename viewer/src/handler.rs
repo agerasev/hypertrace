@@ -8,6 +8,7 @@ use sdl2::{
     keyboard::{Keycode, Scancode},
     mouse::{MouseState, RelativeMouseState},
 };
+use hy_base as base;
 
 use crate::Controller;
 

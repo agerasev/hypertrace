@@ -1,6 +1,6 @@
 pub mod eu {
-    use types::{Shape, Config, source::{Sourced, SourceInfo}};
-    use type_macros::{SizedEntity};
+    use hy_types::{Shape, Config, source::{Sourced, SourceInfo}};
+    use hy_type_macros::{SizedEntity};
     use ccgeom::{Euclidean3};
 
     #[derive(Clone, Default, SizedEntity, Debug)]

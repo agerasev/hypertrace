@@ -12,10 +12,10 @@ path = "src/main.rs"
 sdl2 = "0.34"
 ocl = "0.19"
 ocl-include = { path = "../includer" }
-base = { package = "hypertrace-base", path = "../base" }
-types = { package = "hypertrace-types", path = "../types" }
-view = { package = "hypertrace-viewer", path = "../viewer" }
-objs = { package = "hypertrace-objects", path = "../objects" }
-proc = { package = "hypertrace-processing", path = "../processing" }
+hy-base = { path = "../base" }
+hy-types = { path = "../types" }
+hy-viewer = { path = "../viewer" }
+hy-objects = { path = "../objects" }
+hy-processing = { path = "../processing" }
 clap = "2.33"
 vecmat = { path = "../vecmat" }

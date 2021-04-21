@@ -1,12 +1,12 @@
 [package]
-name = "hypertrace-objects"
+name = "hy-objects"
 version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-base = { package = "hypertrace-base", path = "../base" }
-types = { package = "hypertrace-types", path = "../types" }
-type-macros = { package = "hypertrace-type-macros", path = "../type-macros" }
+hy-base = { path = "../base" }
+hy-types = { path = "../types" }
+hy-type-macros = { path = "../type-macros" }
 vecmat = { path = "../vecmat" }
 ccgeom = { path = "../ccgeom" }

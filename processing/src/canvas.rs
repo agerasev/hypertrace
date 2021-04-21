@@ -1,4 +1,4 @@
-use base::Image;
+use hy_base::{self as base, Image};
 use ocl::OclPrm;
 
 pub struct ImageBuffer<T: Copy + Default + OclPrm, const N: usize> {

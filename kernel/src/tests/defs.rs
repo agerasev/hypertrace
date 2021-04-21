@@ -1,1 +1,0 @@
-include!(concat!(env!("OUT_DIR"), "/test_defs.rs"));

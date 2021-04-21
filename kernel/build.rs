@@ -5,13 +5,9 @@ fn str_text(value: &str) -> String {
     format!("r##\"{}\"##", value)
 }
 
-fn var_text(name: &str, value: &str) -> String {
-    format!("pub const {}: &'static str = {};\n", name, str_text(value))
-}
-
 fn dict_text(name: &str, dict: &BTreeMap<String, String>) -> String {
     [
-        format!("pub const {}: [(&'static str, &'static str); {}] = [\n", name, dict.len()),
+        format!("pub const {}: [(&str, &str); {}] = [\n", name, dict.len()),
         dict.iter().map(|(k, v)| format!("    ({}, {}),\n", str_text(k), str_text(v))).fold(String::new(), |a, b| a + &b),
         String::from("];\n"),
     ].join("")
@@ -31,15 +27,6 @@ fn kernel_src_path() -> PathBuf {
 
 fn remount_path(path: &Path, old_base: &Path, new_base: &Path) -> PathBuf {
     new_base.join(path.strip_prefix(old_base).unwrap())
-}
-
-fn write_test_defs() {
-    fs::write(
-        &out_path().join("test_defs.rs"),
-        [
-            var_text("TARGET", &env::var("TARGET").unwrap()),
-        ].join("")
-    ).unwrap();
 }
 
 fn embed_kernel_source() {
@@ -71,9 +58,18 @@ fn rerun_if_source_changed() {
     }
 }
 
+fn build_host_tests() {
+    let mut cfg = cmake::Config::new(env!("CARGO_MANIFEST_DIR"));
+    cfg.profile("Debug");
+    cfg.build_arg(format!("-j{}", num_cpus::get()));
+    cfg.build();
+}
+
 fn main() {
     embed_kernel_source();
-    write_test_defs();
+
+    #[cfg(feature = "host_tests")]
+    build_host_tests();
 
     println!("cargo:rerun-if-changed=build.rs");
     rerun_if_source_changed();

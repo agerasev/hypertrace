@@ -5,8 +5,9 @@ use crate::{
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::{fmt::Debug, io, mem::size_of};
+use num_traits::Num;
 
-pub trait PrimScal: SizedEntity + Copy + Default + Debug + 'static {}
+pub trait PrimScal: SizedEntity + Num + Copy + Default + Debug + 'static {}
 
 macro_rules! impl_entity_native {
     ($T:ident, $K:expr, $read:ident, $write:ident) => {

@@ -1,6 +1,9 @@
-mod derived;
+#[macro_use]
+mod macros;
+
 #[cfg(test)]
 mod tests;
+mod derived;
 
 pub mod entity;
 pub mod config;

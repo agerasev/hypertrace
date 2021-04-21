@@ -87,7 +87,7 @@ impl<T: PrimScal> SizedEntity for Vector<T, 3> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use crate::{
         config::HOST_CONFIG,

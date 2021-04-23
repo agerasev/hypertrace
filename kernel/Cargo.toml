@@ -1,6 +1,6 @@
 [package]
 name = "hypertrace-kernel"
-version = "0.0.1"
+version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
 

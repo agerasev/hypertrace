@@ -22,7 +22,7 @@ impl Entity for () {
     }
 
     fn entity_source(_: &Config) -> SourceInfo {
-        SourceInfo::new("void".into(), "empty".into())
+        SourceInfo::with_root("void", "empty", "types.hh")
     }
 }
 

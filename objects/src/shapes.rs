@@ -7,12 +7,11 @@ pub mod eu {
     pub struct Sphere;
     impl Sourced for Sphere {
         fn source(_: &Config) -> SourceInfo {
-            let mut si = SourceInfo::new(
-                "SphereEu".into(),
-                "sphere_eu".into(),
-            );
-            si.tree.set_root(Some("shape/eu/shapes.hh".into()));
-            si
+            SourceInfo::with_root(
+                "SphereEu",
+                "sphere_eu",
+                "shape/eu/shapes.hh",
+            )
         }
     }
     impl Shape<Euclidean3> for Sphere {}
@@ -21,12 +20,11 @@ pub mod eu {
     pub struct Cube;
     impl Sourced for Cube {
         fn source(_: &Config) -> SourceInfo {
-            let mut si = SourceInfo::new(
-                "CubeEu".into(),
-                "cube_eu".into(),
-            );
-            si.tree.set_root(Some("shape/eu/shapes.hh".into()));
-            si
+            SourceInfo::with_root(
+                "CubeEu",
+                "cube_eu",
+                "shape/eu/shapes.hh",
+            )
         }
     }
     impl Shape<Euclidean3> for Cube {}

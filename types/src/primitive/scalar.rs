@@ -32,7 +32,7 @@ macro_rules! impl_entity_native {
                 }
             }
             fn entity_source(_: &Config) -> SourceInfo {
-                SourceInfo::new($K.into(), $K.into())
+                SourceInfo::with_root($K, $K, "types.hh")
             }
         }
         impl SizedEntity for $T {
@@ -60,7 +60,7 @@ macro_rules! impl_entity_byte {
                 dst.$write(*self)
             }
             fn entity_source(_: &Config) -> SourceInfo {
-                SourceInfo::new($K.into(), $K.into())
+                SourceInfo::with_root($K, $K, "types.hh")
             }
         }
         impl SizedEntity for $T {
@@ -156,7 +156,7 @@ impl Entity for f64 {
     }
     fn entity_source(cfg: &Config) -> SourceInfo {
         if cfg.double_support {
-            SourceInfo::new("double".into(), "double".into())
+            SourceInfo::with_root("double", "double", "types.hh")
         } else {
             f32::entity_source(cfg)
         }

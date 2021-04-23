@@ -25,30 +25,41 @@ pub struct SourceInfo {
 
 #[derive(Clone, Default)]
 pub struct SourceTree {
-    root: Option<PathBuf>,
+    root: PathBuf,
     files: BTreeMap<PathBuf, String>,
 }
 
 impl SourceInfo {
-    pub fn new(name: String, prefix: String) -> Self {
+    pub fn new<A: Into<String>, B: Into<String>>(name: A, prefix: B, tree: SourceTree) -> Self {
         Self {
-            name,
-            prefix,
-            tree: SourceTree::new(),
+            name: name.into(),
+            prefix: prefix.into(),
+            tree,
+        }
+    }
+    pub fn with_root<A: Into<String>, B: Into<String>, C: Into<PathBuf>>(name: A, prefix: B, root: C) -> Self {
+        Self {
+            name: name.into(),
+            prefix: prefix.into(),
+            tree: SourceTree::new(root.into()),
         }
     }
 }
 
 impl SourceTree {
-    pub fn new() -> Self {
+    pub fn new(root: PathBuf) -> Self {
         Self {
-            root: None,
+            root,
             files: BTreeMap::new(),
         }
     }
 
-    pub fn root(&self) -> Option<PathBuf> {
-        self.root.clone()
+    pub fn root(&self) -> &Path {
+        &self.root
+    }
+
+    pub fn set_root(&mut self, root: PathBuf) {
+        self.root = root;
     }
 
     pub fn iter(&self) -> impl Iterator<Item=(&Path, &String)> {
@@ -83,10 +94,6 @@ impl SourceTree {
         self.files.append(&mut other.files);
         Ok(())
     }
-
-    pub fn set_root(&mut self, root: Option<PathBuf>) {
-        self.root = root;
-    }
 }
 
 impl IntoIterator for SourceTree {
@@ -95,4 +102,30 @@ impl IntoIterator for SourceTree {
     fn into_iter(self) -> Self::IntoIter {
         self.files.into_iter()
     }
+}
+
+#[macro_export]
+macro_rules! include_list {
+    ($($path:expr),* $(,)?) => {
+        [
+            $(
+                format!("#include <{}>\n", $path),
+            )*
+        ].iter().join("")
+    };
+}
+
+#[macro_export]
+macro_rules! include_template {
+    ($path:expr, $($name:ident = $value:expr),* $(,)?) => {
+        [
+            $(
+                format!("#define ${} {}\n", stringify!($name), $value),
+            )*
+            format!("#include <{}>\n", $path),
+            $(
+                format!("#undef ${}\n", stringify!($name)),
+            )*
+        ].iter().join("")
+    };
 }

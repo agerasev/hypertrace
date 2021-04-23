@@ -13,6 +13,7 @@ typedef comp2x2 Moebius;
 
 comp mo_apply_c(Moebius m, comp p);
 quat mo_apply_q(Moebius m, quat p);
+#define mo_apply mo_apply_q
 
 comp mo_deriv_c(Moebius m, comp p);
 quat mo_deriv_q(Moebius m, quat p, quat v);

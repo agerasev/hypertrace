@@ -33,9 +33,10 @@ macro_rules! impl_entity {
             }
             fn entity_source(cfg: &Config) -> SourceInfo {
                 let src = T::entity_source(cfg);
-                SourceInfo::new(
+                SourceInfo::with_root(
                     format!("{}{}", src.name, $N),
                     format!("{}{}", src.prefix, $N),
+                    "algebra/vector.hh",
                 )
             }
         }
@@ -77,7 +78,13 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
     }
     fn entity_source(cfg: &Config) -> SourceInfo {
         let src = T::entity_source(cfg);
-        SourceInfo::new(format!("{}3", src.name), format!("{}3", src.prefix))
+        let mut tree = src.tree;
+        tree.set_root("algebra/vector.hh".into());
+        SourceInfo::new(
+            format!("{}3", src.name),
+            format!("{}3", src.prefix),
+            tree,
+        )
     }
 }
 impl<T: PrimScal> SizedEntity for Vector<T, 3> {

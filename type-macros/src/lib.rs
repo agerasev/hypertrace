@@ -246,9 +246,10 @@ fn make_source_fields(fields: &Fields, name: TokenStream2) -> TokenStream2 {
 */
 fn make_source(_input: &DeriveInput) -> TokenStream2 {
     quote!{
-        types::SourceInfo::new(
+        types::SourceInfo::with_root(
             format!("DerivedSizedEntity{}", <Self as types::Entity>::type_id()),
             format!("derived_sized_entity_{}", <Self as types::Entity>::type_id()),
+            "",
         )
     }
 }

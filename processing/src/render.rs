@@ -15,12 +15,8 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
     fn source(config: &Config) -> base::Result<(String, Index)> {
         let source_info = T::source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
-        
-        let object_link = if let Some(root) = source_info.tree.root() {
-            format!("#include <{}>", root)
-        } else {
-            String::new()
-        };
+
+        let include = PathBuf::from(source_info.tree.root());
         let mut memfs = source::Mem::builder();
         for (k, v) in source_info.tree.into_iter() {
             memfs = memfs.add_file(&k, v)?;
@@ -31,7 +27,7 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
             r#"
                 #define ADDRESS_WIDTH {}
 
-                {}
+                #include <{}>
 
                 typedef {} Shape;
                 #define shape_detect {}_detect
@@ -39,7 +35,7 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
                 #include <render/render.cc>
             "#,
             config.address_width.num_value(),
-            object_link,
+            include,
             source_info.name,
             source_info.prefix,
         ))?;

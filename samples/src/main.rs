@@ -6,11 +6,11 @@ use std::{
 };
 use base::Image;
 use view::{Window, Handler, DummyController};
-use proc::{Context, Render, Canvas, Converter, Buffer};
+use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objs::shapes::eu as shapes;
+use objects::shapes::eu as shapes;
 
 fn main() -> base::Result<()> {
     let matches = clap::App::new("Sample")

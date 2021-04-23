@@ -1,142 +1,155 @@
-use crate::{Entity, SizedEntity, primitive::{PrimScal, PrimVec}, Config, source::{Sourced, SourceInfo}/*, math*/};
-use vecmat::{Vector, Matrix, complex::{Complex, Quaternion}, transform::{Shift, Linear, Rotation2, Rotation3, Moebius/*, Chain*/}};
+use crate::{Entity, SizedEntity, Config, source::{Sourced, SourceInfo}, math, io::{CntRead, CntWrite}};
+use vecmat::{Vector, Matrix, Transform, complex::{Complex, Quaternion}, transform::{Shift, Linear, Rotation2, Rotation3, Moebius, Chain, Reorder}};
+use std::io;
 
-
-pub trait Map<T>: SizedEntity + Sourced {}
-
+pub trait Map<T>: Transform<T> + SizedEntity + Sourced {}
 
 // Shift
 
-impl<T: PrimScal, const N: usize> Entity for Shift<T, N> where Vector<T, N>: PrimVec {
-    impl_entity_unwrap!(Vector<T, N>);
+impl Entity for Shift<f64, 2> {
+    impl_entity_unwrap!(Vector<f64, 2>);
 }
-
-impl<T: PrimScal, const N: usize> SizedEntity for Shift<T, N> where Vector<T, N>: PrimVec {
-    impl_sized_entity_unwrap!(Vector<T, N>);
+impl SizedEntity for Shift<f64, 2> {
+    impl_sized_entity_unwrap!(Vector<f64, 2>);
 }
-
-impl<T: PrimScal, const N: usize> Sourced for Shift<T, N> where Vector<T, N>: PrimVec {
-    fn source(cfg: &Config) -> SourceInfo {
-        Self::entity_source(cfg)
+impl Sourced for Shift<f64, 2> {
+    fn source(_: &Config) -> SourceInfo {
+        unimplemented!()
+        //SourceInfo::with_root("Shift2", "shf2", "algebra/shift.hh")
     }
 }
+impl Map<Vector<f64, 2>> for Shift<f64, 2> {}
 
-impl<T: PrimScal, const N: usize> Map<Vector<T, N>> for Shift<T, N> where Vector<T, N>: PrimVec {}
-
+impl Entity for Shift<f64, 3> {
+    impl_entity_unwrap!(Vector<f64, 3>);
+}
+impl SizedEntity for Shift<f64, 3> {
+    impl_sized_entity_unwrap!(Vector<f64, 3>);
+}
+impl Sourced for Shift<f64, 3> {
+    fn source(_: &Config) -> SourceInfo {
+        unimplemented!()
+        //SourceInfo::with_root("Shift3", "shf3", "algebra/shift.hh")
+    }
+}
+impl Map<Vector<f64, 3>> for Shift<f64, 3> {}
 
 // Rotation2
 
-impl<T: PrimScal> Entity for Rotation2<T> {
-    impl_entity_unwrap!(Complex<T>);
+impl Entity for Rotation2<f64> {
+    impl_entity_unwrap!(Complex<f64>);
 }
-
-impl<T: PrimScal> SizedEntity for Rotation2<T> {
-    impl_sized_entity_unwrap!(Complex<T>);
+impl SizedEntity for Rotation2<f64> {
+    impl_sized_entity_unwrap!(Complex<f64>);
 }
-
-impl<T: PrimScal> Sourced for Rotation2<T> {
-    fn source(cfg: &Config) -> SourceInfo {
-        Self::entity_source(cfg)
+impl Sourced for Rotation2<f64> {
+    fn source(_: &Config) -> SourceInfo {
+        SourceInfo::with_root("Rotation2", "rot2", "algebra/rotation.hh")
     }
 }
-
-impl<T: PrimScal> Map<Vector<T, 2>> for Rotation2<T> {}
-
+impl Map<Vector<f64, 2>> for Rotation2<f64> {}
 
 // Rotation3
 
-impl<T: PrimScal> Entity for Rotation3<T> {
-    impl_entity_unwrap!(Quaternion<T>);
+impl Entity for Rotation3<f64> {
+    impl_entity_unwrap!(Quaternion<f64>);
 }
-
-impl<T: PrimScal> SizedEntity for Rotation3<T> {
-    impl_sized_entity_unwrap!(Quaternion<T>);
+impl SizedEntity for Rotation3<f64> {
+    impl_sized_entity_unwrap!(Quaternion<f64>);
 }
-
-impl<T: PrimScal> Sourced for Rotation3<T> {
-    fn source(cfg: &Config) -> SourceInfo {
-        Self::entity_source(cfg)
+impl Sourced for Rotation3<f64> {
+    fn source(_: &Config) -> SourceInfo {
+        SourceInfo::with_root("Rotation3", "rot3", "algebra/rotation.hh")
     }
 }
-
-impl<T: PrimScal> Map<Quaternion<T>> for Rotation3<T> {}
-
+impl Map<Vector<f64, 3>> for Rotation3<f64> {}
 
 // Linear
 
-impl<T: PrimScal, const N: usize> Entity for Linear<T, N> where Matrix<T, N, N>: PrimVec {
-    impl_entity_unwrap!(Matrix<T, N, N>);
+impl Entity for Linear<f64, 2> {
+    impl_entity_unwrap!(Matrix<f64, 2, 2>);
 }
-
-impl<T: PrimScal, const N: usize> SizedEntity for Linear<T, N> where Matrix<T, N, N>: PrimVec {
-    impl_sized_entity_unwrap!(Matrix<T, N, N>);
+impl SizedEntity for Linear<f64, 2> {
+    impl_sized_entity_unwrap!(Matrix<f64, 2, 2>);
 }
-
-impl<T: PrimScal, const N: usize> Sourced for Linear<T, N> where Matrix<T, N, N>: PrimVec {
-    fn source(cfg: &Config) -> SourceInfo {
-        Self::entity_source(cfg)
+impl Sourced for Linear<f64, 2> {
+    fn source(_: &Config) -> SourceInfo {
+        SourceInfo::with_root("Linear2", "lin2", "algebra/linear.hh")
     }
 }
+impl Map<Vector<f64, 2>> for Linear<f64, 2> {}
 
-impl<T: PrimScal, const N: usize> Map<Vector<T, N>> for Linear<T, N> where Matrix<T, N, N>: PrimVec {}
-
+impl Entity for Linear<f64, 3> {
+    impl_entity_unwrap!(Matrix<f64, 3, 3>);
+}
+impl SizedEntity for Linear<f64, 3> {
+    impl_sized_entity_unwrap!(Matrix<f64, 3, 3>);
+}
+impl Sourced for Linear<f64, 3> {
+    fn source(_: &Config) -> SourceInfo {
+        SourceInfo::with_root("Linear3", "lin3", "algebra/linear.hh")
+    }
+}
+impl Map<Vector<f64, 3>> for Linear<f64, 3> {}
 
 // Moebius
 
-impl<T: PrimScal> Entity for Moebius<Complex<T>> {
-    impl_entity_unwrap!(Matrix<Complex<T>, 2, 2>);
+impl Entity for Moebius<Complex<f64>> {
+    impl_entity_unwrap!(Matrix<Complex<f64>, 2, 2>);
 }
-
-impl<T: PrimScal> SizedEntity for Moebius<Complex<T>> {
-    impl_sized_entity_unwrap!(Matrix<Complex<T>, 2, 2>);
+impl SizedEntity for Moebius<Complex<f64>> {
+    impl_sized_entity_unwrap!(Matrix<Complex<f64>, 2, 2>);
 }
-
-impl<T: PrimScal> Sourced for Moebius<Complex<T>> {
-    fn source(cfg: &Config) -> SourceInfo {
-        Self::entity_source(cfg)
+impl Sourced for Moebius<Complex<f64>> {
+    fn source(_: &Config) -> SourceInfo {
+        SourceInfo::with_root("Moebius", "mo", "algebra/moebius.hh")
     }
 }
-
-impl<T: PrimScal> Map<Complex<T>> for Moebius<Complex<T>> {}
-
-impl<T: PrimScal> Map<Quaternion<T>> for Moebius<Complex<T>> {}
-
+impl Map<Complex<f64>> for Moebius<Complex<f64>> {}
+impl Map<Quaternion<f64>> for Moebius<Complex<f64>> {}
 
 // Chain
-/*
-impl<A, B, T> Entity for Chain<A, B, T> where A: Map<T>, B: Map<T>, T: SizedEntity {
+
+impl<A, B, T> Entity for Chain<A, B, T> where A: Map<T> + Reorder<B, T>, B: Map<T> + Reorder<A, T>, T: SizedEntity + Copy {
     fn align(cfg: &Config) -> usize {
-        mathSelf::type_size(cfg)
+        math::lcm(A::align(cfg), B::align(cfg))
     }
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
     }
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
-        let mut v = Self::default();
-        for i in 0..3 {
-            v[i] = T::load(cfg, src)?;
-        }
-        src.skip(T::type_size(cfg))?;
-        Ok(v)
+        let a = A::load(cfg, src)?;
+        src.align(B::align(cfg))?;
+        let b = B::load(cfg, src)?;
+        src.align(Self::align(cfg))?;
+        Ok(Self::new(a, b))
     }
     fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
-        for i in 0..3 {
-            self[i].store(cfg, dst)?;
-        }
-        dst.skip(T::type_size(cfg))?;
+        self.outer().store(cfg, dst)?;
+        dst.align(B::align(cfg))?;
+        self.inner().store(cfg, dst)?;
+        dst.align(Self::align(cfg))?;
         Ok(())
     }
-    fn entity_source(cfg: &Config) -> SourceInfo {
-        let src = T::entity_source(cfg);
-        SourceInfo::new(format!("{}3", src.name), format!("{}3", src.prefix))
+    fn entity_source(_cfg: &Config) -> SourceInfo {
+        unimplemented!()
+        // FIXME: build source
+        //let a = A::entity_source(cfg);
+        //let b = B::entity_source(cfg);
+        //SourceInfo::new("", "", "")
     }
 }
-
-impl<T: PrimScal> SizedEntity for Vector<T, 3> {
+impl<A, B, T> SizedEntity for Chain<A, B, T> where A: Map<T> + Reorder<B, T>, B: Map<T> + Reorder<A, T>, T: SizedEntity + Copy {
     fn type_size(cfg: &Config) -> usize {
-        T::type_size(cfg) * 4
+        math::upper_multiple(
+            math::upper_multiple(A::type_size(cfg), B::align(cfg)) + B::type_size(cfg),
+            Self::align(cfg)
+        )
     }
 }
-
-impl<T: PrimScal> PrimVec for Vector<T, 3> {}
-*/
+impl<A, B, T> Sourced for Chain<A, B, T> where A: Map<T> + Reorder<B, T>, B: Map<T> + Reorder<A, T>, T: SizedEntity + Copy {
+    fn source(cfg: &Config) -> SourceInfo {
+        Self::entity_source(cfg)
+    }
+}
+impl<A, B, T> Map<T> for Chain<A, B, T> where A: Map<T> + Reorder<B, T>, B: Map<T> + Reorder<A, T>, T: SizedEntity + Copy {}

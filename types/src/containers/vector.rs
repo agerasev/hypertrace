@@ -42,9 +42,10 @@ impl<T: SizedEntity> Entity for Vec<T> {
 
     fn entity_source(cfg: &Config) -> SourceInfo {
         let src = T::entity_source(cfg);
-        SourceInfo::new(
+        SourceInfo::with_root(
             format!("Vector_{}", src.name),
             format!("vector_{}", src.prefix),
+            "container/vector.inl",
         )
     }
 }

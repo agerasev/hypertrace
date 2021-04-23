@@ -6,6 +6,7 @@ pub trait Sourced {
     fn source(cfg: &Config) -> SourceInfo;
 }
 
+#[derive(Clone, Debug)]
 pub struct ContentMismatchError {
     pub path: PathBuf,
 }

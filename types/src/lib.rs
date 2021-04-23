@@ -14,6 +14,8 @@ pub mod math;
 pub mod primitive;
 pub mod source;
 
+pub use uni_path as path;
+
 pub use derived::*;
 pub use entity::*;
 pub use config::Config;

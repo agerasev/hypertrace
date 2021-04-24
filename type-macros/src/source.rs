@@ -91,7 +91,7 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
         Data::Union(_) => panic!("Union derive is not supported yet"),
     };
     quote!{
-        let type_id = format!("{:0X}", <Self as types::Entity>::type_id() as u32);
+        let type_id = <Self as types::Entity>::type_tag();
         let type_name = format!("{}{}", #name, &type_id);
         let type_prefix = format!("{}{}", #prefix, &type_id);
         let file = format!("generated/{}{}.hh", #prefix, &type_id);

@@ -18,6 +18,11 @@ pub trait Entity: 'static + Sized {
         hasher.finish()
     }
 
+    /// Type short text identifier.
+    fn type_tag() -> String {
+        format!("{:08X}", Self::type_id() as u32)
+    }
+
     /// Align of type.
     fn align(cfg: &Config) -> usize;
 

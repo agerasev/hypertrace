@@ -1,6 +1,6 @@
 #include "material.hh"
 
-#include <algebra/linear.hh>
+#include <transform/linear.hh>
 
 
 _ALLOW_UNUSED_PARAMETERS_

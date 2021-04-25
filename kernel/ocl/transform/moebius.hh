@@ -1,8 +1,8 @@
 #pragma once
 
-#include "complex.hh"
-#include "quaternion.hh"
-#include "matrix.hh"
+#include <algebra/complex.hh>
+#include <algebra/quaternion.hh>
+#include <algebra/matrix.hh>
 
 
 typedef comp2x2 Moebius;
@@ -35,7 +35,7 @@ real mo_diff(Moebius a, Moebius b);
 
 #ifdef HOST
 
-#include "traits.hpp"
+#include <algebra/traits.hpp>
 
 template <>
 struct Group<Moebius> {

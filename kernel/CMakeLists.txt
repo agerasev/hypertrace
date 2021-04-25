@@ -25,11 +25,12 @@ set(SRC
     "ocl/algebra/matrix_real.cc"
     "ocl/algebra/matrix_complex.cc"
     "ocl/algebra/matrix_test.cpp"
-    "ocl/algebra/moebius.cc"
-    "ocl/algebra/linear.cc"
-    "ocl/algebra/affine.cc"
-    "ocl/algebra/rotation.cc"
     "ocl/algebra/color.cc"
+
+    "ocl/transform/moebius.cc"
+    "ocl/transform/linear.cc"
+    "ocl/transform/affine.cc"
+    "ocl/transform/rotation.cc"
 
     "ocl/random.cc"
 
@@ -39,7 +40,7 @@ set(SRC
 
     "ocl/render/light.cc"
 
-    "ocl/shape/eu/shapes.cc"
+    "ocl/shape/mapped.cpp"
     "ocl/shape/hy/plane.cc"
     "ocl/shape/hy/horosphere.cc"
 

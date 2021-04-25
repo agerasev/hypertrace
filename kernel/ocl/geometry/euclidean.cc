@@ -1,5 +1,5 @@
 #include "euclidean.hh"
-#include <algebra/rotation.hh>
+#include <transform/rotation.hh>
 
 
 EuPos eu_origin() {

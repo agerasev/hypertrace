@@ -1,7 +1,7 @@
 #pragma once
 
 #include <algebra/quaternion.hh>
-#include <algebra/moebius.hh>
+#include <transform/moebius.hh>
 
 #include "euclidean.hh"
 

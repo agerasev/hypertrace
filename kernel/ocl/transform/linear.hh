@@ -1,6 +1,6 @@
 #pragma once
 
-#include "matrix.hh"
+#include <algebra/matrix.hh>
 
 
 typedef real2x2 Linear2;

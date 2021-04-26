@@ -28,7 +28,7 @@ bool lambertian_interact(__global const void *material, Context *context, real3 
     real3 rand = random_hemisphere_cosine(context->rng);
     // FIXME: Use Rotation3 instead of more general Linear3
     Linear3 rot = lin3_inverse(lin3_look_to(normal)); // Transpose
-    light->direction = lin3_apply(rot, rand);
+    light->direction = lin3_apply_dir(rot, MAKE(real3)(R0), rand);
     //light->diffuse = true;
     return true;
 }
@@ -152,7 +152,7 @@ TEST_F(MaterialTest, lambertian) {
         ASSERT_EQ(length(odir), approx(1));
         ASSERT_GT(dot(odir, normal), R0);
 
-        real3 ldir = lin3_apply(loc, odir);
+        real3 ldir = lin3_apply_dir(loc, MAKE(real3)(R0), odir);
         sum += ldir;
         grid[ldir.xy] += 1.0;
     }

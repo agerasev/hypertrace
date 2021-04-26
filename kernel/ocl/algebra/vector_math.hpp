@@ -32,6 +32,11 @@ T length(vec<T, N> a) {
 }
 
 template <typename T, int N>
+T distance(vec<T, N> a, vec<T, N> b) {
+    return length(a - b);
+}
+
+template <typename T, int N>
 vec<T, N> normalize(vec<T, N> a) {
     return a/length(a);
 }

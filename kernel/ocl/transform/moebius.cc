@@ -1,48 +1,74 @@
 #include "moebius.hh"
 
+Moebius mo_identity() {
+    return Moebius { c22_one() };
+}
+
 comp mo_apply_c(Moebius m, comp p) {
     return c_div(
-        c_mul(m.s01, p) + m.s23,
-        c_mul(m.s45, p) + m.s67
+        c_mul(m.v.s01, p) + m.v.s23,
+        c_mul(m.v.s45, p) + m.v.s67
     );
 }
 
 quat mo_apply_q(Moebius m, quat p) {
     return q_div(
-        cq_mul(m.s01, p) + q_new(m.s23, C0),
-        cq_mul(m.s45, p) + q_new(m.s67, C0)
+        cq_mul(m.v.s01, p) + q_new(m.v.s23, C0),
+        cq_mul(m.v.s45, p) + q_new(m.v.s67, C0)
     );
 }
 
 comp mo_deriv_c(Moebius m, comp p) {
-    comp u = c_mul(m.s01, p) + m.s23;
-    comp d = c_mul(m.s45, p) + m.s67;
-    return c_div(c_mul(m.s01, d) - c_mul(u, m.s45), c_mul(d, d));
+    comp u = c_mul(m.v.s01, p) + m.v.s23;
+    comp d = c_mul(m.v.s45, p) + m.v.s67;
+    return c_div(c_mul(m.v.s01, d) - c_mul(u, m.v.s45), c_mul(d, d));
 }
 
 quat mo_deriv_q(Moebius m, quat p, quat v) {
-    quat u = cq_mul(m.s01, p) + q_new(m.s23, C0);
-    quat d = cq_mul(m.s45, p) + q_new(m.s67, C0);
+    quat u = cq_mul(m.v.s01, p) + q_new(m.v.s23, C0);
+    quat d = cq_mul(m.v.s45, p) + q_new(m.v.s67, C0);
     real d2 = q_abs2(d);
-    quat g1 = q_div(cq_mul(m.s01, v), d);
-    quat g21 = q_conj(cq_mul(m.s45, v));
-    quat g22 = (2*dot(d, cq_mul(m.s45, v))/d2)*q_conj(d);
+    quat g1 = q_div(cq_mul(m.v.s01, v), d);
+    quat g21 = q_conj(cq_mul(m.v.s45, v));
+    quat g22 = (2*dot(d, cq_mul(m.v.s45, v))/d2)*q_conj(d);
     quat g2 = q_mul(u, (g21 - g22)/d2);
     return g1 + g2;
 }
 
-Moebius mo_interpolate(Moebius a, Moebius b, real t) {
-    return mo_chain(a, mo_pow(mo_chain(mo_inverse(a), b), t));
+quat mo_apply_pos(Moebius m, quat p) {
+    return mo_apply_q(m, p);
+}
+quat mo_apply_dir(Moebius m, quat p, quat v) {
+    return normalize(mo_deriv_q(m, p, v));
+}
+quat mo_apply_normal(Moebius m, quat p, quat v) {
+    return mo_apply_dir(m, p, v);
 }
 
-real mo_diff(Moebius a, Moebius b) {
-    return mo_norm_l1(a - b);
+Moebius mo_inverse(Moebius m) {
+    return Moebius { c22_inverse_n(m.v) };
+}
+
+Moebius mo_chain(Moebius a, Moebius b) {
+    return Moebius { c22_dot(a.v, b.v) };
+}
+
+Moebius mo_interpolate(Moebius a, Moebius b, real t) {
+    return mo_chain(a, Moebius { c22_pow(mo_chain(mo_inverse(a), b).v, t) });
+}
+
+real mo_distance(Moebius a, Moebius b) {
+    return distance(a.v, b.v);
+}
+
+real mo_distance_l1(Moebius a, Moebius b) {
+    return c22_norm_l1(a.v - b.v);
 }
 
 #ifdef UNITTEST
 
 Moebius TestRngMoebius::normal() {
-    return c22_normalize(rng.normal());
+    return Moebius { c22_normalize(rng.normal()) };
 }
 
 #include <gtest/gtest.h>

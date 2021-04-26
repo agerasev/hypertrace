@@ -7,28 +7,38 @@
 
 // Rotation2
 
-typedef comp Rotation2;
+typedef struct {
+    comp v;
+} Rotation2;
 
-Rotation2 rot2_identity();
 Rotation2 rot2_from_angle(real angle);
 Rotation2 rot2_look_at(real2 pos);
 
-real2 rot2_apply(Rotation2 m, real2 pos);
-Rotation2 rot2_chain(Rotation2 a, Rotation2 b);
-Rotation2 rot2_inverse(Rotation2 m);
-
 Linear2 rot2_to_linear(Rotation2 m);
+
+#define $Map Rotation2
+#define $map rot2
+#define $elem real2
+#include "derive.inl"
+#undef $Map
+#undef $map
+#undef $elem
 
 // Rotation3
 
-typedef quat Rotation3;
+typedef struct {
+    quat v;
+} Rotation3;
 
-Rotation3 rot3_identity();
+#define $Map Rotation3
+#define $map rot3
+#define $elem real3
+#include "derive.inl"
+#undef $Map
+#undef $map
+#undef $elem
+
 Rotation3 rot3_from_axis(real3 axis, real angle);
-
-real3 rot3_apply(Rotation3 m, real3 pos);
-Rotation3 rot3_chain(Rotation3 a, Rotation3 b);
-Rotation3 rot3_inverse(Rotation3 m);
 
 Linear3 rot3_to_linear(Rotation3 m);
 //Rotation3 rot3_look_to(real3 m);

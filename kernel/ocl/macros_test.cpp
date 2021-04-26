@@ -5,9 +5,6 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#define _STRINGIFY(a) #a
-#define STRINGIFY(a) _STRINGIFY(a)
-
 #define $A a
 
 TEST(MacrosTest, concat) {

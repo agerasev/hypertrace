@@ -33,7 +33,7 @@ Affine3 aff3_chain(Affine3 a, Affine3 b) {
 }
 Affine3 aff3_inverse(Affine3 m) {
     Linear3 l = lin3_inverse(m); // aff3_get_linear(m)
-    real3 s = -lin3_apply(l, aff3_get_shift(m));
+    real3 s = -lin3_apply_pos(l, aff3_get_shift(m));
     return aff3_from_ls(l, s);
 }
 

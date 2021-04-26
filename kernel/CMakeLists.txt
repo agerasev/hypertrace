@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project(kernel)
 
-set(CMAKE_C_FLAGS "-g -Wall -Wextra")
+set(CMAKE_C_FLAGS "-g -Wall -Wextra -Wno-unused-parameter")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++17 -fno-exceptions")
 
 add_definitions(
@@ -27,10 +27,10 @@ set(SRC
     "ocl/algebra/matrix_test.cpp"
     "ocl/algebra/color.cc"
 
-    "ocl/transform/moebius.cc"
+    "ocl/transform/shift.cc"
     "ocl/transform/linear.cc"
-    "ocl/transform/affine.cc"
     "ocl/transform/rotation.cc"
+    "ocl/transform/moebius.cc"
 
     "ocl/random.cc"
 

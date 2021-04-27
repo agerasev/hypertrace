@@ -1,4 +1,5 @@
 #include <macros.hh>
+#include <types.hh>
 
 #if !defined($Map)  || !defined($map) || !defined($elem)
 #error "$Map, $map or $Space macro parameters are not defined."
@@ -6,7 +7,7 @@
 
 $Map $2($map,_identity)();
 
-$elem $2($map,_apply_pos)($Map m, $elem v);
+$elem $2($map,_apply_pos)($Map m, $elem p);
 $elem $2($map,_apply_dir)($Map m, $elem p, $elem d);
 $elem $2($map,_apply_normal)($Map m, $elem p, $elem d);
 

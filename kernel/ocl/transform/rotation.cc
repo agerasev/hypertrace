@@ -1,5 +1,6 @@
 #include "rotation.hh"
 
+// Rotation2
 
 Rotation2 rot2_identity() {
     return Rotation2 { C1 };
@@ -36,6 +37,14 @@ Linear2 rot2_to_linear(Rotation2 m) {
     return Linear2 { r22_transpose(r22_from_comp(m.v)) };
 }
 
+void rot2_shf2_reorder(Rotation2 *a, Shift2 *b) {
+    b->v = rot2_apply_pos(*a, b->v);
+}
+void shf2_rot2_reorder(Shift2 *a, Rotation2 *b) {
+    a->v = rot2_apply_pos(rot2_inverse(*b), a->v);
+}
+
+// Rotation3
 
 Rotation3 rot3_identity() {
     return Rotation3 { Q1 };
@@ -85,6 +94,13 @@ Linear3 rot3_to_linear(Rotation3 m) {
 
         R0, R0, R0, R1
     ) };
+}
+
+void rot3_shf3_reorder(Rotation3 *a, Shift3 *b) {
+    b->v = rot3_apply_pos(*a, b->v);
+}
+void shf3_rot3_reorder(Shift3 *a, Rotation3 *b) {
+    a->v = rot3_apply_pos(rot3_inverse(*b), a->v);
 }
 
 

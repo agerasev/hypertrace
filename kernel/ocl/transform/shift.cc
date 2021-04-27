@@ -7,7 +7,7 @@ Shift2 shf2_identity() {
 }
 
 real2 shf2_apply_pos(Shift2 m, real2 p) {
-    return p - m.v;
+    return p + m.v;
 }
 real2 shf2_apply_dir(Shift2 m, real2 p, real2 d) {
     return d;
@@ -34,7 +34,7 @@ Shift3 shf3_identity() {
 }
 
 real3 shf3_apply_pos(Shift3 m, real3 p) {
-    return p - m.v;
+    return p + m.v;
 }
 real3 shf3_apply_dir(Shift3 m, real3 p, real3 d) {
     return d;

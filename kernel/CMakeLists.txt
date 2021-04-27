@@ -32,20 +32,20 @@ set(SRC
     "ocl/transform/rotation.cc"
     "ocl/transform/moebius.cc"
 
-    "ocl/random.cc"
+    #"ocl/random.cc"
 
-    "ocl/geometry/euclidean.cc"
-    "ocl/geometry/hyperbolic.cc"
-    "ocl/geometry/ray_test.cpp"
+    #"ocl/geometry/euclidean.cc"
+    #"ocl/geometry/hyperbolic.cc"
+    #"ocl/geometry/ray_test.cpp"
 
-    "ocl/render/light.cc"
+    #"ocl/render/light.cc"
 
-    "ocl/shape/mapped.cpp"
-    "ocl/shape/hy/plane.cc"
-    "ocl/shape/hy/horosphere.cc"
+    #"ocl/shape/mapped.cpp"
+    #"ocl/shape/hy/plane.cc"
+    #"ocl/shape/hy/horosphere.cc"
 
-    "ocl/material/material.cc"
-    "ocl/material/modifier_test.cpp"
+    #"ocl/material/material.cc"
+    #"ocl/material/modifier_test.cpp"
 )
 
 enable_testing()

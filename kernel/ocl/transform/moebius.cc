@@ -65,6 +65,14 @@ real mo_distance_l1(Moebius a, Moebius b) {
     return c22_norm_l1(a.v - b.v);
 }
 
+#ifdef HOST
+
+std::ostream &operator<<(std::ostream &o, Moebius m) {
+    return o << "Moebius { " << m.v << " }";
+}
+
+#endif // HOST
+
 #ifdef UNITTEST
 
 Moebius TestRngMoebius::normal() {

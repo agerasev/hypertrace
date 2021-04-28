@@ -17,7 +17,7 @@ quat mo_deriv_q(Moebius m, quat p, quat v);
 #define $Map Moebius
 #define $map mo
 #define $elem quat
-#include "derive.inl"
+#include "interface.inl"
 #undef $Map
 #undef $map
 #undef $elem
@@ -25,6 +25,15 @@ quat mo_deriv_q(Moebius m, quat p, quat v);
 Moebius mo_interpolate(Moebius a, Moebius b, real t);
 
 real mo_distance_l1(Moebius a, Moebius b);
+
+#ifdef HOST
+template <>
+struct Distance<Moebius> {
+    static real distance(Moebius a, Moebius b) {
+        return ::distance(a.v, b.v);
+    }
+};
+#endif // HOST
 
 #ifdef UNITTEST
 

@@ -134,27 +134,10 @@ public:
 
 
 template <typename T, int N>
-class Approx<vec<T, N>> {
+class Distance<vec<T, N>> {
 public:
-    typedef vec<T, N> V;
-    real _epsilon = APPROX_EPS;
-    V _value = V(R0);
-
-    explicit Approx(V value) :
-        _value(value)    
-    {}
-    Approx epsilon(real eps) const {
-        Approx copy_ = *this;
-        copy_._epsilon = eps;
-        return copy_;
-    }
-    bool operator==(V x) const {
-        for (int i = 0; i < N; ++i) {
-            if (!(std::abs(_value[i] - x[i]) <= _epsilon)) {
-                return false;
-            }
-        }
-        return true;
+    static real distance(vec<T, N> a, vec<T, N> b) {
+        return ::distance(a, b);
     }
 };
 

@@ -11,18 +11,31 @@ typedef struct {
     comp v;
 } Rotation2;
 
+
+#define $Map Rotation2
+#define $map rot2
+#define $elem real2
+#include "interface.inl"
+#undef $Map
+#undef $map
+#undef $elem
+
 Rotation2 rot2_from_angle(real angle);
 Rotation2 rot2_look_at(real2 pos);
 
 Linear2 rot2_to_linear(Rotation2 m);
 
-#define $Map Rotation2
-#define $map rot2
-#define $elem real2
-#include "derive.inl"
-#undef $Map
-#undef $map
-#undef $elem
+void rot2_shf2_reorder(Rotation2 *a, Shift2 *b);
+void shf2_rot2_reorder(Shift2 *a, Rotation2 *b);
+
+#ifdef HOST
+template <>
+struct Distance<Rotation2> {
+    static real distance(Rotation2 a, Rotation2 b) {
+        return ::distance(a.v, b.v);
+    }
+};
+#endif // HOST
 
 // Rotation3
 
@@ -33,7 +46,7 @@ typedef struct {
 #define $Map Rotation3
 #define $map rot3
 #define $elem real3
-#include "derive.inl"
+#include "interface.inl"
 #undef $Map
 #undef $map
 #undef $elem
@@ -42,6 +55,18 @@ Rotation3 rot3_from_axis(real3 axis, real angle);
 
 Linear3 rot3_to_linear(Rotation3 m);
 //Rotation3 rot3_look_to(real3 m);
+
+void rot3_shf3_reorder(Rotation3 *a, Shift3 *b);
+void shf3_rot3_reorder(Shift3 *a, Rotation3 *b);
+
+#ifdef HOST
+template <>
+struct Distance<Rotation3> {
+    static real distance(Rotation3 a, Rotation3 b) {
+        return ::distance(a.v, b.v);
+    }
+};
+#endif // HOST
 
 // Tests
 

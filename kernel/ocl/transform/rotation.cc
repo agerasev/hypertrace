@@ -18,7 +18,7 @@ real2 rot2_apply_pos(Rotation2 m, real2 pos) {
 real2 rot2_apply_dir(Rotation2 m, real2 pos, real2 dir) {
     return rot2_apply_pos(m, dir);
 }
-real2 rot2_apply_pos_normal(Rotation2 m, real2 pos, real2 dir) {
+real2 rot2_apply_normal(Rotation2 m, real2 pos, real2 dir) {
     return rot2_apply_dir(m, pos, dir);
 }
 
@@ -27,10 +27,6 @@ Rotation2 rot2_chain(Rotation2 a, Rotation2 b) {
 }
 Rotation2 rot2_inverse(Rotation2 m) {
     return Rotation2 { c_inverse(m.v) };
-}
-
-real rot2_distance(Rotation2 a, Rotation2 b) {
-    return distance(a.v, b.v);
 }
 
 Linear2 rot2_to_linear(Rotation2 m) {
@@ -59,7 +55,7 @@ real3 rot3_apply_pos(Rotation3 m, real3 pos) {
 real3 rot3_apply_dir(Rotation3 m, real3 pos, real3 dir) {
     return rot3_apply_pos(m, dir);
 }
-real3 rot3_apply_pos_normal(Rotation3 m, real3 pos, real3 dir) {
+real3 rot3_apply_normal(Rotation3 m, real3 pos, real3 dir) {
     return rot3_apply_dir(m, pos, dir);
 }
 
@@ -68,10 +64,6 @@ Rotation3 rot3_chain(Rotation3 a, Rotation3 b) {
 }
 Rotation3 rot3_inverse(Rotation3 m) {
     return Rotation3 { q_conj(m.v) };
-}
-
-real rot3_distance(Rotation3 a, Rotation3 b) {
-    return distance(a.v, b.v);
 }
 
 Linear3 rot3_to_linear(Rotation3 m) {
@@ -103,6 +95,17 @@ void shf3_rot3_reorder(Shift3 *a, Rotation3 *b) {
     a->v = rot3_apply_pos(rot3_inverse(*b), a->v);
 }
 
+#ifdef HOST
+
+std::ostream &operator<<(std::ostream &o, Rotation2 m) {
+    return o << "Rotation2 { " << m.v << " }";
+}
+
+std::ostream &operator<<(std::ostream &o, Rotation3 m) {
+    return o << "Rotation3 { " << m.v << " }";
+}
+
+#endif // HOST
 
 #ifdef UNITTEST
 

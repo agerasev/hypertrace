@@ -23,10 +23,6 @@ Linear2 lin2_inverse(Linear2 m) {
     return Linear2 { r22_inverse(m.v) };
 }
 
-real lin2_distance(Linear2 a, Linear2 b) {
-    return distance(a.v, b.v);
-}
-
 void lin2_shf2_reorder(Linear2 *a, Shift2 *b) {
     b->v = lin2_apply_pos(*a, b->v);
 }
@@ -76,16 +72,24 @@ Linear3 lin3_inverse(Linear3 m) {
     return Linear3 { r33_inverse(m.v) };
 }
 
-real lin3_distance(Linear3 a, Linear3 b) {
-    return distance(a.v, b.v);
-}
-
 void lin3_shf3_reorder(Linear3 *a, Shift3 *b) {
     b->v = lin3_apply_pos(*a, b->v);
 }
 void shf3_lin3_reorder(Shift3 *a, Linear3 *b) {
     a->v = lin3_apply_pos(lin3_inverse(*b), a->v);
 }
+
+#ifdef HOST
+
+std::ostream &operator<<(std::ostream &o, Linear2 m) {
+    return o << "Linear2 { " << m.v << " }";
+}
+
+std::ostream &operator<<(std::ostream &o, Linear3 m) {
+    return o << "Linear3 { " << m.v << " }";
+}
+
+#endif // HOST
 
 #ifdef UNITTEST
 

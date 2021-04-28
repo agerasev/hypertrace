@@ -27,14 +27,16 @@ set(SRC
     "ocl/algebra/matrix_test.cpp"
     "ocl/algebra/color.cc"
 
+    "ocl/transform/scale.cc"
     "ocl/transform/shift.cc"
     "ocl/transform/linear.cc"
     "ocl/transform/rotation.cc"
     "ocl/transform/moebius.cc"
+    "ocl/transform/chain_test.cpp"
 
-    #"ocl/random.cc"
+    "ocl/random.cc"
 
-    #"ocl/geometry/euclidean.cc"
+    "ocl/geometry/euclidean.cc"
     #"ocl/geometry/hyperbolic.cc"
     #"ocl/geometry/ray_test.cpp"
 

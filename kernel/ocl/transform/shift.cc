@@ -23,10 +23,6 @@ Shift3 shf2_inverse(Shift3 m) {
     return Shift3 { -m.v };
 }
 
-real shf2_distance(Shift3 a, Shift3 b) {
-    return distance(a.v, b.v);
-}
-
 // Shift3
 
 Shift3 shf3_identity() {
@@ -50,6 +46,14 @@ Shift3 shf3_inverse(Shift3 m) {
     return Shift3 { -m.v };
 }
 
-real shf3_distance(Shift3 a, Shift3 b) {
-    return distance(a.v, b.v);
+#ifdef HOST
+
+std::ostream &operator<<(std::ostream &o, Shift2 m) {
+    return o << "Shift2 { " << m.v << " }";
 }
+
+std::ostream &operator<<(std::ostream &o, Shift3 m) {
+    return o << "Shift3 { " << m.v << " }";
+}
+
+#endif // HOST

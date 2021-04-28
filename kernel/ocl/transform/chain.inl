@@ -9,29 +9,30 @@
 #error "Some of macro parameters are not defined."
 #endif
 
-#ifndef CHAIN_NO_DEF
 typedef struct {
     $Outer outer;
     $Inner inner;
 } $Self;
-#endif // CHAIN_NO_DEF
 
 #define $Map $Self
 #define $map $self
-#include "derive.inl"
+#include "interface.inl"
 #undef $Map
 #undef $map
 
+_ALLOW_MULTIPLE_DEFINITIONS_
 $Self $2($self,_identity)() {
     return $Self {
-        $2($inner,_identity)(),
-        $2($outer,_identity)()
-    }
+        $2($outer,_identity)(),
+        $2($inner,_identity)()
+    };
 }
 
+_ALLOW_MULTIPLE_DEFINITIONS_
 $elem $2($self,_apply_pos)($Self m, $elem p) {
-    return $2($outer,_apply_pos)(m.outer, $2($inner,_apply_pos)(m.inner, v));
+    return $2($outer,_apply_pos)(m.outer, $2($inner,_apply_pos)(m.inner, p));
 }
+_ALLOW_MULTIPLE_DEFINITIONS_
 $elem $2($self,_apply_dir)($Self m, $elem p, $elem d) {
     return $2($outer,_apply_dir)(
         m.outer,
@@ -39,6 +40,7 @@ $elem $2($self,_apply_dir)($Self m, $elem p, $elem d) {
         $2($inner,_apply_dir)(m.inner, p, d)
     );
 }
+_ALLOW_MULTIPLE_DEFINITIONS_
 $elem $2($self,_apply_normal)($Self m, $elem p, $elem d) {
     return $2($outer,_apply_normal)(
         m.outer,
@@ -47,13 +49,15 @@ $elem $2($self,_apply_normal)($Self m, $elem p, $elem d) {
     );
 }
 
+_ALLOW_MULTIPLE_DEFINITIONS_
 $Self $2($self,_chain)($Self a, $Self b) {
     $4($inner,_,$outer,_reorder)(&a.inner, &b.outer);
     return $Self {
         $2($outer,_chain)(a.outer, b.outer),
         $2($inner,_chain)(a.inner, b.inner)
-    }
+    };
 }
+_ALLOW_MULTIPLE_DEFINITIONS_
 $Self $2($self,_inverse)($Self m) {
     $Self s = $Self {
         $2($outer,_inverse)(m.outer),
@@ -63,8 +67,19 @@ $Self $2($self,_inverse)($Self m) {
     return s;
 }
 
-real $2($self,_distance)($Self a, $Self b) {
-    real ad = $2($outer,_distance)(a);
-    real bd = $2($inner,_distance)(b);
-    return ad + bd;
+#ifdef HOST
+
+template <>
+struct Distance<$Self> {
+    inline static real distance($Self a, $Self b) {
+        real ad = Distance<$Outer>::distance(a.outer, b.outer);
+        real bd = Distance<$Inner>::distance(a.inner, b.inner);
+        return ad + bd;
+    }
+};
+
+inline std::ostream &operator<<(std::ostream &o, $Self m) {
+    return o << "Chain { " << m.outer << ", " << m.inner << " }";
 }
+
+#endif // HOST

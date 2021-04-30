@@ -36,23 +36,23 @@ Linear3 lin3_identity() {
     return Linear3 { r44_one() };
 }
 
-Linear3 lin3_look_to(real3 dir) {
+Linear3 lin3_look_at(real3 dir) {
     if (2*fabs(dir.z) < 1) {
-        return lin3_look_to_up(dir, r3_new(0,0,1));
+        return lin3_look_at_up(dir, r3_new(0,0,1));
     } else {
-        return lin3_look_to_up(dir, r3_new(0,1,0));
+        return lin3_look_at_up(dir, r3_new(0,1,0));
     }
 }
 
-Linear3 lin3_look_to_up(real3 dir, real3 up) {
+Linear3 lin3_look_at_up(real3 dir, real3 up) {
     real3 right = normalize(cross(dir, up));
-    real3 down = cross(dir, right);
-    return Linear3 { MAKE(real3x3)(
+    real3 up_ort = cross(right, dir);
+    return Linear3 { r33_transpose(MAKE(real3x3)(
         r4_new(right, R0),
-        r4_new(down, R0),
-        r4_new(dir, R0),
+        r4_new(up_ort, R0),
+        r4_new(-dir, R0),
         r4_new(R0)
-    ) };
+    )) };
 }
 
 real3 lin3_apply_pos(Linear3 m, real3 v) {
@@ -134,12 +134,12 @@ TEST_F(LinearTest, inversion) {
         ASSERT_EQ(lin3_apply_pos(a, lin3_apply_pos(lin3_inverse(a), x)), approx(x));
     }
 }
-TEST_F(LinearTest, look_to_the_direction) {
+TEST_F(LinearTest, look_at) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         real3 d = vrng.unit();
-        Linear3 m = lin3_look_to(d);
+        Linear3 m = lin3_look_at(d);
 
-        ASSERT_EQ(lin3_apply_pos(m, d), approx(r3_new(R0, R0, R1)));
+        ASSERT_EQ(lin3_apply_pos(m, r3_new(R0, R0, -R1)), approx(d));
     }
 }
 

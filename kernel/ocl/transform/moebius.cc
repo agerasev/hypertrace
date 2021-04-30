@@ -65,6 +65,10 @@ real mo_distance_l1(Moebius a, Moebius b) {
     return c22_norm_l1(a.v - b.v);
 }
 
+Moebius mo_pow(Moebius m, real p) {
+    return Moebius { c22_pow_n(m.v, p) };
+}
+
 #ifdef HOST
 
 std::ostream &operator<<(std::ostream &o, Moebius m) {

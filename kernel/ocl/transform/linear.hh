@@ -43,8 +43,8 @@ typedef struct {
 #undef $map
 #undef $elem
 
-Linear3 lin3_look_to(real3 dir);
-Linear3 lin3_look_to_up(real3 dir, real3 up);
+Linear3 lin3_look_at(real3 dir);
+Linear3 lin3_look_at_up(real3 dir, real3 up);
 
 void lin3_shf3_reorder(Linear3 *a, Shift3 *b);
 void shf3_lin3_reorder(Shift3 *a, Linear3 *b);

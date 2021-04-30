@@ -88,6 +88,19 @@ Linear3 rot3_to_linear(Rotation3 m) {
     ) };
 }
 
+Rotation3 rot3_look_at(real3 d) {
+    real3 z = MAKE(real3)(R0, R0, -R1);
+    real3 c = cross(z, d);
+    real cl = length(c);
+    if (cl > EPS) {
+        real dl = dot(d, z);
+        return rot3_from_axis(c / cl, atan2(cl, dl));
+    } else {
+        real3 y = MAKE(real3)(R0, R1, R0);
+        return rot3_from_axis(y, PI);
+    }
+}
+
 void rot3_shf3_reorder(Rotation3 *a, Shift3 *b) {
     b->v = rot3_apply_pos(*a, b->v);
 }
@@ -218,6 +231,14 @@ TEST_F(Rotation3Test, to_linear) {
             lin3_chain(rot3_to_linear(a), rot3_to_linear(b)),
             approx(rot3_to_linear(rot3_chain(a, b)))
         );
+    }
+}
+TEST_F(Rotation3Test, look_at) {
+    for (int i = 0; i < TEST_ATTEMPTS; ++i) {
+        real3 d = r3rng.unit();
+        Rotation3 m = rot3_look_at(d);
+
+        ASSERT_EQ(rot3_apply_pos(m, r3_new(R0, R0, -R1)), approx(d));
     }
 }
 

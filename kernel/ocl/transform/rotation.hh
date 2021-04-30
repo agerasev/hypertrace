@@ -54,7 +54,7 @@ typedef struct {
 Rotation3 rot3_from_axis(real3 axis, real angle);
 
 Linear3 rot3_to_linear(Rotation3 m);
-//Rotation3 rot3_look_to(real3 m);
+Rotation3 rot3_look_at(real3 d);
 
 void rot3_shf3_reorder(Rotation3 *a, Shift3 *b);
 void shf3_rot3_reorder(Shift3 *a, Rotation3 *b);

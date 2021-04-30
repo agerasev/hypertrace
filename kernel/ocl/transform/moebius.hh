@@ -26,6 +26,8 @@ Moebius mo_interpolate(Moebius a, Moebius b, real t);
 
 real mo_distance_l1(Moebius a, Moebius b);
 
+Moebius mo_pow(Moebius m, real p);
+
 #ifdef HOST
 template <>
 struct Distance<Moebius> {

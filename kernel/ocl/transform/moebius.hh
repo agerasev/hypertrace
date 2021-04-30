@@ -4,48 +4,38 @@
 #include <algebra/quaternion.hh>
 #include <algebra/matrix.hh>
 
-
-typedef comp2x2 Moebius;
-
-
-#define mo_new c22_new
-#define mo_identity c22_one
+typedef struct {
+    comp2x2 v;
+} Moebius;
 
 comp mo_apply_c(Moebius m, comp p);
 quat mo_apply_q(Moebius m, quat p);
-#define mo_apply mo_apply_q
 
 comp mo_deriv_c(Moebius m, comp p);
 quat mo_deriv_q(Moebius m, quat p, quat v);
 
-#define mo_inverse c22_inverse_n
-
-#define mo_chain c22_dot
-
-#define mo_eigen c22_eigen_n
-#define mo_pow c22_pow_n
+#define $Map Moebius
+#define $map mo
+#define $elem quat
+#include "interface.inl"
+#undef $Map
+#undef $map
+#undef $elem
 
 Moebius mo_interpolate(Moebius a, Moebius b, real t);
 
-#define mo_mul c22_mul
-#define mo_div c22_div
+real mo_distance_l1(Moebius a, Moebius b);
 
-#define mo_norm_l1 c22_norm_l1
-real mo_diff(Moebius a, Moebius b);
+Moebius mo_pow(Moebius m, real p);
 
 #ifdef HOST
-
-#include <algebra/traits.hpp>
-
 template <>
-struct Group<Moebius> {
-    static Moebius chain(Moebius a, Moebius b) {
-        return mo_chain(a, b);
+struct Distance<Moebius> {
+    static real distance(Moebius a, Moebius b) {
+        return ::distance(a.v, b.v);
     }
 };
-
 #endif // HOST
-
 
 #ifdef UNITTEST
 

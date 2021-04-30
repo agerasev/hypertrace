@@ -72,5 +72,6 @@ fn main() {
     build_host_tests();
 
     println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=CMakeLists.txt");
     rerun_if_source_changed();
 }

@@ -44,3 +44,6 @@
 #define $(...) CONCAT(__VA_ARGS__)
 
 #endif // VARIADIC_MACROS
+
+#define _STRINGIFY(a) #a
+#define STRINGIFY(a) _STRINGIFY(a)

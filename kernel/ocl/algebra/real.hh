@@ -55,6 +55,13 @@ public:
 #include <iostream>
 #include <type_traits>
 
+template <typename T>
+struct Distance {
+    static real distance(T a, T b) {
+        return std::abs(a - b);
+    }
+};
+
 #define APPROX_EPS pow(EPS, (real)2/3)
 
 template <typename T>
@@ -72,7 +79,7 @@ public:
         return copy_;
     }
     bool operator==(T x) const {
-        return std::abs(_value - x) <= _epsilon;
+        return Distance<T>::distance(_value, x) <= _epsilon;
     }
 };
 

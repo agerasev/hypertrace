@@ -3,22 +3,17 @@
 
 
 EuPos eu_origin() {
-    return MAKE(real3)(0);
+    return MAKE(real3)(R0);
+}
+EuDir eu_default_dir() {
+    return MAKE(real3)(R0, R0, -R1);
 }
 
 real eu_length(EuPos a) {
     return length(a);
 }
 real eu_distance(EuPos a, EuPos b) {
-    return length(a - b);
-}
-
-EuPos eu_apply_pos(EuMap m, EuPos p) {
-    return aff3_apply_pos(m, p);
-}
-_ALLOW_UNUSED_PARAMETERS_
-EuDir eu_apply_dir(EuMap m, EuPos p, EuDir d) {
-    return aff3_apply_dir(m, d);
+    return distance(a, b);
 }
 
 // Returns the direction of the line at point `dst_pos`
@@ -29,15 +24,18 @@ EuDir eu_dir_at(EuPos src_pos, EuDir src_dir, EuPos dst_pos) {
 }
 
 EuMap eu_shift(EuDir pos) {
-    return aff3_from_ls(lin3_identity(), pos);
+    return EuMap { -pos, rot3_identity() };
 }
 EuMap eu_rotate(EuDir axis, real phi) {
-    return rot3_to_linear(rot3_from_axis(axis, phi));
+    return EuMap { shf3_identity(), rot3_from_axis(axis, phi) };
 }
 
 // Turns direction `dir` to *z*.
 EuMap eu_look_to(EuDir dir) {
-    return lin3_look_to(dir);
+    return Homogenous3 {
+        shf3_identity(),
+        rot3_inverse(rot3_look_at(dir)),
+    };
 }
 
 // Rotates point `pos` around the origin to make it lay on the z axis.
@@ -48,12 +46,30 @@ EuMap eu_look_at(EuPos pos) {
 // Translates point `pos` to the origin preserving orientation
 // relative to the line that connects `pos` to the origin.
 EuMap eu_move_at(EuPos pos) {
-    return aff3_from_ls(lin3_identity(), -pos);
+    return EuMap { Shift3 { -pos }, rot3_identity() };
 }
 EuMap eu_move_to(EuDir dir, real dist) {
-    return eu_move_at(dir*dist);
+    return eu_move_at(dir * dist);
 }
 
+EuMap eu_identity() {
+    return hom3_identity();
+}
+EuPos eu_apply_pos(EuMap m, EuPos p) {
+    return hom3_apply_pos(m, p);
+}
+EuDir eu_apply_dir(EuMap m, EuPos p, EuDir d) {
+    return hom3_apply_dir(m, p, d);
+}
+EuDir eu_apply_normal(EuMap m, EuPos p, EuDir d) {
+    return hom3_apply_normal(m, p, d);
+}
+EuMap eu_chain(EuMap a, EuMap b) {
+    return hom3_chain(a, b);
+}
+EuMap eu_inverse(EuMap m) {
+    return hom3_inverse(m);
+}
 
 #ifdef UNITTEST
 
@@ -69,10 +85,10 @@ TEST_F(EuclideanTest, distance_invariance) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         real3 a = vrng.normal(), b = vrng.normal();
 
-        Affine3 m = aff3_from_ls(
-            rot3_to_linear(rot3rng.uniform()),
-            vrng.normal()
-        );
+        Homogenous3 m = {
+            vrng.normal(),
+            rot3rng.uniform(),
+        };
 
         real dist_before = eu_distance(a, b);
         real dist_after = eu_distance(
@@ -95,10 +111,10 @@ TEST_F(EuclideanTest, move_at_the_point) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         real3 p = vrng.normal(), q = vrng.normal();
 
-        Affine3 a = eu_move_at(p);
+        EuMap a = eu_move_at(p);
         ASSERT_EQ(eu_apply_pos(a, p), approx(eu_origin()));
 
-        Affine3 b = eu_chain(eu_inverse(eu_move_at(q)), a);
+        EuMap b = eu_chain(eu_inverse(eu_move_at(q)), a);
         ASSERT_EQ(eu_apply_pos(b, p), approx(q));
     }
 }

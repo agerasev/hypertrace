@@ -26,9 +26,8 @@ bool lambertian_interact(__global const void *material, Context *context, real3 
         normal = -normal;
     }
     real3 rand = random_hemisphere_cosine(context->rng);
-    // FIXME: Use Rotation3 instead of more general Linear3
-    Linear3 rot = lin3_inverse(lin3_look_to(normal)); // Transpose
-    light->direction = lin3_apply(rot, rand);
+    Rotation3 rot = rot3_look_at(-normal);
+    light->direction = rot3_apply_dir(rot, MAKE(real3)(R0), rand);
     //light->diffuse = true;
     return true;
 }
@@ -128,7 +127,7 @@ TEST_F(MaterialTest, lambertian) {
     DiskGrid grid(P, R);
 
     real3 normal = vrng.unit();
-    Linear3 loc = lin3_look_to(normal);
+    Rotation3 loc = rot3_inverse(rot3_look_at(-normal));
     float3 emission(0.0f);
 
     const size_t N = P*R*TEST_ATTEMPTS;
@@ -152,7 +151,7 @@ TEST_F(MaterialTest, lambertian) {
         ASSERT_EQ(length(odir), approx(1));
         ASSERT_GT(dot(odir, normal), R0);
 
-        real3 ldir = lin3_apply(loc, odir);
+        real3 ldir = rot3_apply_dir(loc, MAKE(real3)(R0), odir);
         sum += ldir;
         grid[ldir.xy] += 1.0;
     }

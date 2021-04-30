@@ -22,13 +22,6 @@ real hy_distance(HyPos a, HyPos b) {
     return log(x + sqrt(x*x - 1));
 }
 
-HyPos hy_apply_pos(HyMap m, HyPos p) {
-    return mo_apply_q(m, p);
-}
-HyDir hy_apply_dir(HyMap m, HyPos p, HyDir d) {
-    return mo_deriv_q(m, p, d);
-}
-
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
 HyDir hy_dir_at(HyDir src_pos, HyDir src_dir, HyDir dst_pos) {
@@ -44,35 +37,35 @@ HyDir hy_dir_at(HyDir src_pos, HyDir src_dir, HyDir dst_pos) {
 HyMap hy_zshift(real l) {
     real l2 = l/2;
     real e = exp(l2);
-    return mo_new(e*C1, C0, C0, C1/e);
+    return Moebius { c22_new(e*C1, C0, C0, C1/e) };
 }
 HyMap hy_xshift(real l) {
     real l2 = l/2;
     real c = cosh(l2), s = sinh(l2);
-    return mo_new(c*C1, s*C1, s*C1, c*C1);
+    return Moebius { c22_new(c*C1, s*C1, s*C1, c*C1) };
 }
 HyMap hy_yshift(real l) {
     real l2 = l/(real)2;
     real c = cosh(l2), s = sinh(l2);
-    return mo_new(c*C1, s*CI, -s*CI, c*C1);
+    return Moebius { c22_new(c*C1, s*CI, -s*CI, c*C1) };
 }
 
 HyMap hy_zrotate(real phi) {
     real c = cos(phi/2), s = sin(phi/2);
-    return mo_new(c_new(c, s), C0, C0, c_new(c, -s));
+    return Moebius { c22_new(c_new(c, s), C0, C0, c_new(c, -s)) };
 }
 HyMap hy_xrotate(real theta) {
     real c = cos(theta/2), s = sin(theta/2);
-    return mo_new(c*C1, s*CI, s*CI, c*C1);
+    return Moebius { c22_new(c*C1, s*CI, s*CI, c*C1) };
 }
 HyMap hy_yrotate(real theta) {
     real c = cos(theta/2), s = sin(theta/2);
-    return mo_new(c*C1, -s*C1, s*C1, c*C1);
+    return Moebius { c22_new(c*C1, -s*C1, s*C1, c*C1) };
 }
 
 // Move to position at the horosphere.
 HyMap hy_horosphere(comp pos) {
-    return mo_new(C1, pos, C0, C1);
+    return Moebius { c22_new(C1, pos, C0, C1) };
 }
 
 // Turns direction `dir` to *j*.
@@ -104,6 +97,25 @@ HyMap hy_move_to(HyDir dir, real dist) {
     return mo_chain(mo_inverse(a), mo_chain(b, a));
 }
 
+
+HyMap hy_identity() {
+    return mo_identity();
+}
+HyPos hy_apply_pos(HyMap m, HyPos p) {
+    return mo_apply_pos(m, p);
+}
+HyDir hy_apply_dir(HyMap m, HyPos p, HyDir d) {
+    return mo_apply_dir(m, p, d);
+}
+HyDir hy_apply_normal(HyMap m, HyPos p, HyDir d) {
+    return mo_apply_normal(m, p, d);
+}
+HyMap hy_chain(HyMap a, HyMap b) {
+    return mo_chain(a, b);
+}
+HyMap hy_inverse(HyMap m) {
+    return mo_inverse(m);
+}
 
 #ifdef UNITTEST
 
@@ -183,7 +195,7 @@ TEST_F(HyperbolicTest, rotation_interpolation_at_small_angles) {
             l = mo_chain(l, m);
         }
         Moebius o = mo_pow(l, R1/q);
-        ASSERT_EQ(c22_det(o), approx(C1));
+        ASSERT_EQ(c22_det(o.v), approx(C1));
         ASSERT_EQ(o, approx(m).epsilon(pow(EPS, (real)2/3)));
     }
 }

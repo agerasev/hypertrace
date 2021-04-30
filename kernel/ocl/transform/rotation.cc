@@ -2,14 +2,20 @@
 
 // Rotation2
 
+Rotation2 rot2_new(comp v) {
+    Rotation2 m;
+    m.v = v;
+    return m;
+}
+
 Rotation2 rot2_identity() {
-    return Rotation2 { C1 };
+    return rot2_new(C1);
 }
 Rotation2 rot2_from_angle(real angle) {
-    return Rotation2 { c_new(cos(angle), sin(angle)) };
+    return rot2_new(c_new(cos(angle), sin(angle)));
 }
 Rotation2 rot2_look_at(real2 pos) {
-    return Rotation2 { normalize(c_new(pos.x, pos.y)) };
+    return rot2_new(normalize(c_new(pos.x, pos.y)));
 }
 
 real2 rot2_apply_pos(Rotation2 m, real2 pos) {
@@ -23,14 +29,14 @@ real2 rot2_apply_normal(Rotation2 m, real2 pos, real2 dir) {
 }
 
 Rotation2 rot2_chain(Rotation2 a, Rotation2 b) {
-    return Rotation2 { c_mul(a.v, b.v) };
+    return rot2_new(c_mul(a.v, b.v));
 }
 Rotation2 rot2_inverse(Rotation2 m) {
-    return Rotation2 { c_inverse(m.v) };
+    return rot2_new(c_inverse(m.v));
 }
 
 Linear2 rot2_to_linear(Rotation2 m) {
-    return Linear2 { r22_transpose(r22_from_comp(m.v)) };
+    return lin2_new(r22_transpose(r22_from_comp(m.v)));
 }
 
 void rot2_shf2_reorder(Rotation2 *a, Shift2 *b) {
@@ -42,11 +48,17 @@ void shf2_rot2_reorder(Shift2 *a, Rotation2 *b) {
 
 // Rotation3
 
+Rotation3 rot3_new(quat v) {
+    Rotation3 m;
+    m.v = v;
+    return m;
+}
+
 Rotation3 rot3_identity() {
-    return Rotation3 { Q1 };
+    return rot3_new(Q1);
 }
 Rotation3 rot3_from_axis(real3 axis, real angle) {
-    return Rotation3 { q_new(cos(angle/2), sin(angle/2)*axis) };
+    return rot3_new(q_new(cos(angle/2), sin(angle/2)*axis));
 }
 
 real3 rot3_apply_pos(Rotation3 m, real3 pos) {
@@ -60,15 +72,15 @@ real3 rot3_apply_normal(Rotation3 m, real3 pos, real3 dir) {
 }
 
 Rotation3 rot3_chain(Rotation3 a, Rotation3 b) {
-    return Rotation3 { q_mul(a.v, b.v) };
+    return rot3_new(q_mul(a.v, b.v));
 }
 Rotation3 rot3_inverse(Rotation3 m) {
-    return Rotation3 { q_conj(m.v) };
+    return rot3_new(q_conj(m.v));
 }
 
 Linear3 rot3_to_linear(Rotation3 m) {
     quat q = m.v;
-    return Linear3 { r33_new(
+    return lin3_new(r33_new(
         1 - 2*q.z*q.z - 2*q.w*q.w,
         2*q.y*q.z - 2*q.w*q.x,
         2*q.y*q.w + 2*q.z*q.x,
@@ -85,7 +97,7 @@ Linear3 rot3_to_linear(Rotation3 m) {
         R0,
 
         R0, R0, R0, R1
-    ) };
+    ));
 }
 
 Rotation3 rot3_look_at(real3 d) {

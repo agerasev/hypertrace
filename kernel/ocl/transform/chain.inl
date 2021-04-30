@@ -14,6 +14,14 @@ typedef struct {
     $Inner inner;
 } $Self;
 
+_ALLOW_MULTIPLE_DEFINITIONS_
+$Self $2($self,_new)($Outer outer, $Inner inner) {
+    $Self m;
+    m.outer = outer;
+    m.inner = inner;
+    return m;
+}
+
 #define $Map $Self
 #define $map $self
 #include "interface.inl"
@@ -22,10 +30,10 @@ typedef struct {
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 $Self $2($self,_identity)() {
-    return $Self {
+    return $2($self,_new)(
         $2($outer,_identity)(),
         $2($inner,_identity)()
-    };
+    );
 }
 
 _ALLOW_MULTIPLE_DEFINITIONS_
@@ -52,17 +60,17 @@ $elem $2($self,_apply_normal)($Self m, $elem p, $elem d) {
 _ALLOW_MULTIPLE_DEFINITIONS_
 $Self $2($self,_chain)($Self a, $Self b) {
     $4($inner,_,$outer,_reorder)(&a.inner, &b.outer);
-    return $Self {
+    return $2($self,_new)(
         $2($outer,_chain)(a.outer, b.outer),
         $2($inner,_chain)(a.inner, b.inner)
-    };
+    );
 }
 _ALLOW_MULTIPLE_DEFINITIONS_
 $Self $2($self,_inverse)($Self m) {
-    $Self s = $Self {
+    $Self s = $2($self,_new)(
         $2($outer,_inverse)(m.outer),
         $2($inner,_inverse)(m.inner)
-    };
+    );
     $4($inner,_,$outer,_reorder)(&s.inner, &s.outer);
     return s;
 }

@@ -30,8 +30,8 @@ protected:
 
 TEST_F(ChainTest, chaining) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-        auto a = ShiftScale3 { vrng.normal(), 0.5f + rng.uniform() };
-        auto b = ShiftScale3 { vrng.normal(), 0.5f + rng.uniform() };
+        auto a = ss3_new(shf3_new(vrng.normal()), scl3_new(0.5f + rng.uniform()));
+        auto b = ss3_new(shf3_new(vrng.normal()), scl3_new(0.5f + rng.uniform()));
         real3 c = vrng.normal();
 
         ASSERT_EQ(ss3_chain(a, ss3_identity()), approx(a));
@@ -41,7 +41,7 @@ TEST_F(ChainTest, chaining) {
 }
 TEST_F(ChainTest, inversion) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-        auto a = ShiftScale3 { vrng.normal(), 0.5f + rng.uniform() };
+        auto a = ss3_new(shf3_new(vrng.normal()), scl3_new(0.5f + rng.uniform()));
         real3 x = vrng.normal();
 
         ASSERT_EQ(ss3_chain(a, ss3_inverse(a)), approx(ss3_identity()));

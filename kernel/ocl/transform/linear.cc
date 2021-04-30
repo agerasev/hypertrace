@@ -2,8 +2,14 @@
 
 // Linear2
 
+Linear2 lin2_new(real2x2 v) {
+    Linear2 m;
+    m.v = v;
+    return m;
+}
+
 Linear2 lin2_identity() {
-    return Linear2 { r22_one() };
+    return lin2_new(r22_one());
 }
 
 real2 lin2_apply_pos(Linear2 m, real2 v) {
@@ -17,10 +23,10 @@ real2 lin2_apply_normal(Linear2 m, real2 p, real2 d) {
 }
 
 Linear2 lin2_chain(Linear2 a, Linear2 b) {
-    return Linear2 { r22_dot(a.v, b.v) };
+    return lin2_new(r22_dot(a.v, b.v));
 }
 Linear2 lin2_inverse(Linear2 m) {
-    return Linear2 { r22_inverse(m.v) };
+    return lin2_new(r22_inverse(m.v));
 }
 
 void lin2_shf2_reorder(Linear2 *a, Shift2 *b) {
@@ -32,8 +38,14 @@ void shf2_lin2_reorder(Shift2 *a, Linear2 *b) {
 
 // Linear3
 
+Linear3 lin3_new(real3x3 v) {
+    Linear3 m;
+    m.v = v;
+    return m;
+}
+
 Linear3 lin3_identity() {
-    return Linear3 { r44_one() };
+    return lin3_new(r44_one());
 }
 
 Linear3 lin3_look_at(real3 dir) {
@@ -47,12 +59,12 @@ Linear3 lin3_look_at(real3 dir) {
 Linear3 lin3_look_at_up(real3 dir, real3 up) {
     real3 right = normalize(cross(dir, up));
     real3 up_ort = cross(right, dir);
-    return Linear3 { r33_transpose(MAKE(real3x3)(
+    return lin3_new(r33_transpose(MAKE(real3x3)(
         r4_new(right, R0),
         r4_new(up_ort, R0),
         r4_new(-dir, R0),
         r4_new(R0)
-    )) };
+    )));
 }
 
 real3 lin3_apply_pos(Linear3 m, real3 v) {
@@ -66,10 +78,10 @@ real3 lin3_apply_normal(Linear3 m, real3 p, real3 d) {
 }
 
 Linear3 lin3_chain(Linear3 a, Linear3 b) {
-    return Linear3 { r33_dot(a.v, b.v) };
+    return lin3_new(r33_dot(a.v, b.v));
 }
 Linear3 lin3_inverse(Linear3 m) {
-    return Linear3 { r33_inverse(m.v) };
+    return lin3_new(r33_inverse(m.v));
 }
 
 void lin3_shf3_reorder(Linear3 *a, Shift3 *b) {
@@ -104,18 +116,18 @@ protected:
 
 TEST_F(LinearTest, linearity) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-        auto m = Linear3 { mrng.normal() };
+        auto m = lin3_new(mrng.normal());
         real a = rng.normal();
         real3 x = vrng.normal();
 
-        ASSERT_EQ(lin3_apply_pos(Linear3 { a * m.v }, x), approx(lin3_apply_pos(m, a * x)));
-        ASSERT_EQ(lin3_apply_pos(Linear3 { a * m.v }, x), approx(a * lin3_apply_pos(m, x)));
+        ASSERT_EQ(lin3_apply_pos(lin3_new(a * m.v), x), approx(lin3_apply_pos(m, a * x)));
+        ASSERT_EQ(lin3_apply_pos(lin3_new(a * m.v), x), approx(a * lin3_apply_pos(m, x)));
     }
 }
 TEST_F(LinearTest, chaining) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-        auto a = Linear3 { mrng.normal() };
-        auto b = Linear3 { mrng.normal() };
+        auto a = lin3_new(mrng.normal());
+        auto b = lin3_new(mrng.normal());
         real3 c = vrng.normal();
 
         ASSERT_EQ(lin3_chain(a, lin3_identity()), approx(a));
@@ -125,7 +137,7 @@ TEST_F(LinearTest, chaining) {
 }
 TEST_F(LinearTest, inversion) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
-        auto a = Linear3 { mrng.invertible() };
+        auto a = lin3_new(mrng.invertible());
         real3 x = vrng.normal();
 
         ASSERT_EQ(lin3_chain(a, lin3_inverse(a)), approx(lin3_identity()));

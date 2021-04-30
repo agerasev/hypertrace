@@ -1,7 +1,13 @@
 #include "moebius.hh"
 
+Moebius mo_new(comp2x2 v) {
+    Moebius m;
+    m.v = v;
+    return m;
+}
+
 Moebius mo_identity() {
-    return Moebius { c22_one() };
+    return mo_new(c22_one());
 }
 
 comp mo_apply_c(Moebius m, comp p) {
@@ -46,19 +52,15 @@ quat mo_apply_normal(Moebius m, quat p, quat v) {
 }
 
 Moebius mo_inverse(Moebius m) {
-    return Moebius { c22_inverse_n(m.v) };
+    return mo_new(c22_inverse_n(m.v));
 }
 
 Moebius mo_chain(Moebius a, Moebius b) {
-    return Moebius { c22_dot(a.v, b.v) };
+    return mo_new(c22_dot(a.v, b.v));
 }
 
 Moebius mo_interpolate(Moebius a, Moebius b, real t) {
-    return mo_chain(a, Moebius { c22_pow(mo_chain(mo_inverse(a), b).v, t) });
-}
-
-real mo_distance(Moebius a, Moebius b) {
-    return distance(a.v, b.v);
+    return mo_chain(a, mo_new(c22_pow(mo_chain(mo_inverse(a), b).v, t)));
 }
 
 real mo_distance_l1(Moebius a, Moebius b) {
@@ -66,7 +68,7 @@ real mo_distance_l1(Moebius a, Moebius b) {
 }
 
 Moebius mo_pow(Moebius m, real p) {
-    return Moebius { c22_pow_n(m.v, p) };
+    return mo_new(c22_pow_n(m.v, p));
 }
 
 #ifdef HOST
@@ -80,7 +82,7 @@ std::ostream &operator<<(std::ostream &o, Moebius m) {
 #ifdef UNITTEST
 
 Moebius TestRngMoebius::normal() {
-    return Moebius { c22_normalize(rng.normal()) };
+    return mo_new(c22_normalize(rng.normal()));
 }
 
 #include <gtest/gtest.h>

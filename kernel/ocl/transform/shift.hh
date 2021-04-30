@@ -8,6 +8,8 @@ typedef struct {
     real2 v;
 } Shift2;
 
+Shift2 shf2_new(real2 v);
+
 #define $Map Shift2
 #define $map shf2
 #define $elem real2
@@ -31,6 +33,8 @@ typedef struct {
     real3 v;
 } Shift3;
 
+Shift3 shf3_new(real3 v);
+
 #define $Map Shift3
 #define $map shf3
 #define $elem real3
@@ -50,5 +54,5 @@ struct Distance<Shift3> {
 
 
 #ifndef HOST
-#include "rotation.cc"
+#include "shift.cc"
 #endif // !HOST

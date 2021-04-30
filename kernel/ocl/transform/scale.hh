@@ -20,6 +20,8 @@ struct Distance<Scale> {
 
 typedef Scale Scale2;
 
+Scale2 scl2_new(real v);
+
 #define $Map Scale2
 #define $map scl2
 #define $elem real2
@@ -34,6 +36,8 @@ void shf2_scl2_reorder(Shift2 *a, Scale2 *b);
 // Scale3
 
 typedef Scale Scale3;
+
+Scale3 scl3_new(real v);
 
 #define $Map Scale3
 #define $map scl3

@@ -8,6 +8,8 @@ typedef struct {
     comp2x2 v;
 } Moebius;
 
+Moebius mo_new(comp2x2 v);
+
 comp mo_apply_c(Moebius m, comp p);
 quat mo_apply_q(Moebius m, quat p);
 

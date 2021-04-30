@@ -37,35 +37,35 @@ HyDir hy_dir_at(HyDir src_pos, HyDir src_dir, HyDir dst_pos) {
 HyMap hy_zshift(real l) {
     real l2 = l/2;
     real e = exp(l2);
-    return Moebius { c22_new(e*C1, C0, C0, C1/e) };
+    return mo_new(c22_new(e*C1, C0, C0, C1/e));
 }
 HyMap hy_xshift(real l) {
     real l2 = l/2;
     real c = cosh(l2), s = sinh(l2);
-    return Moebius { c22_new(c*C1, s*C1, s*C1, c*C1) };
+    return mo_new(c22_new(c*C1, s*C1, s*C1, c*C1));
 }
 HyMap hy_yshift(real l) {
     real l2 = l/(real)2;
     real c = cosh(l2), s = sinh(l2);
-    return Moebius { c22_new(c*C1, s*CI, -s*CI, c*C1) };
+    return mo_new(c22_new(c*C1, s*CI, -s*CI, c*C1));
 }
 
 HyMap hy_zrotate(real phi) {
     real c = cos(phi/2), s = sin(phi/2);
-    return Moebius { c22_new(c_new(c, s), C0, C0, c_new(c, -s)) };
+    return mo_new(c22_new(c_new(c, s), C0, C0, c_new(c, -s)));
 }
 HyMap hy_xrotate(real theta) {
     real c = cos(theta/2), s = sin(theta/2);
-    return Moebius { c22_new(c*C1, s*CI, s*CI, c*C1) };
+    return mo_new(c22_new(c*C1, s*CI, s*CI, c*C1));
 }
 HyMap hy_yrotate(real theta) {
     real c = cos(theta/2), s = sin(theta/2);
-    return Moebius { c22_new(c*C1, -s*C1, s*C1, c*C1) };
+    return mo_new(c22_new(c*C1, -s*C1, s*C1, c*C1));
 }
 
 // Move to position at the horosphere.
 HyMap hy_horosphere(comp pos) {
-    return Moebius { c22_new(C1, pos, C0, C1) };
+    return mo_new(c22_new(C1, pos, C0, C1));
 }
 
 // Turns direction `dir` to *j*.

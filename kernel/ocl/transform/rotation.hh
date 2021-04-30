@@ -11,6 +11,7 @@ typedef struct {
     comp v;
 } Rotation2;
 
+Rotation2 rot2_new(comp v);
 
 #define $Map Rotation2
 #define $map rot2
@@ -42,6 +43,8 @@ struct Distance<Rotation2> {
 typedef struct {
     quat v;
 } Rotation3;
+
+Rotation3 rot3_new(quat v);
 
 #define $Map Rotation3
 #define $map rot3

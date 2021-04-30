@@ -55,8 +55,8 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
             Regex::new(r#"([\w.:_\-/<>]*):([\d]+):([\d]+)"#).unwrap().replace_all(
                 &String::from(err),
                 |cap: &Captures| {
-                    let line = cap[2].parse::<usize>().unwrap();
-                    let (file, line) = index.search(line).map(|(f, l)| (String::from(f), l)).unwrap_or((cap[1].into(), line));
+                    let origin = cap[2].parse::<usize>().unwrap() - 2; // `ocl` workaround
+                    let (file, line) = index.search(origin).map(|(f, l)| (String::from(f), l)).unwrap_or((cap[1].into(), origin));
                     format!("{}:{}:{}", file, line, &cap[3])
                 }
             ).into_owned()

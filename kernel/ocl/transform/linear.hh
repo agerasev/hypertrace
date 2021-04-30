@@ -9,6 +9,8 @@ typedef struct {
     real2x2 v;
 } Linear2;
 
+Linear2 lin2_new(real2x2 v);
+
 #define $Map Linear2
 #define $map lin2
 #define $elem real2
@@ -34,6 +36,8 @@ struct Distance<Linear2> {
 typedef struct {
     real3x3 v;
 } Linear3;
+
+Linear3 lin3_new(real3x3 v);
 
 #define $Map Linear3
 #define $map lin3

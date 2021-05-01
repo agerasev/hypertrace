@@ -1,5 +1,4 @@
 #include <macros.hh>
-#include <types.hh>
 
 #if !defined($Geo) || !defined($geo)
 #error "$Geo and $geo macros must be defined."

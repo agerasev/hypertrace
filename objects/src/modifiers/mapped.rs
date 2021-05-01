@@ -1,7 +1,8 @@
-use types::{Map, Shape, Entity, SizedEntity, Config, source::{Sourced, SourceInfo, SourceTree}};
+use types::{Map, Entity, SizedEntity, Config, source::{Sourced, SourceInfo, SourceTree}};
 use type_macros::SizedEntity;
 use ccgeom::{Geometry3};
 use std::marker::PhantomData;
+use crate::Shape;
 
 #[derive(Clone, Copy, Debug, SizedEntity)]
 struct MappedShape<G: Geometry3, M: Map<G::Pos, G::Dir> + SizedEntity, T: Shape<G> + SizedEntity> {

@@ -46,7 +46,7 @@ __kernel void render(
     ray.start = (real3)((real)0, (real)0, (real)-4);
     ray.direction = normalize((real3)(pos, (real)1));
 
-    real dist = shape_detect(&scene->object, &context, &normal, &ray);
+    real dist = shape_detect(NULL/*&scene->object*/, &context, &normal, &ray);
 
     float4 color = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
     if (dist > (real)-0.5f) {

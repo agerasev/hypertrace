@@ -1,19 +1,20 @@
 use crate::{Canvas, Buffer, Context};
-use types::{Shape, Config};
+use types::{Config, SizedEntity, Sourced};
+use objects::{View, Shape, Scene};
 use ccgeom::Geometry3;
 use std::{marker::PhantomData, fs};
 use ocl_include::{Parser, Index, source};
 use uni_path::PathBuf;
 use regex::{Regex, Captures};
 
-pub struct Render<G: Geometry3, T: Shape<G>> {
+pub struct Render<G: Geometry3, V: View<G>, T: Shape<G> + SizedEntity> {
     kernel: ocl::Kernel,
-    phantom: PhantomData<(G, T)>,
+    phantom: PhantomData<(G, V, T)>,
 }
 
-impl<G: Geometry3, T: Shape<G>> Render<G, T> {
+impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G> + SizedEntity> Render<G, V, T> {
     fn source(config: &Config) -> base::Result<(String, Index)> {
-        let source_info = T::source(config);
+        let source_info = <Scene::<G, V, T> as Sourced>::source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
 
         let include = PathBuf::from(source_info.tree.root());
@@ -29,7 +30,7 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
 
                 #include <{}>
 
-                typedef {} Shape;
+                typedef {} Scene;
                 #define shape_detect {}_detect
 
                 #include <render/render.cc>
@@ -37,7 +38,7 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
             config.address_width.num_value(),
             include,
             source_info.name,
-            source_info.prefix,
+            T::source(config).prefix,
         ))?;
 
         let parser = parser_builder.add_source(memfs.build())
@@ -73,16 +74,16 @@ impl<G: Geometry3, T: Shape<G>> Render<G, T> {
             .program(&program)
             .name("render")
             .arg_named("shape", &ocl::prm::Uint2::new(0, 0))
-            .arg_named("object", None::<&ocl::Buffer<u8>>)
+            .arg_named("scene", None::<&ocl::Buffer<u8>>)
             .arg_named("canvas", None::<&ocl::Buffer<f32>>)
             .build()?;
 
         Ok(Self { kernel, phantom: PhantomData })
     }
 
-    pub fn render(&self, queue: &ocl::Queue, object_buffer: &Buffer<T>, canvas: &mut Canvas) -> base::Result<()> {
+    pub fn render(&self, queue: &ocl::Queue, scene_buffer: &Buffer<Scene<G, V, T>>, canvas: &mut Canvas) -> base::Result<()> {
         self.kernel.set_arg("shape", ocl::prm::Uint2::new(canvas.width() as u32, canvas.height() as u32))?;
-        self.kernel.set_arg("object", object_buffer.buffer())?;
+        self.kernel.set_arg("scene", scene_buffer.buffer())?;
         self.kernel.set_arg("canvas", canvas.image().buffer())?;
         let cmd = self.kernel
             .cmd()

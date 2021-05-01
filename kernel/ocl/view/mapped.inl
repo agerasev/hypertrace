@@ -1,5 +1,4 @@
 #include <macros.hh>
-#include <types.hh>
 
 #if \
     !defined($Self) || !defined($self) || \

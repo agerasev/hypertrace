@@ -45,6 +45,27 @@ impl SourceInfo {
             tree: SourceTree::new(root.into()),
         }
     }
+    pub fn with_trees<
+        A: Into<String>,
+        B: Into<String>,
+        C: Into<PathBuf>,
+        D: IntoIterator<Item=SourceTree>,
+    >(
+        name: A,
+        prefix: B,
+        root: C,
+        trees: D,
+    ) -> Result<Self, ContentMismatchError> {
+        let mut tree = SourceTree::new(root.into());
+        for t in trees.into_iter() {
+            tree.append(t)?;
+        }
+        Ok(Self {
+            name: name.into(),
+            prefix: prefix.into(),
+            tree,
+        })
+    }
 }
 
 impl SourceTree {

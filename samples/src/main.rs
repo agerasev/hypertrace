@@ -10,7 +10,7 @@ use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objects::shapes::eu as shapes;
+use objects::{Scene, view::PointView, shape::eu as shapes};
 
 fn main() -> base::Result<()> {
     let matches = clap::App::new("Sample")
@@ -60,7 +60,8 @@ fn main() -> base::Result<()> {
     };
 
     let object = shapes::Sphere::default();
-    let buffer = Buffer::new(&context, &object)?;
+    let scene = Scene::new(PointView::new(1.0), object);
+    let buffer = Buffer::new(&context, &scene)?;
     let render = Render::new(&context)?;
     let converter = Converter::new(&context.ocl, shape)?;
 

@@ -13,12 +13,12 @@ typedef struct {
 
 Rotation2 rot2_new(comp v);
 
-#define $Map Rotation2
-#define $map rot2
+#define $Self Rotation2
+#define $self rot2
 #define $elem real2
 #include "interface.inl"
-#undef $Map
-#undef $map
+#undef $Self
+#undef $self
 #undef $elem
 
 Rotation2 rot2_from_angle(real angle);
@@ -46,12 +46,12 @@ typedef struct {
 
 Rotation3 rot3_new(quat v);
 
-#define $Map Rotation3
-#define $map rot3
+#define $Self Rotation3
+#define $self rot3
 #define $elem real3
 #include "interface.inl"
-#undef $Map
-#undef $map
+#undef $Self
+#undef $self
 #undef $elem
 
 Rotation3 rot3_from_axis(real3 axis, real angle);

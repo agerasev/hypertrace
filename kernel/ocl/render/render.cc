@@ -8,7 +8,7 @@
 
 #include <placeholder.hpp>
 
-struct Shape;
+struct Shape {};
 
 real shape_detect(
     __global const Shape *shape,
@@ -17,12 +17,19 @@ real shape_detect(
     RayEu *ray
 );
 
+struct View {};
+
+struct Scene {
+    View view;
+    Shape object;
+};
+
 #endif // HOST
 
 
 __kernel void render(
     const uint2 shape,
-    __global const Shape *object,
+    __global const Scene *scene,
     __global float4 *canvas
 ) {
     uint2 ipos = (uint2)(get_global_id(0), get_global_id(1));
@@ -39,7 +46,7 @@ __kernel void render(
     ray.start = (real3)((real)0, (real)0, (real)-4);
     ray.direction = normalize((real3)(pos, (real)1));
 
-    real dist = shape_detect(object, &context, &normal, &ray);
+    real dist = shape_detect(&scene->object, &context, &normal, &ray);
 
     float4 color = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
     if (dist > (real)-0.5f) {

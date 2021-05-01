@@ -11,12 +11,12 @@ typedef struct {
 
 Linear2 lin2_new(real2x2 v);
 
-#define $Map Linear2
-#define $map lin2
+#define $Self Linear2
+#define $self lin2
 #define $elem real2
 #include "interface.inl"
-#undef $Map
-#undef $map
+#undef $Self
+#undef $self
 #undef $elem
 
 void lin2_shf2_reorder(Linear2 *a, Shift2 *b);
@@ -39,12 +39,12 @@ typedef struct {
 
 Linear3 lin3_new(real3x3 v);
 
-#define $Map Linear3
-#define $map lin3
+#define $Self Linear3
+#define $self lin3
 #define $elem real3
 #include "interface.inl"
-#undef $Map
-#undef $map
+#undef $Self
+#undef $self
 #undef $elem
 
 Linear3 lin3_look_at(real3 dir);

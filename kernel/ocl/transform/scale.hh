@@ -22,12 +22,12 @@ typedef Scale Scale2;
 
 Scale2 scl2_new(real v);
 
-#define $Map Scale2
-#define $map scl2
+#define $Self Scale2
+#define $self scl2
 #define $elem real2
 #include "interface.inl"
-#undef $Map
-#undef $map
+#undef $Self
+#undef $self
 #undef $elem
 
 void scl2_shf2_reorder(Scale2 *a, Shift2 *b);
@@ -39,12 +39,12 @@ typedef Scale Scale3;
 
 Scale3 scl3_new(real v);
 
-#define $Map Scale3
-#define $map scl3
+#define $Self Scale3
+#define $self scl3
 #define $elem real3
 #include "interface.inl"
-#undef $Map
-#undef $map
+#undef $Self
+#undef $self
 #undef $elem
 
 void scl3_shf3_reorder(Scale3 *a, Shift3 *b);

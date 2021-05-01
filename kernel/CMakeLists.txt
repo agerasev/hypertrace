@@ -48,6 +48,9 @@ set(SRC
 
     "ocl/material/material.cc"
     "ocl/material/modifier_test.cpp"
+
+    "ocl/view/point_test.cpp"
+    "ocl/view/mapped_test.cpp"
 )
 
 enable_testing()

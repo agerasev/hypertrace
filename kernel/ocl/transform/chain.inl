@@ -6,7 +6,7 @@
     !defined($Outer) || !defined($outer) || \
     !defined($Inner) || !defined($inner) || \
     !defined($elem)
-#error "Some of macro parameters are not defined."
+#error "All required macro parameters must be defined."
 #endif
 
 typedef struct {
@@ -22,11 +22,7 @@ $Self $2($self,_new)($Outer outer, $Inner inner) {
     return m;
 }
 
-#define $Map $Self
-#define $map $self
 #include "interface.inl"
-#undef $Map
-#undef $map
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 $Self $2($self,_identity)() {

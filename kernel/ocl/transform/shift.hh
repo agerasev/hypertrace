@@ -10,12 +10,12 @@ typedef struct {
 
 Shift2 shf2_new(real2 v);
 
-#define $Map Shift2
-#define $map shf2
+#define $Self Shift2
+#define $self shf2
 #define $elem real2
 #include "interface.inl"
-#undef $Map
-#undef $map
+#undef $Self
+#undef $self
 #undef $elem
 
 #ifdef HOST
@@ -35,12 +35,12 @@ typedef struct {
 
 Shift3 shf3_new(real3 v);
 
-#define $Map Shift3
-#define $map shf3
+#define $Self Shift3
+#define $self shf3
 #define $elem real3
 #include "interface.inl"
-#undef $Map
-#undef $map
+#undef $Self
+#undef $self
 #undef $elem
 
 #ifdef HOST

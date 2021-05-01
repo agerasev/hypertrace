@@ -5,7 +5,7 @@
     !defined($Geo) || !defined($geo) || \
     !defined($Map) || !defined($map) || \
     !defined($pos) || !defined($dir)
-#error "Some of the macro parameters are not defined."
+#error "All required macro parameters must be defined."
 #endif
 
 #define GeoPos $2($Geo,Pos)

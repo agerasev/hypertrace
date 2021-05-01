@@ -16,12 +16,12 @@ quat mo_apply_q(Moebius m, quat p);
 comp mo_deriv_c(Moebius m, comp p);
 quat mo_deriv_q(Moebius m, quat p, quat v);
 
-#define $Map Moebius
-#define $map mo
+#define $Self Moebius
+#define $self mo
 #define $elem quat
 #include "interface.inl"
-#undef $Map
-#undef $map
+#undef $Self
+#undef $self
 #undef $elem
 
 Moebius mo_interpolate(Moebius a, Moebius b, real t);

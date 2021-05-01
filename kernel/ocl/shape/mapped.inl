@@ -6,7 +6,7 @@
     !defined($Geo)   || !defined($geo) || \
     !defined($Shape) || !defined($shape) || \
     !defined($Map)   || !defined($map)
-#error "Not all macro parameters are defined."
+#error "All required macro parameters must be defined."
 #endif
 
 real $2($shape,_detect)(__global const $Self *self, Context *context, $2($Geo,Pos) *normal, $2(Ray,$Geo) *ray) {

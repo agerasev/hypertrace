@@ -2,7 +2,7 @@
 #include "geometry.hh"
 
 #if !defined($Geo) || !defined($geo)
-#error "$Geo and $geo macros must be defined."
+#error "$Geo and $geo macro parameters must be defined."
 #endif
 
 typedef struct {

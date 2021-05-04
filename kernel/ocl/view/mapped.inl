@@ -8,11 +8,6 @@
 #error "All required macro parameters must be defined."
 #endif
 
-typedef struct {
-    $Map map;
-    $View inner;
-} $Self;
-
 #include "interface.inl"
 
 _ALLOW_MULTIPLE_DEFINITIONS_

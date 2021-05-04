@@ -4,13 +4,14 @@ use std::{
     thread::sleep,
     time::Duration,
 };
+use vecmat::{Vector, transform::Shift};
 use base::Image;
 use view::{Window, Handler, DummyController};
 use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objects::{Scene, view::PointView, shape::eu as shapes};
+use objects::{Scene, view::{PointView, MappedView}, shape::eu as shapes};
 
 fn main() -> base::Result<()> {
     let matches = clap::App::new("Sample")
@@ -59,8 +60,9 @@ fn main() -> base::Result<()> {
         ocl: ocl_context
     };
 
+    let view = MappedView::new(PointView::new(1.0), Shift::from(Vector::from([0.0, 0.0, -4.0])));
     let object = shapes::Sphere::default();
-    let scene = Scene::new(PointView::new(1.0), object);
+    let scene = Scene::new(view, object);
     let buffer = Buffer::new(&context, &scene)?;
     let render = Render::new(&context)?;
     let converter = Converter::new(&context.ocl, shape)?;

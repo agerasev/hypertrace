@@ -134,12 +134,13 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
         let type_prefix = format!("{}{}", #prefix, &type_id);
         let file = format!("generated/{}{}.hh", #prefix, &type_id);
         let mut tree = types::source::SourceTree::new(file.clone().into());
-        let mut includes = std::collections::HashSet::<types::path::PathBuf>::new();
+        let mut includes = std::collections::BTreeSet::<types::path::PathBuf>::new();
         let mut text = String::new();
         let mut getter_text = String::new();
         let namespaces = [("", ""), ("const ", "__c"), ("__global ", "__g"), ("__global const ", "__gc")];
         #content
         let final_text = [
+            "#pragma once\n".into(),
             includes.into_iter().map(|path| format!("#include <{}>\n", path)).collect::<String>(),
             text,
             getter_text,

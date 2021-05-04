@@ -31,32 +31,42 @@ impl<G: Geometry3 + Sourced> Sourced for PointView<G> {
 impl<G: Geometry3 + Sourced> View<G> for PointView<G> {}
 
 #[derive(Clone, Debug, SizedEntity)]
-pub struct MappedView<G: Geometry3, M: Map<G>, V: View<G>> {
-    map: M,
-    inner: V,
+pub struct MappedView<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> {
+    pub inner: V,
+    pub map: M,
     phantom: PhantomData<G>,
 }
 
 impl<
+    G: Geometry3,
+    V: View<G>,
+    M: Map<G::Pos, G::Dir>,
+> MappedView<G, V, M> {
+    pub fn new(inner: V, map: M) -> Self {
+        Self { inner, map, phantom: PhantomData }
+    }
+}
+
+impl<
     G: Geometry3 + Sourced,
-    M: Map<G> + Sourced,
     V: View<G> + Sourced,
-> Sourced for MappedView<G, M, V> {
+    M: Map<G::Pos, G::Dir> + Sourced,
+> Sourced for MappedView<G, V, M> {
     fn source(cfg: &Config) -> SourceInfo {
+        let src = Self::entity_source(cfg);
         let gsrc = G::source(cfg);
         let msrc = M::source(cfg);
         let vsrc = V::source(cfg);
-        let name = format!("MappedView{}", Self::type_tag());
-        let prefix = format!("mapped_view_{}", Self::type_tag());
 
         SourceBuilder::new(format!("generated/mapped_view_{}.hh", Self::type_tag()))
+            .tree(src.tree)
             .tree(gsrc.tree)
             .tree(vsrc.tree)
             .content(&include(&format!("geometry/ray_{}.hh", &gsrc.prefix)))
             .content(&include_template!(
                 "view/mapped.inl",
-                "Self": &name,
-                "self": &prefix,
+                "Self": &src.name,
+                "self": &src.prefix,
                 "Geo": &gsrc.name,
                 "geo": &gsrc.prefix,
                 "Map": &msrc.name,
@@ -64,12 +74,12 @@ impl<
                 "View": &vsrc.name,
                 "view": &vsrc.prefix,
             ))
-            .build(name, prefix)
+            .build(src.name, src.prefix)
     }
 }
 
 impl<
     G: Geometry3 + Sourced,
-    M: Map<G> + Sourced,
     V: View<G> + Sourced,
-> View<G> for MappedView<G, M, V> {}
+    M: Map<G::Pos, G::Dir> + Sourced,
+> View<G> for MappedView<G, V, M> {}

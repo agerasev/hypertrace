@@ -9,6 +9,8 @@ pub trait Sourced {
 #[derive(Clone, Debug)]
 pub struct ContentMismatchError {
     pub path: PathBuf,
+    pub src: String,
+    pub dst: String,
 }
 
 impl From<ContentMismatchError> for String {
@@ -74,10 +76,15 @@ impl SourceTree {
                 Ok(())
             },
             Entry::Occupied(oe) => {
-                if oe.get() == &content {
+                let src = oe.get();
+                if src == &content {
                     Ok(())
                 } else {
-                    Err(ContentMismatchError { path: oe.key().clone() })
+                    Err(ContentMismatchError {
+                        path: oe.key().clone(),
+                        src: src.clone(),
+                        dst: content,
+                    })
                 }
             }
         }
@@ -88,8 +95,12 @@ impl SourceTree {
         let other_keys = other.files.keys().collect::<HashSet<_>>();
         let collision = self_keys.intersection(&other_keys).copied();
         for path in collision {
-            if self.files.get(path) != other.files.get(path) {
-                return Err(ContentMismatchError { path: path.clone() });
+            let (src, dst) = (self.files.get(path).unwrap(), other.files.get(path).unwrap());
+            if src != dst {
+                return Err(ContentMismatchError {
+                    path: path.clone(),
+                    src: src.clone(), dst: dst.clone(),
+                });
             }
         }
         self.files.append(&mut other.files);

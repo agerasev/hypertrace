@@ -1,6 +1,6 @@
 use ccgeom::Geometry3;
-use types::{Entity, SizedEntity, Sourced, Config, source::{SourceInfo, SourceTree}};
-use std::{marker::PhantomData, iter};
+use types::{Entity, SizedEntity, Sourced, Config, source::{SourceInfo, SourceBuilder, include}, include_template};
+use std::{marker::PhantomData};
 use type_macros::SizedEntity;
 
 pub trait View<G: Geometry3>: SizedEntity + Sourced {}
@@ -19,13 +19,12 @@ impl<G: Geometry3> PointView<G> {
 
 impl<G: Geometry3 + Sourced> Sourced for PointView<G> {
     fn source(cfg: &Config) -> SourceInfo {
-        let geo_src = G::source(cfg);
-        SourceInfo::with_trees(
-            format!("PointView{}", &geo_src.name),
-            format!("point_view_{}", &geo_src.prefix),
+        let geo = G::source(cfg);
+        SourceInfo::with_root(
+            format!("PointView{}", &geo.name),
+            format!("point_view_{}", &geo.prefix),
             "view/point.hh",
-            iter::once(geo_src.tree),
-        ).unwrap()
+        )
     }
 }
 
@@ -39,51 +38,25 @@ pub struct MappedView<G: Geometry3, V: View<G>> {
 
 impl<G: Geometry3 + Sourced, V: View<G> + Sourced> Sourced for MappedView<G, V> where G::Map: SizedEntity {
     fn source(cfg: &Config) -> SourceInfo {
-        let geo_src = G::source(cfg);
-        let view_src = V::source(cfg);
-        let file = format!("generated/mapped_view_{}.hh", Self::type_tag());
-        let name = format!("MappedView{}{}", &geo_src.name, Self::type_tag());
-        let prefix = format!("mapped_view_{}_{}", &geo_src.prefix, Self::type_tag());
-        let mut tree = SourceTree::new(file.clone().into());
-        tree.insert(file.into(), format!(
-            r#"
-                #pragma once
+        let geo = G::source(cfg);
+        let view = V::source(cfg);
+        let name = format!("MappedView{}{}", &geo.name, Self::type_tag());
+        let prefix = format!("mapped_view_{}_{}", &geo.prefix, Self::type_tag());
 
-                #include <{geo_root}>
-                #include <geometry/ray.hh>
-                #include <{view_root}>
-
-                #define $Self {name}
-                #define $self {prefix}
-                #define $View {View}
-                #define $view {view}
-                #define $Geo {Geo}
-                #define $geo {geo}
-                #include "mapped.inl"
-                #undef $Self
-                #undef $self
-                #undef $View
-                #undef $view
-                #undef $Geo
-                #undef $geo
-            "#,
-            geo_root=geo_src.tree.root(),
-            view_root=view_src.tree.root(),
-            name=&name,
-            prefix=&prefix,
-            Geo=&geo_src.name,
-            geo=&geo_src.prefix,
-            View=&view_src.name,
-            view=&view_src.prefix,
-        )).unwrap();
-        tree.append(geo_src.tree).unwrap();
-        tree.append(view_src.tree).unwrap();
-        
-        SourceInfo::new(
-            name,
-            prefix,
-            tree,
-        )
+        SourceBuilder::new(format!("generated/mapped_view_{}.hh", Self::type_tag()))
+            .tree(geo.tree)
+            .content(&include("geometry/ray.hh"))
+            .tree(view.tree)
+            .content(&include_template!(
+                "view/mapped.inl",
+                "Self": &name,
+                "self": &prefix,
+                "View": &view.name,
+                "view": &view.prefix,
+                "Geo": &geo.name,
+                "geo": &geo.prefix,
+            ))
+            .build(name, prefix)
     }
 }
 

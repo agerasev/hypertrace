@@ -45,27 +45,6 @@ impl SourceInfo {
             tree: SourceTree::new(root.into()),
         }
     }
-    pub fn with_trees<
-        A: Into<String>,
-        B: Into<String>,
-        C: Into<PathBuf>,
-        D: IntoIterator<Item=SourceTree>,
-    >(
-        name: A,
-        prefix: B,
-        root: C,
-        trees: D,
-    ) -> Result<Self, ContentMismatchError> {
-        let mut tree = SourceTree::new(root.into());
-        for t in trees.into_iter() {
-            tree.append(t)?;
-        }
-        Ok(Self {
-            name: name.into(),
-            prefix: prefix.into(),
-            tree,
-        })
-    }
 }
 
 impl SourceTree {
@@ -126,28 +105,54 @@ impl IntoIterator for SourceTree {
     }
 }
 
-#[macro_export]
-macro_rules! include_list {
-    ($($path:expr),* $(,)?) => {
-        [
-            $(
-                format!("#include <{}>\n", $path),
-            )*
-        ].iter().join("")
-    };
+pub struct SourceBuilder {
+    tree: SourceTree,
+    content: String,
+}
+
+impl SourceBuilder {
+    pub fn new<P: Into<PathBuf>>(root: P) -> Self {
+        Self {
+            tree: SourceTree::new(root.into()),
+            content: String::from("#pragma once\n"),
+        }
+    }
+    pub fn tree(mut self, tree: SourceTree) -> Self {
+        self.content.push_str(&include(tree.root()));
+        self.tree.append(tree).unwrap();
+        self
+    }
+    pub fn content(mut self, text: &str) -> Self {
+        self.content.push_str(&text);
+        self
+    }
+    pub fn build(mut self, name: String, prefix: String) -> SourceInfo {
+        self.tree.insert(self.tree.root().to_path_buf(), self.content).unwrap();
+        SourceInfo::new(name, prefix, self.tree)
+    }
+}
+
+pub fn include<P: AsRef<Path>>(path: P) -> String {
+    format!("#include <{}>\n", path.as_ref())
+}
+pub fn include_template<P: AsRef<Path>>(path: P, map: &BTreeMap<String, String>) -> String {
+    let mut lines = Vec::new();
+    for (key, value) in map.iter() {
+        lines.push(format!("#define ${} {}\n", key, value));
+    }
+    lines.push(format!("#include <{}>\n", path.as_ref()));
+    for (key, _) in map.iter() {
+        lines.push(format!("#undef ${}\n", key));
+    }
+    lines.join("")
 }
 
 #[macro_export]
 macro_rules! include_template {
-    ($path:expr, $($name:ident = $value:expr),* $(,)?) => {
-        [
-            $(
-                format!("#define ${} {}\n", stringify!($name), $value),
-            )*
-            format!("#include <{}>\n", $path),
-            $(
-                format!("#undef ${}\n", stringify!($name)),
-            )*
-        ].iter().join("")
+    ($path:expr, $($name:literal: $value:expr),* $(,)?) => {
+        include_template(
+            $path,
+            &vec![$((String::from($name), String::from($value))),*].into_iter().collect(),
+        )
     };
 }

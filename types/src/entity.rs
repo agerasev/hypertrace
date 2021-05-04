@@ -9,8 +9,17 @@ use std::{
     io,
 };
 
+/// Something that could be named.
+pub trait Named: 'static + Sized {
+    /// Type name on backend.
+    fn name(cfg: &Config) -> String;
+
+    /// Prefix for type method (usually lower-case version of the name).
+    fn prefix(cfg: &Config) -> String;
+}
+
 /// Static entity type.
-pub trait Entity: 'static + Sized {
+pub trait Entity: Named {
     /// Type identifier.
     fn type_id() -> u64 {
         let mut hasher = DefaultHasher::default();

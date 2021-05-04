@@ -3,7 +3,7 @@
 #include <algebra/vector.hh>
 #include <geometry/euclidean.hh>
 #include <render/context.hh>
-#include <render/light.hh>
+#include <render/light/eu.hh>
 
 
 typedef void SphereEu;

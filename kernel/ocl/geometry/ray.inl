@@ -1,5 +1,4 @@
 #include <macros.hh>
-#include "geometry.hh"
 
 #if !defined($Geo) || !defined($geo)
 #error "$Geo and $geo macro parameters must be defined."

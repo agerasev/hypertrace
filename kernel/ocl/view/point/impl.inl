@@ -1,4 +1,5 @@
 #include <macros.hh>
+#include <types.hh>
 
 #if !defined($Geo) || !defined($geo)
 #error "$Geo and $geo macros must be defined."
@@ -10,7 +11,7 @@ typedef struct {
 
 #define $Self $2(PointView,$Geo)
 #define $self $2(point_view_,$geo)
-#include "interface.inl"
+#include <view/interface.inl>
 #undef $Self
 #undef $self
 

@@ -1,5 +1,5 @@
 #include <macros.hh>
-#include <render/light.hh>
+#include <render/light/base.hh>
 #include <render/context.hh>
 
 #if !defined($Material) || !defined($material)

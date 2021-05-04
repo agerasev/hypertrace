@@ -2,7 +2,7 @@
 
 #include <algebra/quaternion.hh>
 #include <geometry/hyperbolic.hh>
-#include <render/light.hh>
+#include <render/light/hy.hh>
 #include <render/context.hh>
 
 

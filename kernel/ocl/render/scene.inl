@@ -1,6 +1,4 @@
 #include <macros.hh>
-#include <geometry/geometry.hh>
-#include <render/light.hh>
 #include <render/context.hh>
 
 #if \

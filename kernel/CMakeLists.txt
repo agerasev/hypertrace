@@ -32,6 +32,7 @@ set(SRC
     "ocl/transform/linear.cc"
     "ocl/transform/rotation.cc"
     "ocl/transform/moebius.cc"
+    "ocl/transform/affine.cc"
     "ocl/transform/chain_test.cpp"
 
     "ocl/random.cc"
@@ -40,16 +41,17 @@ set(SRC
     "ocl/geometry/hyperbolic.cc"
     "ocl/geometry/ray_test.cpp"
 
-    "ocl/render/light.cc"
+    "ocl/render/light/hy.cc"
+    "ocl/render/light/eu.cc"
 
-    "ocl/shape/mapped.cpp"
+    "ocl/shape/eu/shapes.cc"
     "ocl/shape/hy/plane.cc"
     "ocl/shape/hy/horosphere.cc"
 
     "ocl/material/material.cc"
     "ocl/material/modifier_test.cpp"
 
-    "ocl/view/point_test.cpp"
+    "ocl/view/point/test.cpp"
     "ocl/view/mapped_test.cpp"
 )
 

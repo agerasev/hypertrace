@@ -40,3 +40,11 @@ macro_rules! impl_sized_entity_unwrap {
         }
     };
 }
+
+macro_rules! impl_sourced_unwrap {
+    ($T:ty) => {
+        fn source(cfg: &crate::Config) -> crate::SourceTree {
+            <$T>::type_source(cfg)
+        }
+    };
+}

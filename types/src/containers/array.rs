@@ -2,7 +2,7 @@ use crate::{
     hash::DefaultHasher,
     include_template,
     io::{CntRead, CntWrite},
-    source::{SourceBuilder, SourceTree},
+    source::{SourceBuilder, SourceTree, Sourced},
     Config, Entity, Named, SizedEntity,
 };
 use std::{hash::Hasher, io, iter};
@@ -72,6 +72,12 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
 impl<T: SizedEntity, const N: usize> SizedEntity for [T; N] {
     fn type_size(cfg: &Config) -> usize {
         T::type_size(cfg) * N
+    }
+}
+
+impl<T: SizedEntity, const N: usize> Sourced for [T; N] {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }
 

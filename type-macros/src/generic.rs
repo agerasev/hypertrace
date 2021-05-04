@@ -9,7 +9,7 @@ fn make_where_clause_fields(fields: &Fields) -> TokenStream2 {
         let ty = &field.ty;
         quote! {
             #accum
-            #ty: types::SizedEntity,
+            #ty: types::SizedEntity + types::Sourced,
         }
     })
 }

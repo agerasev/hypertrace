@@ -17,9 +17,9 @@ color4 $2($self,_sample)(__global const $Self *self, Context *context, real2 pix
     real dist = $2($object,_detect)($2($self,__object__gc)(self), context, &normal, &ray);
 
     color4 color = (color4)(ray.direction, 1.0f);
-    //if (dist > (real)-0.5f) {
-    //    color = (color4)(1.0f, 1.0f, 1.0f, 1.0f);
-    //}
+    if (dist > (real)-0.5f) {
+        color = (color4)(1.0f, 1.0f, 1.0f, 1.0f);
+    }
 
     return color;
 }

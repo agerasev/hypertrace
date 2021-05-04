@@ -60,7 +60,7 @@ fn main() -> base::Result<()> {
         ocl: ocl_context
     };
 
-    let view = MappedView::new(PointView::new(1.0), Shift::from(Vector::from([0.0, 0.0, -4.0])));
+    let view = MappedView::new(PointView::new(1.0), Shift::from(Vector::from([0.0, 0.0, 4.0])));
     let object = shapes::Sphere::default();
     let scene = Scene::new(view, object);
     let buffer = Buffer::new(&context, &scene)?;

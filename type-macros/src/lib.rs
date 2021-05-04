@@ -82,3 +82,19 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+#[proc_macro_derive(Sourced)]
+pub fn derive_sourced(stream: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(stream as DeriveInput);
+
+    let ty = &input.ident;
+    let (params, bindings) = make_params(&input);
+
+    TokenStream::from(quote! {
+        impl<#bindings> types::Sourced for #ty<#params> where Self: types::Entity {
+            fn source(cfg: &types::Config) -> types::source::SourceTree {
+                <Self as types::Entity>::type_source(cfg)
+            }
+        }
+    })
+}

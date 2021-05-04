@@ -1,7 +1,7 @@
 use crate::{
     config::{AddressWidth, Config, Endian},
     io::{CntRead, CntWrite},
-    Entity, Named, SizedEntity, SourceTree,
+    Entity, Named, SizedEntity, source::{SourceTree, Sourced},
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_traits::Num;
@@ -48,6 +48,11 @@ macro_rules! impl_entity_native {
                 size_of::<Self>()
             }
         }
+        impl Sourced for $T {
+            fn source(cfg: &Config) -> SourceTree {
+                Self::type_source(cfg)
+            }
+        }
     };
 }
 
@@ -82,6 +87,11 @@ macro_rules! impl_entity_byte {
         impl SizedEntity for $T {
             fn type_size(_cfg: &Config) -> usize {
                 1
+            }
+        }
+        impl Sourced for $T {
+            fn source(cfg: &Config) -> SourceTree {
+                Self::type_source(cfg)
             }
         }
     };
@@ -136,6 +146,11 @@ macro_rules! impl_entity_size {
                     AddressWidth::X32 => $T32::type_size(cfg),
                     AddressWidth::X64 => $T64::type_size(cfg),
                 }
+            }
+        }
+        impl Sourced for $T {
+            fn source(cfg: &Config) -> SourceTree {
+                Self::type_source(cfg)
             }
         }
     };
@@ -215,5 +230,10 @@ impl SizedEntity for f64 {
         } else {
             f32::type_size(cfg)
         }
+    }
+}
+impl Sourced for f64 {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }

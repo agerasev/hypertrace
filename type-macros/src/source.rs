@@ -54,7 +54,7 @@ fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2)
                     align = types::math::lcm(align, <#ty as types::Entity>::align(cfg));
 
                     let field_type_name = <#ty as types::Named>::type_name(cfg);
-                    let field_src = <#ty as types::Entity>::type_source(cfg);
+                    let field_src = <#ty as types::Sourced>::source(cfg);
                     if field_size > 0 {
                         text += &format!("    {} {};\n", &field_type_name, #fname);
                     }

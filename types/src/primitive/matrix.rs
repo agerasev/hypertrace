@@ -1,7 +1,7 @@
 use crate::{
     io::{CntRead, CntWrite},
     primitive::PrimVec,
-    Config, Entity, Named, SizedEntity, SourceTree,
+    Config, Entity, Named, SizedEntity, source::{SourceTree, Sourced},
 };
 use std::io;
 use vecmat::{Complex, Matrix};
@@ -49,6 +49,11 @@ impl SizedEntity for Matrix<f64, 2, 2> {
         4 * f64::type_size(cfg)
     }
 }
+impl Sourced for Matrix<f64, 2, 2> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
+    }
+}
 impl PrimVec for Matrix<f64, 2, 2> {}
 
 // Real4x4
@@ -92,6 +97,11 @@ impl Entity for Matrix<f64, 4, 4> {
 impl SizedEntity for Matrix<f64, 4, 4> {
     fn type_size(cfg: &Config) -> usize {
         16 * f64::type_size(cfg)
+    }
+}
+impl Sourced for Matrix<f64, 4, 4> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }
 impl PrimVec for Matrix<f64, 4, 4> {}
@@ -146,6 +156,11 @@ impl SizedEntity for Matrix<f64, 3, 3> {
         16 * f64::type_size(cfg)
     }
 }
+impl Sourced for Matrix<f64, 3, 3> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
+    }
+}
 impl PrimVec for Matrix<f64, 3, 3> {}
 
 // Complex2x2
@@ -189,6 +204,11 @@ impl Entity for Matrix<Complex<f64>, 2, 2> {
 impl SizedEntity for Matrix<Complex<f64>, 2, 2> {
     fn type_size(cfg: &Config) -> usize {
         8 * f64::type_size(cfg)
+    }
+}
+impl Sourced for Matrix<Complex<f64>, 2, 2> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }
 impl PrimVec for Matrix<Complex<f64>, 2, 2> {}

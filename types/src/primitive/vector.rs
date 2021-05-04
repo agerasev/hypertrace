@@ -1,7 +1,7 @@
 use crate::{
     io::{CntRead, CntWrite},
     primitive::PrimScal,
-    Config, Entity, Named, SizedEntity, SourceTree,
+    Config, Entity, Named, SizedEntity, source::{SourceTree, Sourced},
 };
 use std::{fmt::Debug, io};
 use vecmat::Vector;
@@ -46,6 +46,11 @@ macro_rules! impl_entity {
         impl<T: PrimScal> SizedEntity for Vector<T, $N> {
             fn type_size(cfg: &Config) -> usize {
                 T::type_size(cfg) * $N
+            }
+        }
+        impl<T: PrimScal> Sourced for Vector<T, $N> {
+            fn source(cfg: &Config) -> SourceTree {
+                Self::type_source(cfg)
             }
         }
     };
@@ -94,6 +99,11 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
 impl<T: PrimScal> SizedEntity for Vector<T, 3> {
     fn type_size(cfg: &Config) -> usize {
         T::type_size(cfg) * 4
+    }
+}
+impl<T: PrimScal> Sourced for Vector<T, 3> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }
 

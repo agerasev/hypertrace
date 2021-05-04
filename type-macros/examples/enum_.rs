@@ -1,7 +1,7 @@
-use hypertrace_type_macros::{Named, SizedEntity};
-use types::{config::HOST_CONFIG, Entity};
+use hypertrace_type_macros::{Named, SizedEntity, Sourced};
+use types::{config::HOST_CONFIG, Sourced};
 
-#[derive(Named, SizedEntity)]
+#[derive(Named, SizedEntity, Sourced)]
 enum E {
     #[getter]
     A {
@@ -15,7 +15,7 @@ enum E {
 }
 
 fn main() {
-    for (key, value) in E::type_source(&HOST_CONFIG).into_iter() {
+    for (key, value) in E::source(&HOST_CONFIG).into_iter() {
         println!("'{}':\n{}\n", key, value);
     }
 }

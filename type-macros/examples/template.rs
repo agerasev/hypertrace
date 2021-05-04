@@ -1,8 +1,8 @@
-use hypertrace_type_macros::{Named, SizedEntity};
+use hypertrace_type_macros::{Named, SizedEntity, Sourced};
 use std::marker::PhantomData;
-use types::{config::HOST_CONFIG, Entity};
+use types::{config::HOST_CONFIG, Sourced};
 
-#[derive(Named, SizedEntity)]
+#[derive(Named, SizedEntity, Sourced)]
 struct A<T: Copy + 'static, U: Copy + 'static, V: 'static> {
     #[getter]
     x: T,
@@ -11,7 +11,7 @@ struct A<T: Copy + 'static, U: Copy + 'static, V: 'static> {
 }
 
 fn main() {
-    for (key, value) in A::<i32, u8, usize>::type_source(&HOST_CONFIG).into_iter() {
+    for (key, value) in A::<i32, u8, usize>::source(&HOST_CONFIG).into_iter() {
         println!("'{}':\n{}\n", key, value);
     }
 }

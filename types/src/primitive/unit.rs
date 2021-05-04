@@ -1,6 +1,6 @@
 use crate::{
     io::{CntRead, CntWrite},
-    Config, Entity, Named, SizedEntity, SourceTree,
+    Config, Entity, Named, SizedEntity, source::{SourceTree, Sourced}
 };
 use std::{io, marker::PhantomData};
 
@@ -44,6 +44,12 @@ impl SizedEntity for () {
     }
 }
 
+impl Sourced for () {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
+    }
+}
+
 // PhantomData
 
 impl<T: 'static> Named for PhantomData<T> {
@@ -81,5 +87,11 @@ impl<T: 'static> Entity for PhantomData<T> {
 impl<T: 'static> SizedEntity for PhantomData<T> {
     fn type_size(_: &Config) -> usize {
         0
+    }
+}
+
+impl<T: 'static> Sourced for PhantomData<T> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }

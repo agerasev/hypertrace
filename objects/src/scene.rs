@@ -1,13 +1,13 @@
-use types::{Config, Entity, SizedEntity, Sourced, source::{SourceInfo, SourceBuilder}, include_template};
-use type_macros::SizedEntity;
+use types::{Config, Named, Entity, SizedEntity, Sourced, source::{SourceTree, SourceBuilder}, include_template};
+use type_macros::{SizedEntity};
 use ccgeom::Geometry3;
 use crate::{View, Shape};
 use std::marker::PhantomData;
 
 #[derive(Clone, Debug, SizedEntity)]
 pub struct Scene<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> {
-    pub view: V,
-    pub object: T,
+    #[getter] pub view: V,
+    #[getter] pub object: T,
     phantom: PhantomData<G>,
 }
 
@@ -17,28 +17,33 @@ impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> Scene<G, V, T> {
     }
 }
 
-impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> Sourced for Scene<G, V, T> where T: SizedEntity {
-    fn source(cfg: &Config) -> SourceInfo {
-        let src = Self::entity_source(cfg);
-        let gsrc = G::source(cfg);
-        let vsrc = V::source(cfg);
-        let osrc = T::source(cfg);
+impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> Named for Scene<G, V, T> {
+    fn type_name(_: &Config) -> String {
+        format!("Scene{}", Self::type_tag())
+    }
+    fn type_prefix(_: &Config) -> String {
+        format!("scene_{}", Self::type_tag())
+    }
+}
+
+impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> Sourced for Scene<G, V, T> where Self: Entity, T: SizedEntity {
+    fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/scene_{}.hh", Self::type_tag()))
-            .tree(src.tree)
-            .tree(gsrc.tree)
-            .tree(vsrc.tree)
-            .tree(osrc.tree)
+            .tree(Self::type_source(cfg))
+            .tree(G::source(cfg))
+            .tree(V::source(cfg))
+            .tree(T::source(cfg))
             .content(&include_template!(
                 "render/scene.inl",
-                "Self": &src.name,
-                "self": &src.prefix,
-                "Geo": &gsrc.name,
-                "geo": &gsrc.prefix,
-                "View": &vsrc.name,
-                "view": &vsrc.prefix,
-                "Object": &osrc.name,
-                "object": &osrc.prefix,
+                "Self": &Self::type_name(cfg),
+                "self": &Self::type_prefix(cfg),
+                "Geo": &G::type_name(cfg),
+                "geo": &G::type_prefix(cfg),
+                "View": &V::type_name(cfg),
+                "view": &V::type_prefix(cfg),
+                "Object": &T::type_name(cfg),
+                "object": &T::type_prefix(cfg),
             ))
-            .build(src.name, src.prefix)
+            .build()
     }
 }

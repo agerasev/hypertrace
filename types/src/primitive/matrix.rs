@@ -1,13 +1,21 @@
 use crate::{
     io::{CntRead, CntWrite},
-    primitive::{PrimVec},
-    Config, Entity, SizedEntity, SourceInfo,
+    primitive::PrimVec,
+    Config, Entity, Named, SizedEntity, source::{SourceTree, Sourced},
 };
 use std::io;
-use vecmat::{Matrix, Complex};
+use vecmat::{Complex, Matrix};
 
 // Real2x2
 
+impl Named for Matrix<f64, 2, 2> {
+    fn type_name(_: &Config) -> String {
+        String::from("real2x2")
+    }
+    fn type_prefix(_: &Config) -> String {
+        String::from("r22")
+    }
+}
 impl Entity for Matrix<f64, 2, 2> {
     fn align(cfg: &Config) -> usize {
         Self::type_size(cfg)
@@ -32,12 +40,8 @@ impl Entity for Matrix<f64, 2, 2> {
         }
         Ok(())
     }
-    fn entity_source(_: &Config) -> SourceInfo {
-        SourceInfo::with_root(
-            "real2x2",
-            "r22",
-            "algebra/matrix.hh",
-        )
+    fn type_source(_: &Config) -> SourceTree {
+        SourceTree::new("algebra/matrix.hh")
     }
 }
 impl SizedEntity for Matrix<f64, 2, 2> {
@@ -45,10 +49,23 @@ impl SizedEntity for Matrix<f64, 2, 2> {
         4 * f64::type_size(cfg)
     }
 }
+impl Sourced for Matrix<f64, 2, 2> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
+    }
+}
 impl PrimVec for Matrix<f64, 2, 2> {}
 
 // Real4x4
 
+impl Named for Matrix<f64, 4, 4> {
+    fn type_name(_: &Config) -> String {
+        String::from("real4x4")
+    }
+    fn type_prefix(_: &Config) -> String {
+        String::from("r44")
+    }
+}
 impl Entity for Matrix<f64, 4, 4> {
     fn align(cfg: &Config) -> usize {
         Self::type_size(cfg)
@@ -73,12 +90,8 @@ impl Entity for Matrix<f64, 4, 4> {
         }
         Ok(())
     }
-    fn entity_source(_: &Config) -> SourceInfo {
-        SourceInfo::with_root(
-            "real4x4",
-            "r44",
-            "algebra/matrix.hh",
-        )
+    fn type_source(_: &Config) -> SourceTree {
+        SourceTree::new("algebra/matrix.hh")
     }
 }
 impl SizedEntity for Matrix<f64, 4, 4> {
@@ -86,10 +99,23 @@ impl SizedEntity for Matrix<f64, 4, 4> {
         16 * f64::type_size(cfg)
     }
 }
+impl Sourced for Matrix<f64, 4, 4> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
+    }
+}
 impl PrimVec for Matrix<f64, 4, 4> {}
 
 // Real3x3
 
+impl Named for Matrix<f64, 3, 3> {
+    fn type_name(_: &Config) -> String {
+        String::from("real3x3")
+    }
+    fn type_prefix(_: &Config) -> String {
+        String::from("r33")
+    }
+}
 impl Entity for Matrix<f64, 3, 3> {
     fn align(cfg: &Config) -> usize {
         Self::type_size(cfg)
@@ -121,12 +147,8 @@ impl Entity for Matrix<f64, 3, 3> {
         (1.0).store(cfg, dst)?;
         Ok(())
     }
-    fn entity_source(_: &Config) -> SourceInfo {
-        SourceInfo::with_root(
-            "real3x3",
-            "r33",
-            "algebra/matrix.hh",
-        )
+    fn type_source(_: &Config) -> SourceTree {
+        SourceTree::new("algebra/matrix.hh")
     }
 }
 impl SizedEntity for Matrix<f64, 3, 3> {
@@ -134,10 +156,23 @@ impl SizedEntity for Matrix<f64, 3, 3> {
         16 * f64::type_size(cfg)
     }
 }
+impl Sourced for Matrix<f64, 3, 3> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
+    }
+}
 impl PrimVec for Matrix<f64, 3, 3> {}
 
 // Complex2x2
 
+impl Named for Matrix<Complex<f64>, 2, 2> {
+    fn type_name(_: &Config) -> String {
+        String::from("comp2x2")
+    }
+    fn type_prefix(_: &Config) -> String {
+        String::from("c22")
+    }
+}
 impl Entity for Matrix<Complex<f64>, 2, 2> {
     fn align(cfg: &Config) -> usize {
         Self::type_size(cfg)
@@ -162,17 +197,18 @@ impl Entity for Matrix<Complex<f64>, 2, 2> {
         }
         Ok(())
     }
-    fn entity_source(_: &Config) -> SourceInfo {
-        SourceInfo::with_root(
-            "comp2x2",
-            "c22",
-            "algebra/matrix.hh",
-        )
+    fn type_source(_: &Config) -> SourceTree {
+        SourceTree::new("algebra/matrix.hh")
     }
 }
 impl SizedEntity for Matrix<Complex<f64>, 2, 2> {
     fn type_size(cfg: &Config) -> usize {
         8 * f64::type_size(cfg)
+    }
+}
+impl Sourced for Matrix<Complex<f64>, 2, 2> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }
 impl PrimVec for Matrix<Complex<f64>, 2, 2> {}
@@ -200,7 +236,10 @@ mod tests {
     #[test]
     fn complex2x2() {
         let mut buf = TestBuffer::new();
-        let sv = Matrix::<Complex<f64>, 2, 2>::from([[(1.0, 2.0).into(), (3.0, 4.0).into()], [(5.0, 6.0).into(), (7.0, 8.0).into()]]);
+        let sv = Matrix::<Complex<f64>, 2, 2>::from([
+            [(1.0, 2.0).into(), (3.0, 4.0).into()],
+            [(5.0, 6.0).into(), (7.0, 8.0).into()],
+        ]);
         buf.writer().write_entity(&HOST_CONFIG, &sv).unwrap();
         //assert_eq!(buf.vec, vec![1, 2, 3, 4, 5, 6, 7, 8]);
         let dv = buf.reader().read_entity(&HOST_CONFIG).unwrap();

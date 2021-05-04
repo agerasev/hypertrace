@@ -1,8 +1,15 @@
-use proc_macro2::{TokenStream as TokenStream2};
-use quote::quote;
-use syn::{self, DeriveInput, Data, Fields};
-use std::iter::Iterator;
 use crate::utils::fields_iter;
+use proc_macro2::TokenStream as TokenStream2;
+use quote::quote;
+use std::iter::Iterator;
+use syn::{self, Attribute, Data, DeriveInput, Fields};
+
+fn getter_required(attrs: &[Attribute]) -> bool {
+    attrs
+        .iter()
+        .filter_map(|a| a.path.get_ident())
+        .any(|i| i == "getter")
+}
 
 fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2) -> TokenStream2 {
     let fields_list = fields_iter(fields).collect::<Vec<_>>();
@@ -13,26 +20,13 @@ fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2)
                 Some(x) => quote!{ std::stringify!(#x) },
                 None => quote!{ format!("field_{}", #index) },
             };
-            quote!{
-                #accum
-                {
-                    let field_size = <#ty as types::SizedEntity>::type_size(cfg);
-                    size = types::math::upper_multiple(size, <#ty as types::Entity>::align(cfg)) +
-                        field_size;
-                    align = types::math::lcm(align, <#ty as types::Entity>::align(cfg));
 
-                    let src = <#ty as types::Entity>::entity_source(cfg);
-                    if field_size > 0 {
-                        text += &format!("    {} {};\n", &src.name, #fname);
-                    }
-
-                    includes.insert(src.tree.root().to_path_buf());
-                    tree.append(src.tree).unwrap();
-
+            let getter = if getter_required(&field.attrs) {
+                quote!{
                     for (ns, nsp) in &namespaces {
                         getter_text += &format!(
                             "{ns}{} *{}__{}{nsp}({ns}{} *self) {{\n",
-                            &src.name,
+                            &field_type_name,
                             &#prefix,
                             &#fname,
                             &#name,
@@ -47,9 +41,32 @@ fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2)
                         getter_text += "}\n";
                     }
                 }
+            } else {
+                quote!{}
+            };
+
+            quote!{
+                #accum
+                {
+                    let field_size = <#ty as types::SizedEntity>::type_size(cfg);
+                    size = types::math::upper_multiple(size, <#ty as types::Entity>::align(cfg)) +
+                        field_size;
+                    align = types::math::lcm(align, <#ty as types::Entity>::align(cfg));
+
+                    let field_type_name = <#ty as types::Named>::type_name(cfg);
+                    let field_src = <#ty as types::Sourced>::source(cfg);
+                    if field_size > 0 {
+                        text += &format!("    {} {};\n", &field_type_name, #fname);
+                    }
+
+                    includes.insert(field_src.root().to_path_buf());
+                    tree.append(field_src).unwrap();
+
+                    #getter
+                }
             }
         });
-        quote!{
+        quote! {
             let mut size = 0;
             let mut align = 0;
             text += &format!("typedef struct {} {{\n", &#name);
@@ -57,20 +74,47 @@ fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2)
             text += &format!("}} {};\n", &#name);
         }
     } else {
-        quote!{
+        quote! {
             text += &format!("typedef void {};\n", &#name);
         }
     }
 }
 
 pub fn make_source(input: &DeriveInput) -> TokenStream2 {
-    let (content, (name, prefix)) = match &input.data {
-        Data::Struct(struct_data) => {
-            (make_source_fields(&struct_data.fields, quote!{ type_name }, quote!{ type_prefix }), ("Struct", "struct"))
-        },
+    let content = match &input.data {
+        Data::Struct(struct_data) => make_source_fields(
+            &struct_data.fields,
+            quote! { type_name },
+            quote! { type_prefix },
+        ),
         Data::Enum(enum_data) => {
             let enums = enum_data.variants.iter().enumerate().fold(quote!{}, |accum, (index, variant)| {
                 let enum_source = make_source_fields(&variant.fields, quote!{ enum_name }, quote!{ enum_prefix });
+
+                let getter = if getter_required(&variant.attrs) {
+                    quote!{
+                        for (ns, nsp) in &namespaces {
+                            getter_text += &format!(
+                                "{ns}{} *{}__variant_{}{nsp}({ns}{} *self) {{\n",
+                                &enum_name,
+                                &type_prefix,
+                                #index,
+                                &type_name,
+                                ns = ns,
+                                nsp = nsp,
+                            );
+                            if size > 0 {
+                                getter_text += &format!("    return &self->variant_{};\n", #index);
+                            } else {
+                                getter_text += "    return NULL;\n";
+                            }
+                            getter_text += "}\n";
+                        }
+                    }
+                } else {
+                    quote!{}
+                };
+
                 quote!{
                     #accum
                     {
@@ -85,27 +129,11 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
                             enum_text += &format!("        {} variant_{};\n", enum_name, #index);
                         }
 
-                        for (ns, nsp) in &namespaces {
-                            getter_text += &format!(
-                                "{ns}{} *{}__variant_{}{nsp}({ns}{} *self) {{\n",
-                                &enum_name,
-                                &enum_prefix,
-                                #index,
-                                &type_name,
-                                ns = ns,
-                                nsp = nsp,
-                            );
-                            if size > 0 {
-                                getter_text += &format!("    return &self->variant_{};\n", #index);
-                            } else {
-                                getter_text += "    return NULL;\n";
-                            }
-                            getter_text += "}\n";
-                        }
+                        #getter
                     }
                 }
             });
-            (quote!{
+            quote! {
                 let mut enum_size = 0;
                 let mut enum_align = 1;
                 let mut enum_text = String::new();
@@ -124,32 +152,30 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
                     format!("    }};\n"),
                     format!("}} {};\n", type_name),
                 ].join("");
-            }, ("Enum", "enum"))
-        },
+            }
+        }
         Data::Union(_) => panic!("Union derive is not supported yet"),
     };
-    quote!{
-        let type_id = <Self as types::Entity>::type_tag();
-        let type_name = format!("{}{}", #name, &type_id);
-        let type_prefix = format!("{}{}", #prefix, &type_id);
-        let file = format!("generated/{}{}.hh", #prefix, &type_id);
-        let mut tree = types::source::SourceTree::new(file.clone().into());
-        let mut includes = std::collections::HashSet::<types::path::PathBuf>::new();
+    quote! {
+        let type_name = <Self as types::Named>::type_name(cfg);
+        let type_prefix = <Self as types::Named>::type_prefix(cfg);
+        let file = format!("generated/type_{}.hh", <Self as types::Named>::type_tag());
+        let mut tree = types::source::SourceTree::new(file.clone());
+        let mut includes = std::collections::BTreeSet::<types::path::PathBuf>::new();
         let mut text = String::new();
         let mut getter_text = String::new();
         let namespaces = [("", ""), ("const ", "__c"), ("__global ", "__g"), ("__global const ", "__gc")];
         #content
         let final_text = [
+            "#pragma once\n".into(),
             includes.into_iter().map(|path| format!("#include <{}>\n", path)).collect::<String>(),
+            "\n".into(),
             text,
+            "\n".into(),
             getter_text,
         ].join("");
 
         tree.insert(file.into(), final_text).unwrap();
-        types::source::SourceInfo::new(
-            type_name,
-            type_prefix,
-            tree,
-        )
+        tree
     }
 }

@@ -1,11 +1,20 @@
 use crate::{
-    Entity, SizedEntity,
+    include_template,
     io::{CntRead, CntWrite, EntityReader, EntityWriter},
-    math, Config, SourceInfo,
+    math,
+    source::{SourceBuilder, SourceTree, Sourced},
+    Config, Entity, Named, SizedEntity,
 };
-use std::{
-    io,
-};
+use std::io;
+
+impl<T: SizedEntity> Named for Vec<T> {
+    fn type_name(cfg: &Config) -> String {
+        format!("Vector_{}", T::type_name(cfg))
+    }
+    fn type_prefix(cfg: &Config) -> String {
+        format!("vector_{}", T::type_prefix(cfg))
+    }
+}
 
 impl<T: SizedEntity> Entity for Vec<T> {
     fn align(cfg: &Config) -> usize {
@@ -40,13 +49,23 @@ impl<T: SizedEntity> Entity for Vec<T> {
         Ok(())
     }
 
-    fn entity_source(cfg: &Config) -> SourceInfo {
-        let src = T::entity_source(cfg);
-        SourceInfo::with_root(
-            format!("Vector_{}", src.name),
-            format!("vector_{}", src.prefix),
-            "container/vector.inl",
-        )
+    fn type_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/vector_{}.hh", Self::type_tag()))
+            .tree(T::type_source(cfg))
+            .content(&include_template!(
+                "container/vector.inl",
+                "Self": &Self::type_name(cfg),
+                "self": &Self::type_prefix(cfg),
+                "Elem": &T::type_name(cfg),
+                "elem": &T::type_prefix(cfg),
+            ))
+            .build()
+    }
+}
+
+impl<T: SizedEntity> Sourced for Vec<T> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }
 

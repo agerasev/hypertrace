@@ -1,9 +1,25 @@
-use crate::{Entity, SizedEntity, math, Config, io::{CntRead, CntWrite, EntityReader, EntityWriter}, SourceInfo};
+use crate::{
+    include_template,
+    io::{CntRead, CntWrite, EntityReader, EntityWriter},
+    math,
+    source::{SourceBuilder, SourceTree, Sourced},
+    Config, Entity, Named, SizedEntity,
+};
 use std::io;
 
 #[derive(Clone, Debug)]
 pub struct IndexVector<T: Entity> {
     items: Vec<T>,
+}
+
+impl<T: Entity> Named for IndexVector<T> {
+    fn type_name(cfg: &Config) -> String {
+        format!("IndexVector_{}", T::type_name(cfg))
+    }
+
+    fn type_prefix(cfg: &Config) -> String {
+        format!("index_vector_{}", T::type_prefix(cfg))
+    }
 }
 
 impl<T: Entity> IndexVector<T> {
@@ -93,13 +109,23 @@ impl<T: Entity> Entity for IndexVector<T> {
         Ok(())
     }
 
-    fn entity_source(cfg: &Config) -> SourceInfo {
-        let src = T::entity_source(cfg);
-        SourceInfo::with_root(
-            format!("IndexVector_{}", src.name),
-            format!("index_vector_{}", src.prefix),
-            "container/index_vector.inl",
-        )
+    fn type_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/index_vector_{}.hh", Self::type_tag()))
+            .tree(T::type_source(cfg))
+            .content(&include_template!(
+                "container/index_vector.inl",
+                "Self": &Self::type_name(cfg),
+                "self": &Self::type_prefix(cfg),
+                "Elem": &T::type_name(cfg),
+                "elem": &T::type_prefix(cfg),
+            ))
+            .build()
+    }
+}
+
+impl<T: SizedEntity> Sourced for IndexVector<T> {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }
 
@@ -110,9 +136,7 @@ mod tests {
 
     #[test]
     fn store_load() {
-        let ivec = IndexVector::from_items(
-            vec![vec![1], vec![2, 3], vec![], vec![4, 5, 6]],
-        );
+        let ivec = IndexVector::from_items(vec![vec![1], vec![2, 3], vec![], vec![4, 5, 6]]);
         let mut buf = TestBuffer::new();
         buf.writer().write_entity(&HOST_CONFIG, &ivec).unwrap();
         assert_eq!(buf.vec.len(), ivec.size(&HOST_CONFIG));

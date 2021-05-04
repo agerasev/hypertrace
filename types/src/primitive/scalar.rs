@@ -1,17 +1,25 @@
 use crate::{
     config::{AddressWidth, Config, Endian},
     io::{CntRead, CntWrite},
-    Entity, SizedEntity, SourceInfo,
+    Entity, Named, SizedEntity, source::{SourceTree, Sourced},
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-use std::{fmt::Debug, io, mem::size_of};
 use num_traits::Num;
+use std::{fmt::Debug, io, mem::size_of};
 
 pub trait PrimScal: SizedEntity + Num + Copy + Default + Debug + 'static {}
 
 macro_rules! impl_entity_native {
     ($T:ident, $K:expr, $read:ident, $write:ident) => {
         impl PrimScal for $T {}
+        impl Named for $T {
+            fn type_name(_: &Config) -> String {
+                String::from($K)
+            }
+            fn type_prefix(_: &Config) -> String {
+                String::from($K)
+            }
+        }
         impl Entity for $T {
             fn align(cfg: &Config) -> usize {
                 Self::type_size(cfg)
@@ -31,13 +39,18 @@ macro_rules! impl_entity_native {
                     Endian::Little => dst.$write::<LittleEndian>(*self),
                 }
             }
-            fn entity_source(_: &Config) -> SourceInfo {
-                SourceInfo::with_root($K, $K, "types.hh")
+            fn type_source(_: &Config) -> SourceTree {
+                SourceTree::new("types.hh")
             }
         }
         impl SizedEntity for $T {
             fn type_size(_cfg: &Config) -> usize {
                 size_of::<Self>()
+            }
+        }
+        impl Sourced for $T {
+            fn source(cfg: &Config) -> SourceTree {
+                Self::type_source(cfg)
             }
         }
     };
@@ -46,6 +59,14 @@ macro_rules! impl_entity_native {
 macro_rules! impl_entity_byte {
     ($T:ident, $K:expr, $read:ident, $write:ident) => {
         impl PrimScal for $T {}
+        impl Named for $T {
+            fn type_name(_: &Config) -> String {
+                String::from($K)
+            }
+            fn type_prefix(_: &Config) -> String {
+                String::from($K)
+            }
+        }
         impl Entity for $T {
             fn align(cfg: &Config) -> usize {
                 Self::type_size(cfg)
@@ -59,13 +80,18 @@ macro_rules! impl_entity_byte {
             fn store<W: CntWrite>(&self, _cfg: &Config, dst: &mut W) -> io::Result<()> {
                 dst.$write(*self)
             }
-            fn entity_source(_: &Config) -> SourceInfo {
-                SourceInfo::with_root($K, $K, "types.hh")
+            fn type_source(_: &Config) -> SourceTree {
+                SourceTree::new("types.hh")
             }
         }
         impl SizedEntity for $T {
             fn type_size(_cfg: &Config) -> usize {
                 1
+            }
+        }
+        impl Sourced for $T {
+            fn source(cfg: &Config) -> SourceTree {
+                Self::type_source(cfg)
             }
         }
     };
@@ -74,6 +100,20 @@ macro_rules! impl_entity_byte {
 macro_rules! impl_entity_size {
     ($T:ident, $T32:ident, $T64:ident) => {
         impl PrimScal for $T {}
+        impl Named for $T {
+            fn type_name(cfg: &Config) -> String {
+                match cfg.address_width {
+                    AddressWidth::X32 => $T32::type_name(cfg),
+                    AddressWidth::X64 => $T64::type_name(cfg),
+                }
+            }
+            fn type_prefix(cfg: &Config) -> String {
+                match cfg.address_width {
+                    AddressWidth::X32 => $T32::type_prefix(cfg),
+                    AddressWidth::X64 => $T64::type_prefix(cfg),
+                }
+            }
+        }
         impl Entity for $T {
             fn align(cfg: &Config) -> usize {
                 Self::type_size(cfg)
@@ -93,10 +133,10 @@ macro_rules! impl_entity_size {
                     AddressWidth::X64 => (*self as $T64).store(cfg, dst),
                 }
             }
-            fn entity_source(cfg: &Config) -> SourceInfo {
+            fn type_source(cfg: &Config) -> SourceTree {
                 match cfg.address_width {
-                    AddressWidth::X32 => $T32::entity_source(cfg),
-                    AddressWidth::X64 => $T64::entity_source(cfg),
+                    AddressWidth::X32 => $T32::type_source(cfg),
+                    AddressWidth::X64 => $T64::type_source(cfg),
                 }
             }
         }
@@ -106,6 +146,11 @@ macro_rules! impl_entity_size {
                     AddressWidth::X32 => $T32::type_size(cfg),
                     AddressWidth::X64 => $T64::type_size(cfg),
                 }
+            }
+        }
+        impl Sourced for $T {
+            fn source(cfg: &Config) -> SourceTree {
+                Self::type_source(cfg)
             }
         }
     };
@@ -127,6 +172,22 @@ impl_entity_size!(isize, i32, i64);
 impl_entity_native!(f32, "float", read_f32, write_f32);
 
 impl PrimScal for f64 {}
+impl Named for f64 {
+    fn type_name(cfg: &Config) -> String {
+        if cfg.double_support {
+            String::from("double")
+        } else {
+            f32::type_name(cfg)
+        }
+    }
+    fn type_prefix(cfg: &Config) -> String {
+        if cfg.double_support {
+            String::from("double")
+        } else {
+            f32::type_prefix(cfg)
+        }
+    }
+}
 impl Entity for f64 {
     fn align(cfg: &Config) -> usize {
         Self::type_size(cfg)
@@ -154,11 +215,11 @@ impl Entity for f64 {
             (*self as f32).store(cfg, dst)
         }
     }
-    fn entity_source(cfg: &Config) -> SourceInfo {
+    fn type_source(cfg: &Config) -> SourceTree {
         if cfg.double_support {
-            SourceInfo::with_root("double", "double", "types.hh")
+            SourceTree::new("types.hh")
         } else {
-            f32::entity_source(cfg)
+            f32::type_source(cfg)
         }
     }
 }
@@ -169,5 +230,10 @@ impl SizedEntity for f64 {
         } else {
             f32::type_size(cfg)
         }
+    }
+}
+impl Sourced for f64 {
+    fn source(cfg: &Config) -> SourceTree {
+        Self::type_source(cfg)
     }
 }

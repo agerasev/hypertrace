@@ -1,4 +1,4 @@
-use types::{Map, Entity, SizedEntity, Config, source::{Sourced, SourceInfo, SourceTree}};
+use types::{Map, Entity, SizedEntity, Config, source::{Sourced, SourceTree, SourceTree}};
 use type_macros::SizedEntity;
 use ccgeom::{Geometry3};
 use std::marker::PhantomData;
@@ -12,10 +12,10 @@ struct MappedShape<G: Geometry3, M: Map<G::Pos, G::Dir> + SizedEntity, T: Shape<
 }
 
 impl<G: Geometry3, M: Map<G::Pos, G::Dir> + SizedEntity, T: Shape<G> + SizedEntity> Sourced for MappedShape<G, M, T> {
-    fn source(cfg: &Config) -> SourceInfo {
+    fn source(cfg: &Config) -> SourceTree {
         let shape_src = <T as Sourced>::source(cfg);
         let map_src = M::source(cfg);
-        let mapped_src = Self::entity_source(cfg);
+        let mapped_src = Self::type_source(cfg);
         let tag = Self::type_tag();
         let name = format!("Shape{}", tag);
         let prefix = format!("shape_{}", tag);
@@ -41,7 +41,7 @@ impl<G: Geometry3, M: Map<G::Pos, G::Dir> + SizedEntity, T: Shape<G> + SizedEnti
         tree.append(shape_src.tree).unwrap();
         tree.append(map_src.tree).unwrap();
         tree.append(mapped_src.tree).unwrap();
-        SourceInfo::new(
+        SourceTree::new(
             name,
             prefix,
             tree,

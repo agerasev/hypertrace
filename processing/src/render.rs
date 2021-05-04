@@ -1,5 +1,5 @@
 use crate::{Canvas, Buffer, Context};
-use types::{Config, SizedEntity, Sourced};
+use types::{Config, Named, SizedEntity, Sourced};
 use objects::{View, Shape, Scene};
 use ccgeom::Geometry3;
 use std::{marker::PhantomData, fs};
@@ -14,12 +14,12 @@ pub struct Render<G: Geometry3, V: View<G>, T: Shape<G> + SizedEntity> {
 
 impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G> + SizedEntity> Render<G, V, T> {
     fn source(config: &Config) -> base::Result<(String, Index)> {
-        let source_info = <Scene::<G, V, T> as Sourced>::source(config);
+        let source = <Scene::<G, V, T> as Sourced>::source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
 
-        let include = PathBuf::from(source_info.tree.root());
+        let include = PathBuf::from(source.root());
         let mut memfs = source::Mem::builder();
-        for (k, v) in source_info.tree.into_iter() {
+        for (k, v) in source.into_iter() {
             memfs = memfs.add_file(&k, v)?;
         }
 
@@ -37,8 +37,8 @@ impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G> + SizedEntity> Render<G, V,
             "#,
             config.address_width.num_value(),
             include,
-            source_info.name,
-            source_info.prefix,
+            <Scene::<G, V, T> as Named>::type_name(config),
+            <Scene::<G, V, T> as Named>::type_prefix(config),
         ))?;
 
         let parser = parser_builder.add_source(memfs.build())

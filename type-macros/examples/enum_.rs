@@ -1,23 +1,21 @@
-use hypertrace_type_macros::{SizedEntity};
-use types::{Entity, config::HOST_CONFIG};
+use hypertrace_type_macros::{Named, SizedEntity, Sourced};
+use types::{config::HOST_CONFIG, Sourced};
 
-#[derive(SizedEntity)]
+#[derive(Named, SizedEntity, Sourced)]
 enum E {
-    A { x: i32, y: u8 },
+    #[getter]
+    A {
+        #[getter]
+        x: i32,
+        y: u8,
+    },
     B((), usize),
     C(),
     D,
 }
 
-/*
-#[derive(SizedEntity)]
-enum G {
-    E(E),
-    F(F),
-}
-*/
 fn main() {
-    for (key, value) in E::entity_source(&HOST_CONFIG).tree.into_iter() {
+    for (key, value) in E::source(&HOST_CONFIG).into_iter() {
         println!("'{}':\n{}\n", key, value);
     }
 }

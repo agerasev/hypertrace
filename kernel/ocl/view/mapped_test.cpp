@@ -3,6 +3,11 @@
 #include <transform/affine.hh>
 #include "point/eu.hh"
 
+typedef struct {
+    PointViewEu inner;
+    Affine3 map;
+} MapPointViewEu;
+
 #define $Self MapPointViewEu
 #define $self map_point_view_eu
 #define $Geo Eu

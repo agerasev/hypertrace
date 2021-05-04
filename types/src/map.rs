@@ -35,7 +35,7 @@ impl SizedEntity for Shift<f64, 2> {
 }
 impl Sourced for Shift<f64, 2> {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/shift.hh")
+        SourceTree::new("transform/shift.hh")
     }
 }
 
@@ -55,7 +55,7 @@ impl SizedEntity for Shift<f64, 3> {
 }
 impl Sourced for Shift<f64, 3> {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/shift.hh")
+        SourceTree::new("transform/shift.hh")
     }
 }
 
@@ -77,7 +77,7 @@ impl SizedEntity for Rotation2<f64> {
 }
 impl Sourced for Rotation2<f64> {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/rotation.hh")
+        SourceTree::new("transform/rotation.hh")
     }
 }
 
@@ -99,7 +99,7 @@ impl SizedEntity for Rotation3<f64> {
 }
 impl Sourced for Rotation3<f64> {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/rotation.hh")
+        SourceTree::new("transform/rotation.hh")
     }
 }
 
@@ -121,7 +121,7 @@ impl SizedEntity for Linear<f64, 2> {
 }
 impl Sourced for Linear<f64, 2> {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/linear.hh")
+        SourceTree::new("transform/linear.hh")
     }
 }
 
@@ -141,7 +141,7 @@ impl SizedEntity for Linear<f64, 3> {
 }
 impl Sourced for Linear<f64, 3> {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/linear.hh")
+        SourceTree::new("transform/linear.hh")
     }
 }
 
@@ -163,7 +163,7 @@ impl SizedEntity for Moebius<Complex<f64>> {
 }
 impl Sourced for Moebius<Complex<f64>> {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/moebius.hh")
+        SourceTree::new("transform/moebius.hh")
     }
 }
 

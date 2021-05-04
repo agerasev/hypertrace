@@ -1,4 +1,4 @@
-use type_macros::SizedEntity;
+use type_macros::{Named, SizedEntity};
 use types::{Entity, SizedEntity, config::{self, Config}};
 
 const CONFIG: Config = Config {
@@ -7,7 +7,7 @@ const CONFIG: Config = Config {
     double_support: true,
 };
 
-#[derive(SizedEntity)]
+#[derive(Named, SizedEntity)]
 struct Unit0;
 
 #[test]
@@ -16,7 +16,7 @@ fn unit0() {
     assert_eq!(Unit0::type_size(&CONFIG), 0);
 }
 
-#[derive(SizedEntity)]
+#[derive(Named, SizedEntity)]
 struct Struct0 {
     pub x: u8,
     pub y: i32,
@@ -30,7 +30,7 @@ fn struct0() {
     assert_eq!(Struct0::type_size(&CONFIG), 12);
 }
 
-#[derive(SizedEntity)]
+#[derive(Named, SizedEntity)]
 struct Tuple0(u8, i32, (), [u8; 3]);
 
 #[test]
@@ -39,7 +39,7 @@ fn tuple0() {
     assert_eq!(Tuple0::type_size(&CONFIG), 12);
 }
 
-#[derive(SizedEntity)]
+#[derive(Named, SizedEntity)]
 enum Enum0 {
     A { x: u8, y: f32 },
     B((), [u16; 3]),

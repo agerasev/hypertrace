@@ -4,12 +4,11 @@ use quote::quote;
 use std::iter::Iterator;
 use syn::{self, Attribute, Data, DeriveInput, Fields};
 
-fn getter_required(attrs: &Vec<Attribute>) -> bool {
+fn getter_required(attrs: &[Attribute]) -> bool {
     attrs
         .iter()
         .filter_map(|a| a.path.get_ident())
-        .find(|i| i == &"getter")
-        .is_some()
+        .any(|i| i == "getter")
 }
 
 fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2) -> TokenStream2 {
@@ -160,7 +159,7 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
     quote! {
         let type_name = <Self as types::Named>::type_name(cfg);
         let type_prefix = <Self as types::Named>::type_prefix(cfg);
-        let file = format!("generated/{}.hh", &type_prefix);
+        let file = format!("generated/type_{}.hh", <Self as types::Named>::type_tag());
         let mut tree = types::source::SourceTree::new(file.clone());
         let mut includes = std::collections::BTreeSet::<types::path::PathBuf>::new();
         let mut text = String::new();

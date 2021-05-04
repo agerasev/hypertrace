@@ -1,11 +1,11 @@
-mod unit;
-mod scalar;
-mod vector;
-mod matrix;
 mod complex;
+mod matrix;
+mod scalar;
+mod unit;
+mod vector;
 
-pub use unit::*;
-pub use scalar::*;
-pub use vector::*;
-pub use matrix::*;
 pub use complex::*;
+pub use matrix::*;
+pub use scalar::*;
+pub use unit::*;
+pub use vector::*;

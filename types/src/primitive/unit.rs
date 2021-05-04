@@ -1,10 +1,20 @@
 use crate::{
     io::{CntRead, CntWrite},
-    Config, Entity, SizedEntity, SourceInfo,
+    Config, Entity, Named, SizedEntity, SourceTree,
 };
 use std::{io, marker::PhantomData};
 
 // Unit
+
+impl Named for () {
+    fn type_name(_: &Config) -> String {
+        String::from("void")
+    }
+
+    fn type_prefix(_: &Config) -> String {
+        String::from("empty")
+    }
+}
 
 impl Entity for () {
     fn align(_: &Config) -> usize {
@@ -23,8 +33,8 @@ impl Entity for () {
         Ok(())
     }
 
-    fn entity_source(_: &Config) -> SourceInfo {
-        SourceInfo::with_root("void", "empty", "types.hh")
+    fn type_source(_: &Config) -> SourceTree {
+        SourceTree::new("types.hh")
     }
 }
 
@@ -35,6 +45,16 @@ impl SizedEntity for () {
 }
 
 // PhantomData
+
+impl<T: 'static> Named for PhantomData<T> {
+    fn type_name(_: &Config) -> String {
+        String::from("void")
+    }
+
+    fn type_prefix(_: &Config) -> String {
+        String::from("phantom")
+    }
+}
 
 impl<T: 'static> Entity for PhantomData<T> {
     fn align(_: &Config) -> usize {
@@ -53,8 +73,8 @@ impl<T: 'static> Entity for PhantomData<T> {
         Ok(())
     }
 
-    fn entity_source(_: &Config) -> SourceInfo {
-        SourceInfo::with_root("void", "phantom", "types.hh")
+    fn type_source(_: &Config) -> SourceTree {
+        SourceTree::new("types.hh")
     }
 }
 

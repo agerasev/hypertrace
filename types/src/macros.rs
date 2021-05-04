@@ -1,3 +1,14 @@
+macro_rules! impl_named_unwrap {
+    ($T:ty) => {
+        fn type_name(cfg: &crate::Config) -> String {
+            <$T>::type_name(cfg)
+        }
+        fn type_prefix(cfg: &crate::Config) -> String {
+            <$T>::type_prefix(cfg)
+        }
+    };
+}
+
 macro_rules! impl_entity_unwrap {
     ($T:ty) => {
         fn align(cfg: &crate::Config) -> usize {
@@ -9,11 +20,15 @@ macro_rules! impl_entity_unwrap {
         fn load<R: crate::io::CntRead>(cfg: &crate::Config, src: &mut R) -> std::io::Result<Self> {
             <$T>::load(cfg, src).map(|x| x.into())
         }
-        fn store<W: crate::io::CntWrite>(&self, cfg: &crate::Config, dst: &mut W) -> std::io::Result<()> {
+        fn store<W: crate::io::CntWrite>(
+            &self,
+            cfg: &crate::Config,
+            dst: &mut W,
+        ) -> std::io::Result<()> {
             <Self as Into<$T>>::into(*self).store(cfg, dst)
         }
-        fn entity_source(cfg: &crate::Config) -> crate::source::SourceInfo {
-            <$T>::entity_source(cfg)
+        fn type_source(cfg: &crate::Config) -> crate::source::SourceTree {
+            <$T>::type_source(cfg)
         }
     };
 }

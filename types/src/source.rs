@@ -1,9 +1,12 @@
-use std::collections::{btree_map::{BTreeMap, Entry}, HashSet};
-use crate::Config;
+use crate::{Config, Named};
+use std::collections::{
+    btree_map::{BTreeMap, Entry},
+    HashSet,
+};
 use uni_path::{Path, PathBuf};
 
-pub trait Sourced {
-    fn source(cfg: &Config) -> SourceInfo;
+pub trait Sourced: Named {
+    fn source(cfg: &Config) -> SourceTree;
 }
 
 #[derive(Clone, Debug)]
@@ -15,15 +18,11 @@ pub struct ContentMismatchError {
 
 impl From<ContentMismatchError> for String {
     fn from(err: ContentMismatchError) -> String {
-        format!("Files '{}' has the same path but different content", err.path)
+        format!(
+            "Files '{}' has the same path but different content",
+            err.path
+        )
     }
-}
-
-#[derive(Clone)]
-pub struct SourceInfo {
-    pub name: String,
-    pub prefix: String,
-    pub tree: SourceTree,
 }
 
 #[derive(Clone, Default)]
@@ -32,27 +31,10 @@ pub struct SourceTree {
     files: BTreeMap<PathBuf, String>,
 }
 
-impl SourceInfo {
-    pub fn new<A: Into<String>, B: Into<String>>(name: A, prefix: B, tree: SourceTree) -> Self {
-        Self {
-            name: name.into(),
-            prefix: prefix.into(),
-            tree,
-        }
-    }
-    pub fn with_root<A: Into<String>, B: Into<String>, C: Into<PathBuf>>(name: A, prefix: B, root: C) -> Self {
-        Self {
-            name: name.into(),
-            prefix: prefix.into(),
-            tree: SourceTree::new(root.into()),
-        }
-    }
-}
-
 impl SourceTree {
-    pub fn new(root: PathBuf) -> Self {
+    pub fn new<P: Into<PathBuf>>(root: P) -> Self {
         Self {
-            root,
+            root: root.into(),
             files: BTreeMap::new(),
         }
     }
@@ -65,7 +47,7 @@ impl SourceTree {
         self.root = root;
     }
 
-    pub fn iter(&self) -> impl Iterator<Item=(&Path, &String)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Path, &String)> {
         self.files.iter().map(|(x, y)| (x.as_path(), y))
     }
 
@@ -74,7 +56,7 @@ impl SourceTree {
             Entry::Vacant(ve) => {
                 ve.insert(content);
                 Ok(())
-            },
+            }
             Entry::Occupied(oe) => {
                 let src = oe.get();
                 if src == &content {
@@ -95,11 +77,15 @@ impl SourceTree {
         let other_keys = other.files.keys().collect::<HashSet<_>>();
         let collision = self_keys.intersection(&other_keys).copied();
         for path in collision {
-            let (src, dst) = (self.files.get(path).unwrap(), other.files.get(path).unwrap());
+            let (src, dst) = (
+                self.files.get(path).unwrap(),
+                other.files.get(path).unwrap(),
+            );
             if src != dst {
                 return Err(ContentMismatchError {
                     path: path.clone(),
-                    src: src.clone(), dst: dst.clone(),
+                    src: src.clone(),
+                    dst: dst.clone(),
                 });
             }
         }
@@ -137,9 +123,11 @@ impl SourceBuilder {
         self.content.push_str(&text);
         self
     }
-    pub fn build(mut self, name: String, prefix: String) -> SourceInfo {
-        self.tree.insert(self.tree.root().to_path_buf(), self.content).unwrap();
-        SourceInfo::new(name, prefix, self.tree)
+    pub fn build(mut self) -> SourceTree {
+        self.tree
+            .insert(self.tree.root().to_path_buf(), self.content)
+            .unwrap();
+        self.tree
     }
 }
 

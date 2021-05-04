@@ -1,7 +1,7 @@
 use crate::{
     hash::DefaultHasher,
     io::{CntRead, CntWrite},
-    Config, SourceInfo,
+    Config, SourceTree,
 };
 use std::{
     any::TypeId,
@@ -9,17 +9,14 @@ use std::{
     io,
 };
 
-/// Something that could be named.
+/// Something that could be identified.
 pub trait Named: 'static + Sized {
     /// Type name on backend.
-    fn name(cfg: &Config) -> String;
+    fn type_name(cfg: &Config) -> String;
 
     /// Prefix for type method (usually lower-case version of the name).
-    fn prefix(cfg: &Config) -> String;
-}
+    fn type_prefix(cfg: &Config) -> String;
 
-/// Static entity type.
-pub trait Entity: Named {
     /// Type identifier.
     fn type_id() -> u64 {
         let mut hasher = DefaultHasher::default();
@@ -31,7 +28,10 @@ pub trait Entity: Named {
     fn type_tag() -> String {
         format!("{:08X}", Self::type_id() as u32)
     }
+}
 
+/// Static entity type.
+pub trait Entity: Named {
     /// Align of type.
     fn align(cfg: &Config) -> usize;
 
@@ -44,8 +44,8 @@ pub trait Entity: Named {
     /// Stores the instance to a writer.
     fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
 
-    /// Returns a kernel source info of the type.
-    fn entity_source(cfg: &Config) -> SourceInfo;
+    /// Returns a kernel source tree of the type.
+    fn type_source(cfg: &Config) -> SourceTree;
 }
 
 /// Sized static entity.

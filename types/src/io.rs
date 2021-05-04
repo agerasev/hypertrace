@@ -1,5 +1,8 @@
-use crate::{Entity, math, Config};
-use std::{io::{self, Read, Write}, any::type_name};
+use crate::{math, Config, Entity};
+use std::{
+    any::type_name,
+    io::{self, Read, Write},
+};
 
 pub trait CntRead: Read {
     fn position(&self) -> usize;
@@ -83,7 +86,12 @@ pub trait EntityReader {
 impl<R: CntRead> EntityReader for R {
     fn read_entity<T: Entity>(&mut self, cfg: &Config) -> io::Result<T> {
         let align = T::align(cfg);
-        assert!(align != 0, "Align of type {:?} ({}) is zero", type_name::<T>(), align);
+        assert!(
+            align != 0,
+            "Align of type {:?} ({}) is zero",
+            type_name::<T>(),
+            align
+        );
         assert!(
             math::is_pow2(T::align(cfg)),
             "Align of type {:?} ({}) is not a power of 2",
@@ -111,9 +119,12 @@ impl<R: CntRead> EntityReader for R {
             size,
         );
         assert_eq!(
-            size, shift,
+            size,
+            shift,
             "Size of a value of type {:?} ({}) differs from a count of actually read bytes ({})",
-            type_name::<T>(), size, shift,
+            type_name::<T>(),
+            size,
+            shift,
         );
         Ok(value)
     }
@@ -126,7 +137,12 @@ impl<W: CntWrite> EntityWriter for W {
     fn write_entity<T: Entity>(&mut self, cfg: &Config, entity: &T) -> io::Result<()> {
         let align = T::align(cfg);
         let size = entity.size(cfg);
-        assert!(align != 0, "Align of type {:?} ({}) is zero", type_name::<T>(), align);
+        assert!(
+            align != 0,
+            "Align of type {:?} ({}) is zero",
+            type_name::<T>(),
+            align
+        );
         assert!(
             math::is_pow2(T::align(cfg)),
             "Align of type {:?} ({}) is not a power of 2",
@@ -153,9 +169,12 @@ impl<W: CntWrite> EntityWriter for W {
         entity.store(cfg, self)?;
         let shift = self.position() - pos;
         assert_eq!(
-            size, shift,
+            size,
+            shift,
             "Size of a value of type {:?} ({}) differs from a count of actually written bytes ({})",
-            type_name::<T>(), size, shift
+            type_name::<T>(),
+            size,
+            shift
         );
         Ok(())
     }

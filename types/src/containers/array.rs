@@ -1,15 +1,20 @@
 use crate::{
-    Entity, SizedEntity,
     hash::DefaultHasher,
+    include_template,
     io::{CntRead, CntWrite},
-    Config, SourceInfo,
+    source::{SourceBuilder, SourceTree},
+    Config, Entity, Named, SizedEntity,
 };
 use std::{hash::Hasher, io, iter};
 use vecmat::Vector;
 
-impl<T: SizedEntity, const N: usize> Entity for [T; N] {
-    fn align(cfg: &Config) -> usize {
-        T::align(cfg)
+impl<T: SizedEntity, const N: usize> Named for [T; N] {
+    fn type_name(cfg: &Config) -> String {
+        format!("Array_{}_{}", T::type_name(cfg), N)
+    }
+
+    fn type_prefix(cfg: &Config) -> String {
+        format!("array_{}_{}", T::type_prefix(cfg), N)
     }
 
     fn type_id() -> u64 {
@@ -17,6 +22,12 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
         hasher.write_u64(T::type_id());
         hasher.write_usize(N);
         hasher.finish()
+    }
+}
+
+impl<T: SizedEntity, const N: usize> Entity for [T; N] {
+    fn align(cfg: &Config) -> usize {
+        T::align(cfg)
     }
 
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
@@ -43,13 +54,18 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
         Ok(())
     }
 
-    fn entity_source(cfg: &Config) -> SourceInfo {
-        let src = T::entity_source(cfg);
-        SourceInfo::with_root(
-            format!("Array_{}_{}", src.name, N),
-            format!("array_{}_{}", src.prefix, N),
-            "container/array.inl",
-        )
+    fn type_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/array_{}.hh", Self::type_tag()))
+            .tree(T::type_source(cfg))
+            .content(&include_template!(
+                "container/array.inl",
+                "Self": &Self::type_name(cfg),
+                "self": &Self::type_prefix(cfg),
+                "Elem": &T::type_name(cfg),
+                "elem": &T::type_prefix(cfg),
+                "Num": &format!("{}", N),
+            ))
+            .build()
     }
 }
 

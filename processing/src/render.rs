@@ -31,14 +31,14 @@ impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G> + SizedEntity> Render<G, V,
                 #include <{}>
 
                 typedef {} Scene;
-                #define shape_detect {}_detect
+                #define scene_sample {}_sample
 
                 #include <render/render.cc>
             "#,
             config.address_width.num_value(),
             include,
             source_info.name,
-            T::source(config).prefix,
+            source_info.prefix,
         ))?;
 
         let parser = parser_builder.add_source(memfs.build())

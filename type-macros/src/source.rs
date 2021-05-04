@@ -4,7 +4,7 @@ use syn::{self, DeriveInput, Data, Fields};
 use std::iter::Iterator;
 use crate::utils::fields_iter;
 
-fn make_source_fields(fields: &Fields, name: TokenStream2) -> TokenStream2 {
+fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2) -> TokenStream2 {
     let fields_list = fields_iter(fields).collect::<Vec<_>>();
     if !fields_list.is_empty() {
         let content = fields_list.into_iter().enumerate().fold(quote!{}, |accum, (index, field)| {
@@ -16,17 +16,36 @@ fn make_source_fields(fields: &Fields, name: TokenStream2) -> TokenStream2 {
             quote!{
                 #accum
                 {
+                    let field_size = <#ty as types::SizedEntity>::type_size(cfg);
                     size = types::math::upper_multiple(size, <#ty as types::Entity>::align(cfg)) +
-                        <#ty as types::SizedEntity>::type_size(cfg);
+                        field_size;
                     align = types::math::lcm(align, <#ty as types::Entity>::align(cfg));
 
                     let src = <#ty as types::Entity>::entity_source(cfg);
-                    if <#ty as types::SizedEntity>::type_size(cfg) > 0 {
+                    if field_size > 0 {
                         text += &format!("    {} {};\n", &src.name, #fname);
                     }
 
                     includes.insert(src.tree.root().to_path_buf());
                     tree.append(src.tree).unwrap();
+
+                    for (ns, nsp) in &namespaces {
+                        getter_text += &format!(
+                            "{ns}{} *{}__{}{nsp}({ns}{} *self) {{\n",
+                            &src.name,
+                            &#prefix,
+                            &#fname,
+                            &#name,
+                            ns = ns,
+                            nsp = nsp,
+                        );
+                        if field_size > 0 {
+                            getter_text += &format!("    return &self->{};\n", &#fname);
+                        } else {
+                            getter_text += "    return NULL;\n";
+                        }
+                        getter_text += "}\n";
+                    }
                 }
             }
         });
@@ -47,15 +66,16 @@ fn make_source_fields(fields: &Fields, name: TokenStream2) -> TokenStream2 {
 pub fn make_source(input: &DeriveInput) -> TokenStream2 {
     let (content, (name, prefix)) = match &input.data {
         Data::Struct(struct_data) => {
-            (make_source_fields(&struct_data.fields, quote!{ type_name }), ("Struct", "struct"))
+            (make_source_fields(&struct_data.fields, quote!{ type_name }, quote!{ type_prefix }), ("Struct", "struct"))
         },
         Data::Enum(enum_data) => {
             let enums = enum_data.variants.iter().enumerate().fold(quote!{}, |accum, (index, variant)| {
-                let enum_source = make_source_fields(&variant.fields, quote!{ enum_name });
+                let enum_source = make_source_fields(&variant.fields, quote!{ enum_name }, quote!{ enum_prefix });
                 quote!{
                     #accum
                     {
                         let enum_name = format!("{}_Struct{}", type_name, #index);
+                        let enum_prefix = format!("{}_struct{}", type_prefix, #index);
                         let mut size = 0;
                         let mut align = 1;
                         #enum_source
@@ -63,6 +83,24 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
                         enum_align = types::math::lcm(enum_align, align);
                         if size > 0 {
                             enum_text += &format!("        {} variant_{};\n", enum_name, #index);
+                        }
+
+                        for (ns, nsp) in &namespaces {
+                            getter_text += &format!(
+                                "{ns}{} *{}__variant_{}{nsp}({ns}{} *self) {{\n",
+                                &enum_name,
+                                &enum_prefix,
+                                #index,
+                                &type_name,
+                                ns = ns,
+                                nsp = nsp,
+                            );
+                            if size > 0 {
+                                getter_text += &format!("    return &self->variant_{};\n", #index);
+                            } else {
+                                getter_text += "    return NULL;\n";
+                            }
+                            getter_text += "}\n";
                         }
                     }
                 }
@@ -98,10 +136,13 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
         let mut tree = types::source::SourceTree::new(file.clone().into());
         let mut includes = std::collections::HashSet::<types::path::PathBuf>::new();
         let mut text = String::new();
+        let mut getter_text = String::new();
+        let namespaces = [("", ""), ("const ", "__c"), ("__global ", "__g"), ("__global const ", "__gc")];
         #content
         let final_text = [
             includes.into_iter().map(|path| format!("#include <{}>\n", path)).collect::<String>(),
             text,
+            getter_text,
         ].join("");
 
         tree.insert(file.into(), final_text).unwrap();

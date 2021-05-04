@@ -1,29 +1,10 @@
 #include <types.hh>
 #include <algebra/real.hh>
 #include <algebra/vector.hh>
-#include "light.hh"
 #include "context.hh"
 
 #ifdef HOST
-
 #include <placeholder.hpp>
-
-struct Shape {};
-
-real shape_detect(
-    __global const Shape *shape,
-    Context *context,
-    real3 *normal,
-    RayEu *ray
-);
-
-struct View {};
-
-struct Scene {
-    View view;
-    Shape object;
-};
-
 #endif // HOST
 
 
@@ -40,18 +21,7 @@ __kernel void render(
     context.repeat = false;
     context.rng = NULL;
     
-    real3 normal = (real3)((real)0);
-
-    RayEu ray;
-    ray.start = (real3)((real)0, (real)0, (real)-4);
-    ray.direction = normalize((real3)(pos, (real)1));
-
-    real dist = shape_detect(NULL/*&scene->object*/, &context, &normal, &ray);
-
-    float4 color = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-    if (dist > (real)-0.5f) {
-        color = (float4)(1.0f, 1.0f, 1.0f, 1.0f);
-    }
+    color4 color = scene_sample(scene, &context, pos, (real2)(R0, R0));
 
     canvas[idx] += color;
 }

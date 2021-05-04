@@ -38,23 +38,23 @@ pub struct MappedView<G: Geometry3, V: View<G>> {
 
 impl<G: Geometry3 + Sourced, V: View<G> + Sourced> Sourced for MappedView<G, V> where G::Map: SizedEntity {
     fn source(cfg: &Config) -> SourceInfo {
-        let geo = G::source(cfg);
-        let view = V::source(cfg);
-        let name = format!("MappedView{}{}", &geo.name, Self::type_tag());
-        let prefix = format!("mapped_view_{}_{}", &geo.prefix, Self::type_tag());
+        let gsrc = G::source(cfg);
+        let vsrc = V::source(cfg);
+        let name = format!("MappedView{}{}", &gsrc.name, Self::type_tag());
+        let prefix = format!("mapped_view_{}_{}", &gsrc.prefix, Self::type_tag());
 
         SourceBuilder::new(format!("generated/mapped_view_{}.hh", Self::type_tag()))
-            .tree(geo.tree)
+            .tree(gsrc.tree)
+            .tree(vsrc.tree)
             .content(&include("geometry/ray.hh"))
-            .tree(view.tree)
             .content(&include_template!(
                 "view/mapped.inl",
                 "Self": &name,
                 "self": &prefix,
-                "View": &view.name,
-                "view": &view.prefix,
-                "Geo": &geo.name,
-                "geo": &geo.prefix,
+                "View": &vsrc.name,
+                "view": &vsrc.prefix,
+                "Geo": &gsrc.name,
+                "geo": &gsrc.prefix,
             ))
             .build(name, prefix)
     }

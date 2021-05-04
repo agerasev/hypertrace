@@ -1,4 +1,4 @@
-use types::{Config, Entity, SizedEntity, Sourced, source::{SourceInfo, SourceBuilder}};
+use types::{Config, Entity, SizedEntity, Sourced, source::{SourceInfo, SourceBuilder}, include_template};
 use type_macros::SizedEntity;
 use ccgeom::Geometry3;
 use crate::{View, Shape};
@@ -20,14 +20,25 @@ impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> Scene<G, V, T> {
 impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> Sourced for Scene<G, V, T> where T: SizedEntity {
     fn source(cfg: &Config) -> SourceInfo {
         let src = Self::entity_source(cfg);
-        let name = format!("Scene{}", Self::type_tag());
-        let prefix = format!("scene_{}", Self::type_tag());
+        let gsrc = G::source(cfg);
+        let vsrc = V::source(cfg);
+        let osrc = T::source(cfg);
         SourceBuilder::new(format!("generated/scene_{}.hh", Self::type_tag()))
             .tree(src.tree)
-            .tree(G::source(cfg).tree)
-            .tree(V::source(cfg).tree)
-            .tree(T::source(cfg).tree)
-            .content(&format!("typedef {} {};", &src.name, &name))
-            .build(name, prefix)
+            .tree(gsrc.tree)
+            .tree(vsrc.tree)
+            .tree(osrc.tree)
+            .content(&include_template!(
+                "render/scene.inl",
+                "Self": &src.name,
+                "self": &src.prefix,
+                "Geo": &gsrc.name,
+                "geo": &gsrc.prefix,
+                "View": &vsrc.name,
+                "view": &vsrc.prefix,
+                "Object": &osrc.name,
+                "object": &osrc.prefix,
+            ))
+            .build(src.name, src.prefix)
     }
 }

@@ -1,136 +1,141 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{rc::Rc};
 use sdl2::{
     self,
     Sdl, EventPump,
-    render::{WindowCanvas, TextureAccess},
-    pixels::PixelFormatEnum,
     event::Event,
-    keyboard::{Keycode, Scancode},
+    keyboard::{Keycode, Scancode, KeyboardState},
     mouse::{MouseState, RelativeMouseState},
 };
 
 use crate::Controller;
 
-pub struct Handler<C: Controller> {
+pub struct Handler {
     context: Rc<Sdl>,
-    event_pump: Option<EventPump>,
-    controller: Rc<RefCell<C>>,
+    event_pump: EventPump,
+    size: (usize, usize),
 
-    pub lock: bool,
-    pub capture: bool,
-    pub drop_mouse: bool,
+    capture: bool,
+    drop_move: bool,
 }
 
-impl<C: Controller> Handler<C> {
-    pub fn new(context: Rc<Sdl>, controller: Rc<RefCell<C>>) -> base::Result<Self> {
-        context.mouse().set_relative_mouse_mode(true);
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum MouseMode {
+    Capture,
+    Drag,
+}
 
-        let event_pump = Some(context.event_pump()?);
-
+impl Handler {
+    pub fn new(context: Rc<Sdl>, size: (usize, usize)) -> base::Result<Self> {
+        let event_pump = context.event_pump()?;
+        
         let mut self_ = Self {
             context,
-            controller,
             event_pump,
+            size,
 
-            lock: false,
             capture: false,
-            drop_mouse: false,
+            drop_move: false,
         };
 
-        self_.set_capture_mode(false);
-        self_.unlock();
+        self_.set_mouse_mode(MouseMode::Drag);
 
         Ok(self_)
     }
 
-    pub fn set_capture_mode(&mut self, state: bool) {
-        self.capture = state;
-        self.context.mouse().set_relative_mouse_mode(state);
-    }
-
-    pub fn lock(&mut self) {
-        self.lock = true;
-        self.context.mouse().set_relative_mouse_mode(false);
-        //self.canvas.window_mut().set_title("Clay [LOCKED]").unwrap();
-    }
-
-    pub fn unlock(&mut self) {
-        self.lock = false;
+    pub fn set_mouse_mode(&mut self, mode: MouseMode) {
+        self.capture = mode == MouseMode::Capture;
         self.context.mouse().set_relative_mouse_mode(self.capture);
-        //self.canvas.window_mut().set_title("Clay").unwrap();
+        if self.capture {
+            self.drop_move = true;
+        }
     }
 
-    pub fn locked(&self) -> bool {
-        self.lock
-    }
+    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> base::Result<bool> {
+        let mut toggle_mouse_mode = false;
+        let mut mouse_wheel = 0;
 
-    #[allow(clippy::unnecessary_wraps)]
-    fn poll_pump(&mut self, event_pump: &mut EventPump) -> base::Result<bool> {
         'event_loop: loop {
-            let event = match event_pump.poll_event() {
+            let event = match self.event_pump.poll_event() {
                 Some(evt) => evt,
                 None => break 'event_loop,
             };
-            /*
-            let kbs = event_pump.keyboard_state();
-            let shift =
-                kbs.is_scancode_pressed(Scancode::LShift) ||
-                kbs.is_scancode_pressed(Scancode::RShift);
-            */
 
             match event {
                 Event::Quit {..} => { return Ok(true); },
                 Event::KeyDown { keycode: Some(key), .. } => match key {
                     Keycode::Escape => { return Ok(true); },
-                    /*
-                    Keycode::Tab => {
-                        if !self.locked() {
-                            self.set_capture_mode(!self.state.capture);
-                            if self.state.capture {
-                                self.state.drop_mouse = true;
-                            }
-                        }
-                    },
-                    Keycode::P => {
-                        self.state.screenshot = Some(shift);
-                    },
-                    Keycode::L => {
-                        if !shift {
-                            self.lock();
-                        } else {
-                            self.unlock();
-                            if self.state.capture {
-                                self.state.drop_mouse = true;
-                            }
-                        }
-                    },
-                    */
+                    Keycode::Tab => { toggle_mouse_mode = true; },
                     _ => (),
                 },
+                Event::MouseWheel { y, .. } => { mouse_wheel += y; }
                 _ => (),
             }
         }
-        /*
-        if !self.locked() {
-            if !self.state.drop_mouse {
-                handler.handle_mouse(
-                    &self.state,
-                    &event_pump.mouse_state(),
-                    &event_pump.relative_mouse_state(),
-                )?;
-            } else {
-                event_pump.relative_mouse_state();
-                self.state.drop_mouse = false;
-            }
+
+        // Keyboard
+
+        self.handle_keys(controller, self.event_pump.keyboard_state());
+
+        // Mouse
+
+        if toggle_mouse_mode {
+            self.set_mouse_mode(if self.capture { MouseMode::Drag } else { MouseMode::Capture });
         }
-        */
+
+        let relative_mouse_state = self.event_pump.relative_mouse_state();
+        if !self.drop_move {
+            self.handle_mouse(
+                controller,
+                self.event_pump.keyboard_state(),
+                self.event_pump.mouse_state(),
+                relative_mouse_state,
+                mouse_wheel,
+            );
+        } else {
+            self.drop_move = false;
+        }
+
         Ok(false)
     }
 
-    pub fn poll(&mut self) -> base::Result<bool> {
-        let mut event_pump = self.event_pump.take().unwrap();
-        let res = self.poll_pump(&mut event_pump);
-        assert!(self.event_pump.replace(event_pump).is_none());
-        res
+    fn handle_mouse<C: Controller>(
+        &self,
+        controller: &mut C,
+        key_state: KeyboardState,
+        state: MouseState,
+        relative_state: RelativeMouseState,
+        wheel: i32,
+    ) {
+        let shift = key_state.is_scancode_pressed(Scancode::LShift) || key_state.is_scancode_pressed(Scancode::RShift);
+
+        if self.capture || state.left() {
+            if relative_state.x() != 0 {
+                controller.rotate_yaw(2.0 * relative_state.x() as f64 / self.size.0 as f64);
+            }
+            if relative_state.y() != 0 {
+                controller.rotate_pitch(-2.0 * relative_state.y() as f64 / self.size.1 as f64);
+            }
+        }
+
+        if wheel != 0 {
+            if !shift {
+                controller.zoom(wheel as f64);
+            } else {
+                controller.zoom_alt(wheel as f64);
+            }
+        }
+    }
+
+    fn handle_keys<C: Controller>(&self, controller: &mut C, key_state: KeyboardState) {
+        let key = |code: Scancode| key_state.is_scancode_pressed(code);
+
+        if key(Scancode::W) || key(Scancode::Up) { controller.move_forward(1.0); }
+        if key(Scancode::A) || key(Scancode::Left) { controller.move_right(-1.0); }
+        if key(Scancode::S) || key(Scancode::Down) { controller.move_forward(-1.0); }
+        if key(Scancode::D) || key(Scancode::Right) { controller.move_right(1.0); }
+        if key(Scancode::Space) { controller.move_up(1.0); }
+        if key(Scancode::C) { controller.move_up(-1.0); }
+        if key(Scancode::E) { controller.rotate_roll(-1.0); }
+        if key(Scancode::Q) { controller.rotate_roll(1.0); }
     }
 }

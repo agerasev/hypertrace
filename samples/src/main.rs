@@ -1,12 +1,11 @@
 use std::{
     rc::Rc,
-    cell::RefCell,
     thread::sleep,
     time::Duration,
 };
 use vecmat::{Vector, transform::Shift};
 use base::Image;
-use view::{Window, Handler, DummyController};
+use view::{Window, EmptyController};
 use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
@@ -68,14 +67,13 @@ fn main() -> base::Result<()> {
     let converter = Converter::new(&context.ocl, shape)?;
 
     let sdl_context = Rc::new(sdl2::init()?);
-    let mut window = Window::new(sdl_context.clone(), shape, "Sample")?;
-    let mut handler = Handler::new(sdl_context, Rc::new(RefCell::new(DummyController)))?;
+    let mut window = Window::new(sdl_context, shape, "Sample")?;
 
     let mut canvas = Canvas::new(&context.ocl, shape)?;
     let mut image = Image::new(shape);
 
     loop {
-        if handler.poll()? {
+        if window.poll(&mut EmptyController)? {
             break Ok(());
         }
         render.render(&ocl_queue, &buffer, &mut canvas)?;

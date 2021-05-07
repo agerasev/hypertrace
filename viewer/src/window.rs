@@ -1,14 +1,12 @@
 use std::{rc::Rc};
 use sdl2::{
     self,
-    Sdl, EventPump,
+    Sdl,
     render::{WindowCanvas, TextureAccess},
     pixels::PixelFormatEnum,
-    event::Event,
-    keyboard::{Keycode, Scancode},
-    mouse::{MouseState, RelativeMouseState},
 };
 use base::Image;
+use crate::{Controller, handler::Handler};
 
 rental! { mod rent {
     use sdl2::{
@@ -25,7 +23,11 @@ rental! { mod rent {
 use rent::{RentTexture};
 
 pub struct Window {
-    context: Rc<Sdl>,
+    canvas: Canvas,
+    handler: Handler,
+}
+
+pub struct Canvas {
     size: (usize, usize),
     canvas: WindowCanvas,
     texture: Option<RentTexture>,
@@ -39,8 +41,34 @@ impl Window {
         .position_centered()/*.resizable()*/.build()
         .map_err(|e| e.to_string())?;
      
-        let canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+        let canvas = Canvas::new(
+            window.into_canvas().build().map_err(|e| e.to_string())?,
+            size,
+        )?;
 
+        let handler = Handler::new(context, size)?;
+
+        Ok(Self {
+            canvas,
+            handler,
+        })
+    }
+
+    pub fn size(&self) -> (usize, usize) {
+        self.canvas.size()
+    }
+
+    pub fn draw(&mut self, image: &Image<u8, 4>) -> base::Result<()> {
+        self.canvas.draw(image)
+    }
+
+    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> base::Result<bool> {
+        self.handler.poll(controller)
+    }
+} 
+
+impl Canvas {
+    fn new(canvas: WindowCanvas, size: (usize, usize)) -> base::Result<Self> {
         let texture_creator = canvas.texture_creator();
         let texture = Some(RentTexture::try_new_or_drop(
             Box::new(texture_creator),
@@ -55,7 +83,6 @@ impl Window {
         )?);
 
         Ok(Self {
-            context,
             size,
             canvas,
             texture,
@@ -68,21 +95,14 @@ impl Window {
 
     pub fn draw(&mut self, image: &Image<u8, 4>) -> base::Result<()> {
         let mut texture = self.texture.take().unwrap();
-
-        /*
-        if let Some(ll) = self.state.screenshot {
-            println!("saving screenshot ...");
-            match save_screenshot(img, ll) {
-                Ok(f) => println!("... saved to '{}'", f),
-                Err(e) => eprintln!("error saving screenshot: {}", e),
-            }
-            self.state.screenshot = None;
-        }
-        */
+        texture.rent(|tex| {
+            let query = tex.query();
+            assert_eq!((query.width as usize, query.height as usize), image.shape());
+        });
 
         texture.rent_mut(|tex| tex.update(None, image.data(), 4 * image.width()).map_err(|e| e.to_string()))?;
 
-        //self.canvas.clear();
+        self.canvas.clear();
         texture.rent(|tex| self.canvas.copy(tex, None, None))?;
 
         self.canvas.present();
@@ -91,4 +111,4 @@ impl Window {
 
         Ok(())
     }
-} 
+}

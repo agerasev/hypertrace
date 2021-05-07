@@ -6,5 +6,4 @@ mod handler;
 mod controller;
 
 pub use window::*;
-pub use handler::*;
 pub use controller::*;

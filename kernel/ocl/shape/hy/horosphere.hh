@@ -1,14 +1,19 @@
 #pragma once
 
-#include <algebra/quaternion.hh>
 #include <geometry/hyperbolic.hh>
 #include <render/light/hy.hh>
-#include <render/context.hh>
-
 
 typedef void Horosphere;
-real horosphere_detect(__global const Horosphere *shape, Context *context, HyDir *normal, LightHy *light);
 
+#define $Self Horosphere
+#define $self horosphere
+#define $Geo Hy
+#define $geo hy
+#include <shape/interface.inl>
+#undef $Self
+#undef $self
+#undef $Geo
+#undef $geo
 
 /*
 namespace hyperbolic {

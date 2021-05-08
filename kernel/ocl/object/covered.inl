@@ -18,20 +18,22 @@ typedef struct $2($Self,Cache) {
     $2($Geo,Dir) normal;
 } $2($Self,Cache);
 
+_ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(
     __global const $Self *self,
     Context *context,
     $2($Self,Cache) *cache,
-    $2(Ray,$Geo) *ray
+    $2(Light,$Geo) *light
 ) {
     return $2($shape,_detect)(
         $2($self,__shape__gc)(self),
         context,
         &cache->normal,
-        ray
+        light
     );
 }
 
+_ALLOW_MULTIPLE_DEFINITIONS_
 bool $2($self,_interact)(
     __global const $Self *self,
     Context *context,
@@ -43,7 +45,7 @@ bool $2($self,_interact)(
     bool ret = $2($material,_interact)(
         $2($self,__material__gc)(self),
         context,
-        cache->normal,
+        $2($geo,_dir_to_local)(light->ray.start, cache->normal),
         &ll,
         emission
     );

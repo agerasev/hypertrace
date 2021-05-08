@@ -7,7 +7,7 @@ struct MappedSphere {
     //SphereEu shape;
 };
 
-__global SphereEu *mapped_sphere__shape__gc(__global const MappedSphere *self) {
+__global const SphereEu *mapped_sphere__shape__gc(__global const MappedSphere *self) {
     return NULL;
 }
 

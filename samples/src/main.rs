@@ -10,7 +10,7 @@ use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objects::{Scene, view::{PointView, MappedView}, shape::{euclidean::Cube, MappedShape}, object::{Covered}, material::{Specular}};
+use objects::{SceneImpl, view::{PointView, MappedView}, shape::{euclidean::Cube, MappedShape}, object::{Covered}, material::{Specular}, background::{GradBg}};
 use ccgeom::{Euclidean3, Homogenous3};
 
 fn main() -> base::Result<()> {
@@ -75,7 +75,11 @@ fn main() -> base::Result<()> {
         ),
     );
     let object = Covered::new(shape, Specular);
-    let mut scene = Scene::new(view, object);
+    let background = GradBg::new(
+        [0.0, 1.0, 0.0].into(),
+        [[1.0, 1.0, 1.0].into(), [0.0, 0.0, 0.0].into()],
+    );
+    let mut scene = SceneImpl::new(view, object, background);
     let render = Render::new(&context)?;
     let converter = Converter::new(&context.ocl, size)?;
 

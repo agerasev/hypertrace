@@ -48,7 +48,12 @@ set(SRC
     "ocl/material/basic.cc"
     "ocl/material/modifier_test.cpp"
 
-    "ocl/object/covered_test.cpp"
+    "ocl/object/test/covered/eu.cpp"
+    "ocl/object/test/covered/hy.cpp"
+
+    "ocl/background/gradient.cc"
+    "ocl/background/test/constant/eu.cpp"
+    "ocl/background/test/constant/hy.cpp"
 
     "ocl/view/point/test.cpp"
     "ocl/view/mapped_test.cpp"
@@ -57,6 +62,9 @@ set(SRC
 
     "ocl/render/light/hy.cc"
     "ocl/render/light/eu.cc"
+
+    "ocl/render/test/scene_eu.cpp"
+    "ocl/render/test/scene_hy.cpp"
 )
 
 enable_testing()

@@ -1,13 +1,19 @@
 #pragma once
 
-#include <algebra/quaternion.hh>
 #include <geometry/hyperbolic.hh>
 #include <render/light/hy.hh>
-#include <render/context.hh>
-
 
 typedef void PlaneHy;
-real plane_hy_detect(__global const PlaneHy *shape, Context *context, HyDir *normal, LightHy *light);
+
+#define $Self PlaneHy
+#define $self PlaneHy
+#define $Geo Hy
+#define $geo hy
+#include <shape/interface.inl>
+#undef $Self
+#undef $self
+#undef $Geo
+#undef $geo
 
 
 /*

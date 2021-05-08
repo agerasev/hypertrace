@@ -21,7 +21,9 @@ static real cube_eu_detect_nearest(real3 near, real3 *normal) {
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-real cube_eu_detect(__global const void *shape, Context *context, real3 *normal, RayEu *ray) {
+real cube_eu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light) {
+    RayEu *ray = &light->ray;
+
     const real3 cmax = MAKE(real3)(R1);
     const real3 cmin = MAKE(real3)(-R1);
 
@@ -84,10 +86,10 @@ TEST_F(CubeEuTest, cube) {
     ctx.repeat = false;
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         real3 start = vrng.normal(), dir = vrng.unit();
-        RayEu ray { start, dir };
+        LightEu light { LightBase {}, RayEu { start, dir }};
         real3 normal;
 
-        real dist = cube_eu_detect(nullptr, &ctx, &normal, &ray);
+        real dist = cube_eu_detect(nullptr, &ctx, &normal, &light);
         
         if (max_comp(fabs(start)) < 1 - EPS) {
             // TODO: Update on refraction
@@ -97,9 +99,9 @@ TEST_F(CubeEuTest, cube) {
             real proj = -dot(start, dir);
             bool sph = proj > EPS && length(start + proj*dir) < 1 - EPS;
             if (sph || dist > EPS) {
-                ASSERT_EQ(max_comp(fabs(ray.start)), approx(1).epsilon(sqrt(EPS)));
-                int idx = max_comp_idx(fabs(ray.start));
-                ASSERT_EQ(normal[idx], approx(sign(ray.start[idx])));
+                ASSERT_EQ(max_comp(fabs(light.ray.start)), approx(1).epsilon(sqrt(EPS)));
+                int idx = max_comp_idx(fabs(light.ray.start));
+                ASSERT_EQ(normal[idx], approx(sign(light.ray.start[idx])));
                 normal[idx] = 0;
                 ASSERT_EQ(normal, approx(real3(0)));
                 ASSERT_TRUE(dist > -EPS);

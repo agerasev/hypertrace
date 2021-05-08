@@ -1,20 +1,20 @@
 use crate::{Canvas, Buffer, Context};
-use types::{Config, Named, SizedEntity, Sourced};
-use objects::{View, Object, Scene};
+use types::{Config, Sourced};
+use objects::{Scene};
 use ccgeom::Geometry3;
 use std::{marker::PhantomData, fs};
 use ocl_include::{Parser, Index, source};
 use uni_path::PathBuf;
 use regex::{Regex, Captures};
 
-pub struct Render<G: Geometry3, V: View<G>, T: Object<G> + SizedEntity> {
+pub struct Render<G: Geometry3, S: Scene<G>> {
     kernel: ocl::Kernel,
-    phantom: PhantomData<(G, V, T)>,
+    phantom: PhantomData<(G, S)>,
 }
 
-impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G> + SizedEntity> Render<G, V, T> {
+impl<G: Geometry3 + Sourced, S: Scene<G>> Render<G, S> {
     fn source(config: &Config) -> base::Result<(String, Index)> {
-        let source = <Scene::<G, V, T> as Sourced>::source(config);
+        let source = S::source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
 
         let include = PathBuf::from(source.root());
@@ -37,8 +37,8 @@ impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G> + SizedEntity> Render<G, V
             "#,
             config.address_width.num_value(),
             include,
-            <Scene::<G, V, T> as Named>::type_name(config),
-            <Scene::<G, V, T> as Named>::type_prefix(config),
+            S::type_name(config),
+            S::type_prefix(config),
         ))?;
 
         let parser = parser_builder.add_source(memfs.build())
@@ -81,7 +81,7 @@ impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G> + SizedEntity> Render<G, V
         Ok(Self { kernel, phantom: PhantomData })
     }
 
-    pub fn render(&self, queue: &ocl::Queue, scene_buffer: &Buffer<Scene<G, V, T>>, canvas: &mut Canvas) -> base::Result<()> {
+    pub fn render(&self, queue: &ocl::Queue, scene_buffer: &Buffer<S>, canvas: &mut Canvas) -> base::Result<()> {
         self.kernel.set_arg("shape", ocl::prm::Uint2::new(canvas.width() as u32, canvas.height() as u32))?;
         self.kernel.set_arg("scene", scene_buffer.buffer())?;
         self.kernel.set_arg("canvas", canvas.image().buffer())?;

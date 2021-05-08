@@ -8,7 +8,7 @@ typedef struct LightEu {
     RayEu ray;
 } LightEu;
 
-LightLocal light_eu_to_local(LightEu light);
+LightLocal light_eu_to_local(LightEu *light);
 void light_eu_update_local(LightEu *light, LightLocal ll);
 
 #ifndef HOST

@@ -16,5 +16,5 @@ bool specular_interact   (__global const Specular    *material, Context *context
 bool lambertian_interact (__global const Lambertian  *material, Context *context, real3 normal, LightLocal *light, float3 *emission);
 
 #ifndef HOST
-#include "material.cc"
+#include "basic.cc"
 #endif // !HOST

@@ -12,7 +12,7 @@ struct A {
 struct B;
 
 #[derive(Named, SizedEntity, Sourced)]
-struct C(A, B);
+struct C(A, #[getter] B);
 
 fn main() {
     for (key, value) in C::source(&HOST_CONFIG).into_iter() {

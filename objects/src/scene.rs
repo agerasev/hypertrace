@@ -1,32 +1,23 @@
 use types::{Config, Named, Entity, SizedEntity, Sourced, source::{SourceTree, SourceBuilder}, include_template};
-use type_macros::{SizedEntity};
+use type_macros::{Named, SizedEntity};
 use ccgeom::Geometry3;
-use crate::{View, Shape};
+use crate::{View, Object};
 use std::marker::PhantomData;
 
-#[derive(Clone, Debug, SizedEntity)]
-pub struct Scene<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> {
+#[derive(Clone, Debug, Named, SizedEntity)]
+pub struct Scene<G: Geometry3 + Sourced, V: View<G>, T: Object<G>> {
     #[getter] pub view: V,
     #[getter] pub object: T,
     phantom: PhantomData<G>,
 }
 
-impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> Scene<G, V, T> {
-    pub fn new(view: V, shape: T) -> Self {
-        Self { view, object: shape, phantom: PhantomData }
+impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>> Scene<G, V, T> {
+    pub fn new(view: V, object: T) -> Self {
+        Self { view, object, phantom: PhantomData }
     }
 }
 
-impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> Named for Scene<G, V, T> {
-    fn type_name(_: &Config) -> String {
-        format!("Scene{}", Self::type_tag())
-    }
-    fn type_prefix(_: &Config) -> String {
-        format!("scene_{}", Self::type_tag())
-    }
-}
-
-impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G>> Sourced for Scene<G, V, T> where Self: Entity, T: SizedEntity {
+impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>> Sourced for Scene<G, V, T> where Self: Entity, T: SizedEntity {
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/scene_{}.hh", Self::type_tag()))
             .tree(Self::type_source(cfg))

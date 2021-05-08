@@ -1,18 +1,18 @@
 use crate::{Canvas, Buffer, Context};
 use types::{Config, Named, SizedEntity, Sourced};
-use objects::{View, Shape, Scene};
+use objects::{View, Object, Scene};
 use ccgeom::Geometry3;
 use std::{marker::PhantomData, fs};
 use ocl_include::{Parser, Index, source};
 use uni_path::PathBuf;
 use regex::{Regex, Captures};
 
-pub struct Render<G: Geometry3, V: View<G>, T: Shape<G> + SizedEntity> {
+pub struct Render<G: Geometry3, V: View<G>, T: Object<G> + SizedEntity> {
     kernel: ocl::Kernel,
     phantom: PhantomData<(G, V, T)>,
 }
 
-impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G> + SizedEntity> Render<G, V, T> {
+impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G> + SizedEntity> Render<G, V, T> {
     fn source(config: &Config) -> base::Result<(String, Index)> {
         let source = <Scene::<G, V, T> as Sourced>::source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
@@ -33,7 +33,7 @@ impl<G: Geometry3 + Sourced, V: View<G>, T: Shape<G> + SizedEntity> Render<G, V,
                 typedef {} Scene;
                 #define scene_sample {}_sample
 
-                #include <render/render.cc>
+                #include <render/render.cl>
             "#,
             config.address_width.num_value(),
             include,

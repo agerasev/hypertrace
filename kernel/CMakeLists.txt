@@ -35,27 +35,28 @@ set(SRC
     "ocl/transform/affine.cc"
     "ocl/transform/chain_test.cpp"
 
-    "ocl/random.cc"
-
     "ocl/geometry/euclidean.cc"
     "ocl/geometry/hyperbolic.cc"
     "ocl/geometry/ray_test.cpp"
-
-    "ocl/render/light/hy.cc"
-    "ocl/render/light/eu.cc"
 
     "ocl/shape/eu/sphere.cc"
     "ocl/shape/eu/cube.cc"
     "ocl/shape/hy/plane.cc"
     "ocl/shape/hy/horosphere.cc"
-
     "ocl/shape/mapped_test.cpp"
 
-    "ocl/material/material.cc"
+    "ocl/material/basic.cc"
     "ocl/material/modifier_test.cpp"
+
+    "ocl/object/covered_test.cpp"
 
     "ocl/view/point/test.cpp"
     "ocl/view/mapped_test.cpp"
+
+    "ocl/random.cc"
+
+    "ocl/render/light/hy.cc"
+    "ocl/render/light/eu.cc"
 )
 
 enable_testing()

@@ -3,11 +3,6 @@
 #include <algebra/vector.hh>
 #include "context.hh"
 
-#ifdef HOST
-#include <placeholder.hpp>
-#endif // HOST
-
-
 __kernel void render(
     const uint2 shape,
     __global const Scene *scene,
@@ -22,7 +17,7 @@ __kernel void render(
     context.repeat = false;
     context.rng = NULL;
     
-    color4 color = scene_sample(scene, &context, pos, (real2)(R0, R0));
+    color4 color = (color4)(scene_sample(scene, &context, pos, (real2)(R0, R0)), 1.0f);
 
     canvas[idx] += color;
 }

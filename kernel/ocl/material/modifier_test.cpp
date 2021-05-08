@@ -1,10 +1,11 @@
 #ifdef UNITTEST
 
-#include "material.hh"
+#include "basic.hh"
 
 #define $Material Transparent
 #define $material transparent
-#include "modifier.inl"
+#include "colored.inl"
+#include "emissive.inl"
 #undef $Material
 #undef $material
 

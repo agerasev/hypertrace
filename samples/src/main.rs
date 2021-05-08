@@ -10,7 +10,7 @@ use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objects::{Scene, view::{PointView, MappedView}, shape::{euclidean::Cube, MappedShape}};
+use objects::{Scene, view::{PointView, MappedView}, shape::{euclidean::Cube, MappedShape}, object::{Covered}, material::{Specular}};
 use ccgeom::{Euclidean3, Homogenous3};
 
 fn main() -> base::Result<()> {
@@ -39,7 +39,7 @@ fn main() -> base::Result<()> {
         return Ok(());
     }
 
-    let shape = (800, 600);
+    let size = (800, 600);
 
     let platform_no = matches.value_of("platform_no").map(|s| s.parse::<usize>().unwrap()).unwrap_or(0);
     let device_no = matches.value_of("device_no").map(|s| s.parse::<usize>().unwrap()).unwrap_or(0);
@@ -64,7 +64,7 @@ fn main() -> base::Result<()> {
         PointView::new(1.0),
         Homogenous3::identity(),
     );
-    let object = MappedShape::new(
+    let shape = MappedShape::new(
         Cube::default(),
         Linear::from(Matrix::from([
             [0.5, 0.0, 0.0],
@@ -74,15 +74,16 @@ fn main() -> base::Result<()> {
             Rotation3::look_at_any([1.0, 1.0, 1.0].into()).to_linear()
         ),
     );
+    let object = Covered::new(shape, Specular);
     let mut scene = Scene::new(view, object);
     let render = Render::new(&context)?;
-    let converter = Converter::new(&context.ocl, shape)?;
+    let converter = Converter::new(&context.ocl, size)?;
 
     let sdl_context = Rc::new(sdl2::init()?);
-    let mut window = Window::new(sdl_context, shape, "Sample")?;
+    let mut window = Window::new(sdl_context, size, "Sample")?;
 
-    let mut canvas = Canvas::new(&context.ocl, shape)?;
-    let mut image = Image::new(shape);
+    let mut canvas = Canvas::new(&context.ocl, size)?;
+    let mut image = Image::new(size);
 
     let mut controller = IsotropicController::<Euclidean3>::new(
         Homogenous3::new(Shift::from(Vector::from([0.0, 0.0, 4.0])), Rotation3::identity()),

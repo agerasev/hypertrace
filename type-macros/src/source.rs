@@ -118,8 +118,8 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
                 quote!{
                     #accum
                     {
-                        let enum_name = format!("{}_Struct{}", type_name, #index);
-                        let enum_prefix = format!("{}_struct{}", type_prefix, #index);
+                        let enum_name = format!("{}__Variant{}", type_name, #index);
+                        let enum_prefix = format!("{}__variant_{}", type_prefix, #index);
                         let mut size = 0;
                         let mut align = 1;
                         #enum_source

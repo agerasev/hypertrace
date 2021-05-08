@@ -8,7 +8,7 @@ typedef struct LightHy {
     RayHy ray;
 } LightHy;
 
-LightLocal light_hy_to_local(LightHy light);
+LightLocal light_hy_to_local(LightHy *light);
 void light_hy_update_local(LightHy *light, LightLocal ll);
 
 

@@ -3,13 +3,13 @@ use types::{config::HOST_CONFIG, Sourced};
 
 #[derive(Named, SizedEntity, Sourced)]
 enum E {
-    #[getter]
     A {
         #[getter]
         x: i32,
         y: u8,
     },
-    B((), usize),
+    #[getter]
+    B((), #[getter] usize),
     C(),
     D,
 }

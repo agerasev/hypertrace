@@ -1,7 +1,7 @@
 use ccgeom::Geometry3;
 use types::{Named, Entity, SizedEntity, Sourced, Config, Map, source::{SourceTree, SourceBuilder, include}, include_template};
 use std::{marker::PhantomData};
-use type_macros::SizedEntity;
+use type_macros::{Named, SizedEntity};
 
 pub trait View<G: Geometry3>: SizedEntity + Sourced {}
 
@@ -36,7 +36,7 @@ impl<G: Geometry3 + Sourced> Sourced for PointView<G> {
 
 impl<G: Geometry3 + Sourced> View<G> for PointView<G> {}
 
-#[derive(Clone, Debug, SizedEntity)]
+#[derive(Clone, Debug, Named, SizedEntity)]
 pub struct MappedView<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> {
     pub inner: V,
     pub map: M,
@@ -50,19 +50,6 @@ impl<
 > MappedView<G, V, M> {
     pub fn new(inner: V, map: M) -> Self {
         Self { inner, map, phantom: PhantomData }
-    }
-}
-
-impl<
-    G: Geometry3,
-    V: View<G>,
-    M: Map<G::Pos, G::Dir>,
-> Named for MappedView<G, V, M> {
-    fn type_name(_: &Config) -> String {
-        format!("MappedView{}", Self::type_tag())
-    }
-    fn type_prefix(_: &Config) -> String {
-        format!("mapped_view_{}", Self::type_tag())
     }
 }
 

@@ -1,9 +1,9 @@
 #include "hy.hh"
 
-LightLocal light_hy_to_local(LightHy light) {
+LightLocal light_hy_to_local(LightHy *light) {
     LightLocal ll;
-    ll.direction = light.ray.direction.xyz;
-    ll.base = light.base;
+    ll.direction = light->ray.direction.xyz;
+    ll.base = light->base;
     return ll;
 }
 

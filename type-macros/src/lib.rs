@@ -10,7 +10,9 @@ use crate::{
 };
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{self, parse_macro_input, Data, DeriveInput};
+use syn::{self, parse_macro_input, DeriveInput};
+use convert_case::{Case, Casing};
+
 
 #[proc_macro_derive(Named)]
 pub fn derive_named(stream: TokenStream) -> TokenStream {
@@ -19,19 +21,22 @@ pub fn derive_named(stream: TokenStream) -> TokenStream {
     let ty = &input.ident;
     let (params, bindings) = make_params(&input);
 
-    let (name, prefix) = match &input.data {
-        Data::Struct(_) => (quote! { "Struct" }, quote! { "struct" }),
-        Data::Enum(_) => (quote! { "Enum" }, quote! { "enum" }),
-        Data::Union(_) => (quote! { "Union" }, quote! { "union" }),
+    let name = ty.to_string();
+    let prefix = name.to_case(Case::Snake);
+
+    let (tag, div) = if input.generics.params.is_empty() {
+        (quote! { "" }, quote! { "" })
+    } else {
+        (quote! { <Self as types::Named>::type_tag() }, quote! { "_" })
     };
 
     TokenStream::from(quote! {
         impl<#bindings> types::Named for #ty<#params> {
             fn type_name(cfg: &types::Config) -> String {
-                format!("{}{}", #name, <Self as types::Named>::type_tag())
+                format!("{}{}", #name, #tag)
             }
             fn type_prefix(cfg: &types::Config) -> String {
-                format!("{}_{}", #prefix, <Self as types::Named>::type_tag())
+                format!("{}{}{}", #prefix, #div, #tag)
             }
         }
     })

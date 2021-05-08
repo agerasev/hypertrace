@@ -14,6 +14,7 @@ pub mod io;
 pub mod math;
 pub mod primitive;
 pub mod source;
+mod ray;
 
 pub use uni_path as path;
 
@@ -23,3 +24,4 @@ pub use entity::*;
 pub use map::Map;
 pub use primitive::*;
 pub use source::*;
+pub use ray::*;

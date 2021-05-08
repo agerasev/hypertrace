@@ -6,13 +6,10 @@
 #include <render/light/eu.hh>
 
 
-typedef void SphereEu;
-real sphere_eu_detect(__global const SphereEu *shape, Context *context, real3 *normal, RayEu *ray);
-
 typedef void CubeEu;
 real cube_eu_detect(__global const CubeEu *shape, Context *context, real3 *normal, RayEu *ray);
 
 
 #ifndef HOST
-#include "shapes.cc"
+#include "cube.cc"
 #endif // !HOST

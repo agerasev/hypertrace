@@ -3,14 +3,14 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use vecmat::{Vector, Transform, transform::{Shift, Rotation3}};
+use vecmat::{Vector, Matrix, Transform, transform::{Shift, Rotation3, Linear}};
 use base::Image;
 use view::{Window, Controller, controllers::IsotropicController};
 use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objects::{Scene, view::{PointView, MappedView}, shape::eu as shapes};
+use objects::{Scene, view::{PointView, MappedView}, shape::{euclidean::Cube, MappedShape}};
 use ccgeom::{Euclidean3, Homogenous3};
 
 fn main() -> base::Result<()> {
@@ -60,8 +60,20 @@ fn main() -> base::Result<()> {
         ocl: ocl_context
     };
 
-    let view = MappedView::new(PointView::new(1.0), Homogenous3::identity());
-    let object = shapes::Cube::default();
+    let view = MappedView::new(
+        PointView::new(1.0),
+        Homogenous3::identity(),
+    );
+    let object = MappedShape::new(
+        Cube::default(),
+        Linear::from(Matrix::from([
+            [0.5, 0.0, 0.0],
+            [0.0, 2.0, 0.0],
+            [0.0, 0.0, 0.5],
+        ])).chain(
+            Rotation3::look_at_any([1.0, 1.0, 1.0].into()).to_linear()
+        ),
+    );
     let mut scene = Scene::new(view, object);
     let render = Render::new(&context)?;
     let converter = Converter::new(&context.ocl, shape)?;

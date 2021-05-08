@@ -9,13 +9,13 @@ typedef struct {
     $2($Geo,Dir) direction;
 } $2(Ray,$Geo);
 
-_ALLOW_MULTIPLE_DEFINITIONS_
-$2(Ray,$Geo) $3(ray_,$geo,_map)($2(Ray,$Geo) ray, $2($Geo,Map) map) {
-    $2(Ray,$Geo) r;
-    r.start = $2($geo,_apply_pos)(map, ray.start);
-    r.direction = normalize($2($geo,_apply_dir)(map, ray.start, ray.direction));
-    return r;
-}
+#define $Map $2($Geo,Map)
+#define $map $geo
+#define $postfix
+#include "ray_map.inl"
+#undef $Map
+#undef $map
+#undef $postfix
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 $2(Ray,$Geo) $3(ray_,$geo,_advance)($2(Ray,$Geo) ray, real l) {

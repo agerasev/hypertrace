@@ -44,9 +44,12 @@ set(SRC
     "ocl/render/light/hy.cc"
     "ocl/render/light/eu.cc"
 
-    "ocl/shape/eu/shapes.cc"
+    "ocl/shape/eu/sphere.cc"
+    "ocl/shape/eu/cube.cc"
     "ocl/shape/hy/plane.cc"
     "ocl/shape/hy/horosphere.cc"
+
+    "ocl/shape/mapped_test.cpp"
 
     "ocl/material/material.cc"
     "ocl/material/modifier_test.cpp"

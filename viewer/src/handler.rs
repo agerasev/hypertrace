@@ -7,7 +7,7 @@ use sdl2::{
     mouse::{MouseState, RelativeMouseState},
 };
 
-use crate::Controller;
+use crate::{Controller, Motion};
 
 pub struct Handler {
     context: Rc<Sdl>,
@@ -110,18 +110,18 @@ impl Handler {
 
         if self.capture || state.left() {
             if relative_state.x() != 0 {
-                controller.rotate_yaw(2.0 * relative_state.x() as f64 / self.size.0 as f64);
+                controller.rotate_yaw(Motion::Position(2.0 * relative_state.x() as f64 / self.size.0 as f64));
             }
             if relative_state.y() != 0 {
-                controller.rotate_pitch(-2.0 * relative_state.y() as f64 / self.size.1 as f64);
+                controller.rotate_pitch(Motion::Position(2.0 * relative_state.y() as f64 / self.size.1 as f64));
             }
         }
 
         if wheel != 0 {
             if !shift {
-                controller.zoom(wheel as f64);
+                controller.zoom(Motion::Position(wheel as f64));
             } else {
-                controller.zoom_alt(wheel as f64);
+                controller.zoom_alt(Motion::Position(wheel as f64));
             }
         }
     }
@@ -129,13 +129,13 @@ impl Handler {
     fn handle_keys<C: Controller>(&self, controller: &mut C, key_state: KeyboardState) {
         let key = |code: Scancode| key_state.is_scancode_pressed(code);
 
-        if key(Scancode::W) || key(Scancode::Up) { controller.move_forward(1.0); }
-        if key(Scancode::A) || key(Scancode::Left) { controller.move_right(-1.0); }
-        if key(Scancode::S) || key(Scancode::Down) { controller.move_forward(-1.0); }
-        if key(Scancode::D) || key(Scancode::Right) { controller.move_right(1.0); }
-        if key(Scancode::Space) { controller.move_up(1.0); }
-        if key(Scancode::C) { controller.move_up(-1.0); }
-        if key(Scancode::E) { controller.rotate_roll(-1.0); }
-        if key(Scancode::Q) { controller.rotate_roll(1.0); }
+        if key(Scancode::W) || key(Scancode::Up) { controller.move_forward(Motion::Velocity(1.0)); }
+        if key(Scancode::A) || key(Scancode::Left) { controller.move_right(Motion::Velocity(-1.0)); }
+        if key(Scancode::S) || key(Scancode::Down) { controller.move_forward(Motion::Velocity(-1.0)); }
+        if key(Scancode::D) || key(Scancode::Right) { controller.move_right(Motion::Velocity(1.0)); }
+        if key(Scancode::Space) { controller.move_up(Motion::Velocity(1.0)); }
+        if key(Scancode::C) { controller.move_up(Motion::Velocity(-1.0)); }
+        if key(Scancode::E) { controller.rotate_roll(Motion::Velocity(1.0)); }
+        if key(Scancode::Q) { controller.rotate_roll(Motion::Velocity(-1.0)); }
     }
 }

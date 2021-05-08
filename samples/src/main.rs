@@ -3,14 +3,15 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use vecmat::{Vector, transform::Shift};
+use vecmat::{Vector, Transform, transform::{Shift, Rotation3}};
 use base::Image;
-use view::{Window, EmptyController};
+use view::{Window, Controller, controllers::IsotropicController};
 use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
 use objects::{Scene, view::{PointView, MappedView}, shape::eu as shapes};
+use ccgeom::{Euclidean3, Homogenous3};
 
 fn main() -> base::Result<()> {
     let matches = clap::App::new("Sample")
@@ -59,10 +60,9 @@ fn main() -> base::Result<()> {
         ocl: ocl_context
     };
 
-    let view = MappedView::new(PointView::new(1.0), Shift::from(Vector::from([0.0, 0.0, 4.0])));
-    let object = shapes::Sphere::default();
-    let scene = Scene::new(view, object);
-    let buffer = Buffer::new(&context, &scene)?;
+    let view = MappedView::new(PointView::new(1.0), Homogenous3::identity());
+    let object = shapes::Cube::default();
+    let mut scene = Scene::new(view, object);
     let render = Render::new(&context)?;
     let converter = Converter::new(&context.ocl, shape)?;
 
@@ -72,13 +72,25 @@ fn main() -> base::Result<()> {
     let mut canvas = Canvas::new(&context.ocl, shape)?;
     let mut image = Image::new(shape);
 
+    let mut controller = IsotropicController::<Euclidean3>::new(
+        Homogenous3::new(Shift::from(Vector::from([0.0, 0.0, 4.0])), Rotation3::identity()),
+        1.0,
+    );
+    let delay = 0.04;
     loop {
-        if window.poll(&mut EmptyController)? {
+        if window.poll(&mut controller)? {
             break Ok(());
         }
+        if controller.updated() {
+            scene.view.map = *controller.map();
+            scene.view.inner.fov = 1.0 / controller.zoom();
+            canvas.clean(&ocl_queue)?;
+        }
+        let buffer = Buffer::new(&context, &scene)?;
         render.render(&ocl_queue, &buffer, &mut canvas)?;
         converter.convert_canvas_to_image(&ocl_queue, &canvas, &mut image)?;
         window.draw(&image)?;
-        sleep(Duration::from_millis(40));
+        controller.step(delay);
+        sleep(Duration::from_secs_f64(delay));
     }
 }

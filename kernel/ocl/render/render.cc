@@ -16,6 +16,7 @@ __kernel void render(
     uint2 ipos = (uint2)(get_global_id(0), get_global_id(1));
     uint idx = ipos.x + shape.x * ipos.y;
     real2 pos = ((real)2 * convert_real2(ipos) / convert_real2(shape) - (real)1);
+    pos.y = -pos.y;
 
     Context context;
     context.repeat = false;

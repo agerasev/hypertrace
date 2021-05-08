@@ -8,6 +8,7 @@ pub struct ImageBuffer<T: Copy + Default + OclPrm, const N: usize> {
 
 pub struct Canvas {
     image: ImageBuffer<f32, 4>,
+    clear: Image<f32, 4>,
     passes: usize,
 }
 
@@ -57,6 +58,7 @@ impl Canvas {
     pub fn new(context: &ocl::Context, shape: (usize, usize)) -> base::Result<Self> {
         Ok(Self {
             image: ImageBuffer::new(context, shape)?,
+            clear: Image::new(shape),
             passes: 0,
         })
     }
@@ -77,8 +79,10 @@ impl Canvas {
     pub fn add_pass(&mut self) {
         self.passes += 1;
     }
-    pub fn clear(&mut self) {
+    pub fn clean(&mut self, queue: &ocl::Queue) -> base::Result<()> {
+        self.image.store(queue, &self.clear)?;
         self.passes = 0;
+        Ok(())
     }
 
     pub fn image(&self) -> &ImageBuffer<f32, 4> {

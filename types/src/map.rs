@@ -224,7 +224,7 @@ where
     }
     fn type_source(cfg: &Config) -> SourceTree {
         if TypeId::of::<Self>() == hom3_id() {
-            SourceTree::new("transfomrm/homogenous.hh")
+            SourceTree::new("transform/homogenous.hh")
         } else {
             SourceBuilder::new(format!("generated/chain_{}.hh", Self::type_tag()))
                 .tree(A::type_source(cfg))

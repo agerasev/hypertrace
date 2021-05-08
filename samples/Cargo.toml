@@ -19,3 +19,4 @@ objects = { package = "hypertrace-objects", path = "../objects" }
 processing = { package = "hypertrace-processing", path = "../processing" }
 clap = "2.33"
 vecmat = { path = "../vecmat" }
+ccgeom = { path = "../ccgeom" }

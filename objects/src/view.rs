@@ -7,7 +7,7 @@ pub trait View<G: Geometry3>: SizedEntity + Sourced {}
 
 #[derive(Clone, Debug, SizedEntity)]
 pub struct PointView<G: Geometry3 + Named> {
-    fov: f64,
+    pub fov: f64,
     phantom: PhantomData<G>,
 }
 

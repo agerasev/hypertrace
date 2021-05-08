@@ -3,45 +3,46 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use hypertrace_viewer::{Window, Controller};
+use hypertrace_viewer::{Window, Controller, Motion};
 
 
 pub struct DummyController;
 
 impl Controller for DummyController {
-    fn move_forward(&mut self, value: f64) {
-        println!("move_forward: {}", value);
+    fn move_forward(&mut self, motion: Motion) {
+        println!("move_forward: {:?}", motion);
     }
-    fn move_right(&mut self, value: f64) {
-        println!("move_right: {}", value);
+    fn move_right(&mut self, motion: Motion) {
+        println!("move_right: {:?}", motion);
     }
-    fn move_up(&mut self, value: f64) {
-        println!("move_up: {}", value);
-    }
-
-    fn rotate_yaw(&mut self, value: f64) {
-        println!("rotate_yaw: {}", value);
-    }
-    fn rotate_pitch(&mut self, value: f64) {
-        println!("rotate_pitch: {}", value);
-    }
-    fn rotate_roll(&mut self, value: f64) {
-        println!("rotate_roll: {}", value);
+    fn move_up(&mut self, motion: Motion) {
+        println!("move_up: {:?}", motion);
     }
 
-    fn zoom(&mut self, value: f64) {
-        println!("zoom: {}", value);
+    fn rotate_yaw(&mut self, motion: Motion) {
+        println!("rotate_yaw: {:?}", motion);
     }
-    fn zoom_alt(&mut self, value: f64) {
-        println!("zoom_alt: {}", value);
+    fn rotate_pitch(&mut self, motion: Motion) {
+        println!("rotate_pitch: {:?}", motion);
     }
+    fn rotate_roll(&mut self, motion: Motion) {
+        println!("rotate_roll: {:?}", motion);
+    }
+
+    fn zoom(&mut self, motion: Motion) {
+        println!("zoom: {:?}", motion);
+    }
+    fn zoom_alt(&mut self, motion: Motion) {
+        println!("zoom_alt: {:?}", motion);
+    }
+
+    fn step(&mut self, _: f64) {}
 }
-
 
 fn main() -> base::Result<()> {
     let shape = (800, 600);
     let context = Rc::new(sdl2::init()?);
-    let mut window = Window::new(context.clone(), shape, "Press ESC to close")?;
+    let mut window = Window::new(context, shape, "Press ESC to close")?;
     let mut image = base::Image::new(shape);
     for iy in 0..shape.1 {
         for ix in 0..shape.0 {
@@ -54,12 +55,14 @@ fn main() -> base::Result<()> {
         }
     }
 
+    let delay = 0.04;
     let mut controller = DummyController;
     loop {
         if window.poll(&mut controller)? {
             break Ok(());
         }
         window.draw(&image)?;
-        sleep(Duration::from_millis(40));
+        controller.step(delay);
+        sleep(Duration::from_secs_f64(delay));
     }
 }

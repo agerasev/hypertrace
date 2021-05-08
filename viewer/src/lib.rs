@@ -3,7 +3,7 @@ extern crate rental;
 
 mod window;
 mod handler;
-mod controller;
+pub mod controllers;
 
 pub use window::*;
-pub use controller::*;
+pub use controllers::{Controller, Motion};

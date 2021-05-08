@@ -9,3 +9,4 @@ sdl2 = "0.34"
 rental = "0.5.5"
 base = { package = "hypertrace-base", path = "../base" }
 vecmat = { path = "../vecmat" }
+ccgeom = { path = "../ccgeom" }

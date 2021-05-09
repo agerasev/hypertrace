@@ -7,7 +7,7 @@ use crate::View;
 
 #[derive(Clone, Debug, SizedEntity)]
 pub struct PointView<G: Geometry3 + Named> {
-    #[skip]geometry: PhantomData<G>,
+    #[skip_entity] geometry: PhantomData<G>,
     pub fov: f64,
 }
 

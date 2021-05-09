@@ -10,7 +10,7 @@ pub struct MappedShape<
     M: Map<G::Pos, G::Dir>,
     T: Shape<G>,
 > {
-    #[skip]geometry: PhantomData<G>,
+    #[skip_entity] geometry: PhantomData<G>,
     pub map: M,
     pub shape: T,
 }

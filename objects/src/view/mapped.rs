@@ -7,7 +7,7 @@ use crate::View;
 
 #[derive(Clone, Debug, Named, SizedEntity)]
 pub struct MappedView<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> {
-    #[skip]geometry: PhantomData<G>,
+    #[skip_entity] geometry: PhantomData<G>,
     pub map: M,
     pub inner: V,
 }

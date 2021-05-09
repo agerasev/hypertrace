@@ -6,7 +6,7 @@ use crate::{Shape, Material, Object};
 
 #[derive(Clone, Copy, Debug, Named, SizedEntity)]
 pub struct Covered<G: Geometry3, S: Shape<G>, M: Material> {
-    #[skip]geometry: PhantomData<G>,
+    #[skip_entity] geometry: PhantomData<G>,
     pub material: M,
     pub shape: S,
 }

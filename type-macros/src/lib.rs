@@ -42,7 +42,7 @@ pub fn derive_named(stream: TokenStream) -> TokenStream {
     })
 }
 
-#[proc_macro_derive(DynSizedEntity, attributes(skip))]
+#[proc_macro_derive(DynSizedEntity, attributes(skip_entity))]
 pub fn derive_dyn_sized_entity(stream: TokenStream) -> TokenStream {
     let input = parse_macro_input!(stream as DeriveInput);
 
@@ -89,7 +89,7 @@ pub fn derive_dyn_sized_entity(stream: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(SizedEntity, attributes(skip))]
+#[proc_macro_derive(SizedEntity, attributes(skip_entity))]
 pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
     let input = parse_macro_input!(stream as DeriveInput);
 

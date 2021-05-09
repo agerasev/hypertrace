@@ -13,7 +13,7 @@ pub struct SceneImpl<
     T: Object<G>,
     B: Background<G>,
 > {
-    #[skip]geometry: PhantomData<G>,
+    #[skip_entity] geometry: PhantomData<G>,
     pub view: V,
     pub background: B,
     pub object: T,

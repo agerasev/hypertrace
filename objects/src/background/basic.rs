@@ -9,7 +9,7 @@ use crate::Background;
 /// Constant color background.
 #[derive(Clone, Debug, SizedEntity)]
 pub struct ConstBg<G: Geometry3 + Named> {
-    #[skip]geometry: PhantomData<G>,
+    #[skip_entity] geometry: PhantomData<G>,
     pub color: Vector<f32, 3>,
 }
 

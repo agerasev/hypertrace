@@ -4,7 +4,7 @@ mod source;
 mod utils;
 
 use crate::{
-    entity::{make_align, make_load, make_store, make_type_size},
+    entity::{make_align, make_size, make_type_size, make_load, make_store},
     generic::{make_params, make_where_clause},
     source::make_source,
 };
@@ -42,6 +42,53 @@ pub fn derive_named(stream: TokenStream) -> TokenStream {
     })
 }
 
+#[proc_macro_derive(DynSizedEntity, attributes(getter))]
+pub fn derive_dyn_sized_entity(stream: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(stream as DeriveInput);
+
+    let ty = &input.ident;
+    let align = make_align(&input);
+    let size = make_size(&input);
+    let load = make_load(&input);
+    let store = make_store(&input);
+    let source = make_source(&input);
+    let (params, bindings) = make_params(&input);
+    let mut where_clause = make_where_clause(
+        &input,
+        quote! { types::SizedEntity + types::Sourced },
+        Some(quote! { types::Entity + types::Sourced }),
+    );
+    if !where_clause.is_empty() {
+        where_clause = quote! { where #where_clause };
+    }
+
+    let expanded = quote! {
+        impl<#bindings> types::Entity for #ty<#params> #where_clause {
+            fn align(cfg: &types::Config) -> usize {
+                #align
+            }
+
+            fn size(&self, cfg: &types::Config) -> usize {
+                #size
+            }
+
+            fn load<R: types::io::CntRead>(cfg: &types::Config, src: &mut R) -> std::io::Result<Self> {
+                #load
+            }
+
+            fn store<W: types::io::CntWrite>(&self, cfg: &types::Config, dst: &mut W) -> std::io::Result<()> {
+                #store
+            }
+
+            fn type_source(cfg: &types::Config) -> types::SourceTree {
+                #source
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
 #[proc_macro_derive(SizedEntity, attributes(getter))]
 pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
     let input = parse_macro_input!(stream as DeriveInput);
@@ -53,7 +100,10 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
     let store = make_store(&input);
     let source = make_source(&input);
     let (params, bindings) = make_params(&input);
-    let where_clause = make_where_clause(&input);
+    let mut where_clause = make_where_clause(&input, quote! { types::SizedEntity + types::Sourced }, None);
+    if !where_clause.is_empty() {
+        where_clause = quote! { where #where_clause };
+    }
 
     let expanded = quote! {
         impl<#bindings> types::Entity for #ty<#params> #where_clause {

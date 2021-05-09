@@ -1,8 +1,8 @@
-use crate::utils::fields_iter;
+use crate::utils::{fields_iter, make_bindings};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use std::iter::Iterator;
-use syn::{self, Data, DeriveInput, Fields, Ident, Index};
+use syn::{self, Data, DeriveInput, Fields, Index};
 
 fn make_align_fields(fields: &Fields) -> TokenStream2 {
     fields_iter(fields).fold(quote! { 1usize }, |accum, field| {
@@ -27,10 +27,81 @@ pub fn make_align(input: &DeriveInput) -> TokenStream2 {
     }
 }
 
+
+fn make_size_fields(fields: &Fields, prefix: TokenStream2, init: TokenStream2) -> TokenStream2 {
+    fields_iter(fields)
+        .enumerate()
+        .fold(init, |accum, (index, field)| {
+            let ty = &field.ty;
+            let tuple_index = Index {
+                index: index as u32,
+                span: Span::call_site(),
+            };
+            let field_name = match &field.ident {
+                Some(ident) => quote! { #ident },
+                None => quote! { #tuple_index },
+            };
+            quote! {
+                types::math::upper_multiple(#accum, <#ty as types::Entity>::align(cfg)) +
+                    <#ty as types::Entity>::size(#prefix #field_name, cfg)
+            }
+        })
+}
+
+pub fn make_size(input: &DeriveInput) -> TokenStream2 {
+    let ty = &input.ident;
+    let unaligned_size =
+        match &input.data {
+            Data::Struct(struct_data) => make_size_fields(
+                &struct_data.fields,
+                quote! { &self. },
+                quote!{ 0usize },
+            ),
+            Data::Enum(enum_data) => {
+                let matches = enum_data.variants.iter().fold(
+                    quote! {},
+                    |accum, variant| {
+                        let var = &variant.ident;
+                        let bs = make_bindings(&variant.fields);
+                        let (bindings, wrapper) = (bs.bindings, bs.wrapper);
+                        let variant_size = make_size_fields(
+                            &variant.fields,
+                            bs.prefix,
+                            quote! { types::math::upper_multiple(
+                                <usize as types::SizedEntity>::type_size(cfg),
+                                <Self as types::Entity>::align(cfg),
+                            ) },
+                        );
+                        quote! {
+                            #accum
+                            #ty::#var #bindings => {
+                                #wrapper
+                                #variant_size
+                            },
+                        }
+                    },
+                );
+                quote! {
+                    match self {
+                        #matches
+                    }
+                }
+            }
+            Data::Union(_) => panic!("Union derive is not supported yet"),
+        };
+    quote! { types::math::upper_multiple(
+        #unaligned_size,
+        <Self as types::Entity>::align(cfg),
+    ) }
+}
+
 fn make_type_size_fields(fields: &Fields, init: TokenStream2) -> TokenStream2 {
     fields_iter(fields).fold(init, |accum, field| {
         let ty = &field.ty;
-        quote!{ types::math::upper_multiple(#accum, <#ty as types::Entity>::align(cfg)) + <#ty as types::SizedEntity>::type_size(cfg) }
+        quote! {
+            types::math::upper_multiple(#accum, <#ty as types::Entity>::align(cfg)) +
+                <#ty as types::SizedEntity>::type_size(cfg)
+        }
     })
 }
 
@@ -51,7 +122,10 @@ pub fn make_type_size(input: &DeriveInput) -> TokenStream2 {
         }
         Data::Union(_) => panic!("Union derive is not supported yet"),
     };
-    quote! { types::math::upper_multiple(#unaligned_type_size, <Self as types::Entity>::align(cfg)) }
+    quote! { types::math::upper_multiple(
+        #unaligned_type_size,
+        <Self as types::Entity>::align(cfg),
+    ) }
 }
 
 fn make_load_fields(fields: &Fields, ident: TokenStream2) -> TokenStream2 {
@@ -144,49 +218,6 @@ fn make_store_fields(fields: &Fields, prefix: TokenStream2) -> TokenStream2 {
         })
 }
 
-struct StoreBindings {
-    bindings: TokenStream2,
-    wrapper: TokenStream2,
-    prefix: TokenStream2,
-}
-
-fn make_store_bindings(fields: &Fields) -> StoreBindings {
-    match fields {
-        Fields::Named(named_fields) => {
-            let bindings = named_fields.named.iter().fold(quote! {}, |accum, field| {
-                let ident = field.ident.as_ref().unwrap();
-                quote! { #accum #ident, }
-            });
-            StoreBindings {
-                bindings: quote! { { #bindings } },
-                wrapper: quote! {},
-                prefix: quote! {},
-            }
-        }
-        Fields::Unnamed(unnamed_fields) => {
-            let bindings =
-                unnamed_fields
-                    .unnamed
-                    .iter()
-                    .enumerate()
-                    .fold(quote! {}, |accum, (index, _)| {
-                        let ident = Ident::new(&format!("b{}", index), Span::call_site());
-                        quote! { #accum #ident, }
-                    });
-            StoreBindings {
-                bindings: quote! { (#bindings) },
-                wrapper: quote! { let wrapper = (#bindings); },
-                prefix: quote! { wrapper. },
-            }
-        }
-        Fields::Unit => StoreBindings {
-            bindings: quote! {},
-            wrapper: quote! {},
-            prefix: quote! {},
-        },
-    }
-}
-
 pub fn make_store(input: &DeriveInput) -> TokenStream2 {
     let ty = &input.ident;
     let unaligned_store =
@@ -197,7 +228,7 @@ pub fn make_store(input: &DeriveInput) -> TokenStream2 {
                     quote! {},
                     |accum, (index, variant)| {
                         let var = &variant.ident;
-                        let bs = make_store_bindings(&variant.fields);
+                        let bs = make_bindings(&variant.fields);
                         let (bindings, wrapper) = (bs.bindings, bs.wrapper);
                         let store = make_store_fields(&variant.fields, bs.prefix);
                         quote! {

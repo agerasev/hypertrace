@@ -6,18 +6,23 @@
 __kernel void render(
     const uint2 shape,
     __global const Scene *scene,
-    __global float4 *canvas
+    __global float4 *canvas,
+    __global uint *seeds
 ) {
     uint2 ipos = (uint2)(get_global_id(0), get_global_id(1));
     uint idx = ipos.x + shape.x * ipos.y;
-    real2 pos = ((real)2 * convert_real2(ipos) / convert_real2(shape) - (real)1);
-    pos.y = -pos.y;
+    real2 pos = (real2)(
+        (real)(2 * ipos.x + 1) - (real)shape.x,
+        (real)shape.y - (real)(2 * ipos.y + 1)
+    ) / (real)shape.y;
+    real2 size = (real2)((real)2 / (real)shape.y);
 
     Context context;
     context.repeat = false;
-    context.rng = NULL;
+    context.rng.state = seeds[idx];
     
-    color4 color = (color4)(scene_sample(scene, &context, pos, (real2)(R0, R0)), 1.0f);
+    color4 color = (color4)(scene_sample(scene, &context, pos, size), 1.0f);
 
     canvas[idx] += color;
+    seeds[idx] = context.rng.state;
 }

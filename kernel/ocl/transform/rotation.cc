@@ -104,12 +104,17 @@ Rotation3 rot3_look_at(real3 d) {
     real3 z = MAKE(real3)(R0, R0, -R1);
     real3 c = cross(z, d);
     real cl = length(c);
+    real dl = dot(d, z);
     if (cl > EPS) {
-        real dl = dot(d, z);
         return rot3_from_axis(c / cl, atan2(cl, dl));
     } else {
-        real3 y = MAKE(real3)(R0, R1, R0);
-        return rot3_from_axis(y, PI);
+        if (dl > R0) {
+            real3 y = MAKE(real3)(R0, R1, R0);
+            return rot3_from_axis(y, R0);
+        } else {
+            real3 y = MAKE(real3)(R0, R1, R0);
+            return rot3_from_axis(y, PI);
+        }
     }
 }
 

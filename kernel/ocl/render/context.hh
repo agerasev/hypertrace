@@ -5,6 +5,6 @@
 
 
 typedef struct Context {
-    Rng *rng;
+    Rng rng;
     bool repeat;
 } Context;

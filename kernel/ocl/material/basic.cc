@@ -25,7 +25,7 @@ bool lambertian_interact(__global const void *material, Context *context, real3 
     if (dot(normal, light->direction) > R0) {
         normal = -normal;
     }
-    real3 rand = random_hemisphere_cosine(context->rng);
+    real3 rand = random_hemisphere_cosine(&context->rng);
     Rotation3 rot = rot3_look_at(-normal);
     light->direction = rot3_apply_dir(rot, MAKE(real3)(R0), rand);
     //light->diffuse = true;
@@ -119,8 +119,7 @@ TEST_F(MaterialTest, specular) {
 }
 TEST_F(MaterialTest, lambertian) {
     Context ctx;
-    Rng devrng { 0xDEADBEEF };
-    ctx.rng = &devrng;
+    ctx.rng = Rng { 0xDEADBEEF };
 
     real3 sum = real3(R0);
     size_t P = 16, R = 16;

@@ -1,5 +1,6 @@
 use base::Image;
 use ocl::OclPrm;
+use rand::{Rng, SeedableRng, rngs::{SmallRng}};
 
 pub struct ImageBuffer<T: Copy + Default + OclPrm, const N: usize> {
     buffer: ocl::Buffer<T>,
@@ -8,6 +9,7 @@ pub struct ImageBuffer<T: Copy + Default + OclPrm, const N: usize> {
 
 pub struct Canvas {
     image: ImageBuffer<f32, 4>,
+    seeds: ImageBuffer<u32, 1>,
     clear: Image<f32, 4>,
     passes: usize,
 }
@@ -20,6 +22,18 @@ impl<T: Copy + Default + OclPrm, const N: usize> ImageBuffer<T, N> {
                 .len(N * width * height)
                 .build()?,
             shape: (width, height),
+        })
+    }
+
+    pub fn from_image(context: &ocl::Context, image: &Image<T, N>) -> base::Result<Self> {
+        let shape = image.shape();
+        Ok(Self {
+            buffer: ocl::Buffer::builder()
+                .context(context)
+                .len(N * shape.0 * shape.1)
+                .copy_host_slice(image.data())
+                .build()?,
+            shape,
         })
     }
 
@@ -56,9 +70,14 @@ impl<T: Copy + Default + OclPrm, const N: usize> ImageBuffer<T, N> {
 
 impl Canvas {
     pub fn new(context: &ocl::Context, shape: (usize, usize)) -> base::Result<Self> {
+        let mut seeds = Image::new(shape);
+        SmallRng::seed_from_u64(0xdeadbeefdeadbeef).fill(seeds.data_mut());
+
+        let clear = Image::new(shape);
         Ok(Self {
-            image: ImageBuffer::new(context, shape)?,
-            clear: Image::new(shape),
+            image: ImageBuffer::from_image(context, &clear)?,
+            seeds: ImageBuffer::from_image(context, &seeds)?,
+            clear,
             passes: 0,
         })
     }
@@ -88,8 +107,8 @@ impl Canvas {
     pub fn image(&self) -> &ImageBuffer<f32, 4> {
         &self.image
     }
-    pub fn image_mut(&mut self) -> &mut ImageBuffer<f32, 4> {
-        &mut self.image
+    pub fn seeds(&self) -> &ImageBuffer<u32, 1> {
+        &self.seeds
     }
 }
 

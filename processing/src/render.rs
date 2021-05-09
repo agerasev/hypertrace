@@ -76,6 +76,7 @@ impl<G: Geometry3 + Sourced, S: Scene<G>> Render<G, S> {
             .arg_named("shape", &ocl::prm::Uint2::new(0, 0))
             .arg_named("scene", None::<&ocl::Buffer<u8>>)
             .arg_named("canvas", None::<&ocl::Buffer<f32>>)
+            .arg_named("seeds", None::<&ocl::Buffer<u32>>)
             .build()?;
 
         Ok(Self { kernel, phantom: PhantomData })
@@ -85,6 +86,7 @@ impl<G: Geometry3 + Sourced, S: Scene<G>> Render<G, S> {
         self.kernel.set_arg("shape", ocl::prm::Uint2::new(canvas.width() as u32, canvas.height() as u32))?;
         self.kernel.set_arg("scene", scene_buffer.buffer())?;
         self.kernel.set_arg("canvas", canvas.image().buffer())?;
+        self.kernel.set_arg("seeds", canvas.seeds().buffer())?;
         let cmd = self.kernel
             .cmd()
             .queue(queue)

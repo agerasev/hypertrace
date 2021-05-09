@@ -13,5 +13,6 @@ kernel = { package = "hypertrace-kernel", path = "../kernel" }
 ocl-include = { path = "../includer" }
 vecmat = { path = "../vecmat" }
 ccgeom = { path = "../ccgeom" }
+rand = { version = "0.8", features = ["small_rng"] }
 uni-path = "1"
 regex = "1"

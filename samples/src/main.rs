@@ -10,7 +10,7 @@ use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objects::{SceneImpl, view::{PointView, MappedView}, shape::{euclidean::Cube, MappedShape}, object::{Covered}, material::{Specular}, background::{GradBg}};
+use objects::{SceneImpl, view::{PointView, MappedView}, shape::{euclidean::Cube, MappedShape}, object::{Covered}, material::{Lambertian}, background::{GradBg}};
 use ccgeom::{Euclidean3, Homogenous3};
 
 fn main() -> base::Result<()> {
@@ -67,14 +67,16 @@ fn main() -> base::Result<()> {
     let shape = MappedShape::new(
         Cube::default(),
         Linear::from(Matrix::from([
-            [0.5, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
             [0.0, 2.0, 0.0],
-            [0.0, 0.0, 0.5],
+            [0.0, 0.0, 1.0],
         ])).chain(
-            Rotation3::look_at_any([1.0, 1.0, 1.0].into()).to_linear()
+            Rotation3::look_at_any([0.0, 1.0, 0.0].into())
+            .chain(Rotation3::look_at_any([1.0, 1.0, 1.0].into()).inv())
+            .to_linear()
         ),
     );
-    let object = Covered::new(shape, Specular);
+    let object = Covered::new(shape, Lambertian);
     let background = GradBg::new(
         [0.0, 1.0, 0.0].into(),
         [[1.0, 1.0, 1.0].into(), [0.0, 0.0, 0.0].into()],

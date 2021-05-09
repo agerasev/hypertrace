@@ -4,12 +4,8 @@
 
 struct MappedSphere {
     Shift3 map;
-    //SphereEu shape;
+    SphereEu shape;
 };
-
-__global const SphereEu *mapped_sphere__shape__gc(__global const MappedSphere *self) {
-    return NULL;
-}
 
 #define $Self MappedSphere
 #define $self mapped_sphere

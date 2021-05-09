@@ -8,11 +8,11 @@ use std::{io, marker::PhantomData};
 
 impl Named for () {
     fn type_name(_: &Config) -> String {
-        String::from("void")
+        String::from("Empty")
     }
 
     fn type_prefix(_: &Config) -> String {
-        String::from("empty")
+        String::from("unit")
     }
 }
 
@@ -54,11 +54,11 @@ impl Sourced for () {
 
 impl<T: 'static> Named for PhantomData<T> {
     fn type_name(_: &Config) -> String {
-        String::from("void")
+        String::from("Empty")
     }
 
     fn type_prefix(_: &Config) -> String {
-        String::from("phantom")
+        String::from("phantom_data")
     }
 }
 

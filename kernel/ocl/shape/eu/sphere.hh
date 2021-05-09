@@ -3,7 +3,7 @@
 #include <geometry/euclidean.hh>
 #include <render/light/eu.hh>
 
-typedef void SphereEu;
+typedef Empty SphereEu;
 
 #define $Self SphereEu
 #define $self sphere_eu

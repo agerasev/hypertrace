@@ -4,24 +4,24 @@
 
 
 _ALLOW_UNUSED_PARAMETERS_
-bool absorbing_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool absorbing_interact(__global const Absorbing *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     return false;
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-bool transparent_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool transparent_interact(__global const Transparent *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     //light.face = !light.face;
     return true;
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-bool specular_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool specular_interact(__global const Specular *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     light->direction -= (2*dot(light->direction, normal))*normal;
     return true;
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-bool lambertian_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool lambertian_interact(__global const Lambertian *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     if (dot(normal, light->direction) > R0) {
         normal = -normal;
     }

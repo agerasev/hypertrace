@@ -3,7 +3,7 @@
 #include <geometry/euclidean.hh>
 #include <render/light/eu.hh>
 
-typedef void CubeEu;
+typedef Empty CubeEu;
 
 #define $Self CubeEu
 #define $self cube_eu

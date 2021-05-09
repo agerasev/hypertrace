@@ -7,9 +7,9 @@ use crate::View;
 
 #[derive(Clone, Debug, Named, SizedEntity)]
 pub struct MappedView<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> {
-    pub inner: V,
+    #[skip]geometry: PhantomData<G>,
     pub map: M,
-    phantom: PhantomData<G>,
+    pub inner: V,
 }
 
 impl<
@@ -18,7 +18,7 @@ impl<
     M: Map<G::Pos, G::Dir>,
 > MappedView<G, V, M> {
     pub fn new(inner: V, map: M) -> Self {
-        Self { inner, map, phantom: PhantomData }
+        Self { inner, map, geometry: PhantomData }
     }
 }
 

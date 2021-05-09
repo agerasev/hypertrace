@@ -9,13 +9,13 @@ use crate::Background;
 /// Constant color background.
 #[derive(Clone, Debug, SizedEntity)]
 pub struct ConstBg<G: Geometry3 + Named> {
+    #[skip]geometry: PhantomData<G>,
     pub color: Vector<f32, 3>,
-    phantom: PhantomData<G>,
 }
 
 impl<G: Geometry3 + Named> ConstBg<G> {
     pub fn new(color: Vector<f32, 3>) -> Self {
-        Self { color, phantom: PhantomData }
+        Self { color, geometry: PhantomData }
     }
 }
 

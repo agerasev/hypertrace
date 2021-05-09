@@ -21,7 +21,7 @@ static real cube_eu_detect_nearest(real3 near, real3 *normal) {
 }
 
 _ALLOW_UNUSED_PARAMETERS_
-real cube_eu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light) {
+real cube_eu_detect(__global const CubeEu *shape, Context *context, real3 *normal, LightEu *light) {
     RayEu *ray = &light->ray;
 
     const real3 cmax = MAKE(real3)(R1);

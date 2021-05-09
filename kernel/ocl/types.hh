@@ -6,6 +6,10 @@ typedef double real;
 typedef float real;
 #endif
 
+typedef struct Empty {
+    char __[0];
+} Empty;
+
 #ifdef HOST
 
 #include <cstdint>
@@ -36,6 +40,9 @@ static_assert(sizeof(ulong) == 8);
 
 typedef std::size_t    usize;
 typedef std::ptrdiff_t isize;
+
+static_assert(sizeof(Empty) == 0);
+static_assert(alignof(Empty) == 1);
 
 #else // !HOST
 

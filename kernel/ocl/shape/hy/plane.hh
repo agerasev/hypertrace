@@ -3,7 +3,7 @@
 #include <geometry/hyperbolic.hh>
 #include <render/light/hy.hh>
 
-typedef void PlaneHy;
+typedef Empty PlaneHy;
 
 #define $Self PlaneHy
 #define $self PlaneHy

@@ -26,7 +26,7 @@ real $2($self,_detect)(
     $2(Light,$Geo) *light
 ) {
     return $2($shape,_detect)(
-        $2($self,__shape__gc)(self),
+        &self->shape,
         context,
         &cache->normal,
         light
@@ -43,7 +43,7 @@ bool $2($self,_interact)(
 ) {
     LightLocal ll = $3(light_,$geo,_to_local)(light);
     bool ret = $2($material,_interact)(
-        $2($self,__material__gc)(self),
+        &self->material,
         context,
         $2($geo,_dir_to_local)(light->ray.start, cache->normal),
         &ll,

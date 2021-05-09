@@ -7,18 +7,10 @@
 #include <material/basic.hh>
 #include <render/light/hy.hh>
 
-typedef void CoveredTestHy;
-
-_ALLOW_MULTIPLE_DEFINITIONS_
-__global const Horosphere *covered_test_hy__shape__gc(__global const CoveredTestHy *self) {
-    return NULL;
-}
-
-_ALLOW_MULTIPLE_DEFINITIONS_
-__global const Lambertian *covered_test_hy__material__gc(__global const CoveredTestHy *self) {
-    return NULL;
-}
-
+typedef struct CoveredTestHy {
+    Horosphere shape;
+    Lambertian material;
+};
 
 #define $Self CoveredTestHy
 #define $self covered_test_hy

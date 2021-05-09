@@ -13,10 +13,10 @@ pub struct SceneImpl<
     T: Object<G>,
     B: Background<G>,
 > {
-    #[getter] pub view: V,
-    #[getter] pub background: B,
-    #[getter] pub object: T,
-    geometry: PhantomData<G>,
+    #[skip]geometry: PhantomData<G>,
+    pub view: V,
+    pub background: B,
+    pub object: T,
 }
 
 impl<

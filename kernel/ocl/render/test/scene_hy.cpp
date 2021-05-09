@@ -5,19 +5,8 @@
 struct SceneTestHy {
     PointViewHy view;
     ConstBgHy background;
+    CoveredTestHy object;
 };
-
-__global const CoveredTestHy *scene_test_hy__object__gc(__global const SceneTestHy *self) {
-    return NULL;
-}
-
-__global const PointViewHy *scene_test_hy__view__gc(__global const SceneTestHy *self) {
-    return &self->view;
-}
-
-__global const ConstBgHy *scene_test_hy__background__gc(__global const SceneTestHy *self) {
-    return &self->background;
-}
 
 #define $Self SceneTestHy
 #define $self scene_test_hy

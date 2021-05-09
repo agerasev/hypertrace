@@ -3,7 +3,7 @@
 #include <geometry/hyperbolic.hh>
 #include <render/light/hy.hh>
 
-typedef void Horosphere;
+typedef Empty Horosphere;
 
 #define $Self Horosphere
 #define $self horosphere

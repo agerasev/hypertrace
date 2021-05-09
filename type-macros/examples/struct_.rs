@@ -3,7 +3,6 @@ use types::{config::HOST_CONFIG, Sourced};
 
 #[derive(Named, SizedEntity, Sourced)]
 struct A {
-    #[getter]
     x: i32,
     y: (),
 }
@@ -12,7 +11,7 @@ struct A {
 struct B;
 
 #[derive(Named, SizedEntity, Sourced)]
-struct C(A, #[getter] B);
+struct C(A, B);
 
 fn main() {
     for (key, value) in C::source(&HOST_CONFIG).into_iter() {

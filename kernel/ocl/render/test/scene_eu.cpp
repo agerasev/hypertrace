@@ -5,19 +5,8 @@
 struct SceneTestEu {
     PointViewEu view;
     GradBg background;
+    CoveredTestEu object;
 };
-
-__global const CoveredTestEu *scene_test_eu__object__gc(__global const SceneTestEu *self) {
-    return NULL;
-}
-
-__global const PointViewEu *scene_test_eu__view__gc(__global const SceneTestEu *self) {
-    return &self->view;
-}
-
-__global const GradBg *scene_test_eu__background__gc(__global const SceneTestEu *self) {
-    return &self->background;
-}
 
 #define $Self SceneTestEu
 #define $self scene_test_eu

@@ -10,9 +10,9 @@ pub struct MappedShape<
     M: Map<G::Pos, G::Dir>,
     T: Shape<G>,
 > {
-    phantom: PhantomData<G>,
+    #[skip]geometry: PhantomData<G>,
     pub map: M,
-    #[getter] pub shape: T,
+    pub shape: T,
 }
 
 impl<
@@ -21,7 +21,7 @@ impl<
     T: Shape<G>,
 > MappedShape<G, M, T>  {
     pub fn new(shape: T, map: M) -> Self {
-        Self { shape, map, phantom: PhantomData }
+        Self { shape, map, geometry: PhantomData }
     }
 }
 

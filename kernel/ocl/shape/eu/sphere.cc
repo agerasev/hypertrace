@@ -2,7 +2,7 @@
 
 
 _ALLOW_UNUSED_PARAMETERS_
-real sphere_eu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light) {
+real sphere_eu_detect(__global const SphereEu *shape, Context *context, real3 *normal, LightEu *light) {
     RayEu *ray = &light->ray;
 
     real3 pos = ray->start;

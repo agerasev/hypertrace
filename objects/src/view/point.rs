@@ -7,13 +7,13 @@ use crate::View;
 
 #[derive(Clone, Debug, SizedEntity)]
 pub struct PointView<G: Geometry3 + Named> {
+    #[skip]geometry: PhantomData<G>,
     pub fov: f64,
-    phantom: PhantomData<G>,
 }
 
 impl<G: Geometry3 + Named> PointView<G> {
     pub fn new(fov: f64) -> Self {
-        Self { fov, phantom: PhantomData }
+        Self { fov, geometry: PhantomData }
     }
 }
 

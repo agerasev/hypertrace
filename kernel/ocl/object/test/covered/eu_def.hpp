@@ -7,18 +7,10 @@
 #include <material/basic.hh>
 #include <render/light/eu.hh>
 
-typedef void CoveredTestEu;
-
-_ALLOW_MULTIPLE_DEFINITIONS_
-__global const SphereEu *covered_test_eu__shape__gc(__global const CoveredTestEu *self) {
-    return NULL;
-}
-
-_ALLOW_MULTIPLE_DEFINITIONS_
-__global const Lambertian *covered_test_eu__material__gc(__global const CoveredTestEu *self) {
-    return NULL;
-}
-
+typedef struct {
+    SphereEu shape;
+    Lambertian material;
+} CoveredTestEu;
 
 #define $Self CoveredTestEu
 #define $self covered_test_eu

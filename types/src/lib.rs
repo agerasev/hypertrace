@@ -8,6 +8,7 @@ mod tests;
 pub mod config;
 pub mod containers;
 pub mod entity;
+pub mod min_size;
 pub mod geometry;
 pub mod hash;
 pub mod io;

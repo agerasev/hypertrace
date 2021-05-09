@@ -1,7 +1,7 @@
-use hypertrace_type_macros::{Named, SizedEntity, Sourced};
+use hypertrace_type_macros::{Named, Entity, SizedEntity, Sourced};
 use types::{config::HOST_CONFIG, Sourced};
 
-#[derive(Named, SizedEntity, Sourced)]
+#[derive(Named, Entity, SizedEntity, Sourced)]
 enum E {
     A {
         #[getter]

@@ -1,13 +1,13 @@
 use types::{Named, Sourced, Config, source::{SourceTree, SourceBuilder, include}, include_template};
 use std::{marker::PhantomData};
-use type_macros::{Named, SizedEntity};
+use type_macros::{Named, Entity, SizedEntity};
 use vecmat::Vector;
 use ccgeom::{Geometry3, Euclidean3};
 use crate::Background;
 
 
 /// Constant color background.
-#[derive(Clone, Debug, SizedEntity)]
+#[derive(Clone, Debug, Entity, SizedEntity)]
 pub struct ConstBg<G: Geometry3 + Named> {
     pub color: Vector<f32, 3>,
     phantom: PhantomData<G>,
@@ -47,7 +47,7 @@ impl<G: Geometry3 + Sourced> Background<G> for ConstBg<G> {}
 
 /// Gradient background.
 /// Available only for euclidean space because only that space preserves direction.
-#[derive(Clone, Debug, Named, SizedEntity)]
+#[derive(Clone, Debug, Named, Entity, SizedEntity)]
 pub struct GradBg {
     pub direction: Vector<f64, 3>,
     pub colors: [Vector<f32, 3>; 2],

@@ -1,11 +1,11 @@
 use types::{Config, Named, source::{Sourced, SourceTree}};
-use type_macros::{SizedEntity};
+use type_macros::{Entity, SizedEntity};
 use ccgeom::{Euclidean3};
 use super::*;
 
 // Sphere
 
-#[derive(Clone, Default, Debug, SizedEntity)]
+#[derive(Clone, Default, Debug, Entity, SizedEntity)]
 pub struct Sphere;
 
 impl Named for Sphere {
@@ -23,7 +23,7 @@ impl Shape<Euclidean3> for Sphere {}
 
 // Cube
 
-#[derive(Clone, Default, Debug, SizedEntity)]
+#[derive(Clone, Default, Debug, Entity, SizedEntity)]
 pub struct Cube;
 
 impl Named for Cube {

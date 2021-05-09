@@ -1,16 +1,16 @@
 use types::{Map, Named, Entity, SizedEntity, Config, source::{Sourced, SourceTree, SourceBuilder, include}, include_template, RayMap};
-use type_macros::{Named, SizedEntity};
+use type_macros::{Named, Entity, SizedEntity};
 use ccgeom::{Geometry3};
 use std::marker::PhantomData;
 use crate::Shape;
 
-#[derive(Clone, Copy, Debug, Named, SizedEntity)]
+#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
 pub struct MappedShape<
     G: Geometry3,
     M: Map<G::Pos, G::Dir>,
     T: Shape<G>,
 > {
-    phantom: PhantomData<G>,
+    geometry: PhantomData<G>,
     pub map: M,
     #[getter] pub shape: T,
 }
@@ -21,7 +21,7 @@ impl<
     T: Shape<G>,
 > MappedShape<G, M, T>  {
     pub fn new(shape: T, map: M) -> Self {
-        Self { shape, map, phantom: PhantomData }
+        Self { shape, map, geometry: PhantomData }
     }
 }
 

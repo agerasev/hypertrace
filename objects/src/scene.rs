@@ -1,22 +1,22 @@
-use types::{Config, Named, Entity, SizedEntity, Sourced, source::{SourceTree, SourceBuilder}, include_template};
-use type_macros::{Named, SizedEntity};
+use types::{Config, Named, Entity, Sourced, source::{SourceTree, SourceBuilder}, include_template};
+use type_macros::{Named, Entity, SizedEntity};
 use ccgeom::Geometry3;
 use crate::{View, Object, Background};
 use std::marker::PhantomData;
 
 pub trait Scene<G: Geometry3>: Named + Entity + Sourced {}
 
-#[derive(Clone, Debug, Named, SizedEntity)]
+#[derive(Clone, Debug, Named, Entity, SizedEntity)]
 pub struct SceneImpl<
     G: Geometry3 + Sourced,
     V: View<G>,
     T: Object<G>,
     B: Background<G>,
 > {
+    geometry: PhantomData<G>,
     #[getter] pub view: V,
     #[getter] pub background: B,
     #[getter] pub object: T,
-    geometry: PhantomData<G>,
 }
 
 impl<
@@ -35,7 +35,7 @@ impl<
     V: View<G>,
     T: Object<G>,
     B: Background<G>,
-> Sourced for SceneImpl<G, V, T, B> where Self: Entity, T: SizedEntity {
+> Sourced for SceneImpl<G, V, T, B> where Self: Entity {
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/scene_{}.hh", Self::type_tag()))
             .tree(Self::type_source(cfg))
@@ -65,4 +65,4 @@ impl<
     V: View<G>,
     T: Object<G>,
     B: Background<G>,
-> Scene<G> for SceneImpl<G, V, T, B> where Self: Entity, T: SizedEntity {}
+> Scene<G> for SceneImpl<G, V, T, B> where Self: Entity {}

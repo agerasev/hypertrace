@@ -1,11 +1,11 @@
 use ccgeom::Geometry3;
 use types::{Named, Sourced, Config, source::{SourceTree, SourceBuilder}};
 use std::{marker::PhantomData};
-use type_macros::SizedEntity;
+use type_macros::{Entity, SizedEntity};
 use crate::View;
 
 
-#[derive(Clone, Debug, SizedEntity)]
+#[derive(Clone, Debug, Entity, SizedEntity)]
 pub struct PointView<G: Geometry3 + Named> {
     pub fov: f64,
     phantom: PhantomData<G>,

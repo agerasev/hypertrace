@@ -1,10 +1,10 @@
 use std::{marker::PhantomData};
-use types::{Config, Named, Entity, SizedEntity, Sourced, source::{SourceTree, SourceBuilder, include}, include_template};
-use type_macros::{Named, SizedEntity};
+use types::{Config, Named, Entity, Sourced, source::{SourceTree, SourceBuilder, include}, include_template};
+use type_macros::{Named, Entity, SizedEntity};
 use ccgeom::{Geometry3};
 use crate::{Shape, Material, Object};
 
-#[derive(Clone, Copy, Debug, Named, SizedEntity)]
+#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
 pub struct Covered<G: Geometry3, S: Shape<G>, M: Material> {
     geometry: PhantomData<G>,
     #[getter] pub material: M,
@@ -25,7 +25,7 @@ impl<
     G: Geometry3 + Sourced,
     S: Shape<G> + Sourced,
     M: Material + Sourced,
-> Sourced for Covered<G, S, M> where Self: SizedEntity {
+> Sourced for Covered<G, S, M> where Self: Entity {
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/covered_{}.hh", Self::type_tag()))
             .tree(Self::type_source(cfg))
@@ -53,5 +53,4 @@ impl<
     G: Geometry3 + Sourced,
     S: Shape<G> + Sourced,
     M: Material + Sourced,
-> Object<G> for Covered<G, S, M> where Self: SizedEntity {}
-
+> Object<G> for Covered<G, S, M> where Self: Entity {}

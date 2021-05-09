@@ -1,15 +1,15 @@
 use ccgeom::Geometry3;
 use types::{Named, Entity, Sourced, Config, Map, source::{SourceTree, SourceBuilder, include}, include_template};
 use std::{marker::PhantomData};
-use type_macros::{Named, SizedEntity};
+use type_macros::{Named, Entity, SizedEntity};
 use crate::View;
 
 
-#[derive(Clone, Debug, Named, SizedEntity)]
+#[derive(Clone, Debug, Named, Entity, SizedEntity)]
 pub struct MappedView<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> {
     pub inner: V,
     pub map: M,
-    phantom: PhantomData<G>,
+    geometry: PhantomData<G>,
 }
 
 impl<
@@ -18,7 +18,7 @@ impl<
     M: Map<G::Pos, G::Dir>,
 > MappedView<G, V, M> {
     pub fn new(inner: V, map: M) -> Self {
-        Self { inner, map, phantom: PhantomData }
+        Self { inner, map, geometry: PhantomData }
     }
 }
 

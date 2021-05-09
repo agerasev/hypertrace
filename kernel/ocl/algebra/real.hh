@@ -14,6 +14,7 @@
 //#define EPS 1e-8
 #define R0 0.0
 #define R1 1.0
+#define R2 2.0
 
 #else
 
@@ -22,6 +23,7 @@
 #define EPS 1e-6f
 #define R0 0.0f
 #define R1 1.0f
+#define R2 2.0f
 
 #endif
 

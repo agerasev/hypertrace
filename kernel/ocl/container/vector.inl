@@ -7,7 +7,7 @@
 
 typedef struct $Self {
     usize size;
-    $Elem elements[0];
+    $Elem elements[1];
 } $Self;
 
 _ALLOW_MULTIPLE_DEFINITIONS_

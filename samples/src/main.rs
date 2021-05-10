@@ -10,7 +10,7 @@ use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objects::{SceneImpl, view::{PointView, MappedView}, shape::{euclidean::{Cube, Sphere}, MappedShape}, object::{Covered, ObjectVector}, material::{Lambertian}, background::{GradBg}};
+use objects::{SceneImpl, view::{PointView, MappedView}, shape::{euclidean::{Cube, Sphere}, MappedShape, ShapeVector}, object::{Covered, ObjectVector}, material::{Lambertian}, background::{GradBg}};
 use ccgeom::{Euclidean3, Homogenous3};
 
 fn main() -> base::Result<()> {
@@ -64,7 +64,7 @@ fn main() -> base::Result<()> {
         PointView::new(1.0),
         Homogenous3::identity(),
     );
-    let shapes = vec![
+    let shapes = ShapeVector::from_shapes(vec![
         MappedShape::new(
             Sphere::default(),
             Shift::from_vector([1.0, 0.0, 0.0].into()),
@@ -73,14 +73,13 @@ fn main() -> base::Result<()> {
             Sphere::default(),
             Shift::from_vector([-1.0, 0.0, 0.0].into()),
         ),
-    ];
-    let objects = shapes.into_iter().map(|s| Covered::new(s, Lambertian)).collect();
-    let object_vector = ObjectVector::from_objects(objects);
+    ]);
+    let objects = Covered::new(shapes, Lambertian);
     let background = GradBg::new(
         [0.0, 1.0, 0.0].into(),
         [[1.0, 1.0, 1.0].into(), [0.0, 0.0, 0.0].into()],
     );
-    let mut scene = SceneImpl::new(view, object_vector, background);
+    let mut scene = SceneImpl::new(view, objects, background);
     let render = Render::new(&context)?;
     let converter = Converter::new(&context.ocl, size)?;
 

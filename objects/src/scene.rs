@@ -1,17 +1,17 @@
 use crate::{Background, Object, View};
-use ccgeom::Geometry3;
 use std::marker::PhantomData;
-use type_macros::{Entity, Named, SizedEntity};
+use type_macros::*;
 use types::{
     include_template,
+    prelude::*,
     source::{SourceBuilder, SourceTree},
-    Config, Entity, Named, Sourced,
+    Config,
 };
 
-pub trait Scene<G: Geometry3>: Named + Entity + Sourced {}
+pub trait Scene<G: Geometry>: Named + Entity + Sourced {}
 
 #[derive(Clone, Debug, Named, Entity, SizedEntity)]
-pub struct SceneImpl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Background<G>> {
+pub struct SceneImpl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>> {
     geometry: PhantomData<G>,
     #[getter]
     pub view: V,
@@ -21,7 +21,7 @@ pub struct SceneImpl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Backgr
     pub object: T,
 }
 
-impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Background<G>> SceneImpl<G, V, T, B> {
+impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>> SceneImpl<G, V, T, B> {
     pub fn new(view: V, object: T, background: B) -> Self {
         Self {
             view,
@@ -32,8 +32,7 @@ impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Background<G>> SceneIm
     }
 }
 
-impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Background<G>> Sourced
-    for SceneImpl<G, V, T, B>
+impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>> Sourced for SceneImpl<G, V, T, B>
 where
     Self: Entity,
 {
@@ -61,9 +60,7 @@ where
     }
 }
 
-impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Background<G>> Scene<G>
-    for SceneImpl<G, V, T, B>
-where
-    Self: Entity,
+impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>> Scene<G> for SceneImpl<G, V, T, B> where
+    Self: Entity
 {
 }

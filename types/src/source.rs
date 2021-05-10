@@ -1,13 +1,8 @@
-use crate::{Config, Named};
 use std::collections::{
     btree_map::{BTreeMap, Entry},
     HashSet,
 };
 use uni_path::{Path, PathBuf};
-
-pub trait Sourced: Named {
-    fn source(cfg: &Config) -> SourceTree;
-}
 
 #[derive(Clone, Debug)]
 pub struct ContentMismatchError {
@@ -149,7 +144,7 @@ pub fn include_template<P: AsRef<Path>>(path: P, map: &BTreeMap<String, String>)
 #[macro_export]
 macro_rules! include_template {
     ($path:expr, $($name:literal: $value:expr),* $(,)?) => {
-        include_template(
+        $crate::source::include_template(
             $path,
             &vec![$((String::from($name), String::from($value))),*].into_iter().collect(),
         )

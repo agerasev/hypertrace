@@ -62,8 +62,8 @@ pub fn derive_entity(stream: TokenStream) -> TokenStream {
     let (params, bindings) = make_params(&input);
     let mut where_clause = make_where_clause(
         &input,
-        quote! { types::SizedEntity + types::Sourced },
-        Some(quote! { types::Entity + types::Sourced }),
+        quote! { types::SizedEntity },
+        Some(quote! { types::Entity }),
     );
     if !where_clause.is_empty() {
         where_clause = quote! { where #where_clause };
@@ -95,7 +95,7 @@ pub fn derive_entity(stream: TokenStream) -> TokenStream {
                 #store
             }
 
-            fn type_source(cfg: &types::Config) -> types::SourceTree {
+            fn type_source(cfg: &types::Config) -> types::source::SourceTree {
                 #source
             }
         }
@@ -111,8 +111,7 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
     let ty = &input.ident;
     let type_size = make_type_size(&input);
     let (params, bindings) = make_params(&input);
-    let mut where_clause =
-        make_where_clause(&input, quote! { types::SizedEntity + types::Sourced }, None);
+    let mut where_clause = make_where_clause(&input, quote! { types::SizedEntity }, None);
     if !where_clause.is_empty() {
         where_clause = quote! { where #where_clause };
     }

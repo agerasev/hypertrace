@@ -1,21 +1,21 @@
 use crate::View;
-use ccgeom::Geometry3;
 use std::marker::PhantomData;
-use type_macros::{Entity, Named, SizedEntity};
+use type_macros::*;
 use types::{
     include_template,
+    prelude::*,
     source::{include, SourceBuilder, SourceTree},
-    Config, Entity, Map, Named, Sourced,
+    Config, Map,
 };
 
 #[derive(Clone, Debug, Named, Entity, SizedEntity)]
-pub struct MappedView<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> {
+pub struct MappedView<G: Geometry, V: View<G>, M: Map<G::Pos, G::Dir>> {
     pub inner: V,
     pub map: M,
     geometry: PhantomData<G>,
 }
 
-impl<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> MappedView<G, V, M> {
+impl<G: Geometry, V: View<G>, M: Map<G::Pos, G::Dir>> MappedView<G, V, M> {
     pub fn new(inner: V, map: M) -> Self {
         Self {
             inner,
@@ -25,9 +25,7 @@ impl<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> MappedView<G, V, M> {
     }
 }
 
-impl<G: Geometry3 + Sourced, V: View<G> + Sourced, M: Map<G::Pos, G::Dir> + Sourced> Sourced
-    for MappedView<G, V, M>
-{
+impl<G: Geometry, V: View<G>, M: Map<G::Pos, G::Dir>> Sourced for MappedView<G, V, M> {
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/mapped_view_{}.hh", Self::type_tag()))
             .tree(Self::type_source(cfg))
@@ -53,7 +51,4 @@ impl<G: Geometry3 + Sourced, V: View<G> + Sourced, M: Map<G::Pos, G::Dir> + Sour
     }
 }
 
-impl<G: Geometry3 + Sourced, V: View<G> + Sourced, M: Map<G::Pos, G::Dir> + Sourced> View<G>
-    for MappedView<G, V, M>
-{
-}
+impl<G: Geometry, V: View<G>, M: Map<G::Pos, G::Dir>> View<G> for MappedView<G, V, M> {}

@@ -1,10 +1,9 @@
 mod covered;
 mod vector;
 
-use ccgeom::Geometry3;
-use types::{Entity, Sourced};
+use types::prelude::*;
 
-pub trait Object<G: Geometry3>: Entity + Sourced {}
+pub trait Object<G: Geometry>: Entity {}
 
 pub use covered::*;
 pub use vector::*;

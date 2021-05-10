@@ -1,22 +1,22 @@
 use crate::Shape;
-use ccgeom::Geometry3;
 use std::marker::PhantomData;
-use type_macros::{Entity, Named, SizedEntity};
+use type_macros::*;
 use types::{
     include_template,
-    source::{include, SourceBuilder, SourceTree, Sourced},
-    Config, Entity, Map, Named, RayMap, SizedEntity,
+    prelude::*,
+    source::{include, SourceBuilder, SourceTree},
+    Config, Map, RayMap,
 };
 
 #[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
-pub struct MappedShape<G: Geometry3, M: Map<G::Pos, G::Dir>, T: Shape<G>> {
+pub struct MappedShape<G: Geometry, M: Map<G::Pos, G::Dir>, T: Shape<G>> {
     geometry: PhantomData<G>,
     pub map: M,
     #[getter]
     pub shape: T,
 }
 
-impl<G: Geometry3, M: Map<G::Pos, G::Dir>, T: Shape<G>> MappedShape<G, M, T> {
+impl<G: Geometry, M: Map<G::Pos, G::Dir>, T: Shape<G>> MappedShape<G, M, T> {
     pub fn new(shape: T, map: M) -> Self {
         Self {
             shape,
@@ -26,8 +26,7 @@ impl<G: Geometry3, M: Map<G::Pos, G::Dir>, T: Shape<G>> MappedShape<G, M, T> {
     }
 }
 
-impl<G: Geometry3 + Sourced, M: Map<G::Pos, G::Dir> + Sourced, T: Shape<G> + Sourced> Sourced
-    for MappedShape<G, M, T>
+impl<G: Geometry, M: Map<G::Pos, G::Dir>, T: Shape<G>> Sourced for MappedShape<G, M, T>
 where
     Self: Entity,
 {
@@ -57,7 +56,4 @@ where
     }
 }
 
-impl<G: Geometry3 + Sourced, M: Map<G::Pos, G::Dir> + SizedEntity, T: Shape<G> + SizedEntity>
-    Shape<G> for MappedShape<G, M, T>
-{
-}
+impl<G: Geometry, M: Map<G::Pos, G::Dir>, T: Shape<G>> Shape<G> for MappedShape<G, M, T> {}

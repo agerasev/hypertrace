@@ -1,8 +1,8 @@
 use crate::{
     config::{AddressWidth, Config, Endian},
     io::{CntRead, CntWrite},
-    source::{SourceTree, Sourced},
-    Entity, Named, SizedEntity,
+    source::SourceTree,
+    Entity, Named, SizedEntity, Sourced,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_traits::Num;

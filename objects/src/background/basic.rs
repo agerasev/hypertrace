@@ -1,22 +1,23 @@
 use crate::Background;
-use ccgeom::{Euclidean3, Geometry3};
+use ccgeom::Euclidean3;
 use std::marker::PhantomData;
-use type_macros::{Entity, Named, SizedEntity};
+use type_macros::*;
 use types::{
     include_template,
+    prelude::*,
     source::{include, SourceBuilder, SourceTree},
-    Config, Named, Sourced,
+    Config,
 };
 use vecmat::Vector;
 
 /// Constant color background.
 #[derive(Clone, Debug, Entity, SizedEntity)]
-pub struct ConstBg<G: Geometry3 + Named> {
+pub struct ConstBg<G: Geometry> {
     pub color: Vector<f32, 3>,
     phantom: PhantomData<G>,
 }
 
-impl<G: Geometry3 + Named> ConstBg<G> {
+impl<G: Geometry> ConstBg<G> {
     pub fn new(color: Vector<f32, 3>) -> Self {
         Self {
             color,
@@ -25,7 +26,7 @@ impl<G: Geometry3 + Named> ConstBg<G> {
     }
 }
 
-impl<G: Geometry3 + Named> Named for ConstBg<G> {
+impl<G: Geometry> Named for ConstBg<G> {
     fn type_name(cfg: &Config) -> String {
         format!("ConstBg{}", G::type_name(cfg))
     }
@@ -34,7 +35,7 @@ impl<G: Geometry3 + Named> Named for ConstBg<G> {
     }
 }
 
-impl<G: Geometry3 + Sourced> Sourced for ConstBg<G> {
+impl<G: Geometry> Sourced for ConstBg<G> {
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/const_bg_{}.hh", &G::type_prefix(cfg)))
             .tree(G::source(cfg))
@@ -51,7 +52,7 @@ impl<G: Geometry3 + Sourced> Sourced for ConstBg<G> {
     }
 }
 
-impl<G: Geometry3 + Sourced> Background<G> for ConstBg<G> {}
+impl<G: Geometry> Background<G> for ConstBg<G> {}
 
 /// Gradient background.
 /// Available only for euclidean space because only that space preserves direction.

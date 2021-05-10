@@ -2,8 +2,8 @@ use crate::{
     include_template,
     io::{CntRead, CntWrite, EntityReader, EntityWriter},
     math,
-    source::{SourceBuilder, SourceTree, Sourced},
-    Config, Entity, Named, SizedEntity,
+    source::{SourceBuilder, SourceTree},
+    Config, Entity, Named, SizedEntity, Sourced,
 };
 use std::io;
 
@@ -131,7 +131,7 @@ impl<T: Entity> Entity for IndexVector<T> {
     }
 }
 
-impl<T: SizedEntity> Sourced for IndexVector<T> {
+impl<T: Entity> Sourced for IndexVector<T> {
     fn source(cfg: &Config) -> SourceTree {
         Self::type_source(cfg)
     }

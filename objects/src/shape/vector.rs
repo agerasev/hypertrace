@@ -1,25 +1,35 @@
+use crate::Shape;
 use std::marker::PhantomData;
 use type_macros::*;
-use types::{prelude::*, Config, source::{SourceTree, SourceBuilder, include}, include_template};
-use crate::{Shape};
-use ccgeom::Geometry3;
+use types::{
+    include_template,
+    prelude::*,
+    source::{include, SourceBuilder, SourceTree},
+    Config,
+};
 
 #[derive(Clone, Debug, Default, Entity)]
-pub struct ShapeVector<G: Geometry3, T: Shape<G>> {
+pub struct ShapeVector<G: Geometry, T: Shape<G>> {
     geometry: PhantomData<G>,
     pub shapes: Vec<T>,
 }
 
-impl<G: Geometry3, T: Shape<G>> ShapeVector<G, T> {
+impl<G: Geometry, T: Shape<G>> ShapeVector<G, T> {
     pub fn new() -> Self {
-        Self { geometry: PhantomData, shapes: Vec::new() }
+        Self {
+            geometry: PhantomData,
+            shapes: Vec::new(),
+        }
     }
     pub fn from_shapes(shapes: Vec<T>) -> Self {
-        Self { geometry: PhantomData, shapes }
+        Self {
+            geometry: PhantomData,
+            shapes,
+        }
     }
 }
 
-impl<G: Geometry3, T: Shape<G>> Named for ShapeVector<G, T> {
+impl<G: Geometry, T: Shape<G>> Named for ShapeVector<G, T> {
     fn type_name(_: &Config) -> String {
         format!("ShapeVector{}", Self::type_tag())
     }
@@ -28,7 +38,10 @@ impl<G: Geometry3, T: Shape<G>> Named for ShapeVector<G, T> {
     }
 }
 
-impl<G: Geometry3 + Sourced, T: Shape<G>> Sourced for ShapeVector<G, T> where Self: Entity {
+impl<G: Geometry, T: Shape<G>> Sourced for ShapeVector<G, T>
+where
+    Self: Entity,
+{
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/{}.hh", Self::type_prefix(cfg)))
             .tree(Self::type_source(cfg))
@@ -51,4 +64,4 @@ impl<G: Geometry3 + Sourced, T: Shape<G>> Sourced for ShapeVector<G, T> where Se
     }
 }
 
-impl<G: Geometry3 + Sourced, T: Shape<G>> Shape<G> for ShapeVector<G, T> where Self: Entity {}
+impl<G: Geometry, T: Shape<G>> Shape<G> for ShapeVector<G, T> where Self: Entity {}

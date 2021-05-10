@@ -1,25 +1,35 @@
+use crate::Object;
 use std::marker::PhantomData;
 use type_macros::*;
-use types::{prelude::*, Config, source::{SourceTree, SourceBuilder, include}, include_template};
-use crate::{Object};
-use ccgeom::Geometry3;
+use types::{
+    include_template,
+    prelude::*,
+    source::{include, SourceBuilder, SourceTree},
+    Config,
+};
 
 #[derive(Clone, Debug, Default, Entity)]
-pub struct ObjectVector<G: Geometry3, T: Object<G>> {
+pub struct ObjectVector<G: Geometry, T: Object<G>> {
     geometry: PhantomData<G>,
     pub objects: Vec<T>,
 }
 
-impl<G: Geometry3, T: Object<G>> ObjectVector<G, T> {
+impl<G: Geometry, T: Object<G>> ObjectVector<G, T> {
     pub fn new() -> Self {
-        Self { geometry: PhantomData, objects: Vec::new() }
+        Self {
+            geometry: PhantomData,
+            objects: Vec::new(),
+        }
     }
     pub fn from_objects(objects: Vec<T>) -> Self {
-        Self { geometry: PhantomData, objects }
+        Self {
+            geometry: PhantomData,
+            objects,
+        }
     }
 }
 
-impl<G: Geometry3, T: Object<G>> Named for ObjectVector<G, T> {
+impl<G: Geometry, T: Object<G>> Named for ObjectVector<G, T> {
     fn type_name(_: &Config) -> String {
         format!("ObjectVector{}", Self::type_tag())
     }
@@ -28,7 +38,10 @@ impl<G: Geometry3, T: Object<G>> Named for ObjectVector<G, T> {
     }
 }
 
-impl<G: Geometry3 + Sourced, T: Object<G>> Sourced for ObjectVector<G, T> where Self: Entity {
+impl<G: Geometry, T: Object<G>> Sourced for ObjectVector<G, T>
+where
+    Self: Entity,
+{
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/{}.hh", Self::type_prefix(cfg)))
             .tree(Self::type_source(cfg))
@@ -51,4 +64,4 @@ impl<G: Geometry3 + Sourced, T: Object<G>> Sourced for ObjectVector<G, T> where 
     }
 }
 
-impl<G: Geometry3 + Sourced, T: Object<G>> Object<G> for ObjectVector<G, T> where Self: Entity {}
+impl<G: Geometry, T: Object<G>> Object<G> for ObjectVector<G, T> where Self: Entity {}

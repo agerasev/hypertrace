@@ -1,10 +1,7 @@
 use super::*;
 use ccgeom::Euclidean3;
 use type_macros::{Entity, SizedEntity};
-use types::{
-    source::{SourceTree, Sourced},
-    Config, Named,
-};
+use types::{source::SourceTree, Config, Named, Sourced};
 
 // Sphere
 

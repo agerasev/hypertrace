@@ -2,8 +2,8 @@ use crate::{
     include_template,
     io::{CntRead, CntWrite},
     math,
-    source::{SourceBuilder, SourceTree, Sourced},
-    Config, Entity, Named, SizedEntity,
+    source::{SourceBuilder, SourceTree},
+    Config, Entity, Named, SizedEntity, Sourced,
 };
 use ccgeom::Map as GeoMap;
 use std::{any::TypeId, io};

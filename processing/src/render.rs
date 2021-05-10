@@ -1,18 +1,17 @@
 use crate::{Canvas, Buffer, Context};
-use types::{Config, Sourced};
+use types::{Config, prelude::*};
 use objects::{Scene};
-use ccgeom::Geometry3;
 use std::{marker::PhantomData, fs};
 use ocl_include::{Parser, Index, source};
 use uni_path::PathBuf;
 use regex::{Regex, Captures};
 
-pub struct Render<G: Geometry3, S: Scene<G>> {
+pub struct Render<G: Geometry, S: Scene<G>> {
     kernel: ocl::Kernel,
     phantom: PhantomData<(G, S)>,
 }
 
-impl<G: Geometry3 + Sourced, S: Scene<G>> Render<G, S> {
+impl<G: Geometry, S: Scene<G>> Render<G, S> {
     fn source(config: &Config) -> base::Result<(String, Index)> {
         let source = S::source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);

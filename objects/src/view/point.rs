@@ -1,19 +1,19 @@
 use crate::View;
-use ccgeom::Geometry3;
 use std::marker::PhantomData;
 use type_macros::{Entity, SizedEntity};
 use types::{
+    prelude::*,
     source::{SourceBuilder, SourceTree},
-    Config, Named, Sourced,
+    Config,
 };
 
 #[derive(Clone, Debug, Entity, SizedEntity)]
-pub struct PointView<G: Geometry3 + Named> {
+pub struct PointView<G: Geometry> {
     pub fov: f64,
     phantom: PhantomData<G>,
 }
 
-impl<G: Geometry3 + Named> PointView<G> {
+impl<G: Geometry> PointView<G> {
     pub fn new(fov: f64) -> Self {
         Self {
             fov,
@@ -22,7 +22,7 @@ impl<G: Geometry3 + Named> PointView<G> {
     }
 }
 
-impl<G: Geometry3 + Named> Named for PointView<G> {
+impl<G: Geometry> Named for PointView<G> {
     fn type_name(cfg: &Config) -> String {
         format!("PointView{}", G::type_name(cfg))
     }
@@ -31,7 +31,7 @@ impl<G: Geometry3 + Named> Named for PointView<G> {
     }
 }
 
-impl<G: Geometry3 + Sourced> Sourced for PointView<G> {
+impl<G: Geometry> Sourced for PointView<G> {
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("view/point/{}.hh", &G::type_prefix(cfg)))
             .tree(G::source(cfg))
@@ -39,4 +39,4 @@ impl<G: Geometry3 + Sourced> Sourced for PointView<G> {
     }
 }
 
-impl<G: Geometry3 + Sourced> View<G> for PointView<G> {}
+impl<G: Geometry> View<G> for PointView<G> {}

@@ -1,10 +1,9 @@
 mod mapped;
 mod point;
 
-use ccgeom::Geometry3;
-use types::{SizedEntity, Sourced};
+use types::prelude::*;
 
-pub trait View<G: Geometry3>: SizedEntity + Sourced {}
+pub trait View<G: Geometry>: SizedEntity + Sourced {}
 
 pub use mapped::*;
 pub use point::*;

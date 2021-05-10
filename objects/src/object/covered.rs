@@ -1,15 +1,15 @@
 use crate::{Material, Object, Shape};
-use ccgeom::Geometry3;
 use std::marker::PhantomData;
 use type_macros::{Entity, Named, SizedEntity};
 use types::{
     include_template,
+    prelude::*,
     source::{include, SourceBuilder, SourceTree},
-    Config, Entity, Named, Sourced,
+    Config,
 };
 
 #[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
-pub struct Covered<G: Geometry3, S: Shape<G>, M: Material> {
+pub struct Covered<G: Geometry, S: Shape<G>, M: Material> {
     geometry: PhantomData<G>,
     #[getter]
     pub material: M,
@@ -17,7 +17,7 @@ pub struct Covered<G: Geometry3, S: Shape<G>, M: Material> {
     pub shape: S,
 }
 
-impl<G: Geometry3, S: Shape<G>, M: Material> Covered<G, S, M> {
+impl<G: Geometry, S: Shape<G>, M: Material> Covered<G, S, M> {
     pub fn new(shape: S, material: M) -> Self {
         Self {
             geometry: PhantomData,
@@ -27,8 +27,7 @@ impl<G: Geometry3, S: Shape<G>, M: Material> Covered<G, S, M> {
     }
 }
 
-impl<G: Geometry3 + Sourced, S: Shape<G> + Sourced, M: Material + Sourced> Sourced
-    for Covered<G, S, M>
+impl<G: Geometry, S: Shape<G> + Sourced, M: Material + Sourced> Sourced for Covered<G, S, M>
 where
     Self: Entity,
 {
@@ -61,9 +60,7 @@ where
     }
 }
 
-impl<G: Geometry3 + Sourced, S: Shape<G> + Sourced, M: Material + Sourced> Object<G>
-    for Covered<G, S, M>
-where
-    Self: Entity,
+impl<G: Geometry, S: Shape<G> + Sourced, M: Material + Sourced> Object<G> for Covered<G, S, M> where
+    Self: Entity
 {
 }

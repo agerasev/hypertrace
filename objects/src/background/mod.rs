@@ -1,8 +1,7 @@
 mod basic;
 
-use ccgeom::Geometry3;
-use types::{Entity, Named, Sourced};
+use types::prelude::*;
 
-pub trait Background<G: Geometry3>: Named + Entity + Sourced {}
+pub trait Background<G: Geometry>: SizedEntity {}
 
 pub use basic::*;

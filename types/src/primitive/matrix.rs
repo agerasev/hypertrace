@@ -1,8 +1,8 @@
 use crate::{
     io::{CntRead, CntWrite},
     primitive::PrimVec,
-    source::{SourceTree, Sourced},
-    Config, Entity, Named, SizedEntity,
+    source::SourceTree,
+    Config, Entity, Named, SizedEntity, Sourced,
 };
 use std::io;
 use vecmat::{Complex, Matrix};

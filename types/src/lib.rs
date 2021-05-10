@@ -21,11 +21,11 @@ pub use uni_path as path;
 pub use config::Config;
 pub use containers::*;
 pub use entity::*;
+pub use geometry::Geometry;
 pub use map::Map;
 pub use primitive::*;
 pub use ray::*;
-pub use source::*;
 
 pub mod prelude {
-    pub use crate::{Named, Entity, SizedEntity, Sourced};
+    pub use crate::{Entity, Geometry, Named, SizedEntity, Sourced};
 }

@@ -1,7 +1,8 @@
 use crate::{
     hash::DefaultHasher,
     io::{CntRead, CntWrite},
-    Config, SourceTree,
+    source::SourceTree,
+    Config,
 };
 use std::{
     any::TypeId,
@@ -31,7 +32,7 @@ pub trait Named: 'static + Sized {
 }
 
 /// Static entity type.
-pub trait Entity: Named {
+pub trait Entity: Named + Sourced {
     /// Align of type.
     fn align(cfg: &Config) -> usize;
 
@@ -60,4 +61,10 @@ pub trait Entity: Named {
 pub trait SizedEntity: Entity {
     /// Static size of type.
     fn type_size(cfg: &Config) -> usize;
+}
+
+/// Trait to generate backend source code.
+pub trait Sourced: Named {
+    /// Returns backend source code tree.
+    fn source(cfg: &Config) -> SourceTree;
 }

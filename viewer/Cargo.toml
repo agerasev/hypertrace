@@ -5,8 +5,7 @@ authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-sdl2 = "0.34"
-rental = "0.5.6"
+sdl2 = { version = "0.34", features = ["unsafe_textures"] }
 base = { package = "hypertrace-base", path = "../base" }
 vecmat = { path = "../vecmat" }
 ccgeom = { path = "../ccgeom" }

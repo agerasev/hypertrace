@@ -2,7 +2,7 @@ mod empty;
 mod isotropic;
 
 pub use empty::*;
-pub use isotropic::*; 
+pub use isotropic::*;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Motion {

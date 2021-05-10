@@ -3,14 +3,21 @@ use std::{
     thread::sleep,
     time::Duration,
 };
-use vecmat::{Vector, Matrix, Transform, transform::{Shift, Rotation3, Linear}};
+use vecmat::{Vector, Transform, transform::{Shift, Rotation3}};
 use base::Image;
 use view::{Window, Controller, controllers::IsotropicController};
 use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objects::{SceneImpl, view::{PointView, MappedView}, shape::{euclidean::{Cube, Sphere}, MappedShape, ShapeVector}, object::{Covered, ObjectVector}, material::{Lambertian}, background::{GradBg}};
+use objects::{
+    SceneImpl,
+    view::{PointView, MappedView},
+    shape::{euclidean::Sphere, MappedShape, ShapeVector},
+    object::{Covered},
+    material::{Lambertian},
+    background::{GradBg},
+};
 use ccgeom::{Euclidean3, Homogenous3};
 
 fn main() -> base::Result<()> {

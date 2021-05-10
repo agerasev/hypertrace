@@ -1,9 +1,6 @@
-#[macro_use]
-extern crate rental; 
-
-mod window;
-mod handler;
 pub mod controllers;
+mod handler;
+mod window;
 
-pub use window::*;
 pub use controllers::{Controller, Motion};
+pub use window::*;

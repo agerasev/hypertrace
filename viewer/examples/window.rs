@@ -1,10 +1,5 @@
-use std::{
-    rc::Rc,
-    thread::sleep,
-    time::Duration,
-};
-use hypertrace_viewer::{Window, Controller, Motion};
-
+use hypertrace_viewer::{Controller, Motion, Window};
+use std::{rc::Rc, thread::sleep, time::Duration};
 
 pub struct DummyController;
 

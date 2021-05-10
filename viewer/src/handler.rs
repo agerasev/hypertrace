@@ -1,11 +1,11 @@
-use std::{rc::Rc};
 use sdl2::{
     self,
-    Sdl, EventPump,
     event::Event,
-    keyboard::{Keycode, Scancode, KeyboardState},
+    keyboard::{KeyboardState, Keycode, Scancode},
     mouse::{MouseState, RelativeMouseState},
+    EventPump, Sdl,
 };
+use std::rc::Rc;
 
 use crate::{Controller, Motion};
 
@@ -27,7 +27,7 @@ pub enum MouseMode {
 impl Handler {
     pub fn new(context: Rc<Sdl>, size: (usize, usize)) -> base::Result<Self> {
         let event_pump = context.event_pump()?;
-        
+
         let mut self_ = Self {
             context,
             event_pump,
@@ -61,13 +61,23 @@ impl Handler {
             };
 
             match event {
-                Event::Quit {..} => { return Ok(true); },
-                Event::KeyDown { keycode: Some(key), .. } => match key {
-                    Keycode::Escape => { return Ok(true); },
-                    Keycode::Tab => { toggle_mouse_mode = true; },
+                Event::Quit { .. } => {
+                    return Ok(true);
+                }
+                Event::KeyDown {
+                    keycode: Some(key), ..
+                } => match key {
+                    Keycode::Escape => {
+                        return Ok(true);
+                    }
+                    Keycode::Tab => {
+                        toggle_mouse_mode = true;
+                    }
                     _ => (),
                 },
-                Event::MouseWheel { y, .. } => { mouse_wheel += y; }
+                Event::MouseWheel { y, .. } => {
+                    mouse_wheel += y;
+                }
                 _ => (),
             }
         }
@@ -79,7 +89,11 @@ impl Handler {
         // Mouse
 
         if toggle_mouse_mode {
-            self.set_mouse_mode(if self.capture { MouseMode::Drag } else { MouseMode::Capture });
+            self.set_mouse_mode(if self.capture {
+                MouseMode::Drag
+            } else {
+                MouseMode::Capture
+            });
         }
 
         let relative_mouse_state = self.event_pump.relative_mouse_state();
@@ -106,14 +120,19 @@ impl Handler {
         relative_state: RelativeMouseState,
         wheel: i32,
     ) {
-        let shift = key_state.is_scancode_pressed(Scancode::LShift) || key_state.is_scancode_pressed(Scancode::RShift);
+        let shift = key_state.is_scancode_pressed(Scancode::LShift)
+            || key_state.is_scancode_pressed(Scancode::RShift);
 
         if self.capture || state.left() {
             if relative_state.x() != 0 {
-                controller.rotate_yaw(Motion::Position(2.0 * relative_state.x() as f64 / self.size.0 as f64));
+                controller.rotate_yaw(Motion::Position(
+                    2.0 * relative_state.x() as f64 / self.size.0 as f64,
+                ));
             }
             if relative_state.y() != 0 {
-                controller.rotate_pitch(Motion::Position(2.0 * relative_state.y() as f64 / self.size.1 as f64));
+                controller.rotate_pitch(Motion::Position(
+                    2.0 * relative_state.y() as f64 / self.size.1 as f64,
+                ));
             }
         }
 
@@ -129,13 +148,29 @@ impl Handler {
     fn handle_keys<C: Controller>(&self, controller: &mut C, key_state: KeyboardState) {
         let key = |code: Scancode| key_state.is_scancode_pressed(code);
 
-        if key(Scancode::W) || key(Scancode::Up) { controller.move_forward(Motion::Velocity(1.0)); }
-        if key(Scancode::A) || key(Scancode::Left) { controller.move_right(Motion::Velocity(-1.0)); }
-        if key(Scancode::S) || key(Scancode::Down) { controller.move_forward(Motion::Velocity(-1.0)); }
-        if key(Scancode::D) || key(Scancode::Right) { controller.move_right(Motion::Velocity(1.0)); }
-        if key(Scancode::Space) { controller.move_up(Motion::Velocity(1.0)); }
-        if key(Scancode::C) { controller.move_up(Motion::Velocity(-1.0)); }
-        if key(Scancode::E) { controller.rotate_roll(Motion::Velocity(1.0)); }
-        if key(Scancode::Q) { controller.rotate_roll(Motion::Velocity(-1.0)); }
+        if key(Scancode::W) || key(Scancode::Up) {
+            controller.move_forward(Motion::Velocity(1.0));
+        }
+        if key(Scancode::A) || key(Scancode::Left) {
+            controller.move_right(Motion::Velocity(-1.0));
+        }
+        if key(Scancode::S) || key(Scancode::Down) {
+            controller.move_forward(Motion::Velocity(-1.0));
+        }
+        if key(Scancode::D) || key(Scancode::Right) {
+            controller.move_right(Motion::Velocity(1.0));
+        }
+        if key(Scancode::Space) {
+            controller.move_up(Motion::Velocity(1.0));
+        }
+        if key(Scancode::C) {
+            controller.move_up(Motion::Velocity(-1.0));
+        }
+        if key(Scancode::E) {
+            controller.rotate_roll(Motion::Velocity(1.0));
+        }
+        if key(Scancode::Q) {
+            controller.rotate_roll(Motion::Velocity(-1.0));
+        }
     }
 }

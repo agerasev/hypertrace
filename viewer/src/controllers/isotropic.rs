@@ -1,5 +1,5 @@
-use ccgeom::{Geometry3, Map};
 use crate::{Controller, Motion};
+use ccgeom::{Geometry3, Map};
 
 pub struct IsotropicController<G: Geometry3> {
     map: G::Map,
@@ -7,9 +7,16 @@ pub struct IsotropicController<G: Geometry3> {
     updated: bool,
 }
 
-impl<G: Geometry3> IsotropicController<G> where G::Map: Copy {
+impl<G: Geometry3> IsotropicController<G>
+where
+    G::Map: Copy,
+{
     pub fn new(map: G::Map, zoom: f64) -> Self {
-        Self { map, zoom, updated: true }
+        Self {
+            map,
+            zoom,
+            updated: true,
+        }
     }
     pub fn update_map(&mut self, chain: G::Map) {
         self.map = self.map.chain(chain);
@@ -26,7 +33,10 @@ impl<G: Geometry3> IsotropicController<G> where G::Map: Copy {
     }
 }
 
-impl<G: Geometry3> Default for IsotropicController<G> where G::Map: Copy {
+impl<G: Geometry3> Default for IsotropicController<G>
+where
+    G::Map: Copy,
+{
     fn default() -> Self {
         Self {
             map: G::Map::identity(),
@@ -48,7 +58,10 @@ fn motion_to_value(m: Motion) -> f64 {
     }
 }
 
-impl<G: Geometry3> Controller for IsotropicController<G> where G::Map: Copy {
+impl<G: Geometry3> Controller for IsotropicController<G>
+where
+    G::Map: Copy,
+{
     fn move_forward(&mut self, m: Motion) {
         self.update_map(G::shift_z(SPEED * motion_to_value(m)));
     }

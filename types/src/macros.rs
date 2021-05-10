@@ -17,6 +17,12 @@ macro_rules! impl_entity_unwrap {
         fn size(&self, cfg: &crate::Config) -> usize {
             <Self as Into<$T>>::into(*self).size(cfg)
         }
+        fn min_size(cfg: &crate::Config) -> usize {
+            <$T>::min_size(cfg)
+        }
+        fn is_dyn_sized() -> bool {
+            <$T>::is_dyn_sized()
+        }
         fn load<R: crate::io::CntRead>(cfg: &crate::Config, src: &mut R) -> std::io::Result<Self> {
             <$T>::load(cfg, src).map(|x| x.into())
         }

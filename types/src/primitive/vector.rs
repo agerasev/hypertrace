@@ -1,7 +1,8 @@
 use crate::{
     io::{CntRead, CntWrite},
     primitive::PrimScal,
-    Config, Entity, Named, SizedEntity, source::{SourceTree, Sourced},
+    source::{SourceTree, Sourced},
+    Config, Entity, Named, SizedEntity,
 };
 use std::{fmt::Debug, io};
 use vecmat::Vector;
@@ -25,6 +26,12 @@ macro_rules! impl_entity {
             }
             fn size(&self, cfg: &Config) -> usize {
                 Self::type_size(cfg)
+            }
+            fn min_size(cfg: &Config) -> usize {
+                Self::type_size(cfg)
+            }
+            fn is_dyn_sized() -> bool {
+                false
             }
             fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
                 let mut v = Self::default();
@@ -76,6 +83,12 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
     }
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
+    }
+    fn min_size(cfg: &Config) -> usize {
+        Self::type_size(cfg)
+    }
+    fn is_dyn_sized() -> bool {
+        false
     }
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let mut v = Self::default();

@@ -1,6 +1,7 @@
 use crate::{
     io::{CntRead, CntWrite},
-    Config, Entity, Named, SizedEntity, source::{SourceTree, Sourced}
+    source::{SourceTree, Sourced},
+    Config, Entity, Named, SizedEntity,
 };
 use std::{io, marker::PhantomData};
 
@@ -27,6 +28,14 @@ impl Entity for () {
 
     fn size(&self, _: &Config) -> usize {
         0
+    }
+
+    fn min_size(_: &Config) -> usize {
+        0
+    }
+
+    fn is_dyn_sized() -> bool {
+        false
     }
 
     fn store<W: CntWrite>(&self, _: &Config, _: &mut W) -> io::Result<()> {
@@ -73,6 +82,14 @@ impl<T: 'static> Entity for PhantomData<T> {
 
     fn size(&self, _: &Config) -> usize {
         0
+    }
+
+    fn min_size(_: &Config) -> usize {
+        0
+    }
+
+    fn is_dyn_sized() -> bool {
+        false
     }
 
     fn store<W: CntWrite>(&self, _: &Config, _: &mut W) -> io::Result<()> {

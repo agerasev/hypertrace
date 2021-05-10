@@ -65,6 +65,14 @@ impl<T: Entity> Entity for IndexVector<T> {
         )
     }
 
+    fn min_size(cfg: &Config) -> usize {
+        math::upper_multiple(usize::type_size(cfg), T::align(cfg))
+    }
+
+    fn is_dyn_sized() -> bool {
+        true
+    }
+
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let len = src.read_entity::<usize>(cfg)?;
         let poss = (0..len)

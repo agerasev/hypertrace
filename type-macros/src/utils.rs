@@ -1,7 +1,7 @@
-use std::iter::{self, ExactSizeIterator};
-use syn::{self, Field, Fields, Ident};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
+use std::iter::{self, ExactSizeIterator};
+use syn::{self, Field, Fields, Ident};
 
 pub fn fields_iter<'a>(fields: &'a Fields) -> Box<dyn ExactSizeIterator<Item = &'a Field> + 'a> {
     match fields {

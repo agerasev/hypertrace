@@ -1,8 +1,8 @@
-use crate::{Material};
-use types::{Config, Sourced, source::{SourceTree}};
-use type_macros::{Named, SizedEntity};
+use crate::Material;
+use type_macros::{Entity, Named, SizedEntity};
+use types::{source::SourceTree, Config, Sourced};
 
-#[derive(Clone, Copy, Debug, Named, SizedEntity)]
+#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
 pub struct Absorbing;
 
 impl Sourced for Absorbing {
@@ -13,8 +13,7 @@ impl Sourced for Absorbing {
 
 impl Material for Absorbing {}
 
-
-#[derive(Clone, Copy, Debug, Named, SizedEntity)]
+#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
 pub struct Transparent;
 
 impl Sourced for Transparent {
@@ -25,8 +24,7 @@ impl Sourced for Transparent {
 
 impl Material for Transparent {}
 
-
-#[derive(Clone, Copy, Debug, Named, SizedEntity)]
+#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
 pub struct Specular;
 
 impl Sourced for Specular {
@@ -37,8 +35,7 @@ impl Sourced for Specular {
 
 impl Material for Specular {}
 
-
-#[derive(Clone, Copy, Debug, Named, SizedEntity)]
+#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
 pub struct Lambertian;
 
 impl Sourced for Lambertian {

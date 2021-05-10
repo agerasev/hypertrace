@@ -1,7 +1,8 @@
 use crate::{
     io::{CntRead, CntWrite},
     primitive::PrimVec,
-    Config, Entity, Named, SizedEntity, source::{SourceTree, Sourced},
+    source::{SourceTree, Sourced},
+    Config, Entity, Named, SizedEntity,
 };
 use std::io;
 use vecmat::{Complex, Matrix};
@@ -22,6 +23,12 @@ impl Entity for Matrix<f64, 2, 2> {
     }
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
+    }
+    fn min_size(cfg: &Config) -> usize {
+        Self::type_size(cfg)
+    }
+    fn is_dyn_sized() -> bool {
+        false
     }
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let mut v = Self::default();
@@ -73,6 +80,12 @@ impl Entity for Matrix<f64, 4, 4> {
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
     }
+    fn min_size(cfg: &Config) -> usize {
+        Self::type_size(cfg)
+    }
+    fn is_dyn_sized() -> bool {
+        false
+    }
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let mut v = Self::default();
         for i in 0..4 {
@@ -122,6 +135,12 @@ impl Entity for Matrix<f64, 3, 3> {
     }
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
+    }
+    fn min_size(cfg: &Config) -> usize {
+        Self::type_size(cfg)
+    }
+    fn is_dyn_sized() -> bool {
+        false
     }
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let mut v = Self::default();
@@ -179,6 +198,12 @@ impl Entity for Matrix<Complex<f64>, 2, 2> {
     }
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
+    }
+    fn min_size(cfg: &Config) -> usize {
+        Self::type_size(cfg)
+    }
+    fn is_dyn_sized() -> bool {
+        false
     }
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let mut v = Self::default();

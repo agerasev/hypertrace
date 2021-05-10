@@ -1,17 +1,17 @@
-use hypertrace_type_macros::{Named, SizedEntity, Sourced};
+use hypertrace_type_macros::{Entity, Named, SizedEntity, Sourced};
 use types::{config::HOST_CONFIG, Sourced};
 
-#[derive(Named, SizedEntity, Sourced)]
+#[derive(Named, Entity, SizedEntity, Sourced)]
 struct A {
     #[getter]
     x: i32,
     y: (),
 }
 
-#[derive(Named, SizedEntity, Sourced)]
+#[derive(Named, Entity, SizedEntity, Sourced)]
 struct B;
 
-#[derive(Named, SizedEntity, Sourced)]
+#[derive(Named, Entity, SizedEntity, Sourced)]
 struct C(A, #[getter] B);
 
 fn main() {

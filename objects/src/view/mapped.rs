@@ -1,39 +1,43 @@
-use ccgeom::Geometry3;
-use types::{Named, Entity, Sourced, Config, Map, source::{SourceTree, SourceBuilder, include}, include_template};
-use std::{marker::PhantomData};
-use type_macros::{Named, SizedEntity};
 use crate::View;
+use ccgeom::Geometry3;
+use std::marker::PhantomData;
+use type_macros::{Entity, Named, SizedEntity};
+use types::{
+    include_template,
+    source::{include, SourceBuilder, SourceTree},
+    Config, Entity, Map, Named, Sourced,
+};
 
-
-#[derive(Clone, Debug, Named, SizedEntity)]
+#[derive(Clone, Debug, Named, Entity, SizedEntity)]
 pub struct MappedView<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> {
     pub inner: V,
     pub map: M,
-    phantom: PhantomData<G>,
+    geometry: PhantomData<G>,
 }
 
-impl<
-    G: Geometry3,
-    V: View<G>,
-    M: Map<G::Pos, G::Dir>,
-> MappedView<G, V, M> {
+impl<G: Geometry3, V: View<G>, M: Map<G::Pos, G::Dir>> MappedView<G, V, M> {
     pub fn new(inner: V, map: M) -> Self {
-        Self { inner, map, phantom: PhantomData }
+        Self {
+            inner,
+            map,
+            geometry: PhantomData,
+        }
     }
 }
 
-impl<
-    G: Geometry3 + Sourced,
-    V: View<G> + Sourced,
-    M: Map<G::Pos, G::Dir> + Sourced,
-> Sourced for MappedView<G, V, M> {
+impl<G: Geometry3 + Sourced, V: View<G> + Sourced, M: Map<G::Pos, G::Dir> + Sourced> Sourced
+    for MappedView<G, V, M>
+{
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/mapped_view_{}.hh", Self::type_tag()))
             .tree(Self::type_source(cfg))
             .tree(G::source(cfg))
             .tree(M::source(cfg))
             .tree(V::source(cfg))
-            .content(&include(&format!("geometry/ray_{}.hh", &G::type_prefix(cfg))))
+            .content(&include(&format!(
+                "geometry/ray_{}.hh",
+                &G::type_prefix(cfg)
+            )))
             .content(&include_template!(
                 "view/mapped.inl",
                 "Self": &Self::type_name(cfg),
@@ -49,8 +53,7 @@ impl<
     }
 }
 
-impl<
-    G: Geometry3 + Sourced,
-    V: View<G> + Sourced,
-    M: Map<G::Pos, G::Dir> + Sourced,
-> View<G> for MappedView<G, V, M> {}
+impl<G: Geometry3 + Sourced, V: View<G> + Sourced, M: Map<G::Pos, G::Dir> + Sourced> View<G>
+    for MappedView<G, V, M>
+{
+}

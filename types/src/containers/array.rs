@@ -30,6 +30,18 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
         T::align(cfg)
     }
 
+    fn size(&self, cfg: &Config) -> usize {
+        Self::type_size(cfg)
+    }
+
+    fn min_size(cfg: &Config) -> usize {
+        Self::type_size(cfg)
+    }
+
+    fn is_dyn_sized() -> bool {
+        false
+    }
+
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let mut err: Option<io::Error> = None;
         Vector::try_from_iter(iter::from_fn(|| match T::load(cfg, src) {
@@ -41,10 +53,6 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
         }))
         .map(|vec| vec.into_array())
         .ok_or_else(|| err.unwrap())
-    }
-
-    fn size(&self, cfg: &Config) -> usize {
-        Self::type_size(cfg)
     }
 
     fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {

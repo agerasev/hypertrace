@@ -14,11 +14,18 @@ fn getter_required(attrs: &[Attribute]) -> bool {
 fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2) -> TokenStream2 {
     let fields_list = fields_iter(fields).collect::<Vec<_>>();
     if !fields_list.is_empty() {
+        let field_count = fields_list.len();
         let content = fields_list.into_iter().enumerate().fold(quote!{}, |accum, (index, field)| {
             let ty = &field.ty;
             let fname = match &field.ident {
                 Some(x) => quote!{ std::stringify!(#x) },
                 None => quote!{ format!("field_{}", #index) },
+            };
+
+            let size = if index + 1 < field_count {
+                quote! { <#ty as types::SizedEntity>::type_size(cfg) }
+            } else {
+                quote! { <#ty as types::Entity>::min_size(cfg) }
             };
 
             let getter = if getter_required(&field.attrs) {
@@ -33,7 +40,7 @@ fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2)
                             ns = ns,
                             nsp = nsp,
                         );
-                        if field_size > 0 {
+                        if <#ty as types::Entity>::is_dyn_sized() || field_size > 0 {
                             getter_text += &format!("    return &self->{};\n", &#fname);
                         } else {
                             getter_text += "    return NULL;\n";
@@ -48,14 +55,13 @@ fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2)
             quote!{
                 #accum
                 {
-                    let field_size = <#ty as types::SizedEntity>::type_size(cfg);
-                    size = types::math::upper_multiple(size, <#ty as types::Entity>::align(cfg)) +
-                        field_size;
+                    let field_size = #size;
+                    size = types::math::upper_multiple(size, <#ty as types::Entity>::align(cfg)) + field_size;
                     align = types::math::lcm(align, <#ty as types::Entity>::align(cfg));
 
                     let field_type_name = <#ty as types::Named>::type_name(cfg);
                     let field_src = <#ty as types::Sourced>::source(cfg);
-                    if field_size > 0 {
+                    if <#ty as types::Entity>::is_dyn_sized() || field_size > 0 {
                         text += &format!("    {} {};\n", &field_type_name, #fname);
                     }
 
@@ -88,8 +94,13 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
             quote! { type_prefix },
         ),
         Data::Enum(enum_data) => {
-            let enums = enum_data.variants.iter().enumerate().fold(quote!{}, |accum, (index, variant)| {
-                let enum_source = make_source_fields(&variant.fields, quote!{ enum_name }, quote!{ enum_prefix });
+            let variant_iter = enum_data.variants.iter();
+            let enums = variant_iter.enumerate().fold(quote!{}, |accum, (index, variant)| {
+                let enum_source = make_source_fields(
+                    &variant.fields,
+                    quote!{ enum_name },
+                    quote!{ enum_prefix },
+                );
 
                 let getter = if getter_required(&variant.attrs) {
                     quote!{

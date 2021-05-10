@@ -1,7 +1,8 @@
 use crate::{
     config::{AddressWidth, Config, Endian},
     io::{CntRead, CntWrite},
-    Entity, Named, SizedEntity, source::{SourceTree, Sourced},
+    source::{SourceTree, Sourced},
+    Entity, Named, SizedEntity,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_traits::Num;
@@ -26,6 +27,12 @@ macro_rules! impl_entity_native {
             }
             fn size(&self, cfg: &Config) -> usize {
                 Self::type_size(cfg)
+            }
+            fn min_size(cfg: &Config) -> usize {
+                Self::type_size(cfg)
+            }
+            fn is_dyn_sized() -> bool {
+                false
             }
             fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
                 match cfg.endian {
@@ -74,6 +81,12 @@ macro_rules! impl_entity_byte {
             fn size(&self, cfg: &Config) -> usize {
                 Self::type_size(cfg)
             }
+            fn min_size(cfg: &Config) -> usize {
+                Self::type_size(cfg)
+            }
+            fn is_dyn_sized() -> bool {
+                false
+            }
             fn load<R: CntRead>(_cfg: &Config, src: &mut R) -> io::Result<Self> {
                 src.$read()
             }
@@ -120,6 +133,12 @@ macro_rules! impl_entity_size {
             }
             fn size(&self, cfg: &Config) -> usize {
                 Self::type_size(cfg)
+            }
+            fn min_size(cfg: &Config) -> usize {
+                Self::type_size(cfg)
+            }
+            fn is_dyn_sized() -> bool {
+                false
             }
             fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
                 match cfg.address_width {
@@ -194,6 +213,12 @@ impl Entity for f64 {
     }
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
+    }
+    fn min_size(cfg: &Config) -> usize {
+        Self::type_size(cfg)
+    }
+    fn is_dyn_sized() -> bool {
+        false
     }
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         if cfg.double_support {

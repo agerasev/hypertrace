@@ -1,41 +1,42 @@
-use types::{Config, Named, Entity, SizedEntity, Sourced, source::{SourceTree, SourceBuilder}, include_template};
-use type_macros::{Named, SizedEntity};
+use crate::{Background, Object, View};
 use ccgeom::Geometry3;
-use crate::{View, Object, Background};
 use std::marker::PhantomData;
+use type_macros::{Entity, Named, SizedEntity};
+use types::{
+    include_template,
+    source::{SourceBuilder, SourceTree},
+    Config, Entity, Named, Sourced,
+};
 
 pub trait Scene<G: Geometry3>: Named + Entity + Sourced {}
 
-#[derive(Clone, Debug, Named, SizedEntity)]
-pub struct SceneImpl<
-    G: Geometry3 + Sourced,
-    V: View<G>,
-    T: Object<G>,
-    B: Background<G>,
-> {
-    #[getter] pub view: V,
-    #[getter] pub background: B,
-    #[getter] pub object: T,
+#[derive(Clone, Debug, Named, Entity, SizedEntity)]
+pub struct SceneImpl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Background<G>> {
     geometry: PhantomData<G>,
+    #[getter]
+    pub view: V,
+    #[getter]
+    pub background: B,
+    #[getter]
+    pub object: T,
 }
 
-impl<
-    G: Geometry3 + Sourced,
-    V: View<G>,
-    T: Object<G>,
-    B: Background<G>,
-> SceneImpl<G, V, T, B> {
+impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Background<G>> SceneImpl<G, V, T, B> {
     pub fn new(view: V, object: T, background: B) -> Self {
-        Self { view, background, object, geometry: PhantomData }
+        Self {
+            view,
+            background,
+            object,
+            geometry: PhantomData,
+        }
     }
 }
 
-impl<
-    G: Geometry3 + Sourced,
-    V: View<G>,
-    T: Object<G>,
-    B: Background<G>,
-> Sourced for SceneImpl<G, V, T, B> where Self: Entity, T: SizedEntity {
+impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Background<G>> Sourced
+    for SceneImpl<G, V, T, B>
+where
+    Self: Entity,
+{
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/scene_{}.hh", Self::type_tag()))
             .tree(Self::type_source(cfg))
@@ -60,9 +61,9 @@ impl<
     }
 }
 
-impl<
-    G: Geometry3 + Sourced,
-    V: View<G>,
-    T: Object<G>,
-    B: Background<G>,
-> Scene<G> for SceneImpl<G, V, T, B> where Self: Entity, T: SizedEntity {}
+impl<G: Geometry3 + Sourced, V: View<G>, T: Object<G>, B: Background<G>> Scene<G>
+    for SceneImpl<G, V, T, B>
+where
+    Self: Entity,
+{
+}

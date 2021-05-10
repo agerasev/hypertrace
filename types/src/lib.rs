@@ -13,8 +13,8 @@ pub mod hash;
 pub mod io;
 pub mod math;
 pub mod primitive;
-pub mod source;
 mod ray;
+pub mod source;
 
 pub use uni_path as path;
 
@@ -23,5 +23,5 @@ pub use containers::*;
 pub use entity::*;
 pub use map::Map;
 pub use primitive::*;
-pub use source::*;
 pub use ray::*;
+pub use source::*;

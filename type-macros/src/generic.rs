@@ -4,32 +4,45 @@ use quote::{quote, ToTokens};
 use std::iter::Iterator;
 use syn::{self, Data, DeriveInput, Fields, GenericParam};
 
-fn make_where_clause_fields(fields: &Fields) -> TokenStream2 {
-    fields_iter(fields).fold(quote! {}, |accum, field| {
+fn make_where_clause_fields(
+    fields: &Fields,
+    bound: &TokenStream2,
+    last_bound: Option<&TokenStream2>,
+) -> TokenStream2 {
+    let iter = fields_iter(fields);
+    let len = iter.len();
+    iter.enumerate().fold(quote! {}, |accum, (index, field)| {
         let ty = &field.ty;
+        let b = if index + 1 < len {
+            bound
+        } else {
+            last_bound.unwrap_or(bound)
+        };
         quote! {
             #accum
-            #ty: types::SizedEntity + types::Sourced,
+            #ty: #b,
         }
     })
 }
 
-pub fn make_where_clause(input: &DeriveInput) -> TokenStream2 {
-    let clause = match &input.data {
-        Data::Struct(struct_data) => make_where_clause_fields(&struct_data.fields),
+pub fn make_where_clause(
+    input: &DeriveInput,
+    bound: TokenStream2,
+    last_bound: Option<TokenStream2>,
+) -> TokenStream2 {
+    match &input.data {
+        Data::Struct(struct_data) => {
+            make_where_clause_fields(&struct_data.fields, &bound, last_bound.as_ref())
+        }
         Data::Enum(enum_data) => enum_data.variants.iter().fold(quote! {}, |accum, variant| {
-            let variant_clause = make_where_clause_fields(&variant.fields);
+            let variant_clause =
+                make_where_clause_fields(&variant.fields, &bound, last_bound.as_ref());
             quote! {
                 #accum
                 #variant_clause
             }
         }),
         Data::Union(_) => panic!("Union derive is not supported yet"),
-    };
-    if clause.is_empty() {
-        quote! {}
-    } else {
-        quote! { where #clause }
     }
 }
 

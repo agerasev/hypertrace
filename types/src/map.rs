@@ -208,6 +208,12 @@ where
     fn size(&self, cfg: &Config) -> usize {
         Self::type_size(cfg)
     }
+    fn min_size(cfg: &Config) -> usize {
+        Self::type_size(cfg)
+    }
+    fn is_dyn_sized() -> bool {
+        false
+    }
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {
         let a = A::load(cfg, src)?;
         src.align(B::align(cfg))?;

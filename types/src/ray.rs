@@ -1,28 +1,23 @@
-use std::marker::PhantomData;
-use ccgeom::{Geometry3};
 use crate::{
-    Config, Map, Named,
-    source::{Sourced, SourceTree, SourceBuilder},
     include_template,
+    source::{SourceBuilder, SourceTree, Sourced},
+    Config, Map, Named,
 };
+use ccgeom::Geometry3;
+use std::marker::PhantomData;
 
-pub struct RayMap<
-    G: Geometry3,
-    M: Map<G::Pos, G::Dir>,   
->(PhantomData<(G, M)>);
+pub struct RayMap<G: Geometry3, M: Map<G::Pos, G::Dir>>(PhantomData<(G, M)>);
 
-impl<
-    G: Geometry3,
-    M: Map<G::Pos, G::Dir>,    
-> Named for RayMap<G, M> {
-    fn type_name(_: &Config) -> String { "".into() }
-    fn type_prefix(_: &Config) -> String { "".into() }
+impl<G: Geometry3, M: Map<G::Pos, G::Dir>> Named for RayMap<G, M> {
+    fn type_name(_: &Config) -> String {
+        "".into()
+    }
+    fn type_prefix(_: &Config) -> String {
+        "".into()
+    }
 }
 
-impl<
-    G: Geometry3 + Sourced,
-    M: Map<G::Pos, G::Dir>,    
-> Sourced for RayMap<G, M> {
+impl<G: Geometry3 + Sourced, M: Map<G::Pos, G::Dir>> Sourced for RayMap<G, M> {
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/ray_map_{}.hh", Self::type_tag()))
             .tree(G::source(cfg))

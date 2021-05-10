@@ -4,7 +4,6 @@ use crate::{
 };
 use vecmat::{Complex, Quaternion, Vector};
 
-
 impl<T: PrimScal> Named for Complex<T> {
     impl_named_unwrap!(Vector<T, 2>);
 }
@@ -19,7 +18,6 @@ impl<T: PrimScal> Sourced for Complex<T> {
 }
 impl<T: PrimScal> PrimVec for Complex<T> {}
 
-
 impl<T: PrimScal> Named for Quaternion<T> {
     impl_named_unwrap!(Vector<T, 4>);
 }
@@ -33,7 +31,6 @@ impl<T: PrimScal> Sourced for Quaternion<T> {
     impl_sourced_unwrap!(Vector<T, 4>);
 }
 impl<T: PrimScal> PrimVec for Quaternion<T> {}
-
 
 #[cfg(test)]
 mod tests {

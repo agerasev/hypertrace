@@ -1,13 +1,16 @@
-use types::{Named, Sourced, Config, source::{SourceTree, SourceBuilder, include}, include_template};
-use std::{marker::PhantomData};
-use type_macros::{Named, SizedEntity};
-use vecmat::Vector;
-use ccgeom::{Geometry3, Euclidean3};
 use crate::Background;
-
+use ccgeom::{Euclidean3, Geometry3};
+use std::marker::PhantomData;
+use type_macros::{Entity, Named, SizedEntity};
+use types::{
+    include_template,
+    source::{include, SourceBuilder, SourceTree},
+    Config, Named, Sourced,
+};
+use vecmat::Vector;
 
 /// Constant color background.
-#[derive(Clone, Debug, SizedEntity)]
+#[derive(Clone, Debug, Entity, SizedEntity)]
 pub struct ConstBg<G: Geometry3 + Named> {
     pub color: Vector<f32, 3>,
     phantom: PhantomData<G>,
@@ -15,7 +18,10 @@ pub struct ConstBg<G: Geometry3 + Named> {
 
 impl<G: Geometry3 + Named> ConstBg<G> {
     pub fn new(color: Vector<f32, 3>) -> Self {
-        Self { color, phantom: PhantomData }
+        Self {
+            color,
+            phantom: PhantomData,
+        }
     }
 }
 
@@ -32,7 +38,10 @@ impl<G: Geometry3 + Sourced> Sourced for ConstBg<G> {
     fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/const_bg_{}.hh", &G::type_prefix(cfg)))
             .tree(G::source(cfg))
-            .content(&include(&format!("render/light/{}.hh", &G::type_prefix(cfg))))
+            .content(&include(&format!(
+                "render/light/{}.hh",
+                &G::type_prefix(cfg)
+            )))
             .content(&include_template!(
                 "background/constant.inl",
                 "Geo": &G::type_name(cfg),
@@ -44,20 +53,16 @@ impl<G: Geometry3 + Sourced> Sourced for ConstBg<G> {
 
 impl<G: Geometry3 + Sourced> Background<G> for ConstBg<G> {}
 
-
 /// Gradient background.
 /// Available only for euclidean space because only that space preserves direction.
-#[derive(Clone, Debug, Named, SizedEntity)]
+#[derive(Clone, Debug, Named, Entity, SizedEntity)]
 pub struct GradBg {
     pub direction: Vector<f64, 3>,
     pub colors: [Vector<f32, 3>; 2],
 }
 
 impl GradBg {
-    pub fn new(
-        direction: Vector<f64, 3>,
-        colors: [Vector<f32, 3>; 2],
-    ) -> Self {
+    pub fn new(direction: Vector<f64, 3>, colors: [Vector<f32, 3>; 2]) -> Self {
         Self { direction, colors }
     }
 }

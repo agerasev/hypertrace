@@ -23,10 +23,17 @@ impl<T: SizedEntity> Entity for Vec<T> {
 
     fn size(&self, cfg: &Config) -> usize {
         math::upper_multiple(
-            math::upper_multiple(usize::type_size(cfg), T::align(cfg))
-                + self.len() * T::type_size(cfg),
+            Self::min_size(cfg) + self.len() * T::type_size(cfg),
             Self::align(cfg),
         )
+    }
+
+    fn min_size(cfg: &Config) -> usize {
+        math::upper_multiple(usize::type_size(cfg), T::align(cfg))
+    }
+
+    fn is_dyn_sized() -> bool {
+        true
     }
 
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self> {

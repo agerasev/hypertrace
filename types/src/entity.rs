@@ -35,8 +35,16 @@ pub trait Entity: Named {
     /// Align of type.
     fn align(cfg: &Config) -> usize;
 
-    /// Size of the instance.
+    /// Dynamic size of the instance.
+    /// *If statically-sized then it must be equal to static size.*
     fn size(&self, cfg: &Config) -> usize;
+
+    /// Lower bound of dynamic size.
+    /// *If statically-sized then it must be equal to static size.*
+    fn min_size(cfg: &Config) -> usize;
+
+    /// Checks whether the type is dynamically-sized.
+    fn is_dyn_sized() -> bool;
 
     /// Loads the instance of the type.
     fn load<R: CntRead>(cfg: &Config, src: &mut R) -> io::Result<Self>;
@@ -50,6 +58,6 @@ pub trait Entity: Named {
 
 /// Sized static entity.
 pub trait SizedEntity: Entity {
-    /// Size of type.
+    /// Static size of type.
     fn type_size(cfg: &Config) -> usize;
 }

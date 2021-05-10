@@ -11,21 +11,21 @@ typedef struct $Self {
 } $Self;
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-$Elem *$2($self,__elements)($Self *self, usize index) {
-    return self->elements[index];
+$Elem *$2($self,__element)($Self *self, usize index) {
+    return &self->elements[index];
 }
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-const $Elem *$2($self,__elements__c)(const $Self *self, usize index) {
-    return self->elements[index];
+const $Elem *$2($self,__element__c)(const $Self *self, usize index) {
+    return &self->elements[index];
 }
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-__global $Elem *$2($self,__elements__g)(__global $Self *self, usize index) {
-    return self->elements[index];
+__global $Elem *$2($self,__element__g)(__global $Self *self, usize index) {
+    return &self->elements[index];
 }
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-__global const $Elem *$2($self,__elements__gc)(__global const $Self *self, usize index) {
-    return self->elements[index];
+__global const $Elem *$2($self,__element__gc)(__global const $Self *self, usize index) {
+    return &self->elements[index];
 }

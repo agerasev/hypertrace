@@ -25,3 +25,7 @@ pub use map::Map;
 pub use primitive::*;
 pub use ray::*;
 pub use source::*;
+
+pub mod prelude {
+    pub use crate::{Named, Entity, SizedEntity, Sourced};
+}

@@ -10,7 +10,7 @@ use processing::{Context, Render, Canvas, Converter, Buffer};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
-use objects::{SceneImpl, view::{PointView, MappedView}, shape::{euclidean::{Cube, Sphere}, MappedShape}, object::{Covered}, material::{Lambertian}, background::{GradBg}};
+use objects::{SceneImpl, view::{PointView, MappedView}, shape::{euclidean::{Cube, Sphere}, MappedShape}, object::{Covered, ObjectVector}, material::{Lambertian}, background::{GradBg}};
 use ccgeom::{Euclidean3, Homogenous3};
 
 fn main() -> base::Result<()> {
@@ -64,34 +64,23 @@ fn main() -> base::Result<()> {
         PointView::new(1.0),
         Homogenous3::identity(),
     );
-    let shape = MappedShape::new(
-        Sphere::default(),
-        Linear::from(Matrix::from([
-            [1.0, 0.0, 0.0],
-            [0.0, 2.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ])),
-    );
-    /*
-    MappedShape::new(
-        Cube::default(),
-        Linear::from(Matrix::from([
-            [1.0, 0.0, 0.0],
-            [0.0, 2.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ])).chain(
-            Rotation3::look_at_any([0.0, 1.0, 0.0].into())
-            .chain(Rotation3::look_at_any([1.0, 1.0, 1.0].into()).inv())
-            .to_linear()
+    let shapes = vec![
+        MappedShape::new(
+            Sphere::default(),
+            Shift::from_vector([1.0, 0.0, 0.0].into()),
         ),
-    );
-    */
-    let object = Covered::new(shape, Lambertian);
+        MappedShape::new(
+            Sphere::default(),
+            Shift::from_vector([-1.0, 0.0, 0.0].into()),
+        ),
+    ];
+    let objects = shapes.into_iter().map(|s| Covered::new(s, Lambertian)).collect();
+    let object_vector = ObjectVector::from_objects(objects);
     let background = GradBg::new(
         [0.0, 1.0, 0.0].into(),
         [[1.0, 1.0, 1.0].into(), [0.0, 0.0, 0.0].into()],
     );
-    let mut scene = SceneImpl::new(view, object, background);
+    let mut scene = SceneImpl::new(view, object_vector, background);
     let render = Render::new(&context)?;
     let converter = Converter::new(&context.ocl, size)?;
 

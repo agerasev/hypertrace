@@ -1,5 +1,3 @@
-#pragma once
-
 #include <macros.hh>
 #include <types.hh>
 #include <algebra/color.hh>

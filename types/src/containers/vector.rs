@@ -12,7 +12,7 @@ impl<T: SizedEntity> Named for Vec<T> {
         format!("Vector_{}", T::type_name(cfg))
     }
     fn type_prefix(cfg: &Config) -> String {
-        format!("vector_{}", T::type_prefix(cfg))
+        format!("vector__{}", T::type_prefix(cfg))
     }
 }
 

@@ -58,6 +58,7 @@ fn rerun_if_source_changed() {
     }
 }
 
+#[cfg(feature = "host_tests")]
 fn build_host_tests() {
     let mut cfg = cmake::Config::new(env!("CARGO_MANIFEST_DIR"));
     cfg.profile("Debug");

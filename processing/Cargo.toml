@@ -9,7 +9,7 @@ ocl = "0.19"
 base = { package = "hypertrace-base", path = "../base" }
 types = { package = "hypertrace-types", path = "../types" }
 objects = { package = "hypertrace-objects", path = "../objects" }
-kernel = { package = "hypertrace-kernel", path = "../kernel" }
+kernel = { package = "hypertrace-kernel", path = "../kernel", default-features = false }
 ocl-include = { path = "../includer" }
 vecmat = { path = "../vecmat" }
 ccgeom = { path = "../ccgeom" }

@@ -1,11 +1,40 @@
 #ifdef UNITTEST
 
-#include "basic.hh"
+#include "../basic.hh"
 
+struct ColoredTransparent {
+    // Transparent inner;
+    color3 color;
+};
+__global const Transparent *colored_transparent__inner__gc(__global const ColoredTransparent *self) {
+    return NULL;
+}
+
+#define $Self ColoredTransparent
+#define $self colored_transparent
 #define $Material Transparent
 #define $material transparent
-#include "colored.inl"
-#include "emissive.inl"
+#include "../colored.inl"
+#undef $Self
+#undef $self
+#undef $Material
+#undef $material
+
+struct EmissiveTransparent {
+    // Transparent inner;
+    color3 emission;
+};
+__global const Transparent *emissive_transparent__inner__gc(__global const EmissiveTransparent *self) {
+    return NULL;
+}
+
+#define $Self EmissiveTransparent
+#define $self emissive_transparent
+#define $Material Transparent
+#define $material transparent
+#include "../emissive.inl"
+#undef $Self
+#undef $self
 #undef $Material
 #undef $material
 

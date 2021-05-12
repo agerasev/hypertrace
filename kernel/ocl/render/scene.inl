@@ -7,7 +7,8 @@
     !defined($Geo)   || !defined($geo) || \
     !defined($View)   || !defined($view) || \
     !defined($Object) || !defined($object) || \
-    !defined($Background) || !defined($background)
+    !defined($Background) || !defined($background) || \
+    !defined($light_hops)
 #error "All required macro parameters must be defined."
 #endif
 
@@ -19,7 +20,7 @@ color3 $2($self,_sample)(__global const $Self *self, Context *context, real2 pix
 
     color3 emission = MAKE(color3)(0.0f);
 
-    for (uint i = 0; i < 2; ++i) {
+    for (uint i = 0; i < $light_hops; ++i) {
         $2($Object,Cache) cache;
         real dist = $2($object,_detect)($2($self,__object__gc)(self), context, &cache, &light);
 

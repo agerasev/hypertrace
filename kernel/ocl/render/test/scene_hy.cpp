@@ -29,6 +29,7 @@ __global const ConstBgHy *scene_test_hy__background__gc(__global const SceneTest
 #define $view point_view_hy
 #define $Background ConstBgHy
 #define $background const_bg_hy
+#define $light_hops 2
 #include <render/scene.inl>
 #undef $Self
 #undef $self
@@ -40,3 +41,4 @@ __global const ConstBgHy *scene_test_hy__background__gc(__global const SceneTest
 #undef $view
 #undef $Background
 #undef $background
+#undef $light_hops

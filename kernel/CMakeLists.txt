@@ -47,7 +47,7 @@ set(SRC
     "ocl/shape/vector_test.cpp"
 
     "ocl/material/basic.cc"
-    "ocl/material/modifier_test.cpp"
+    "ocl/material/test/modifier.cpp"
 
     "ocl/object/test/covered/eu.cpp"
     "ocl/object/test/covered/hy.cpp"

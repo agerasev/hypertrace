@@ -29,6 +29,7 @@ __global const GradBg *scene_test_eu__background__gc(__global const SceneTestEu 
 #define $view point_view_eu
 #define $Background GradBg
 #define $background grad_bg
+#define $light_hops 2
 #include <render/scene.inl>
 #undef $Self
 #undef $self
@@ -40,3 +41,4 @@ __global const GradBg *scene_test_eu__background__gc(__global const SceneTestEu 
 #undef $view
 #undef $Background
 #undef $background
+#undef $light_hops

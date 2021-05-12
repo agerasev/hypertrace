@@ -2,29 +2,19 @@
 #include <render/light/base.hh>
 #include <render/context.hh>
 
-#if !defined($Material) || !defined($material)
-#error "$Material macro must be defined"
+#if \
+    !defined($Self) || !defined($self) || \
+    !defined($Material) || !defined($material)
+#error "All required macro parameters must be defined."
 #endif
-
-
-typedef struct {
-#if $Material != void
-    $Material inner;
-#endif
-    color3 emission;
-} $2(Emissive,$Material);
-
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-bool $3(emissive_,$material,_interact)(__global const $2(Emissive,$Material) *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
+bool $2($self,_interact)(__global const $Self *self, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     
-    *emission += light->base.intensity * material->emission;
+    *emission += light->base.intensity * self->emission;
 
     return $2($material,_interact)(
-#if $Material != void
-        &material->inner,
-#else
-        NULL,
-#endif
-        context, normal, light, emission);
+        $2($self,__inner__gc)(self),
+        context, normal, light, emission
+    );
 }

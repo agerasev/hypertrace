@@ -104,73 +104,106 @@ impl Canvas {
         Ok(())
     }
 
-    pub fn image(&self) -> &ImageBuffer<f32, 4> {
+    pub fn raw_image(&self) -> &ImageBuffer<f32, 4> {
         &self.image
     }
+
     pub fn seeds(&self) -> &ImageBuffer<u32, 1> {
         &self.seeds
     }
 }
 
-pub struct Converter {
+pub struct Extractor {
     kernel: ocl::Kernel,
-    image: ImageBuffer<u8, 4>,
 }
 
-impl Converter {
-    pub fn new(context: &ocl::Context, shape: (usize, usize)) -> base::Result<Self> {
+impl Extractor {
+    pub fn new(context: &ocl::Context) -> base::Result<Self> {
         let src = r#"
-            __kernel void make_image(
+            __kernel void extract(
                 uint width,
                 uint passes,
                 __global const float4 *canvas,
-                __global uchar4 *image
+                __global float4 *image
             ) {
                 uint idx = get_global_id(0) + width * get_global_id(1);
-                float4 fcolor = canvas[idx] / (float)passes;
-                uchar4 icolor = convert_uchar4(0xFF * clamp(fcolor, 0.0f, 1.0f));
-                image[idx] = icolor;
+                image[idx] = canvas[idx] / (float)passes;
             }
         "#;
         let program = ocl::Program::builder().source(src).build(context)?;
         let kernel = ocl::Kernel::builder()
             .program(&program)
-            .name("make_image")
+            .name("extract")
             .arg_named("width", &0u32)
             .arg_named("passes", &0u32)
             .arg_named("canvas", None::<&ocl::Buffer<f32>>)
-            .arg_named("image", None::<&ocl::Buffer<u8>>)
+            .arg_named("image", None::<&ocl::Buffer<f32>>)
             .build()?;
-        
-        let image = ImageBuffer::new(context, shape)?;
 
-        Ok(Self {
-            kernel,
-            image,
-        })
+        Ok(Self { kernel })
     }
 
-    pub fn shape(&self) -> (usize, usize) {
-        self.image.shape()
-    }
-
-    pub fn convert_canvas_to_image(&self, queue: &ocl::Queue, canvas: &Canvas, image: &mut Image<u8, 4>) -> base::Result<()> {
-        assert_eq!(self.shape(), canvas.shape());
+    pub fn process(&self, queue: &ocl::Queue, canvas: &Canvas, image: &mut ImageBuffer<f32, 4>) -> base::Result<()> {
         assert_eq!(canvas.shape(), image.shape());
 
         self.kernel.set_arg("width", image.width() as u32)?;
         self.kernel.set_arg("passes", canvas.passes() as u32)?;
-        self.kernel.set_arg("canvas", canvas.image().buffer())?;
-        self.kernel.set_arg("image", self.image.buffer())?;
+        self.kernel.set_arg("canvas", canvas.raw_image().buffer())?;
+        self.kernel.set_arg("image", image.buffer())?;
         let cmd = self.kernel
             .cmd()
             .queue(&queue)
             .global_work_size(image.shape());
         unsafe { cmd.enq()?; }
-        
-        self.image.load(queue, image)?;
-        
-        queue.finish()?;
+
+        queue.flush()?;
+        Ok(())
+    }
+}
+
+pub struct Packer {
+    kernel: ocl::Kernel,
+}
+
+impl Packer {
+    pub fn new(context: &ocl::Context) -> base::Result<Self> {
+        let src = r#"
+            __kernel void pack(
+                uint width,
+                __global const float4 *image,
+                __global uchar4 *packed
+            ) {
+                uint idx = get_global_id(0) + width * get_global_id(1);
+                float4 fcolor = image[idx];
+                uchar4 icolor = convert_uchar4(0xFF * clamp(fcolor, 0.0f, 1.0f));
+                packed[idx] = icolor;
+            }
+        "#;
+        let program = ocl::Program::builder().source(src).build(context)?;
+        let kernel = ocl::Kernel::builder()
+            .program(&program)
+            .name("pack")
+            .arg_named("width", &0u32)
+            .arg_named("image", None::<&ocl::Buffer<f32>>)
+            .arg_named("packed", None::<&ocl::Buffer<u8>>)
+            .build()?;
+
+        Ok(Self { kernel })
+    }
+
+    pub fn process(&self, queue: &ocl::Queue, image: &ImageBuffer<f32, 4>, packed: &mut ImageBuffer<u8, 4>) -> base::Result<()> {
+        assert_eq!(image.shape(), packed.shape());
+
+        self.kernel.set_arg("width", image.width() as u32)?;
+        self.kernel.set_arg("image", image.buffer())?;
+        self.kernel.set_arg("packed", packed.buffer())?;
+        let cmd = self.kernel
+            .cmd()
+            .queue(&queue)
+            .global_work_size(image.shape());
+        unsafe { cmd.enq()?; }
+
+        queue.flush()?;
         Ok(())
     }
 }

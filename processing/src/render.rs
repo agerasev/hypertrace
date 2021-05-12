@@ -84,7 +84,7 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
     pub fn render(&self, queue: &ocl::Queue, scene_buffer: &Buffer<S>, canvas: &mut Canvas) -> base::Result<()> {
         self.kernel.set_arg("shape", ocl::prm::Uint2::new(canvas.width() as u32, canvas.height() as u32))?;
         self.kernel.set_arg("scene", scene_buffer.buffer())?;
-        self.kernel.set_arg("canvas", canvas.image().buffer())?;
+        self.kernel.set_arg("canvas", canvas.raw_image().buffer())?;
         self.kernel.set_arg("seeds", canvas.seeds().buffer())?;
         let cmd = self.kernel
             .cmd()

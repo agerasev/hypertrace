@@ -5,7 +5,7 @@ use std::{
 use vecmat::{Vector, Transform, transform::{Shift, Rotation3}};
 use base::Image;
 use view::{Window, Controller, controllers::IsotropicController};
-use processing::{Context, Render, Canvas, Converter, Buffer};
+use processing::{Context, Render, Canvas, Extractor, Packer, Buffer, ImageBuffer, Filter, filter::GammaFilter};
 use types::{
     Config, config::{AddressWidth, Endian},
 };
@@ -76,14 +76,14 @@ fn main() -> base::Result<()> {
                 Sphere::default(),
                 Shift::from_vector([1.0, 0.0, 0.0].into()),
             ),
-            Colored::new(Lambertian, [0.8, 0.4, 0.4].into()),
+            Colored::new(Lambertian, [0.8, 0.2, 0.2].into()),
         ),
         Covered::new(
             MappedShape::new(
                 Sphere::default(),
                 Shift::from_vector([-1.0, 0.0, 0.0].into()),
             ),
-            Colored::new(Lambertian, [0.4, 0.4, 0.8].into()),
+            Colored::new(Lambertian, [0.2, 0.2, 0.8].into()),
         ),
     ]);
     let background = GradBg::new(
@@ -92,12 +92,17 @@ fn main() -> base::Result<()> {
     );
     let mut scene = SceneImpl::<_, _, _, _, 4>::new(view, objects, background);
     let render = Render::new(&context)?;
-    let converter = Converter::new(&context.ocl, size)?;
+    let extractor = Extractor::new(&context.ocl)?;
+    let packer = Packer::new(&context.ocl)?;
+    let filter = GammaFilter::new(&context.ocl, 1.0 / 2.2)?;
 
     let sdl_context = Rc::new(sdl2::init()?);
     let mut window = Window::new(sdl_context, size, "Sample")?;
 
     let mut canvas = Canvas::new(&context.ocl, size)?;
+    let mut image_buf_src = ImageBuffer::new(&context.ocl, size)?;
+    let mut image_buf_dst = ImageBuffer::new(&context.ocl, size)?;
+    let mut image_buf_packed = ImageBuffer::new(&context.ocl, size)?;
     let mut image = Image::new(size);
 
     let mut controller = IsotropicController::<Euclidean3>::new(
@@ -123,7 +128,11 @@ fn main() -> base::Result<()> {
             render.render(&ocl_queue, &buffer, &mut canvas)?;
         }
 
-        converter.convert_canvas_to_image(&ocl_queue, &canvas, &mut image)?;
+        extractor.process(&ocl_queue, &canvas, &mut image_buf_src)?;
+        filter.process(&ocl_queue, &image_buf_src, &mut image_buf_dst)?;
+        packer.process(&ocl_queue, &image_buf_dst, &mut image_buf_packed)?;
+        image_buf_packed.load(&ocl_queue, &mut image)?;
+
         window.draw(&image)?;
     }
 }

@@ -1,7 +1,7 @@
 #include "cube.hh"
 
 
-static real cube_eu_detect_nearest(real3 near, real3 *normal) {
+real cube_eu_detect_nearest(real3 near, real3 *normal) {
     bool xy = near.x > near.y;
     bool yz = near.y > near.z;
     bool xz = near.x > near.z;

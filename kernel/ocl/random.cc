@@ -34,7 +34,7 @@ real4 random_uniform4(Rng *rng) {
     );
 }
 
-static real3 _sphere_point(real cos_theta, real sin_theta, real phi) {
+real3 _sphere_point(real cos_theta, real sin_theta, real phi) {
     return MAKE(real3)(cos(phi)*sin_theta, sin(phi)*sin_theta, cos_theta);
 }
 real3 random_sphere(Rng *rng) {

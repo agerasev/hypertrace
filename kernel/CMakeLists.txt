@@ -44,12 +44,14 @@ set(SRC
     "ocl/shape/hy/plane.cc"
     "ocl/shape/hy/horosphere.cc"
     "ocl/shape/mapped_test.cpp"
+    "ocl/shape/vector_test.cpp"
 
     "ocl/material/basic.cc"
     "ocl/material/modifier_test.cpp"
 
     "ocl/object/test/covered/eu.cpp"
     "ocl/object/test/covered/hy.cpp"
+    "ocl/object/test/vector.cpp"
 
     "ocl/background/gradient.cc"
     "ocl/background/test/constant/eu.cpp"

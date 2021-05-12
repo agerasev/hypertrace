@@ -14,7 +14,7 @@ impl<T: SizedEntity, const N: usize> Named for [T; N] {
     }
 
     fn type_prefix(cfg: &Config) -> String {
-        format!("array_{}_{}", T::type_prefix(cfg), N)
+        format!("array__{}__{}", T::type_prefix(cfg), N)
     }
 
     fn type_id() -> u64 {
@@ -67,11 +67,11 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
             .tree(T::type_source(cfg))
             .content(&include_template!(
                 "container/array.inl",
-                "Self": &Self::type_name(cfg),
-                "self": &Self::type_prefix(cfg),
-                "Elem": &T::type_name(cfg),
-                "elem": &T::type_prefix(cfg),
-                "Num": &format!("{}", N),
+                "Self": Self::type_name(cfg),
+                "self": Self::type_prefix(cfg),
+                "Element": T::type_name(cfg),
+                "element": T::type_prefix(cfg),
+                "size": format!("{}", N),
             ))
             .build()
     }

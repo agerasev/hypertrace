@@ -61,10 +61,11 @@ impl<T: SizedEntity> Entity for Vec<T> {
             .tree(T::type_source(cfg))
             .content(&include_template!(
                 "container/vector.inl",
-                "Self": &Self::type_name(cfg),
-                "self": &Self::type_prefix(cfg),
-                "Elem": &T::type_name(cfg),
-                "elem": &T::type_prefix(cfg),
+                "Self": Self::type_name(cfg),
+                "self": Self::type_prefix(cfg),
+                "Element": T::type_name(cfg),
+                "element": T::type_prefix(cfg),
+                "element_size": format!("{}", T::type_size(cfg)),
             ))
             .build()
     }

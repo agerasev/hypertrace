@@ -1,9 +1,9 @@
 #include <macros.hh>
 
-#if !defined($Self) || !defined($Elem) || !defined($Num)
+#if !defined($Self) || !defined($Element) || !defined($size)
 #error "All required macro parameters must be defined."
 #endif
 
 typedef struct $Self {
-    $Elem elements[$Num];
+    $Element elements[$size];
 } $Self;

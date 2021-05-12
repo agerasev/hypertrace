@@ -8,4 +8,4 @@
 #error "All required macro parameters must be defined."
 #endif
 
-void $2($self,_interact)(__global const $Self *background, Context *context, const $2(Light,$Geo) *light, color3 *emission);
+void $2($self,_interact)(__global const $Self *self, Context *context, const $2(Light,$Geo) *light, color3 *emission);

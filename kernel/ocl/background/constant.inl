@@ -15,8 +15,8 @@ typedef struct $Self {
 #include "interface.inl"
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-void $2($self,_interact)(__global const $Self *background, Context *context, const $2(Light,$Geo) *light, color3 *emission) {
-    *emission += background->color * light->base.intensity;
+void $2($self,_interact)(__global const $Self *self, Context *context, const $2(Light,$Geo) *light, color3 *emission) {
+    *emission += self->color * light->base.intensity;
 }
 
 #undef $Self

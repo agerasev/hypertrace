@@ -89,6 +89,7 @@ fn main() -> base::Result<()> {
     let background = GradBg::new(
         [0.0, 1.0, 0.0].into(),
         [[1.0, 1.0, 1.0].into(), [0.0, 0.0, 0.0].into()],
+        2.4,
     );
     let mut scene = SceneImpl::<_, _, _, _, 4>::new(view, objects, background);
     let render = Render::new(&context)?;

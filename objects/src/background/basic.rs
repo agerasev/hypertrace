@@ -60,11 +60,12 @@ impl<G: Geometry> Background<G> for ConstBg<G> {}
 pub struct GradBg {
     pub direction: Vector<f64, 3>,
     pub colors: [Vector<f32, 3>; 2],
+    pub power: f32,
 }
 
 impl GradBg {
-    pub fn new(direction: Vector<f64, 3>, colors: [Vector<f32, 3>; 2]) -> Self {
-        Self { direction, colors }
+    pub fn new(direction: Vector<f64, 3>, colors: [Vector<f32, 3>; 2], power: f32) -> Self {
+        Self { direction, colors, power }
     }
 }
 

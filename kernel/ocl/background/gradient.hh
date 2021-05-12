@@ -8,6 +8,7 @@
 typedef struct GradBg {
     real3 direction;
     color3 colors[2];
+    float power;
 } GradBg;
 
 #define $Self GradBg

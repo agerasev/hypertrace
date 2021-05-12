@@ -1,7 +1,6 @@
 use std::{
     rc::Rc,
-    thread::sleep,
-    time::Duration,
+    time::{Instant, Duration},
 };
 use vecmat::{Vector, Transform, transform::{Shift, Rotation3}};
 use base::Image;
@@ -105,16 +104,21 @@ fn main() -> base::Result<()> {
         if window.poll(&mut controller)? {
             break Ok(());
         }
-        if controller.updated() {
+        let updated = controller.updated();
+        controller.step(delay);
+        if updated {
             scene.view.map = *controller.map();
             scene.view.inner.fov = 1.0 / controller.zoom();
             canvas.clean(&ocl_queue)?;
         }
         let buffer = Buffer::new(&context, &scene)?;
-        render.render(&ocl_queue, &buffer, &mut canvas)?;
+
+        let now = Instant::now();
+        while now.elapsed() < Duration::from_secs_f64(delay) {
+            render.render(&ocl_queue, &buffer, &mut canvas)?;
+        }
+
         converter.convert_canvas_to_image(&ocl_queue, &canvas, &mut image)?;
         window.draw(&image)?;
-        controller.step(delay);
-        sleep(Duration::from_secs_f64(delay));
     }
 }

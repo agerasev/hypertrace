@@ -61,10 +61,11 @@ set(SRC
     "ocl/view/mapped_test.cpp"
 
     "ocl/random.cc"
+    "ocl/hash.cc"
 
+    "ocl/render/context.cc"
     "ocl/render/light/hy.cc"
     "ocl/render/light/eu.cc"
-
     "ocl/render/test/scene_eu.cpp"
     "ocl/render/test/scene_hy.cpp"
 )

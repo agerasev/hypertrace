@@ -23,26 +23,33 @@ real $2($self,_detect)(
     $2($Self,Cache) *cache,
     $2(Light,$Geo) *light
 ) {
+    Hasher orig_hasher = context->hasher;
+
     real min_dist = -R1;
     usize min_index;
     $2(Light,$Geo) min_light;
     $2($Object,Cache) min_cache;
+    Hasher min_hasher;
     for (usize index = 0; index < self->objects.size; ++index) {
         __global const $Object *object = $3(vector__,$object,__element__gc)(&self->objects, index);
         $2(Light,$Geo) cur_light = *light;
         $2($Object,Cache) cur_cache;
+        hash_usize(&context->hasher, index);
         real dist = $2($object,_detect)(object, context, &cur_cache, &cur_light);
-        if (dist > -(real)0.5f && (min_dist < -(real)0.5f || dist < min_dist)) {
+        if (dist > R0 && (min_dist < R0 || dist < min_dist)) {
             min_dist = dist;
             min_index = index;
             min_light = cur_light;
             min_cache = cur_cache;
+            min_hasher = context->hasher;
         }
+        context->hasher = orig_hasher;
     }
-    if (min_dist > -(real)0.5f) {
+    if (min_dist > R0) {
         cache->inner = min_cache;
         cache->index = min_index;
         *light = min_light;
+        context->hasher = min_hasher;
         return min_dist;
     } else {
         return -R1;

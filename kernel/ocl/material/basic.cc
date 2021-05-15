@@ -22,9 +22,6 @@ bool specular_interact(__global const void *material, Context *context, real3 no
 
 _ALLOW_UNUSED_PARAMETERS_
 bool lambertian_interact(__global const void *material, Context *context, real3 normal, LightLocal *light, float3 *emission) {
-    if (dot(normal, light->direction) > R0) {
-        normal = -normal;
-    }
     real3 rand = random_hemisphere_cosine(&context->rng);
     Rotation3 rot = rot3_look_at(-normal);
     light->direction = rot3_apply_dir(rot, MAKE(real3)(R0), rand);

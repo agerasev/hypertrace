@@ -18,7 +18,6 @@ __kernel void render(
     real2 size = (real2)((real)2 / (real)shape.y);
 
     Context context;
-    context.repeat = false;
     context.rng.state = seeds[idx];
     
     color4 color = (color4)(scene_sample(scene, &context, pos, size), 1.0f);

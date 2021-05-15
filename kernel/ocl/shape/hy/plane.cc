@@ -4,7 +4,7 @@
 _ALLOW_UNUSED_PARAMETERS_
 real plane_hy_detect(__global const void *shape, Context *context, HyDir *normal, LightHy *light) {
     // Line cannot intersect plane twice
-    if (context->repeat) {
+    if (context_is_repeat(context)) {
         return -R1;
     }
 
@@ -143,8 +143,7 @@ protected:
 };
 
 TEST_F(PlaneHyTest, detect) {
-    Context ctx;
-    ctx.repeat = false;
+    Context ctx = context_init();
     size_t hits = 0;
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         quat start = hyrng.normal(), dir = quat(vrng.unit(), 0.0);

@@ -3,6 +3,7 @@
 
 _ALLOW_UNUSED_PARAMETERS_
 real sphere_eu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light) {
+    bool repeat = context_is_repeat(context);
     RayEu *ray = &light->ray;
 
     real3 pos = ray->start;
@@ -14,12 +15,17 @@ real sphere_eu_detect(__global const void *shape, Context *context, real3 *norma
         return -R1;
     }
     d = sqrt(d);
+    real f = R1;
     real e = b - d;
-    if (e < EPS*context->repeat) {
-        return -R1;
+    if (e < EPS * repeat) {
+        e = b + d;
+        f = -R1;
+        if (e < EPS * repeat) {
+            return -R1;
+        }
     }
     real3 h = pos + dir*e;
-    *normal = h;
+    *normal = h * f;
     ray->start = h;
     return e;
 }
@@ -35,8 +41,7 @@ protected:
 };
 
 TEST_F(SphereEuTest, detect) {
-    Context ctx;
-    ctx.repeat = false;
+    Context ctx = context_init();
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         real3 start = vrng.normal(), dir = vrng.unit();
         LightEu light { LightBase {}, RayEu { start, dir } };
@@ -45,8 +50,7 @@ TEST_F(SphereEuTest, detect) {
         real dist = sphere_eu_detect(nullptr, &ctx, &normal, &light);
 
         if (length(start) < 1 - EPS) {
-            // TODO: Update on refraction
-            ASSERT_EQ(dist, approx(-1));
+            ASSERT_EQ(length(start + dist*dir), approx(1));
         }
         if (length(start) > 1 + EPS) {
             real proj = -dot(start, dir);

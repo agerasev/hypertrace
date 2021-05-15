@@ -20,7 +20,7 @@ pub struct Canvas {
 }
 
 impl Window {
-    pub fn new(context: Rc<Sdl>, size: (usize, usize), title: &str) -> base::Result<Self> {
+    pub fn new(context: Rc<Sdl>, size: (usize, usize), title: &str) -> Result<Self, String> {
         let video = context.video()?;
 
         let window = video
@@ -43,17 +43,17 @@ impl Window {
         self.canvas.size()
     }
 
-    pub fn draw(&mut self, image: &Image<u8, 4>) -> base::Result<()> {
+    pub fn draw(&mut self, image: &Image<u8, 4>) -> Result<(), String> {
         self.canvas.draw(image)
     }
 
-    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> base::Result<bool> {
+    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> Result<bool, String> {
         self.handler.poll(controller)
     }
 }
 
 impl Canvas {
-    fn new(canvas: WindowCanvas, size: (usize, usize)) -> base::Result<Self> {
+    fn new(canvas: WindowCanvas, size: (usize, usize)) -> Result<Self, String> {
         let texture = canvas
             .texture_creator()
             .create_texture(
@@ -75,7 +75,7 @@ impl Canvas {
         self.size
     }
 
-    pub fn draw(&mut self, image: &Image<u8, 4>) -> base::Result<()> {
+    pub fn draw(&mut self, image: &Image<u8, 4>) -> Result<(), String> {
         let query = self.texture.query();
         assert_eq!((query.width as usize, query.height as usize), image.shape());
 

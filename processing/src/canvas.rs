@@ -1,3 +1,4 @@
+use crate::{BackendContext, OclContext};
 use base::Image;
 use ocl::OclPrm;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -10,26 +11,26 @@ pub struct ImageBuffer<T: Copy + Default + OclPrm, const N: usize> {
 pub struct Canvas {
     image: ImageBuffer<f32, 4>,
     seeds: ImageBuffer<u32, 1>,
-    clear: Image<f32, 4>,
+    initial: Image<f32, 4>,
     passes: usize,
 }
 
 impl<T: Copy + Default + OclPrm, const N: usize> ImageBuffer<T, N> {
-    pub fn new(context: &ocl::Context, (width, height): (usize, usize)) -> base::Result<Self> {
+    pub fn new(context: &OclContext, (width, height): (usize, usize)) -> crate::Result<Self> {
         Ok(Self {
             buffer: ocl::Buffer::builder()
-                .context(context)
+                .queue(context.queue.clone())
                 .len(N * width * height)
                 .build()?,
             shape: (width, height),
         })
     }
 
-    pub fn from_image(context: &ocl::Context, image: &Image<T, N>) -> base::Result<Self> {
+    pub fn from_image(context: &OclContext, image: &Image<T, N>) -> crate::Result<Self> {
         let shape = image.shape();
         Ok(Self {
             buffer: ocl::Buffer::builder()
-                .context(context)
+                .queue(context.queue.clone())
                 .len(N * shape.0 * shape.1)
                 .copy_host_slice(image.data())
                 .build()?,
@@ -47,37 +48,37 @@ impl<T: Copy + Default + OclPrm, const N: usize> ImageBuffer<T, N> {
         self.shape.1
     }
 
-    pub fn buffer(&self) -> &ocl::Buffer<T> {
+    pub fn raw(&self) -> &ocl::Buffer<T> {
         &self.buffer
     }
-    pub fn buffer_mut(&mut self) -> &mut ocl::Buffer<T> {
+    pub fn raw_mut(&mut self) -> &mut ocl::Buffer<T> {
         &mut self.buffer
     }
 
-    pub fn store(&mut self, queue: &ocl::Queue, image: &Image<T, N>) -> base::Result<()> {
+    pub fn store(&mut self, image: &Image<T, N>) -> crate::Result<()> {
         assert_eq!(self.shape(), image.shape());
-        self.buffer_mut().write(image.data()).queue(queue).enq()?;
-        queue.finish()?;
+        self.raw_mut().write(image.data()).enq()?;
+        self.raw().default_queue().unwrap().finish()?;
         Ok(())
     }
-    pub fn load(&self, queue: &ocl::Queue, image: &mut Image<T, N>) -> base::Result<()> {
+    pub fn load(&self, image: &mut Image<T, N>) -> crate::Result<()> {
         assert_eq!(self.shape(), image.shape());
-        self.buffer().read(image.data_mut()).queue(queue).enq()?;
-        queue.finish()?;
+        self.raw().read(image.data_mut()).enq()?;
+        self.raw().default_queue().unwrap().finish()?;
         Ok(())
     }
 }
 
 impl Canvas {
-    pub fn new(context: &ocl::Context, shape: (usize, usize)) -> base::Result<Self> {
+    pub fn new(context: &BackendContext, shape: (usize, usize)) -> crate::Result<Self> {
         let mut seeds = Image::new(shape);
         SmallRng::seed_from_u64(0xdeadbeefdeadbeef).fill(seeds.data_mut());
 
-        let clear = Image::new(shape);
+        let initial = Image::new(shape);
         Ok(Self {
-            image: ImageBuffer::from_image(context, &clear)?,
+            image: ImageBuffer::from_image(context, &initial)?,
             seeds: ImageBuffer::from_image(context, &seeds)?,
-            clear,
+            initial,
             passes: 0,
         })
     }
@@ -98,8 +99,8 @@ impl Canvas {
     pub fn add_pass(&mut self) {
         self.passes += 1;
     }
-    pub fn clean(&mut self, queue: &ocl::Queue) -> base::Result<()> {
-        self.image.store(queue, &self.clear)?;
+    pub fn clean(&mut self) -> crate::Result<()> {
+        self.image.store(&self.initial)?;
         self.passes = 0;
         Ok(())
     }
@@ -111,6 +112,9 @@ impl Canvas {
     pub fn seeds(&self) -> &ImageBuffer<u32, 1> {
         &self.seeds
     }
+    pub fn seeds_mut(&mut self) -> &mut ImageBuffer<u32, 1> {
+        &mut self.seeds
+    }
 }
 
 pub struct Extractor {
@@ -118,7 +122,7 @@ pub struct Extractor {
 }
 
 impl Extractor {
-    pub fn new(context: &ocl::Context) -> base::Result<Self> {
+    pub fn new(context: &OclContext) -> crate::Result<Self> {
         let src = r#"
             __kernel void extract(
                 uint width,
@@ -130,7 +134,9 @@ impl Extractor {
                 image[idx] = canvas[idx] / (float)passes;
             }
         "#;
-        let program = ocl::Program::builder().source(src).build(context)?;
+        let program = ocl::Program::builder()
+            .source(src)
+            .build(&context.context)?;
         let kernel = ocl::Kernel::builder()
             .program(&program)
             .name("extract")
@@ -138,33 +144,25 @@ impl Extractor {
             .arg_named("passes", &0u32)
             .arg_named("canvas", None::<&ocl::Buffer<f32>>)
             .arg_named("image", None::<&ocl::Buffer<f32>>)
+            .queue(context.queue.clone())
             .build()?;
 
         Ok(Self { kernel })
     }
 
-    pub fn process(
-        &self,
-        queue: &ocl::Queue,
-        canvas: &Canvas,
-        image: &mut ImageBuffer<f32, 4>,
-    ) -> base::Result<()> {
+    pub fn process(&self, canvas: &Canvas, image: &mut ImageBuffer<f32, 4>) -> crate::Result<()> {
         assert_eq!(canvas.shape(), image.shape());
 
         self.kernel.set_arg("width", image.width() as u32)?;
         self.kernel.set_arg("passes", canvas.passes() as u32)?;
-        self.kernel.set_arg("canvas", canvas.raw_image().buffer())?;
-        self.kernel.set_arg("image", image.buffer())?;
-        let cmd = self
-            .kernel
-            .cmd()
-            .queue(&queue)
-            .global_work_size(image.shape());
+        self.kernel.set_arg("canvas", canvas.raw_image().raw())?;
+        self.kernel.set_arg("image", image.raw_mut())?;
+        let cmd = self.kernel.cmd().global_work_size(image.shape());
         unsafe {
             cmd.enq()?;
         }
 
-        queue.flush()?;
+        self.kernel.default_queue().unwrap().flush()?;
         Ok(())
     }
 }
@@ -174,7 +172,7 @@ pub struct Packer {
 }
 
 impl Packer {
-    pub fn new(context: &ocl::Context) -> base::Result<Self> {
+    pub fn new(context: &OclContext) -> crate::Result<Self> {
         let src = r#"
             __kernel void pack(
                 uint width,
@@ -187,13 +185,16 @@ impl Packer {
                 packed[idx] = icolor;
             }
         "#;
-        let program = ocl::Program::builder().source(src).build(context)?;
+        let program = ocl::Program::builder()
+            .source(src)
+            .build(&context.context)?;
         let kernel = ocl::Kernel::builder()
             .program(&program)
             .name("pack")
             .arg_named("width", &0u32)
             .arg_named("image", None::<&ocl::Buffer<f32>>)
             .arg_named("packed", None::<&ocl::Buffer<u8>>)
+            .queue(context.queue.clone())
             .build()?;
 
         Ok(Self { kernel })
@@ -201,25 +202,20 @@ impl Packer {
 
     pub fn process(
         &self,
-        queue: &ocl::Queue,
         image: &ImageBuffer<f32, 4>,
         packed: &mut ImageBuffer<u8, 4>,
-    ) -> base::Result<()> {
+    ) -> crate::Result<()> {
         assert_eq!(image.shape(), packed.shape());
 
         self.kernel.set_arg("width", image.width() as u32)?;
-        self.kernel.set_arg("image", image.buffer())?;
-        self.kernel.set_arg("packed", packed.buffer())?;
-        let cmd = self
-            .kernel
-            .cmd()
-            .queue(&queue)
-            .global_work_size(image.shape());
+        self.kernel.set_arg("image", image.raw())?;
+        self.kernel.set_arg("packed", packed.raw_mut())?;
+        let cmd = self.kernel.cmd().global_work_size(image.shape());
         unsafe {
             cmd.enq()?;
         }
 
-        queue.flush()?;
+        self.kernel.default_queue().unwrap().flush()?;
         Ok(())
     }
 }

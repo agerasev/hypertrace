@@ -1,13 +1,13 @@
-use crate::{Buffer, Canvas, Context, Extractor, FilterSequence, ImageBuffer, Packer, Render};
+use crate::{
+    Canvas, Context, EntityBuffer, Extractor, FilterSequence, ImageBuffer, Packer, Render,
+};
 use base::Image;
 use objects::Scene;
-use std::marker::PhantomData;
 use types::Geometry;
 
 pub struct Pipeline<G: Geometry, S: Scene<G>, F: FilterSequence> {
     context: Context,
-    geometry: PhantomData<G>,
-    scene_buffer: Buffer<S>,
+    scene_buffer: EntityBuffer<S>,
     render: Render<G, S>,
     canvas: Canvas,
     extractor: Extractor,
@@ -21,55 +21,47 @@ pub struct Pipeline<G: Geometry, S: Scene<G>, F: FilterSequence> {
 
 impl<G: Geometry, S: Scene<G>, F: FilterSequence> Pipeline<G, S, F> {
     pub fn new(
-        context: Context,
+        context: &Context,
         canvas_size: (usize, usize),
         scene: &S,
         filter: F,
-    ) -> base::Result<Self> {
+    ) -> crate::Result<Self> {
         Ok(Self {
-            geometry: PhantomData,
-            scene_buffer: Buffer::new(&context, scene)?,
-            render: Render::new(context.clone())?,
-            extractor: Extractor::new(&context.context)?,
-            packer: Packer::new(&context.context)?,
+            context: context.clone(),
+            scene_buffer: EntityBuffer::new(&context, scene)?,
+            render: Render::new(context)?,
+            extractor: Extractor::new(&context.backend)?,
+            packer: Packer::new(&context.backend)?,
             filter,
-            canvas: Canvas::new(&context.context, canvas_size)?,
-            image_buf_src: ImageBuffer::new(&context.context, canvas_size)?,
-            image_buf_dst: ImageBuffer::new(&context.context, canvas_size)?,
-            image_buf_packed: ImageBuffer::new(&context.context, canvas_size)?,
+            canvas: Canvas::new(&context.backend, canvas_size)?,
+            image_buf_src: ImageBuffer::new(&context.backend, canvas_size)?,
+            image_buf_dst: ImageBuffer::new(&context.backend, canvas_size)?,
+            image_buf_packed: ImageBuffer::new(&context.backend, canvas_size)?,
             image: Image::new(canvas_size),
-            context,
         })
     }
 
-    pub fn set_scene(&mut self, scene: &S) -> base::Result<()> {
-        self.scene_buffer = Buffer::new(&self.context, scene)?;
+    pub fn set_scene(&mut self, scene: &S) -> crate::Result<()> {
+        self.scene_buffer = EntityBuffer::new(&self.context, scene)?;
         Ok(())
     }
 
-    pub fn render(&mut self) -> base::Result<()> {
+    pub fn render(&mut self) -> crate::Result<()> {
         self.render.render(&self.scene_buffer, &mut self.canvas)
     }
 
-    pub fn get_image(&mut self) -> base::Result<&Image<u8, 4>> {
+    pub fn get_image(&mut self) -> crate::Result<&Image<u8, 4>> {
         self.extractor
-            .process(&self.context.queue, &self.canvas, &mut self.image_buf_src)?;
-        self.filter.process_sequence(
-            &self.context.queue,
-            &mut self.image_buf_src,
-            &mut self.image_buf_dst,
-        )?;
-        self.packer.process(
-            &self.context.queue,
-            &self.image_buf_src,
-            &mut self.image_buf_packed,
-        )?;
-        self.image_buf_packed
-            .load(&self.context.queue, &mut self.image)?;
+            .process(&self.canvas, &mut self.image_buf_src)?;
+        self.filter
+            .process_sequence(&mut self.image_buf_src, &mut self.image_buf_dst)?;
+        self.packer
+            .process(&self.image_buf_src, &mut self.image_buf_packed)?;
+        self.image_buf_packed.load(&mut self.image)?;
         Ok(&self.image)
     }
 
-    pub fn clean(&mut self) -> base::Result<()> {
-        self.canvas.clean(&self.context.queue)
+    pub fn clean(&mut self) -> crate::Result<()> {
+        self.canvas.clean()
     }
 }

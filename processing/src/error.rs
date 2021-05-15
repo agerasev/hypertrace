@@ -1,10 +1,10 @@
-use std::{io, fmt, result::Result as StdResult};
-
+use std::{fmt, io, result::Result as StdResult};
 
 #[derive(Debug)]
 pub enum Error {
     Io(io::Error),
-    Ocl(ocl::Error),
+    #[cfg(feature = "backend_ocl")]
+    Backend(ocl::Error),
     Other(String),
 }
 
@@ -14,7 +14,8 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Error::Io(e) => write!(f, "Io: {:?}\n{}", e.kind(), e),
-            Error::Ocl(e) => write!(f, "Ocl:\n{}", e),
+            #[cfg(feature = "backend_ocl")]
+            Error::Backend(e) => write!(f, "Backend:\n{}", e),
             Error::Other(s) => write!(f, "Other:\n{}", s),
         }
     }
@@ -25,9 +26,10 @@ impl From<io::Error> for Error {
         Error::Io(e)
     }
 }
+#[cfg(feature = "backend_ocl")]
 impl From<ocl::Error> for Error {
     fn from(e: ocl::Error) -> Self {
-        Error::Ocl(e)
+        Error::Backend(e)
     }
 }
 impl From<String> for Error {

@@ -25,7 +25,7 @@ pub enum MouseMode {
 }
 
 impl Handler {
-    pub fn new(context: Rc<Sdl>, size: (usize, usize)) -> base::Result<Self> {
+    pub fn new(context: Rc<Sdl>, size: (usize, usize)) -> Result<Self, String> {
         let event_pump = context.event_pump()?;
 
         let mut self_ = Self {
@@ -50,7 +50,7 @@ impl Handler {
         }
     }
 
-    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> base::Result<bool> {
+    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> Result<bool, String> {
         let mut toggle_mouse_mode = false;
         let mut mouse_wheel = 0;
 

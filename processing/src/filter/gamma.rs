@@ -1,4 +1,4 @@
-use crate::{Filter, ImageBuffer};
+use crate::{Filter, ImageBuffer, OclContext};
 
 pub struct GammaFilter {
     kernel: ocl::Kernel,
@@ -6,7 +6,7 @@ pub struct GammaFilter {
 }
 
 impl GammaFilter {
-    pub fn new(context: &ocl::Context, gamma: f32) -> base::Result<Self> {
+    pub fn new(context: &OclContext, gamma: f32) -> crate::Result<Self> {
         let src = r#"
             __kernel void filter(
                 uint width,
@@ -18,7 +18,9 @@ impl GammaFilter {
                 output[idx] = pow(input[idx], gamma);
             }
         "#;
-        let program = ocl::Program::builder().source(src).build(context)?;
+        let program = ocl::Program::builder()
+            .source(src)
+            .build(&context.context)?;
         let kernel = ocl::Kernel::builder()
             .program(&program)
             .name("filter")
@@ -26,6 +28,7 @@ impl GammaFilter {
             .arg_named("gamma", &0.0f32)
             .arg_named("input", None::<&ocl::Buffer<f32>>)
             .arg_named("output", None::<&ocl::Buffer<f32>>)
+            .queue(context.queue.clone())
             .build()?;
 
         Ok(Self { kernel, gamma })
@@ -35,26 +38,21 @@ impl GammaFilter {
 impl Filter for GammaFilter {
     fn process(
         &self,
-        queue: &ocl::Queue,
         input: &ImageBuffer<f32, 4>,
         output: &mut ImageBuffer<f32, 4>,
-    ) -> base::Result<()> {
+    ) -> crate::Result<()> {
         assert_eq!(input.shape(), output.shape());
 
         self.kernel.set_arg("width", input.width() as u32)?;
         self.kernel.set_arg("gamma", self.gamma)?;
-        self.kernel.set_arg("input", input.buffer())?;
-        self.kernel.set_arg("output", output.buffer())?;
-        let cmd = self
-            .kernel
-            .cmd()
-            .queue(&queue)
-            .global_work_size(input.shape());
+        self.kernel.set_arg("input", input.raw())?;
+        self.kernel.set_arg("output", output.raw_mut())?;
+        let cmd = self.kernel.cmd().global_work_size(input.shape());
         unsafe {
             cmd.enq()?;
         }
 
-        queue.flush()?;
+        self.kernel.default_queue().unwrap().flush()?;
         Ok(())
     }
 }

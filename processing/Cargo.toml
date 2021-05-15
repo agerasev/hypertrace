@@ -5,7 +5,7 @@ authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-ocl = "0.19"
+ocl = { version = "0.19", optional = true }
 base = { package = "hypertrace-base", path = "../base" }
 types = { package = "hypertrace-types", path = "../types" }
 objects = { package = "hypertrace-objects", path = "../objects" }
@@ -16,3 +16,7 @@ ccgeom = { path = "../ccgeom" }
 rand = { version = "0.8", features = ["small_rng"] }
 uni-path = "1"
 regex = "1"
+
+[features]
+default = ["backend_ocl"]
+backend_ocl = ["ocl"]

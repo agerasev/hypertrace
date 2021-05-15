@@ -34,7 +34,7 @@ impl Controller for DummyController {
     fn step(&mut self, _: f64) {}
 }
 
-fn main() -> base::Result<()> {
+fn main() -> Result<(), String> {
     let shape = (800, 600);
     let context = Rc::new(sdl2::init()?);
     let mut window = Window::new(context, shape, "Press ESC to close")?;

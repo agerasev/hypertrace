@@ -1,5 +1,5 @@
 use ccgeom::{Euclidean3, Homogenous3};
-use objects::{
+use objs::{
     background::GradBg,
     material::{Colored, Lambertian},
     object::{Covered, ObjectVector},
@@ -7,7 +7,7 @@ use objects::{
     view::{MappedView, PointView},
     SceneImpl,
 };
-use processing::{filter::GammaFilter, Context, Pipeline};
+use proc::{filter::GammaFilter, Context, OclContext, Pipeline};
 use std::{
     rc::Rc,
     time::{Duration, Instant},
@@ -22,7 +22,7 @@ use vecmat::{
 };
 use view::{controllers::IsotropicController, Controller, Window};
 
-fn main() -> base::Result<()> {
+fn main() -> proc::Result<()> {
     let matches = clap::App::new("Sample")
         .about("Hypertrace sample")
         .arg(
@@ -86,8 +86,10 @@ fn main() -> base::Result<()> {
     };
     let context = Context {
         config,
-        context: ocl_context,
-        queue: ocl_queue,
+        backend: OclContext {
+            context: ocl_context,
+            queue: ocl_queue,
+        },
     };
 
     let view = MappedView::new(PointView::new(1.0), Homogenous3::identity());
@@ -113,8 +115,8 @@ fn main() -> base::Result<()> {
         2.4,
     );
     let mut scene = SceneImpl::<_, _, _, _, 4>::new(view, objects, background);
-    let filter = GammaFilter::new(&context.context, 1.0 / 2.2)?;
-    let mut pipeline = Pipeline::new(context, size, &scene, filter)?;
+    let filter = GammaFilter::new(&context.backend, 1.0 / 2.2)?;
+    let mut pipeline = Pipeline::new(&context, size, &scene, filter)?;
 
     let sdl_context = Rc::new(sdl2::init()?);
     let mut window = Window::new(sdl_context, size, "Sample")?;

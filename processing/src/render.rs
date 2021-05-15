@@ -1,4 +1,4 @@
-use crate::{Buffer, Canvas, Context};
+use crate::{Canvas, Context, EntityBuffer};
 use objects::Scene;
 use ocl_include::{source, Index, Parser};
 use regex::{Captures, Regex};
@@ -7,13 +7,12 @@ use types::{prelude::*, Config};
 use uni_path::PathBuf;
 
 pub struct Render<G: Geometry, S: Scene<G>> {
-    context: Context,
     kernel: ocl::Kernel,
     phantom: PhantomData<(G, S)>,
 }
 
 impl<G: Geometry, S: Scene<G>> Render<G, S> {
-    fn source(config: &Config) -> base::Result<(String, Index)> {
+    fn source(config: &Config) -> crate::Result<(String, Index)> {
         let source = S::source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
 
@@ -71,7 +70,7 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
         ))
     }
 
-    pub fn new(context: Context) -> base::Result<Self> {
+    pub fn new(context: &Context) -> crate::Result<Self> {
         let (text, index) = Self::source(&context.config)?;
         fs::write(
             "render.ocl",
@@ -83,7 +82,7 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
 
         let program = ocl::Program::builder()
             .source(text)
-            .build(&context.context)
+            .build(&context.backend.context)
             .map_err(|e| Self::map_error(&index, e))?;
         let kernel = ocl::Kernel::builder()
             .program(&program)
@@ -92,33 +91,29 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
             .arg_named("scene", None::<&ocl::Buffer<u8>>)
             .arg_named("canvas", None::<&ocl::Buffer<f32>>)
             .arg_named("seeds", None::<&ocl::Buffer<u32>>)
+            .queue(context.backend.queue.clone())
             .build()?;
 
         Ok(Self {
-            context,
             kernel,
             phantom: PhantomData,
         })
     }
 
-    pub fn render(&self, scene_buffer: &Buffer<S>, canvas: &mut Canvas) -> base::Result<()> {
+    pub fn render(&self, scene_buffer: &EntityBuffer<S>, canvas: &mut Canvas) -> crate::Result<()> {
         self.kernel.set_arg(
             "shape",
             ocl::prm::Uint2::new(canvas.width() as u32, canvas.height() as u32),
         )?;
-        self.kernel.set_arg("scene", scene_buffer.buffer())?;
-        self.kernel.set_arg("canvas", canvas.raw_image().buffer())?;
-        self.kernel.set_arg("seeds", canvas.seeds().buffer())?;
-        let cmd = self
-            .kernel
-            .cmd()
-            .queue(&self.context.queue)
-            .global_work_size(canvas.shape());
+        self.kernel.set_arg("scene", scene_buffer.raw())?;
+        self.kernel.set_arg("canvas", canvas.raw_image().raw())?;
+        self.kernel.set_arg("seeds", canvas.seeds_mut().raw_mut())?;
+        let cmd = self.kernel.cmd().global_work_size(canvas.shape());
         unsafe {
             cmd.enq()?;
         }
 
-        self.context.queue.finish()?;
+        self.kernel.default_queue().unwrap().finish()?;
         canvas.add_pass();
         Ok(())
     }

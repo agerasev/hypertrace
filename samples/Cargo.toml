@@ -11,12 +11,10 @@ path = "src/main.rs"
 [dependencies]
 sdl2 = "0.34"
 ocl = "0.19"
-ocl-include = { path = "../includer" }
-base = { package = "hypertrace-base", path = "../base" }
 types = { package = "hypertrace-types", path = "../types" }
 view = { package = "hypertrace-viewer", path = "../viewer" }
-objects = { package = "hypertrace-objects", path = "../objects" }
-processing = { package = "hypertrace-processing", path = "../processing" }
+objs = { package = "hypertrace-objects", path = "../objects" }
+proc = { package = "hypertrace-processing", path = "../processing", features = ["backend_ocl"] }
 clap = "2.33"
 vecmat = { path = "../vecmat" }
 ccgeom = { path = "../ccgeom" }

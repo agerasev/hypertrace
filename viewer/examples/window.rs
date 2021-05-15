@@ -1,4 +1,4 @@
-use hypertrace_viewer::{Controller, Motion, Window};
+use hypertrace_viewer::{Controller, Motion, Window, PollStatus};
 use std::{rc::Rc, thread::sleep, time::Duration};
 
 pub struct DummyController;
@@ -53,7 +53,7 @@ fn main() -> Result<(), String> {
     let delay = 0.04;
     let mut controller = DummyController;
     loop {
-        if window.poll(&mut controller)? {
+        if let PollStatus::Exit = window.poll(&mut controller)? {
             break Ok(());
         }
         window.draw(&image)?;

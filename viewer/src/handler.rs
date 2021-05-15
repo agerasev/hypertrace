@@ -24,6 +24,11 @@ pub enum MouseMode {
     Drag,
 }
 
+pub enum PollStatus {
+    Continue,
+    Exit,
+}
+
 impl Handler {
     pub fn new(context: Rc<Sdl>, size: (usize, usize)) -> Result<Self, String> {
         let event_pump = context.event_pump()?;
@@ -50,7 +55,7 @@ impl Handler {
         }
     }
 
-    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> Result<bool, String> {
+    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> Result<PollStatus, String> {
         let mut toggle_mouse_mode = false;
         let mut mouse_wheel = 0;
 
@@ -62,13 +67,13 @@ impl Handler {
 
             match event {
                 Event::Quit { .. } => {
-                    return Ok(true);
+                    return Ok(PollStatus::Exit);
                 }
                 Event::KeyDown {
                     keycode: Some(key), ..
                 } => match key {
                     Keycode::Escape => {
-                        return Ok(true);
+                        return Ok(PollStatus::Exit);
                     }
                     Keycode::Tab => {
                         toggle_mouse_mode = true;
@@ -109,7 +114,7 @@ impl Handler {
             self.drop_move = false;
         }
 
-        Ok(false)
+        Ok(PollStatus::Continue)
     }
 
     fn handle_mouse<C: Controller>(

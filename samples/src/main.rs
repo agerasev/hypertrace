@@ -20,7 +20,7 @@ use vecmat::{
     transform::{Rotation3, Shift},
     Transform, Vector,
 };
-use view::{controllers::IsotropicController, Controller, Window};
+use view::{controllers::IsotropicController, Controller, Window, PollStatus};
 
 fn main() -> proc::Result<()> {
     let matches = clap::App::new("Sample")
@@ -130,7 +130,7 @@ fn main() -> proc::Result<()> {
     );
     let delay = 0.04;
     loop {
-        if window.poll(&mut controller)? {
+        if let PollStatus::Exit = window.poll(&mut controller)? {
             break Ok(());
         }
         let updated = controller.updated();

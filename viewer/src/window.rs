@@ -1,4 +1,4 @@
-use crate::{handler::Handler, Controller};
+use crate::{handler::{Handler, PollStatus}, Controller};
 use base::Image;
 use sdl2::{
     self,
@@ -47,7 +47,7 @@ impl Window {
         self.canvas.draw(image)
     }
 
-    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> Result<bool, String> {
+    pub fn poll<C: Controller>(&mut self, controller: &mut C) -> Result<PollStatus, String> {
         self.handler.poll(controller)
     }
 }

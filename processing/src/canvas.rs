@@ -1,6 +1,6 @@
 use base::Image;
 use ocl::OclPrm;
-use rand::{Rng, SeedableRng, rngs::{SmallRng}};
+use rand::{rngs::SmallRng, Rng, SeedableRng};
 
 pub struct ImageBuffer<T: Copy + Default + OclPrm, const N: usize> {
     buffer: ocl::Buffer<T>,
@@ -143,18 +143,26 @@ impl Extractor {
         Ok(Self { kernel })
     }
 
-    pub fn process(&self, queue: &ocl::Queue, canvas: &Canvas, image: &mut ImageBuffer<f32, 4>) -> base::Result<()> {
+    pub fn process(
+        &self,
+        queue: &ocl::Queue,
+        canvas: &Canvas,
+        image: &mut ImageBuffer<f32, 4>,
+    ) -> base::Result<()> {
         assert_eq!(canvas.shape(), image.shape());
 
         self.kernel.set_arg("width", image.width() as u32)?;
         self.kernel.set_arg("passes", canvas.passes() as u32)?;
         self.kernel.set_arg("canvas", canvas.raw_image().buffer())?;
         self.kernel.set_arg("image", image.buffer())?;
-        let cmd = self.kernel
+        let cmd = self
+            .kernel
             .cmd()
             .queue(&queue)
             .global_work_size(image.shape());
-        unsafe { cmd.enq()?; }
+        unsafe {
+            cmd.enq()?;
+        }
 
         queue.flush()?;
         Ok(())
@@ -191,17 +199,25 @@ impl Packer {
         Ok(Self { kernel })
     }
 
-    pub fn process(&self, queue: &ocl::Queue, image: &ImageBuffer<f32, 4>, packed: &mut ImageBuffer<u8, 4>) -> base::Result<()> {
+    pub fn process(
+        &self,
+        queue: &ocl::Queue,
+        image: &ImageBuffer<f32, 4>,
+        packed: &mut ImageBuffer<u8, 4>,
+    ) -> base::Result<()> {
         assert_eq!(image.shape(), packed.shape());
 
         self.kernel.set_arg("width", image.width() as u32)?;
         self.kernel.set_arg("image", image.buffer())?;
         self.kernel.set_arg("packed", packed.buffer())?;
-        let cmd = self.kernel
+        let cmd = self
+            .kernel
             .cmd()
             .queue(&queue)
             .global_work_size(image.shape());
-        unsafe { cmd.enq()?; }
+        unsafe {
+            cmd.enq()?;
+        }
 
         queue.flush()?;
         Ok(())

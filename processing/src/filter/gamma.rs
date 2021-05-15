@@ -33,18 +33,26 @@ impl GammaFilter {
 }
 
 impl Filter for GammaFilter {
-    fn process(&self, queue: &ocl::Queue, input: &ImageBuffer<f32, 4>, output: &mut ImageBuffer<f32, 4>) -> base::Result<()> {
+    fn process(
+        &self,
+        queue: &ocl::Queue,
+        input: &ImageBuffer<f32, 4>,
+        output: &mut ImageBuffer<f32, 4>,
+    ) -> base::Result<()> {
         assert_eq!(input.shape(), output.shape());
 
         self.kernel.set_arg("width", input.width() as u32)?;
         self.kernel.set_arg("gamma", self.gamma)?;
         self.kernel.set_arg("input", input.buffer())?;
         self.kernel.set_arg("output", output.buffer())?;
-        let cmd = self.kernel
+        let cmd = self
+            .kernel
             .cmd()
             .queue(&queue)
             .global_work_size(input.shape());
-        unsafe { cmd.enq()?; }
+        unsafe {
+            cmd.enq()?;
+        }
 
         queue.flush()?;
         Ok(())

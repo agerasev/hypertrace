@@ -1,6 +1,6 @@
-use types::{Entity, io::CntWrapper};
-use std::{marker::PhantomData};
 use crate::Context;
+use std::marker::PhantomData;
+use types::{io::CntWrapper, Entity};
 
 pub struct Buffer<T: Entity> {
     buffer: ocl::Buffer<u8>,
@@ -17,7 +17,7 @@ impl<T: Entity> Buffer<T> {
         value.store(&context.config, &mut CntWrapper::new(&mut buffer))?;
         Ok(Self {
             buffer: ocl::Buffer::builder()
-                .context(&context.ocl)
+                .context(&context.context)
                 .copy_host_slice(&buffer)
                 .len(buffer.len())
                 .build()?,

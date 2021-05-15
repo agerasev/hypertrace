@@ -35,6 +35,7 @@ const HOST_ADDRESS_WIDTH: AddressWidth = AddressWidth::X32;
 #[cfg(target_pointer_width = "64")]
 const HOST_ADDRESS_WIDTH: AddressWidth = AddressWidth::X64;
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct Config {
     pub endian: Endian,
     pub address_width: AddressWidth,

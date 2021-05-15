@@ -1,11 +1,13 @@
-mod context;
 mod buffer;
 mod canvas;
+mod context;
 pub mod filter;
+mod pipeline;
 mod render;
 
-pub use context::*;
 pub use buffer::*;
 pub use canvas::*;
-pub use filter::Filter;
+pub use context::*;
+pub use filter::{Filter, FilterSequence};
+pub use pipeline::*;
 pub use render::*;

@@ -1,4 +1,5 @@
 pub mod euclidean;
+pub mod hyperbolic;
 mod mapped;
 mod vector;
 

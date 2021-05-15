@@ -76,12 +76,12 @@ fn main() -> proc::Result<()> {
 
     let mut controller = IsotropicController::<Euclidean3>::new(
         Homogenous3::new(
-            Shift::from(Vector::from([0.0, 0.0, 4.0])),
+            Shift::from(Vector::from([0.0, 0.0, 2.0])),
             Rotation3::identity(),
         ),
         1.0,
     );
-    
+
     let delay = 0.04;
     loop {
         if let PollStatus::Exit = window.poll(&mut controller)? {

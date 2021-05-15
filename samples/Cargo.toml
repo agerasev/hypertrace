@@ -9,8 +9,12 @@ name = "lib"
 path = "src/lib.rs"
 
 [[bin]]
-name = "main"
-path = "src/main.rs"
+name = "eu"
+path = "bin/eu.rs"
+
+[[bin]]
+name = "hy"
+path = "bin/hy.rs"
 
 [dependencies]
 clap = "2.33"

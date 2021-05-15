@@ -7,7 +7,7 @@ use objs::{
     view::{MappedView, PointView},
     SceneImpl,
 };
-use proc::{filter::GammaFilter, Context, OclContext, Pipeline};
+use proc::{filter::GammaFilter, Context, Pipeline};
 use std::{
     rc::Rc,
     time::{Duration, Instant},
@@ -21,64 +21,18 @@ use vecmat::{
     Transform, Vector,
 };
 use view::{controllers::IsotropicController, Controller, Window, PollStatus};
+use lib::cli::{OclApp, get_ocl_context};
 
 fn main() -> proc::Result<()> {
     let matches = clap::App::new("Sample")
         .about("Hypertrace sample")
-        .arg(
-            clap::Arg::with_name("platform_no")
-                .help("Platform number")
-                .index(1),
-        )
-        .arg(
-            clap::Arg::with_name("device_no")
-                .help("Device number")
-                .index(2),
-        )
-        .arg(
-            clap::Arg::with_name("list")
-                .short("l")
-                .long("list")
-                .help("List available platform and devices")
-                .takes_value(false),
-        )
+        .ocl_args()
         .get_matches();
 
-    if matches.is_present("list") {
-        for (pi, platform) in ocl::Platform::list().into_iter().enumerate() {
-            for (di, device) in ocl::Device::list_all(&platform)?.into_iter().enumerate() {
-                println!("Platform [{}]: {}", pi, platform.name()?);
-                println!(
-                    "    Device [{}]: {} {}",
-                    di,
-                    device.vendor()?,
-                    device.name()?
-                );
-            }
-        }
-        return Ok(());
-    }
-
-    let size = (800, 600);
-
-    let platform_no = matches
-        .value_of("platform_no")
-        .map(|s| s.parse::<usize>().unwrap())
-        .unwrap_or(0);
-    let device_no = matches
-        .value_of("device_no")
-        .map(|s| s.parse::<usize>().unwrap())
-        .unwrap_or(0);
-
-    let platform = *ocl::Platform::list().get(platform_no).unwrap();
-    let device = *ocl::Device::list_all(&platform)?.get(device_no).unwrap();
-
-    let ocl_context = ocl::Context::builder()
-        .platform(platform)
-        .devices(device)
-        .build()?;
-    let ocl_queue = ocl::Queue::new(&ocl_context, device, None)?;
-
+    let ocl_context = match get_ocl_context(&matches)? {
+        Some(ctx) => ctx,
+        None => { return Ok(()); },
+    };
     let config = Config {
         address_width: AddressWidth::X32,
         endian: Endian::Little,
@@ -86,11 +40,10 @@ fn main() -> proc::Result<()> {
     };
     let context = Context {
         config,
-        backend: OclContext {
-            context: ocl_context,
-            queue: ocl_queue,
-        },
+        backend: ocl_context,
     };
+
+    let size = (800, 600);
 
     let view = MappedView::new(PointView::new(1.0), Homogenous3::identity());
     let objects = ObjectVector::from_objects(vec![
@@ -128,6 +81,7 @@ fn main() -> proc::Result<()> {
         ),
         1.0,
     );
+    
     let delay = 0.04;
     loop {
         if let PollStatus::Exit = window.poll(&mut controller)? {

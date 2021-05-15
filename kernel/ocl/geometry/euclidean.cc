@@ -33,7 +33,7 @@ EuDir eu_dir_at(EuPos src_pos, EuDir src_dir, EuPos dst_pos) {
 }
 
 EuMap eu_shift(EuDir pos) {
-    return hom3_new(shf3_new(-pos), rot3_identity());
+    return hom3_new(shf3_new(pos), rot3_identity());
 }
 EuMap eu_rotate(EuDir axis, real phi) {
     return hom3_new(shf3_identity(), rot3_from_axis(axis, phi));
@@ -43,7 +43,7 @@ EuMap eu_rotate(EuDir axis, real phi) {
 EuMap eu_look_to(EuDir dir) {
     return hom3_new(
         shf3_identity(),
-        rot3_inverse(rot3_look_at(dir))
+        rot3_look_at(dir)
     );
 }
 
@@ -55,7 +55,7 @@ EuMap eu_look_at(EuPos pos) {
 // Translates point `pos` to the origin preserving orientation
 // relative to the line that connects `pos` to the origin.
 EuMap eu_move_at(EuPos pos) {
-    return hom3_new(shf3_new(-pos), rot3_identity());
+    return hom3_new(shf3_new(pos), rot3_identity());
 }
 EuMap eu_move_to(EuDir dir, real dist) {
     return eu_move_at(dir * dist);
@@ -111,9 +111,9 @@ TEST_F(EuclideanTest, distance_invariance) {
 TEST_F(EuclideanTest, look_at_the_point) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         real3 q = vrng.normal();
-        real3 p = eu_apply_pos(eu_look_at(q), q);
+        real3 p = eu_apply_pos(eu_look_at(q), r3_new(R0, R0, -length(q)));
 
-        ASSERT_EQ(p.xy, approx(r2_new(R0, R0)));
+        ASSERT_EQ(p, approx(q));
     }
 }
 TEST_F(EuclideanTest, move_at_the_point) {
@@ -121,10 +121,10 @@ TEST_F(EuclideanTest, move_at_the_point) {
         real3 p = vrng.normal(), q = vrng.normal();
 
         EuMap a = eu_move_at(p);
-        ASSERT_EQ(eu_apply_pos(a, p), approx(eu_origin()));
+        ASSERT_EQ(eu_apply_pos(a, eu_origin()), approx(p));
 
         EuMap b = eu_chain(eu_inverse(eu_move_at(q)), a);
-        ASSERT_EQ(eu_apply_pos(b, p), approx(q));
+        ASSERT_EQ(eu_apply_pos(b, q), approx(p));
     }
 }
 

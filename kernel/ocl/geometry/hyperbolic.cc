@@ -22,8 +22,6 @@ real hy_distance(HyPos a, HyPos b) {
     return log(x + sqrt(x*x - 1));
 }
 
-// Returns the direction of the line at point `dst_pos`
-// when we know that the line at the point `src_pos` has direction of `src_dir`.
 HyDir hy_dir_at(HyDir src_pos, HyDir src_dir, HyDir dst_pos) {
     quat p = src_pos, d = src_dir, h = dst_pos;
     return MAKE(HyDir)(
@@ -63,38 +61,31 @@ HyMap hy_yrotate(real theta) {
     return mo_new(c22_new(c*C1, -s*C1, s*C1, c*C1));
 }
 
-// Move to position at the horosphere.
 HyMap hy_horosphere(comp pos) {
     return mo_new(c22_new(C1, pos, C0, C1));
 }
 
-// Turns direction `dir` to *j*.
 HyMap hy_look_to(HyDir dir) {
-    // We look at the top (along the z axis).
-	real phi = -atan2(dir.y, dir.x);
-	real theta = -atan2(length(dir.xy), dir.z);
-	return hy_chain(hy_yrotate(theta), hy_zrotate(phi));
+	real phi = atan2(dir.y, dir.x);
+	real theta = atan2(length(dir.xy), dir.z);
+	return hy_chain(hy_zrotate(phi), hy_yrotate(theta));
 }
 
-// Rotatates point `pos` around the origin to make it lay on the z axis.
 HyMap hy_look_at(HyPos pos) {
-    // The origin is at *j* (z = 1).
-	real phi = -atan2(pos.y, pos.x);
-	real theta = -atan2(2*length(pos.xy), length2(pos) - 1);
-	return hy_chain(hy_yrotate(theta), hy_zrotate(phi));
+	real phi = atan2(pos.y, pos.x);
+	real theta = atan2(2*length(pos.xy), length2(pos) - 1);
+	return hy_chain(hy_zrotate(phi), hy_yrotate(theta));
 }
 
-// Translates point `pos` to the origin preserving orientation
-// relative to the line that connects `pos` to the origin.
 HyMap hy_move_at(HyPos pos) {
     Moebius a = hy_look_at(pos);
-    Moebius b = hy_zshift(-hy_length(pos));
-    return mo_chain(mo_inverse(a), mo_chain(b, a));
+    Moebius b = hy_zshift(hy_length(pos));
+    return mo_chain(a, mo_chain(b, mo_inverse(a)));
 }
 HyMap hy_move_to(HyDir dir, real dist) {
     Moebius a = hy_look_to(dir);
-    Moebius b = hy_zshift(-dist);
-    return mo_chain(mo_inverse(a), mo_chain(b, a));
+    Moebius b = hy_zshift(dist);
+    return mo_chain(a, mo_chain(b, mo_inverse(a)));
 }
 
 
@@ -169,7 +160,7 @@ TEST_F(HyperbolicTest, rotation_of_derivative) {
 TEST_F(HyperbolicTest, look_at_the_point) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         quat q = hyrng.normal();
-        quat p = hy_apply_pos(hy_look_at(q), q);
+        quat p = hy_apply_pos(hy_inverse(hy_look_at(q)), q);
 
         ASSERT_EQ(p.xy, approx(C0).epsilon(sqrt(EPS)));
     }
@@ -178,10 +169,10 @@ TEST_F(HyperbolicTest, move_at_the_point) {
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         quat p = hyrng.normal(), q = hyrng.normal();
 
-        Moebius a = hy_move_at(p);
+        Moebius a = hy_inverse(hy_move_at(p));
         ASSERT_EQ(hy_apply_pos(a, p), approx(QJ));
 
-        Moebius b = hy_chain(hy_inverse(hy_move_at(q)), a);
+        Moebius b = hy_chain(hy_move_at(q), a);
         ASSERT_EQ(hy_apply_pos(b, p), approx(q));
     }
 }

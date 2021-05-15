@@ -13,12 +13,16 @@ real horosphere_detect(__global const void *shape, Context *context, HyDir *norm
     
     real dt = sqrt(p.z*p.z - dxy*dxy);
     real t = p.z*d.z - dt;
-    if (t < R0 + context->repeat*EPS) {
-        t += 2*dt;
+    if (t < R0) {
+        return -R1;
+        //t += 2*dt;
     }
+    // FIXME: make horosphere visible from inside.
+    /*
     if (t < R0 + context->repeat*EPS) {
         return -R1;
     }
+    */
 
     t /= dxy*dxy;
     quat h = MAKE(quat)(p.xy + d.xy*t, 1, 0);

@@ -46,7 +46,7 @@ where
     }
 }
 
-const SPEED: f64 = 4.0;
+const SPEED: f64 = 1.0;
 const SENS: f64 = 1.0;
 
 const DT: f64 = 0.04;
@@ -63,13 +63,13 @@ where
     G::Map: Copy,
 {
     fn move_forward(&mut self, m: Motion) {
-        self.update_map(G::shift_z(SPEED * motion_to_value(m)));
+        self.update_map(G::shift_z(SPEED * -motion_to_value(m)));
     }
     fn move_right(&mut self, m: Motion) {
-        self.update_map(G::shift_x(SPEED * -motion_to_value(m)));
+        self.update_map(G::shift_x(SPEED * motion_to_value(m)));
     }
     fn move_up(&mut self, m: Motion) {
-        self.update_map(G::shift_y(SPEED * -motion_to_value(m)));
+        self.update_map(G::shift_y(SPEED * motion_to_value(m)));
     }
 
     fn rotate_yaw(&mut self, m: Motion) {

@@ -36,13 +36,13 @@ GeoMap $2($geo,_zrotate)(real phi);
 GeoMap $2($geo,_xrotate)(real theta);
 GeoMap $2($geo,_yrotate)(real theta);
 
-// Turns direction `dir` to *j*.
+// Turns `default_dir` to `dir`.
 GeoMap $2($geo,_look_to)(GeoDir dir);
 
-// Rotatates point `pos` around the origin to make it lay on the z axis.
+// Rotatates `default_dir` around the origin to make it point to `pos`.
 GeoMap $2($geo,_look_at)(GeoPos pos);
 
-// Translates point `pos` to the origin preserving orientation
+// Translates origin to `pos` preserving orientation
 // relative to the line that connects `pos` to the origin.
 GeoMap $2($geo,_move_at)(GeoPos pos);
 GeoMap $2($geo,_move_to)(GeoDir dir, real dist);

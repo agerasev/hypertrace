@@ -10,7 +10,7 @@ use types::{
 use vecmat::Vector;
 
 /// Constant color background.
-#[derive(Clone, Debug, Named, Entity, SizedEntity)]
+#[derive(Clone, Debug, EntityId, Entity, SizedEntity)]
 pub struct ConstBg {
     pub color: Vector<f32, 3>,
 }
@@ -21,30 +21,30 @@ impl ConstBg {
     }
 }
 
-impl Sourced for ConstBg {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for ConstBg {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("background/constant.hh")
     }
 }
 
 impl<G: Geometry> Background<G> for ConstBg {
-    fn background_prefix(cfg: &Config) -> String {
-        format!("const_bg_{}", G::geometry_prefix(cfg))
+    fn background_prefix() -> String {
+        format!("const_bg_{}", G::geometry_prefix())
     }
     fn background_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!(
             "generated/const_bg_{}.hh",
-            &G::geometry_prefix(cfg)
+            &G::geometry_prefix()
         ))
         .tree(G::geometry_source(cfg))
         .content(&include(&format!(
             "render/light/{}.hh",
-            &G::geometry_prefix(cfg)
+            &G::geometry_prefix()
         )))
         .content(&include_template!(
             "background/constant.inl",
-            "Geo": &G::type_name(cfg),
-            "geo": &G::geometry_prefix(cfg),
+            "Geo": &G::name(),
+            "geo": &G::geometry_prefix(),
         ))
         .build()
     }
@@ -52,7 +52,7 @@ impl<G: Geometry> Background<G> for ConstBg {
 
 /// Gradient background.
 /// Available only for euclidean space because only that space preserves direction.
-#[derive(Clone, Debug, Named, Entity, SizedEntity)]
+#[derive(Clone, Debug, EntityId, Entity, SizedEntity)]
 pub struct GradBg {
     pub direction: Vector<f64, 3>,
     pub colors: [Vector<f32, 3>; 2],
@@ -69,8 +69,8 @@ impl GradBg {
     }
 }
 
-impl Sourced for GradBg {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for GradBg {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("background/gradient.hh")
     }
 }

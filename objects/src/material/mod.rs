@@ -4,11 +4,11 @@ mod modifier;
 use types::{prelude::*, source::SourceTree, Config};
 
 pub trait Material: SizedEntity {
-    fn material_prefix(cfg: &Config) -> String {
-        Self::type_prefix(cfg)
+    fn material_prefix() -> String {
+        Self::data_prefix()
     }
     fn material_source(cfg: &Config) -> SourceTree {
-        Self::source(cfg)
+        Self::data_source(cfg)
     }
 }
 

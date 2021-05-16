@@ -2,7 +2,7 @@ use crate::{
     config::{AddressWidth, Config, Endian},
     io::{CntRead, CntWrite},
     source::SourceTree,
-    Entity, Named, SizedEntity, Sourced,
+    Entity, EntityId, SizedEntity, EntitySource,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_traits::Num;
@@ -13,11 +13,11 @@ pub trait PrimScal: SizedEntity + Num + Copy + Default + Debug + 'static {}
 macro_rules! impl_entity_native {
     ($T:ident, $K:expr, $read:ident, $write:ident) => {
         impl PrimScal for $T {}
-        impl Named for $T {
-            fn type_name(_: &Config) -> String {
+        impl EntityId for $T {
+            fn name() -> String {
                 String::from($K)
             }
-            fn type_prefix(_: &Config) -> String {
+            fn data_prefix() -> String {
                 String::from($K)
             }
         }
@@ -52,8 +52,8 @@ macro_rules! impl_entity_native {
                 size_of::<Self>()
             }
         }
-        impl Sourced for $T {
-            fn source(_: &Config) -> SourceTree {
+        impl EntitySource for $T {
+            fn data_source(_: &Config) -> SourceTree {
                 SourceTree::new("types.hh")
             }
         }
@@ -63,11 +63,11 @@ macro_rules! impl_entity_native {
 macro_rules! impl_entity_byte {
     ($T:ident, $K:expr, $read:ident, $write:ident) => {
         impl PrimScal for $T {}
-        impl Named for $T {
-            fn type_name(_: &Config) -> String {
+        impl EntityId for $T {
+            fn name() -> String {
                 String::from($K)
             }
-            fn type_prefix(_: &Config) -> String {
+            fn data_prefix() -> String {
                 String::from($K)
             }
         }
@@ -96,8 +96,8 @@ macro_rules! impl_entity_byte {
                 1
             }
         }
-        impl Sourced for $T {
-            fn source(_: &Config) -> SourceTree {
+        impl EntitySource for $T {
+            fn data_source(_: &Config) -> SourceTree {
                 SourceTree::new("types.hh")
             }
         }
@@ -105,20 +105,14 @@ macro_rules! impl_entity_byte {
 }
 
 macro_rules! impl_entity_size {
-    ($T:ident, $T32:ident, $T64:ident) => {
+    ($T:ident, $K:expr, $T32:ident, $T64:ident) => {
         impl PrimScal for $T {}
-        impl Named for $T {
-            fn type_name(cfg: &Config) -> String {
-                match cfg.address_width {
-                    AddressWidth::X32 => $T32::type_name(cfg),
-                    AddressWidth::X64 => $T64::type_name(cfg),
-                }
+        impl EntityId for $T {
+            fn name() -> String {
+                String::from($K)
             }
-            fn type_prefix(cfg: &Config) -> String {
-                match cfg.address_width {
-                    AddressWidth::X32 => $T32::type_prefix(cfg),
-                    AddressWidth::X64 => $T64::type_prefix(cfg),
-                }
+            fn data_prefix() -> String {
+                String::from($K)
             }
         }
         impl Entity for $T {
@@ -155,11 +149,11 @@ macro_rules! impl_entity_size {
                 }
             }
         }
-        impl Sourced for $T {
-            fn source(cfg: &Config) -> SourceTree {
+        impl EntitySource for $T {
+            fn data_source(cfg: &Config) -> SourceTree {
                 match cfg.address_width {
-                    AddressWidth::X32 => $T32::source(cfg),
-                    AddressWidth::X64 => $T64::source(cfg),
+                    AddressWidth::X32 => $T32::data_source(cfg),
+                    AddressWidth::X64 => $T64::data_source(cfg),
                 }
             }
         }
@@ -176,26 +170,18 @@ impl_entity_native!(i16, "short", read_i16, write_i16);
 impl_entity_native!(i32, "int", read_i32, write_i32);
 impl_entity_native!(i64, "long", read_i64, write_i64);
 
-impl_entity_size!(usize, u32, u64);
-impl_entity_size!(isize, i32, i64);
+impl_entity_size!(usize, "usize", u32, u64);
+impl_entity_size!(isize, "isize", i32, i64);
 
 impl_entity_native!(f32, "float", read_f32, write_f32);
 
 impl PrimScal for f64 {}
-impl Named for f64 {
-    fn type_name(cfg: &Config) -> String {
-        if cfg.double_support {
-            String::from("double")
-        } else {
-            f32::type_name(cfg)
-        }
+impl EntityId for f64 {
+    fn name() -> String {
+        String::from("real")
     }
-    fn type_prefix(cfg: &Config) -> String {
-        if cfg.double_support {
-            String::from("double")
-        } else {
-            f32::type_prefix(cfg)
-        }
+    fn data_prefix() -> String {
+        String::from("real")
     }
 }
 impl Entity for f64 {
@@ -241,12 +227,12 @@ impl SizedEntity for f64 {
         }
     }
 }
-impl Sourced for f64 {
-    fn source(cfg: &Config) -> SourceTree {
+impl EntitySource for f64 {
+    fn data_source(cfg: &Config) -> SourceTree {
         if cfg.double_support {
             SourceTree::new("types.hh")
         } else {
-            f32::source(cfg)
+            f32::data_source(cfg)
         }
     }
 }

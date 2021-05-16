@@ -2,18 +2,18 @@ use crate::{
     io::{CntRead, CntWrite},
     primitive::PrimVec,
     source::SourceTree,
-    Config, Entity, Named, SizedEntity, Sourced,
+    Config, Entity, EntityId, SizedEntity, EntitySource,
 };
 use std::io;
 use vecmat::{Complex, Matrix};
 
 // Real2x2
 
-impl Named for Matrix<f64, 2, 2> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Matrix<f64, 2, 2> {
+    fn name() -> String {
         String::from("real2x2")
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         String::from("r22")
     }
 }
@@ -53,8 +53,8 @@ impl SizedEntity for Matrix<f64, 2, 2> {
         4 * f64::type_size(cfg)
     }
 }
-impl Sourced for Matrix<f64, 2, 2> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Matrix<f64, 2, 2> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/matrix.hh")
     }
 }
@@ -62,11 +62,11 @@ impl PrimVec for Matrix<f64, 2, 2> {}
 
 // Real4x4
 
-impl Named for Matrix<f64, 4, 4> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Matrix<f64, 4, 4> {
+    fn name() -> String {
         String::from("real4x4")
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         String::from("r44")
     }
 }
@@ -106,8 +106,8 @@ impl SizedEntity for Matrix<f64, 4, 4> {
         16 * f64::type_size(cfg)
     }
 }
-impl Sourced for Matrix<f64, 4, 4> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Matrix<f64, 4, 4> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/matrix.hh")
     }
 }
@@ -115,11 +115,11 @@ impl PrimVec for Matrix<f64, 4, 4> {}
 
 // Real3x3
 
-impl Named for Matrix<f64, 3, 3> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Matrix<f64, 3, 3> {
+    fn name() -> String {
         String::from("real3x3")
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         String::from("r33")
     }
 }
@@ -166,8 +166,8 @@ impl SizedEntity for Matrix<f64, 3, 3> {
         16 * f64::type_size(cfg)
     }
 }
-impl Sourced for Matrix<f64, 3, 3> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Matrix<f64, 3, 3> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/matrix.hh")
     }
 }
@@ -175,11 +175,11 @@ impl PrimVec for Matrix<f64, 3, 3> {}
 
 // Complex2x2
 
-impl Named for Matrix<Complex<f64>, 2, 2> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Matrix<Complex<f64>, 2, 2> {
+    fn name() -> String {
         String::from("comp2x2")
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         String::from("c22")
     }
 }
@@ -219,8 +219,8 @@ impl SizedEntity for Matrix<Complex<f64>, 2, 2> {
         8 * f64::type_size(cfg)
     }
 }
-impl Sourced for Matrix<Complex<f64>, 2, 2> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Matrix<Complex<f64>, 2, 2> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/matrix.hh")
     }
 }

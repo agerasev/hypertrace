@@ -11,34 +11,34 @@ use std::{
 };
 
 /// Something that could be identified.
-pub trait Named: 'static + Sized {
+pub trait EntityId: 'static + Sized {
     /// Type name on backend.
-    fn type_name(cfg: &Config) -> String;
+    fn name() -> String;
 
     /// Prefix for type method (usually lower-case version of the name).
-    fn type_prefix(cfg: &Config) -> String;
+    fn data_prefix() -> String;
 
     /// Type identifier.
-    fn type_id() -> u64 {
+    fn id() -> u64 {
         let mut hasher = DefaultHasher::default();
         TypeId::of::<Self>().hash(&mut hasher);
         hasher.finish()
     }
 
     /// Type short text identifier.
-    fn type_tag() -> String {
-        format!("{:08X}", Self::type_id() as u32)
+    fn tag() -> String {
+        format!("{:08X}", Self::id() as u32)
     }
 }
 
 /// Trait to generate backend source code.
-pub trait Sourced: Named {
+pub trait EntitySource: EntityId {
     /// Returns backend source code tree.
-    fn source(cfg: &Config) -> SourceTree;
+    fn data_source(cfg: &Config) -> SourceTree;
 }
 
 /// Static entity type.
-pub trait Entity: Named + Sourced {
+pub trait Entity: EntityId + EntitySource {
     /// Align of type.
     fn align(cfg: &Config) -> usize;
 

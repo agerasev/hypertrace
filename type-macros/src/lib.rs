@@ -16,7 +16,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{self, parse_macro_input, DeriveInput};
 
-#[proc_macro_derive(Named)]
+#[proc_macro_derive(EntityId)]
 pub fn derive_named(stream: TokenStream) -> TokenStream {
     let input = parse_macro_input!(stream as DeriveInput);
 
@@ -30,17 +30,17 @@ pub fn derive_named(stream: TokenStream) -> TokenStream {
         (quote! { "" }, quote! { "" })
     } else {
         (
-            quote! { <Self as types::Named>::type_tag() },
+            quote! { <Self as types::EntityId>::tag() },
             quote! { "_" },
         )
     };
 
     TokenStream::from(quote! {
-        impl<#bindings> types::Named for #ty<#params> {
-            fn type_name(cfg: &types::Config) -> String {
+        impl<#bindings> types::EntityId for #ty<#params> {
+            fn name() -> String {
                 format!("{}{}", #name, #tag)
             }
-            fn type_prefix(cfg: &types::Config) -> String {
+            fn data_prefix() -> String {
                 format!("{}{}{}", #prefix, #div, #tag)
             }
         }
@@ -122,7 +122,7 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(Sourced)]
+#[proc_macro_derive(EntitySource)]
 pub fn derive_sourced(stream: TokenStream) -> TokenStream {
     let input = parse_macro_input!(stream as DeriveInput);
 
@@ -139,8 +139,8 @@ pub fn derive_sourced(stream: TokenStream) -> TokenStream {
     }
 
     TokenStream::from(quote! {
-        impl<#bindings> types::Sourced for #ty<#params> #where_clause {
-            fn source(cfg: &types::Config) -> types::source::SourceTree {
+        impl<#bindings> types::EntitySource for #ty<#params> #where_clause {
+            fn data_source(cfg: &types::Config) -> types::source::SourceTree {
                 #source
             }
         }

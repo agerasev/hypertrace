@@ -1,10 +1,10 @@
 macro_rules! impl_named_unwrap {
     ($T:ty) => {
-        fn type_name(cfg: &crate::Config) -> String {
-            <$T>::type_name(cfg)
+        fn name() -> String {
+            <$T>::name()
         }
-        fn type_prefix(cfg: &crate::Config) -> String {
-            <$T>::type_prefix(cfg)
+        fn data_prefix() -> String {
+            <$T>::data_prefix()
         }
     };
 }
@@ -46,8 +46,8 @@ macro_rules! impl_sized_entity_unwrap {
 
 macro_rules! impl_sourced_unwrap {
     ($T:ty) => {
-        fn source(cfg: &crate::Config) -> crate::source::SourceTree {
-            <$T>::source(cfg)
+        fn data_source(cfg: &crate::Config) -> crate::source::SourceTree {
+            <$T>::data_source(cfg)
         }
     };
 }

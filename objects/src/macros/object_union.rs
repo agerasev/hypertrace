@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! object_union {
     { $self:ident { $( $variant:ident($vtype:ty) ),* $(,)? } } => {
-        #[derive(type_macros::Named, type_macros::Entity, type_macros::SizedEntity)]
+        #[derive(type_macros::EntityId, type_macros::Entity, type_macros::SizedEntity)]
         pub enum $self {
             $( $variant($vtype) ),*
         }
@@ -23,38 +23,38 @@ macro_rules! object_union {
         {
         }
 
-        impl types::Sourced for $self
+        impl types::EntitySource for $self
         where
             Self: types::Entity,
             $(
                 $vtype: types::Entity,
             ),*
         {
-            fn source(cfg: &types::Config) -> types::source::SourceTree {
+            fn data_source(cfg: &types::Config) -> types::source::SourceTree {
                 /*
-                SourceBuilder::new(format!("generated/object_union_{}.hh", Self::type_tag()))
+                SourceBuilder::new(format!("generated/object_union_{}.hh", Self::tag()))
                     .tree(Self::type_source(cfg))
-                    .tree(G::source(cfg))
-                    .tree(S::source(cfg))
-                    .tree(M::source(cfg))
+                    .tree(G::data_source(cfg))
+                    .tree(S::data_source(cfg))
+                    .tree(M::data_source(cfg))
                     .content(&include(&format!(
                         "geometry/ray_{}.hh",
-                        G::type_prefix(cfg)
+                        G::data_prefix()
                     )))
                     .content(&include(&format!(
                         "render/light/{}.hh",
-                        G::type_prefix(cfg)
+                        G::data_prefix()
                     )))
                     .content(&include_template!(
                         "object/covered.inl",
-                        "Self": &Self::type_name(cfg),
-                        "self": &Self::type_prefix(cfg),
-                        "Geo": &G::type_name(cfg),
-                        "geo": &G::type_prefix(cfg),
-                        "Shape": &S::type_name(cfg),
-                        "shape": &S::type_prefix(cfg),
-                        "Material": &M::type_name(cfg),
-                        "material": &M::type_prefix(cfg),
+                        "Self": &Self::name(),
+                        "self": &Self::data_prefix(),
+                        "Geo": &G::name(),
+                        "geo": &G::data_prefix(),
+                        "Shape": &S::name(),
+                        "shape": &S::data_prefix(),
+                        "Material": &M::name(),
+                        "material": &M::data_prefix(),
                     ))
                     .build()
                 */

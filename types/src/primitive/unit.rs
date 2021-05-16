@@ -1,18 +1,18 @@
 use crate::{
     io::{CntRead, CntWrite},
     source::SourceTree,
-    Config, Entity, Named, SizedEntity, Sourced,
+    Config, Entity, EntityId, SizedEntity, EntitySource,
 };
 use std::{io, marker::PhantomData};
 
 // Unit
 
-impl Named for () {
-    fn type_name(_: &Config) -> String {
+impl EntityId for () {
+    fn name() -> String {
         String::from("void")
     }
 
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         String::from("empty")
     }
 }
@@ -49,20 +49,20 @@ impl SizedEntity for () {
     }
 }
 
-impl Sourced for () {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for () {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("types.hh")
     }
 }
 
 // PhantomData
 
-impl<T: 'static> Named for PhantomData<T> {
-    fn type_name(_: &Config) -> String {
+impl<T: 'static> EntityId for PhantomData<T> {
+    fn name() -> String {
         String::from("void")
     }
 
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         String::from("phantom")
     }
 }
@@ -99,8 +99,8 @@ impl<T: 'static> SizedEntity for PhantomData<T> {
     }
 }
 
-impl<T: 'static> Sourced for PhantomData<T> {
-    fn source(_: &Config) -> SourceTree {
+impl<T: 'static> EntitySource for PhantomData<T> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("types.hh")
     }
 }

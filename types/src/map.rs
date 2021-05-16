@@ -3,7 +3,7 @@ use crate::{
     io::{CntRead, CntWrite},
     math,
     source::{SourceBuilder, SourceTree},
-    Config, Entity, Named, SizedEntity, Sourced,
+    Config, Entity, EntityId, SizedEntity, EntitySource,
 };
 use ccgeom::Map as GeoMap;
 use std::{any::TypeId, io};
@@ -14,7 +14,7 @@ use vecmat::{
 };
 
 pub trait Map<P, D = P>: GeoMap<P, D> + SizedEntity {
-    fn map_prefix(cfg: &Config) -> String;
+    fn map_prefix() -> String;
     fn map_source(cfg: &Config) -> SourceTree;
 }
 
@@ -22,21 +22,21 @@ impl<M, P, D> Map<P, D> for M
 where
     M: GeoMap<P, D> + SizedEntity,
 {
-    fn map_prefix(cfg: &Config) -> String {
-        Self::type_prefix(cfg)
+    fn map_prefix() -> String {
+        Self::data_prefix()
     }
     fn map_source(cfg: &Config) -> SourceTree {
-        Self::source(cfg)
+        Self::data_source(cfg)
     }
 }
 
 // Shift
 
-impl Named for Shift<f64, 2> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Shift<f64, 2> {
+    fn name() -> String {
         "Shift2".into()
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         "shf2".into()
     }
 }
@@ -46,17 +46,17 @@ impl Entity for Shift<f64, 2> {
 impl SizedEntity for Shift<f64, 2> {
     impl_sized_entity_unwrap!(Vector<f64, 2>);
 }
-impl Sourced for Shift<f64, 2> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Shift<f64, 2> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("transform/shift.hh")
     }
 }
 
-impl Named for Shift<f64, 3> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Shift<f64, 3> {
+    fn name() -> String {
         "Shift3".into()
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         "shf3".into()
     }
 }
@@ -66,19 +66,19 @@ impl Entity for Shift<f64, 3> {
 impl SizedEntity for Shift<f64, 3> {
     impl_sized_entity_unwrap!(Vector<f64, 3>);
 }
-impl Sourced for Shift<f64, 3> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Shift<f64, 3> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("transform/shift.hh")
     }
 }
 
 // Rotation2
 
-impl Named for Rotation2<f64> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Rotation2<f64> {
+    fn name() -> String {
         "Rotation2".into()
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         "rot2".into()
     }
 }
@@ -88,19 +88,19 @@ impl Entity for Rotation2<f64> {
 impl SizedEntity for Rotation2<f64> {
     impl_sized_entity_unwrap!(Complex<f64>);
 }
-impl Sourced for Rotation2<f64> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Rotation2<f64> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("transform/rotation.hh")
     }
 }
 
 // Rotation3
 
-impl Named for Rotation3<f64> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Rotation3<f64> {
+    fn name() -> String {
         "Rotation3".into()
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         "rot3".into()
     }
 }
@@ -110,19 +110,19 @@ impl Entity for Rotation3<f64> {
 impl SizedEntity for Rotation3<f64> {
     impl_sized_entity_unwrap!(Quaternion<f64>);
 }
-impl Sourced for Rotation3<f64> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Rotation3<f64> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("transform/rotation.hh")
     }
 }
 
 // Linear
 
-impl Named for Linear<f64, 2> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Linear<f64, 2> {
+    fn name() -> String {
         "Linear2".into()
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         "lin2".into()
     }
 }
@@ -132,17 +132,17 @@ impl Entity for Linear<f64, 2> {
 impl SizedEntity for Linear<f64, 2> {
     impl_sized_entity_unwrap!(Matrix<f64, 2, 2>);
 }
-impl Sourced for Linear<f64, 2> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Linear<f64, 2> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("transform/linear.hh")
     }
 }
 
-impl Named for Linear<f64, 3> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Linear<f64, 3> {
+    fn name() -> String {
         "Linear3".into()
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         "lin3".into()
     }
 }
@@ -152,19 +152,19 @@ impl Entity for Linear<f64, 3> {
 impl SizedEntity for Linear<f64, 3> {
     impl_sized_entity_unwrap!(Matrix<f64, 3, 3>);
 }
-impl Sourced for Linear<f64, 3> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Linear<f64, 3> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("transform/linear.hh")
     }
 }
 
 // Moebius
 
-impl Named for Moebius<Complex<f64>> {
-    fn type_name(_: &Config) -> String {
+impl EntityId for Moebius<Complex<f64>> {
+    fn name() -> String {
         "Moebius".into()
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         "mo".into()
     }
 }
@@ -174,8 +174,8 @@ impl Entity for Moebius<Complex<f64>> {
 impl SizedEntity for Moebius<Complex<f64>> {
     impl_sized_entity_unwrap!(Matrix<Complex<f64>, 2, 2>);
 }
-impl Sourced for Moebius<Complex<f64>> {
-    fn source(_: &Config) -> SourceTree {
+impl EntitySource for Moebius<Complex<f64>> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("transform/moebius.hh")
     }
 }
@@ -188,24 +188,24 @@ fn hom3_id() -> TypeId {
 // TODO: Support compact affine transform.
 //const AFF3_ID: TypeId = TypeId::of::<Chain<Shift<f64, 3>, Linear<f64, 3>, Vector<f64, 3>>>();
 
-impl<A, B, T> Named for Chain<A, B, T>
+impl<A, B, T> EntityId for Chain<A, B, T>
 where
     A: Map<T> + Reorder<B, T>,
     B: Map<T> + Reorder<A, T>,
     T: SizedEntity + Copy,
 {
-    fn type_name(_: &Config) -> String {
+    fn name() -> String {
         if TypeId::of::<Self>() == hom3_id() {
             "Homogenous3".into()
         } else {
-            format!("Chain{}", Self::type_tag())
+            format!("Chain{}", Self::tag())
         }
     }
-    fn type_prefix(_: &Config) -> String {
+    fn data_prefix() -> String {
         if TypeId::of::<Self>() == hom3_id() {
             "hom3".into()
         } else {
-            format!("chain_{}", Self::type_tag())
+            format!("chain_{}", Self::tag())
         }
     }
 }
@@ -255,28 +255,28 @@ where
         )
     }
 }
-impl<A, B, T> Sourced for Chain<A, B, T>
+impl<A, B, T> EntitySource for Chain<A, B, T>
 where
     A: Map<T> + Reorder<B, T>,
     B: Map<T> + Reorder<A, T>,
     T: SizedEntity + Copy,
 {
-    fn source(cfg: &Config) -> SourceTree {
+    fn data_source(cfg: &Config) -> SourceTree {
         if TypeId::of::<Self>() == hom3_id() {
             SourceTree::new("transform/homogenous.hh")
         } else {
-            SourceBuilder::new(format!("generated/chain_{}.hh", Self::type_tag()))
-                .tree(A::source(cfg))
-                .tree(B::source(cfg))
+            SourceBuilder::new(format!("generated/chain_{}.hh", Self::tag()))
+                .tree(A::data_source(cfg))
+                .tree(B::data_source(cfg))
                 .content(&include_template!(
                     "transform/chain.inl",
-                    "Self": &Self::type_name(cfg),
-                    "self": &Self::type_prefix(cfg),
-                    "Outer": &A::type_name(cfg),
-                    "outer": &A::type_prefix(cfg),
-                    "Inner": &B::type_name(cfg),
-                    "inner": &B::type_prefix(cfg),
-                    "elem": &T::type_name(cfg),
+                    "Self": &Self::name(),
+                    "self": &Self::data_prefix(),
+                    "Outer": &A::name(),
+                    "outer": &A::data_prefix(),
+                    "Inner": &B::name(),
+                    "inner": &B::data_prefix(),
+                    "elem": &T::name(),
                 ))
                 .build()
         }

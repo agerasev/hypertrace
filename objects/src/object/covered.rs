@@ -8,7 +8,7 @@ use types::{
     Config,
 };
 
-#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity, Sourced)]
+#[derive(Clone, Copy, Debug, EntityId, Entity, SizedEntity, EntitySource)]
 pub struct Covered<G: Geometry, S: Shape<G>, M: Material> {
     geometry: PhantomData<G>,
     #[getter]
@@ -32,29 +32,29 @@ where
     Self: Entity,
 {
     fn object_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/{}.hh", Self::object_prefix(cfg)))
-            .tree(Self::source(cfg))
+        SourceBuilder::new(format!("generated/{}.hh", Self::object_prefix()))
+            .tree(Self::data_source(cfg))
             .tree(G::geometry_source(cfg))
             .tree(S::shape_source(cfg))
             .tree(M::material_source(cfg))
             .content(&include(&format!(
                 "geometry/ray_{}.hh",
-                G::geometry_prefix(cfg)
+                G::geometry_prefix()
             )))
             .content(&include(&format!(
                 "render/light/{}.hh",
-                G::geometry_prefix(cfg)
+                G::geometry_prefix()
             )))
             .content(&include_template!(
                 "object/covered.inl",
-                "Self": &Self::type_name(cfg),
-                "self": &Self::object_prefix(cfg),
-                "Geo": &G::type_name(cfg),
-                "geo": &G::geometry_prefix(cfg),
-                "Shape": &S::type_name(cfg),
-                "shape": &S::shape_prefix(cfg),
-                "Material": &M::type_name(cfg),
-                "material": &M::material_prefix(cfg),
+                "Self": &Self::name(),
+                "self": &Self::object_prefix(),
+                "Geo": &G::name(),
+                "geo": &G::geometry_prefix(),
+                "Shape": &S::name(),
+                "shape": &S::shape_prefix(),
+                "Material": &M::name(),
+                "material": &M::material_prefix(),
             ))
             .build()
     }

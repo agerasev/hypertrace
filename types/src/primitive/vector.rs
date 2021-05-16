@@ -2,7 +2,7 @@ use crate::{
     io::{CntRead, CntWrite},
     primitive::PrimScal,
     source::SourceTree,
-    Config, Entity, Named, SizedEntity, Sourced,
+    Config, Entity, EntityId, SizedEntity, EntitySource,
 };
 use std::{fmt::Debug, io};
 use vecmat::Vector;
@@ -12,12 +12,12 @@ pub trait PrimVec: SizedEntity + Copy + Default + Debug + 'static {}
 macro_rules! impl_entity {
     ($N:expr) => {
         impl<T: PrimScal> PrimVec for Vector<T, $N> {}
-        impl<T: PrimScal> Named for Vector<T, $N> {
-            fn type_name(cfg: &Config) -> String {
-                format!("{}{}", &T::type_name(cfg), $N)
+        impl<T: PrimScal> EntityId for Vector<T, $N> {
+            fn name() -> String {
+                format!("{}{}", &T::name(), $N)
             }
-            fn type_prefix(cfg: &Config) -> String {
-                format!("{}{}", &T::type_prefix(cfg), $N)
+            fn data_prefix() -> String {
+                format!("{}{}", &T::data_prefix(), $N)
             }
         }
         impl<T: PrimScal> Entity for Vector<T, $N> {
@@ -52,8 +52,8 @@ macro_rules! impl_entity {
                 T::type_size(cfg) * $N
             }
         }
-        impl<T: PrimScal> Sourced for Vector<T, $N> {
-            fn source(_: &Config) -> SourceTree {
+        impl<T: PrimScal> EntitySource for Vector<T, $N> {
+            fn data_source(_: &Config) -> SourceTree {
                 SourceTree::new("algebra/vector.hh")
             }
         }
@@ -66,12 +66,12 @@ impl_entity!(8);
 impl_entity!(16);
 
 impl<T: PrimScal> PrimVec for Vector<T, 3> {}
-impl<T: PrimScal> Named for Vector<T, 3> {
-    fn type_name(cfg: &Config) -> String {
-        format!("{}3", &T::type_name(cfg))
+impl<T: PrimScal> EntityId for Vector<T, 3> {
+    fn name() -> String {
+        format!("{}3", &T::name())
     }
-    fn type_prefix(cfg: &Config) -> String {
-        format!("{}3", &T::type_prefix(cfg))
+    fn data_prefix() -> String {
+        format!("{}3", &T::data_prefix())
     }
 }
 impl<T: PrimScal> Entity for Vector<T, 3> {
@@ -108,8 +108,8 @@ impl<T: PrimScal> SizedEntity for Vector<T, 3> {
         T::type_size(cfg) * 4
     }
 }
-impl<T: PrimScal> Sourced for Vector<T, 3> {
-    fn source(_: &Config) -> SourceTree {
+impl<T: PrimScal> EntitySource for Vector<T, 3> {
+    fn data_source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/vector.hh")
     }
 }

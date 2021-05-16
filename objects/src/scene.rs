@@ -8,16 +8,16 @@ use types::{
     Config,
 };
 
-pub trait Scene<G: Geometry>: Named + Entity + Sourced {
-    fn scene_prefix(cfg: &Config) -> String {
-        Self::type_prefix(cfg)
+pub trait Scene<G: Geometry>: EntityId + Entity + EntitySource {
+    fn scene_prefix() -> String {
+        Self::data_prefix()
     }
     fn scene_source(cfg: &Config) -> SourceTree {
-        Self::source(cfg)
+        Self::data_source(cfg)
     }
 }
 
-#[derive(Clone, Debug, Named, Entity, SizedEntity, Sourced)]
+#[derive(Clone, Debug, EntityId, Entity, SizedEntity, EntitySource)]
 pub struct SceneImpl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize> {
     geometry: PhantomData<G>,
     #[getter]
@@ -47,24 +47,24 @@ where
     Self: Entity,
 {
     fn scene_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/scene_{}.hh", Self::type_tag()))
-            .tree(Self::source(cfg))
+        SourceBuilder::new(format!("generated/scene_{}.hh", Self::tag()))
+            .tree(Self::data_source(cfg))
             .tree(G::geometry_source(cfg))
             .tree(V::view_source(cfg))
             .tree(T::object_source(cfg))
             .tree(B::background_source(cfg))
             .content(&include_template!(
                 "render/scene.inl",
-                "Self": Self::type_name(cfg),
-                "self": Self::scene_prefix(cfg),
-                "Geo": G::type_name(cfg),
-                "geo": G::geometry_prefix(cfg),
-                "View": V::type_name(cfg),
-                "view": V::view_prefix(cfg),
-                "Object": T::type_name(cfg),
-                "object": T::object_prefix(cfg),
-                "Background": B::type_name(cfg),
-                "background": B::background_prefix(cfg),
+                "Self": Self::name(),
+                "self": Self::scene_prefix(),
+                "Geo": G::name(),
+                "geo": G::geometry_prefix(),
+                "View": V::name(),
+                "view": V::view_prefix(),
+                "Object": T::name(),
+                "object": T::object_prefix(),
+                "Background": B::name(),
+                "background": B::background_prefix(),
                 "light_hops": format!("{}", H),
             ))
             .build()

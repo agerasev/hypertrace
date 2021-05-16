@@ -3,23 +3,23 @@ use crate::{
     include_template,
     io::{CntRead, CntWrite},
     source::{SourceBuilder, SourceTree},
-    Config, Entity, Named, SizedEntity, Sourced,
+    Config, Entity, EntityId, SizedEntity, EntitySource,
 };
 use std::{hash::Hasher, io, iter};
 use vecmat::Vector;
 
-impl<T: SizedEntity, const N: usize> Named for [T; N] {
-    fn type_name(cfg: &Config) -> String {
-        format!("Array_{}_{}", T::type_name(cfg), N)
+impl<T: SizedEntity, const N: usize> EntityId for [T; N] {
+    fn name() -> String {
+        format!("Array_{}_{}", T::name(), N)
     }
 
-    fn type_prefix(cfg: &Config) -> String {
-        format!("array__{}__{}", T::type_prefix(cfg), N)
+    fn data_prefix() -> String {
+        format!("array__{}__{}", T::data_prefix(), N)
     }
 
-    fn type_id() -> u64 {
+    fn id() -> u64 {
         let mut hasher = DefaultHasher::default();
-        hasher.write_u64(T::type_id());
+        hasher.write_u64(T::id());
         hasher.write_usize(N);
         hasher.finish()
     }
@@ -69,16 +69,16 @@ impl<T: SizedEntity, const N: usize> SizedEntity for [T; N] {
     }
 }
 
-impl<T: SizedEntity, const N: usize> Sourced for [T; N] {
-    fn source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/array_{}.hh", Self::type_tag()))
-            .tree(T::source(cfg))
+impl<T: SizedEntity, const N: usize> EntitySource for [T; N] {
+    fn data_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/array_{}.hh", Self::tag()))
+            .tree(T::data_source(cfg))
             .content(&include_template!(
                 "container/array.inl",
-                "Self": Self::type_name(cfg),
-                "self": Self::type_prefix(cfg),
-                "Element": T::type_name(cfg),
-                "element": T::type_prefix(cfg),
+                "Self": Self::name(),
+                "self": Self::data_prefix(),
+                "Element": T::name(),
+                "element": T::data_prefix(),
                 "size": format!("{}", N),
             ))
             .build()

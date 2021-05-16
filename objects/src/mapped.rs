@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use type_macros::*;
 use types::{prelude::*, Map};
 
-#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity, Sourced)]
+#[derive(Clone, Copy, Debug, EntityId, Entity, SizedEntity, EntitySource)]
 pub struct Mapped<G: Geometry, T: Entity, M: Map<G::Pos, G::Dir>> {
     geometry: PhantomData<G>,
     pub map: M,

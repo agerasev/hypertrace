@@ -3,7 +3,7 @@ use crate::{
     io::{CntRead, CntWrite, EntityReader, EntityWriter},
     math,
     source::{SourceBuilder, SourceTree},
-    Config, Entity, Named, SizedEntity, Sourced,
+    Config, Entity, EntityId, SizedEntity, EntitySource,
 };
 use std::io;
 
@@ -12,13 +12,13 @@ pub struct IndexVector<T: Entity> {
     items: Vec<T>,
 }
 
-impl<T: Entity> Named for IndexVector<T> {
-    fn type_name(cfg: &Config) -> String {
-        format!("IndexVector_{}", T::type_name(cfg))
+impl<T: Entity> EntityId for IndexVector<T> {
+    fn name() -> String {
+        format!("IndexVector_{}", T::name())
     }
 
-    fn type_prefix(cfg: &Config) -> String {
-        format!("index_vector_{}", T::type_prefix(cfg))
+    fn data_prefix() -> String {
+        format!("index_vector_{}", T::data_prefix())
     }
 }
 
@@ -118,16 +118,16 @@ impl<T: Entity> Entity for IndexVector<T> {
     }
 }
 
-impl<T: Entity> Sourced for IndexVector<T> {
-    fn source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/index_vector_{}.hh", Self::type_tag()))
-            .tree(T::source(cfg))
+impl<T: Entity> EntitySource for IndexVector<T> {
+    fn data_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/index_vector_{}.hh", Self::tag()))
+            .tree(T::data_source(cfg))
             .content(&include_template!(
                 "container/index_vector.inl",
-                "Self": &Self::type_name(cfg),
-                "self": &Self::type_prefix(cfg),
-                "Elem": &T::type_name(cfg),
-                "elem": &T::type_prefix(cfg),
+                "Self": &Self::name(),
+                "self": &Self::data_prefix(),
+                "Elem": &T::name(),
+                "elem": &T::data_prefix(),
             ))
             .build()
     }

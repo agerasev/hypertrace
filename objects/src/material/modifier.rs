@@ -10,7 +10,7 @@ use vecmat::Vector;
 
 // Colored
 
-#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity, Sourced)]
+#[derive(Clone, Copy, Debug, EntityId, Entity, SizedEntity, EntitySource)]
 pub struct Colored<M: Material> {
     pub color: Vector<f32, 3>,
     #[getter]
@@ -31,15 +31,15 @@ where
     Self: Entity,
 {
     fn material_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/colored_{}.hh", Self::type_tag()))
-            .tree(Self::source(cfg))
+        SourceBuilder::new(format!("generated/colored_{}.hh", Self::tag()))
+            .tree(Self::data_source(cfg))
             .tree(M::material_source(cfg))
             .content(&include_template!(
                 "material/colored.inl",
-                "Self": &Self::type_name(cfg),
-                "self": &Self::material_prefix(cfg),
-                "Material": &M::type_name(cfg),
-                "material": &M::material_prefix(cfg),
+                "Self": &Self::name(),
+                "self": &Self::material_prefix(),
+                "Material": &M::name(),
+                "material": &M::material_prefix(),
             ))
             .build()
     }
@@ -47,7 +47,7 @@ where
 
 // Emissive
 
-#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity, Sourced)]
+#[derive(Clone, Copy, Debug, EntityId, Entity, SizedEntity, EntitySource)]
 pub struct Emissive<M: Material> {
     pub emission: Vector<f32, 3>,
     #[getter]
@@ -68,15 +68,15 @@ where
     Self: Entity,
 {
     fn material_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/emissive_{}.hh", Self::type_tag()))
-            .tree(Self::source(cfg))
+        SourceBuilder::new(format!("generated/emissive_{}.hh", Self::tag()))
+            .tree(Self::data_source(cfg))
             .tree(M::material_source(cfg))
             .content(&include_template!(
                 "material/emissive.inl",
-                "Self": &Self::type_name(cfg),
-                "self": &Self::material_prefix(cfg),
-                "Material": &M::type_name(cfg),
-                "material": &M::material_prefix(cfg),
+                "Self": &Self::name(),
+                "self": &Self::material_prefix(),
+                "Material": &M::name(),
+                "material": &M::material_prefix(),
             ))
             .build()
     }

@@ -22,18 +22,18 @@ impl<G: Geometry> PointView<G> {
     }
 }
 
-impl<G: Geometry> Named for PointView<G> {
-    fn type_name(cfg: &Config) -> String {
-        format!("PointView{}", G::type_name(cfg))
+impl<G: Geometry> EntityId for PointView<G> {
+    fn name() -> String {
+        format!("PointView{}", G::name())
     }
-    fn type_prefix(cfg: &Config) -> String {
-        format!("point_view_{}", G::type_prefix(cfg))
+    fn data_prefix() -> String {
+        format!("point_view_{}", G::data_prefix())
     }
 }
 
-impl<G: Geometry> Sourced for PointView<G> {
-    fn source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("view/point/{}.hh", &G::geometry_prefix(cfg)))
+impl<G: Geometry> EntitySource for PointView<G> {
+    fn data_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("view/point/{}.hh", &G::geometry_prefix()))
             .tree(G::geometry_source(cfg))
             .build()
     }

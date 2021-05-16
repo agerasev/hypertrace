@@ -1,13 +1,13 @@
-use hypertrace_type_macros::{Entity, Named, Sourced};
-use types::{config::HOST_CONFIG, Sourced};
+use hypertrace_type_macros::{Entity, EntityId, EntitySource};
+use types::{config::HOST_CONFIG, EntitySource};
 
-#[derive(Named, Entity, Sourced)]
+#[derive(EntityId, Entity, EntitySource)]
 struct A {
     x: i32,
     y: Vec<u8>,
 }
 
-#[derive(Named, Entity, Sourced)]
+#[derive(EntityId, Entity, EntitySource)]
 enum E {
     A(A),
     B((), Vec<i32>),
@@ -16,7 +16,7 @@ enum E {
 }
 
 fn main() {
-    for (key, value) in E::source(&HOST_CONFIG).into_iter() {
+    for (key, value) in E::data_source(&HOST_CONFIG).into_iter() {
         println!("'{}':\n{}\n", key, value);
     }
 }

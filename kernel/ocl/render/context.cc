@@ -5,6 +5,7 @@ Context context_init() {
     context.rng.state = 0;
     context.hasher = hash_init();
     context.prev_hash = hash_never();
+    return context;
 }
 
 bool context_is_repeat(const Context *context) {

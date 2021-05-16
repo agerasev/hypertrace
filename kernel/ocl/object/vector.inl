@@ -36,7 +36,7 @@ real $2($self,_detect)(
         $2($Object,Cache) cur_cache;
         hash_usize(&context->hasher, index);
         real dist = $2($object,_detect)(object, context, &cur_cache, &cur_light);
-        if (dist > R0 && (min_dist < R0 || dist < min_dist)) {
+        if (dist > -EPS && (min_dist <= -EPS || dist < min_dist)) {
             min_dist = dist;
             min_index = index;
             min_light = cur_light;
@@ -45,7 +45,7 @@ real $2($self,_detect)(
         }
         context->hasher = orig_hasher;
     }
-    if (min_dist > R0) {
+    if (min_dist > -EPS) {
         cache->inner = min_cache;
         cache->index = min_index;
         *light = min_light;

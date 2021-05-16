@@ -9,22 +9,23 @@ real sphere_eu_detect(__global const void *shape, Context *context, real3 *norma
     real3 pos = ray->start;
     real3 dir = ray->direction;
     real b = -dot(dir, pos);
-    real c = dot(pos, pos) - R1;
-    real d = b*b - c;
+    real3 g = pos + dir * b;
+    real d = R1 - length2(g);
     if (d < R0) {
         return -R1;
     }
     d = sqrt(d);
     real f = R1;
     real e = b - d;
-    if (e < EPS * repeat) {
+    real w = 2 * EPS * (2 * repeat - 1);
+    if (e < w) {
         e = b + d;
         f = -R1;
-        if (e < EPS * repeat) {
+        if (e < w) {
             return -R1;
         }
     }
-    real3 h = pos + dir*e;
+    real3 h = normalize(pos + dir * e);
     *normal = h * f;
     ray->start = h;
     return e;

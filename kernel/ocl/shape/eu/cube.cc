@@ -44,13 +44,24 @@ real cube_eu_detect(__global const void *shape, Context *context, real3 *normal,
     float dist_out = -cube_eu_detect_nearest(-far, &norm_out);
     norm_out *= sign(ray->direction);
 
-    if (dist_in < EPS * repeat || dist_in > dist_out) {
+    if (dist_in > dist_out) {
         return -R1;
     }
 
-    ray->start += dist_in*ray->direction;
-    *normal = norm_in;
-    return dist_in;
+    real dist = dist_in;
+    real3 norm = norm_in;
+    real w = 2 * EPS * (2 * repeat - 1);
+    if (dist < w) {
+        dist = dist_out;
+        norm = norm_out;
+        if (dist < w) {
+            return -R1;
+        }
+    }
+
+    ray->start += dist * ray->direction;
+    *normal = norm;
+    return dist;
 }
 
 
@@ -92,8 +103,7 @@ TEST_F(CubeEuTest, cube) {
         real dist = cube_eu_detect(nullptr, &ctx, &normal, &light);
         
         if (max_comp(fabs(start)) < 1 - EPS) {
-            // TODO: Update on refraction
-            ASSERT_EQ(dist, approx(-1));
+            ASSERT_EQ(max_comp(fabs(light.ray.start)), approx(1).epsilon(sqrt(EPS)));
         }
         if (max_comp(fabs(start)) > 1 + EPS) {
             real proj = -dot(start, dir);

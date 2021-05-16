@@ -22,6 +22,7 @@ Rotation2 rot2_new(comp v);
 #undef $elem
 
 Rotation2 rot2_from_angle(real angle);
+Rotation2 rot2_look_at_cont(real2 pos);
 Rotation2 rot2_look_at(real2 pos);
 
 Linear2 rot2_to_linear(Rotation2 m);

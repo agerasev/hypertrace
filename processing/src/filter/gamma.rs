@@ -15,7 +15,7 @@ impl GammaFilter {
                 __global float4 *output
             ) {
                 uint idx = get_global_id(0) + width * get_global_id(1);
-                output[idx] = pow(input[idx], gamma);
+                output[idx] = pow(max(input[idx], 0.0f), gamma);
             }
         "#;
         let program = ocl::Program::builder()

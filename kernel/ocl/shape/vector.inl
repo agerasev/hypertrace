@@ -26,7 +26,7 @@ real $2($self,_detect)(__global const $Self *self, Context *context, $2($Geo,Dir
         $2($Geo,Dir) cur_normal;
         hash_usize(&context->hasher, index);
         real dist = $2($shape,_detect)(shape, context, &cur_normal, &cur_light);
-        if (dist > -(real)0.5f && (min_dist < -(real)0.5f || dist < min_dist)) {
+        if (dist > -EPS && (min_dist <= -EPS || dist < min_dist)) {
             min_dist = dist;
             min_normal = cur_normal;
             min_light = cur_light;
@@ -34,7 +34,7 @@ real $2($self,_detect)(__global const $Self *self, Context *context, $2($Geo,Dir
         }
         context->hasher = orig_hasher;
     }
-    if (min_dist > -(real)0.5f) {
+    if (min_dist > -EPS) {
         *normal = min_normal;
         *light = min_light;
         context->hasher = min_hasher;

@@ -16,10 +16,11 @@ real horosphere_detect(__global const void *shape, Context *context, HyDir *norm
     real dt = sqrt(p.z*p.z - dxy*dxy);
     real t = p.z*d.z - dt;
     real f = -R1;
-    if (t < repeat * EPS) {
+    real w = EPS * (2 * repeat - 1);
+    if (t < w) {
         t += 2*dt;
         f = R1;
-        if (t < repeat * EPS) {
+        if (t < w) {
             return -R1;
         }
     }

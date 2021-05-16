@@ -58,7 +58,6 @@ pub fn derive_entity(stream: TokenStream) -> TokenStream {
     let is_dyn_sized = make_is_dyn_sized(&input);
     let load = make_load(&input);
     let store = make_store(&input);
-    let source = make_source(&input);
     let (params, bindings) = make_params(&input);
     let mut where_clause = make_where_clause(
         &input,
@@ -94,10 +93,6 @@ pub fn derive_entity(stream: TokenStream) -> TokenStream {
             fn store<W: types::io::CntWrite>(&self, cfg: &types::Config, dst: &mut W) -> std::io::Result<()> {
                 #store
             }
-
-            fn type_source(cfg: &types::Config) -> types::source::SourceTree {
-                #source
-            }
         }
     };
 
@@ -132,12 +127,21 @@ pub fn derive_sourced(stream: TokenStream) -> TokenStream {
     let input = parse_macro_input!(stream as DeriveInput);
 
     let ty = &input.ident;
+    let source = make_source(&input);
     let (params, bindings) = make_params(&input);
+    let mut where_clause = make_where_clause(
+        &input,
+        quote! { types::SizedEntity },
+        Some(quote! { types::Entity }),
+    );
+    if !where_clause.is_empty() {
+        where_clause = quote! { where #where_clause };
+    }
 
     TokenStream::from(quote! {
-        impl<#bindings> types::Sourced for #ty<#params> where Self: types::Entity {
+        impl<#bindings> types::Sourced for #ty<#params> #where_clause {
             fn source(cfg: &types::Config) -> types::source::SourceTree {
-                <Self as types::Entity>::type_source(cfg)
+                #source
             }
         }
     })

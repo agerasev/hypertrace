@@ -20,8 +20,8 @@ real $2($self,_detect)(__global const $Self *self, Context *context, $2($Geo,Dir
     $2($Geo,Dir) min_normal;
     $2(Light,$Geo) min_light;
     Hasher min_hasher;
-    for (usize index = 0; index < self->shapes.size; ++index) {
-        __global const $Shape *shape = $3(vector__,$shape,__element__gc)(&self->shapes, index);
+    for (usize index = 0; index < self->size; ++index) {
+        __global const $Shape *shape = $3(vector__,$shape,__element__gc)(self, index);
         $2(Light,$Geo) cur_light = *light;
         $2($Geo,Dir) cur_normal;
         hash_usize(&context->hasher, index);

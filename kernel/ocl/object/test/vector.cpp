@@ -18,12 +18,8 @@
 #undef $element
 #undef $element_size
 
-typedef struct {
-    Vector_CoveredTestEu objects;
-} ObjectVectorTest;
-
-#define $Self ObjectVectorTest
-#define $self object_vector_test
+#define $Self Vector_CoveredTestEu
+#define $self vector__covered_test_eu
 #define $Geo Eu
 #define $geo eu
 #define $Object CoveredTestEu

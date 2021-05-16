@@ -61,20 +61,6 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
         }
         Ok(())
     }
-
-    fn type_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/array_{}.hh", Self::type_tag()))
-            .tree(T::type_source(cfg))
-            .content(&include_template!(
-                "container/array.inl",
-                "Self": Self::type_name(cfg),
-                "self": Self::type_prefix(cfg),
-                "Element": T::type_name(cfg),
-                "element": T::type_prefix(cfg),
-                "size": format!("{}", N),
-            ))
-            .build()
-    }
 }
 
 impl<T: SizedEntity, const N: usize> SizedEntity for [T; N] {
@@ -85,7 +71,17 @@ impl<T: SizedEntity, const N: usize> SizedEntity for [T; N] {
 
 impl<T: SizedEntity, const N: usize> Sourced for [T; N] {
     fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+        SourceBuilder::new(format!("generated/array_{}.hh", Self::type_tag()))
+            .tree(T::source(cfg))
+            .content(&include_template!(
+                "container/array.inl",
+                "Self": Self::type_name(cfg),
+                "self": Self::type_prefix(cfg),
+                "Element": T::type_name(cfg),
+                "element": T::type_prefix(cfg),
+                "size": format!("{}", N),
+            ))
+            .build()
     }
 }
 

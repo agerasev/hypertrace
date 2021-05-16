@@ -31,6 +31,12 @@ pub trait Named: 'static + Sized {
     }
 }
 
+/// Trait to generate backend source code.
+pub trait Sourced: Named {
+    /// Returns backend source code tree.
+    fn source(cfg: &Config) -> SourceTree;
+}
+
 /// Static entity type.
 pub trait Entity: Named + Sourced {
     /// Align of type.
@@ -52,19 +58,10 @@ pub trait Entity: Named + Sourced {
 
     /// Stores the instance to a writer.
     fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()>;
-
-    /// Returns a kernel source tree of the type.
-    fn type_source(cfg: &Config) -> SourceTree;
 }
 
 /// Sized static entity.
 pub trait SizedEntity: Entity {
     /// Static size of type.
     fn type_size(cfg: &Config) -> usize;
-}
-
-/// Trait to generate backend source code.
-pub trait Sourced: Named {
-    /// Returns backend source code tree.
-    fn source(cfg: &Config) -> SourceTree;
 }

@@ -1,6 +1,6 @@
 use crate::Material;
-use type_macros::{Entity, Named, SizedEntity};
-use types::{source::SourceTree, Config, Sourced};
+use type_macros::*;
+use types::{prelude::*, source::SourceTree, Config};
 
 #[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
 pub struct Absorbing;

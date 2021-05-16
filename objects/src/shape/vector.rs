@@ -1,6 +1,4 @@
 use crate::Shape;
-use std::marker::PhantomData;
-use type_macros::*;
 use types::{
     include_template,
     prelude::*,
@@ -8,60 +6,31 @@ use types::{
     Config,
 };
 
-#[derive(Clone, Debug, Default, Entity)]
-pub struct ShapeVector<G: Geometry, T: Shape<G>> {
-    geometry: PhantomData<G>,
-    pub shapes: Vec<T>,
-}
-
-impl<G: Geometry, T: Shape<G>> ShapeVector<G, T> {
-    pub fn new() -> Self {
-        Self {
-            geometry: PhantomData,
-            shapes: Vec::new(),
-        }
-    }
-    pub fn from_shapes(shapes: Vec<T>) -> Self {
-        Self {
-            geometry: PhantomData,
-            shapes,
-        }
-    }
-}
-
-impl<G: Geometry, T: Shape<G>> Named for ShapeVector<G, T> {
-    fn type_name(_: &Config) -> String {
-        format!("ShapeVector{}", Self::type_tag())
-    }
-    fn type_prefix(_: &Config) -> String {
-        format!("shape_vector_{}", Self::type_tag())
-    }
-}
-
-impl<G: Geometry, T: Shape<G>> Sourced for ShapeVector<G, T>
+impl<G: Geometry, T: Shape<G>> Shape<G> for Vec<T>
 where
     Self: Entity,
 {
-    fn source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/{}.hh", Self::type_prefix(cfg)))
-            .tree(Self::type_source(cfg))
-            .tree(G::source(cfg))
-            .tree(T::source(cfg))
+    fn shape_prefix(cfg: &Config) -> String {
+        format!("shape_{}", Self::type_prefix(cfg))
+    }
+    fn shape_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/{}.hh", Self::shape_prefix(cfg)))
+            .tree(Self::source(cfg))
+            .tree(G::geometry_source(cfg))
+            .tree(T::shape_source(cfg))
             .content(&include(&format!(
                 "render/light/{}.hh",
-                G::type_prefix(cfg)
+                G::geometry_prefix(cfg)
             )))
             .content(&include_template!(
                 "shape/vector.inl",
                 "Self": &Self::type_name(cfg),
-                "self": &Self::type_prefix(cfg),
+                "self": &Self::shape_prefix(cfg),
                 "Geo": &G::type_name(cfg),
-                "geo": &G::type_prefix(cfg),
+                "geo": &G::geometry_prefix(cfg),
                 "Shape": &T::type_name(cfg),
-                "shape": &T::type_prefix(cfg),
+                "shape": &T::shape_prefix(cfg),
             ))
             .build()
     }
 }
-
-impl<G: Geometry, T: Shape<G>> Shape<G> for ShapeVector<G, T> where Self: Entity {}

@@ -1,6 +1,5 @@
 use crate::Background;
 use ccgeom::Euclidean3;
-use std::marker::PhantomData;
 use type_macros::*;
 use types::{
     include_template,
@@ -11,48 +10,45 @@ use types::{
 use vecmat::Vector;
 
 /// Constant color background.
-#[derive(Clone, Debug, Entity, SizedEntity)]
-pub struct ConstBg<G: Geometry> {
+#[derive(Clone, Debug, Named, Entity, SizedEntity)]
+pub struct ConstBg {
     pub color: Vector<f32, 3>,
-    phantom: PhantomData<G>,
 }
 
-impl<G: Geometry> ConstBg<G> {
+impl ConstBg {
     pub fn new(color: Vector<f32, 3>) -> Self {
-        Self {
-            color,
-            phantom: PhantomData,
-        }
+        Self { color }
     }
 }
 
-impl<G: Geometry> Named for ConstBg<G> {
-    fn type_name(cfg: &Config) -> String {
-        format!("ConstBg{}", G::type_name(cfg))
-    }
-    fn type_prefix(cfg: &Config) -> String {
-        format!("const_bg_{}", G::type_prefix(cfg))
+impl Sourced for ConstBg {
+    fn source(_: &Config) -> SourceTree {
+        SourceTree::new("background/constant.hh")
     }
 }
 
-impl<G: Geometry> Sourced for ConstBg<G> {
-    fn source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/const_bg_{}.hh", &G::type_prefix(cfg)))
-            .tree(G::source(cfg))
-            .content(&include(&format!(
-                "render/light/{}.hh",
-                &G::type_prefix(cfg)
-            )))
-            .content(&include_template!(
-                "background/constant.inl",
-                "Geo": &G::type_name(cfg),
-                "geo": &G::type_prefix(cfg),
-            ))
-            .build()
+impl<G: Geometry> Background<G> for ConstBg {
+    fn background_prefix(cfg: &Config) -> String {
+        format!("const_bg_{}", G::geometry_prefix(cfg))
+    }
+    fn background_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!(
+            "generated/const_bg_{}.hh",
+            &G::geometry_prefix(cfg)
+        ))
+        .tree(G::geometry_source(cfg))
+        .content(&include(&format!(
+            "render/light/{}.hh",
+            &G::geometry_prefix(cfg)
+        )))
+        .content(&include_template!(
+            "background/constant.inl",
+            "Geo": &G::type_name(cfg),
+            "geo": &G::geometry_prefix(cfg),
+        ))
+        .build()
     }
 }
-
-impl<G: Geometry> Background<G> for ConstBg<G> {}
 
 /// Gradient background.
 /// Available only for euclidean space because only that space preserves direction.
@@ -65,7 +61,11 @@ pub struct GradBg {
 
 impl GradBg {
     pub fn new(direction: Vector<f64, 3>, colors: [Vector<f32, 3>; 2], power: f32) -> Self {
-        Self { direction, colors, power }
+        Self {
+            direction,
+            colors,
+            power,
+        }
     }
 }
 

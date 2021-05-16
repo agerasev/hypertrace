@@ -2,10 +2,9 @@
 
 #include <geometry/euclidean.hh>
 #include <render/light/eu.hh>
+#include <shape/basic.hh>
 
-typedef void SphereEu;
-
-#define $Self SphereEu
+#define $Self Sphere
 #define $self sphere_eu
 #define $Geo Eu
 #define $geo eu

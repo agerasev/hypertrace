@@ -47,9 +47,6 @@ impl Entity for Matrix<f64, 2, 2> {
         }
         Ok(())
     }
-    fn type_source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/matrix.hh")
-    }
 }
 impl SizedEntity for Matrix<f64, 2, 2> {
     fn type_size(cfg: &Config) -> usize {
@@ -57,8 +54,8 @@ impl SizedEntity for Matrix<f64, 2, 2> {
     }
 }
 impl Sourced for Matrix<f64, 2, 2> {
-    fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+    fn source(_: &Config) -> SourceTree {
+        SourceTree::new("algebra/matrix.hh")
     }
 }
 impl PrimVec for Matrix<f64, 2, 2> {}
@@ -103,9 +100,6 @@ impl Entity for Matrix<f64, 4, 4> {
         }
         Ok(())
     }
-    fn type_source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/matrix.hh")
-    }
 }
 impl SizedEntity for Matrix<f64, 4, 4> {
     fn type_size(cfg: &Config) -> usize {
@@ -113,8 +107,8 @@ impl SizedEntity for Matrix<f64, 4, 4> {
     }
 }
 impl Sourced for Matrix<f64, 4, 4> {
-    fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+    fn source(_: &Config) -> SourceTree {
+        SourceTree::new("algebra/matrix.hh")
     }
 }
 impl PrimVec for Matrix<f64, 4, 4> {}
@@ -166,9 +160,6 @@ impl Entity for Matrix<f64, 3, 3> {
         (1.0).store(cfg, dst)?;
         Ok(())
     }
-    fn type_source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/matrix.hh")
-    }
 }
 impl SizedEntity for Matrix<f64, 3, 3> {
     fn type_size(cfg: &Config) -> usize {
@@ -176,8 +167,8 @@ impl SizedEntity for Matrix<f64, 3, 3> {
     }
 }
 impl Sourced for Matrix<f64, 3, 3> {
-    fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+    fn source(_: &Config) -> SourceTree {
+        SourceTree::new("algebra/matrix.hh")
     }
 }
 impl PrimVec for Matrix<f64, 3, 3> {}
@@ -222,9 +213,6 @@ impl Entity for Matrix<Complex<f64>, 2, 2> {
         }
         Ok(())
     }
-    fn type_source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/matrix.hh")
-    }
 }
 impl SizedEntity for Matrix<Complex<f64>, 2, 2> {
     fn type_size(cfg: &Config) -> usize {
@@ -232,8 +220,8 @@ impl SizedEntity for Matrix<Complex<f64>, 2, 2> {
     }
 }
 impl Sourced for Matrix<Complex<f64>, 2, 2> {
-    fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+    fn source(_: &Config) -> SourceTree {
+        SourceTree::new("algebra/matrix.hh")
     }
 }
 impl PrimVec for Matrix<Complex<f64>, 2, 2> {}

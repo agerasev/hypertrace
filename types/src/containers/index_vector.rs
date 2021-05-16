@@ -116,10 +116,12 @@ impl<T: Entity> Entity for IndexVector<T> {
         dst.align(Self::align(cfg))?;
         Ok(())
     }
+}
 
-    fn type_source(cfg: &Config) -> SourceTree {
+impl<T: Entity> Sourced for IndexVector<T> {
+    fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/index_vector_{}.hh", Self::type_tag()))
-            .tree(T::type_source(cfg))
+            .tree(T::source(cfg))
             .content(&include_template!(
                 "container/index_vector.inl",
                 "Self": &Self::type_name(cfg),
@@ -128,12 +130,6 @@ impl<T: Entity> Entity for IndexVector<T> {
                 "elem": &T::type_prefix(cfg),
             ))
             .build()
-    }
-}
-
-impl<T: Entity> Sourced for IndexVector<T> {
-    fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
     }
 }
 

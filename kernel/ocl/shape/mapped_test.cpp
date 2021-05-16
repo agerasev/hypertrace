@@ -4,10 +4,10 @@
 
 struct MappedSphere {
     Shift3 map;
-    //SphereEu shape;
+    //Sphere inner;
 };
 
-__global const SphereEu *mapped_sphere__shape__gc(__global const MappedSphere *self) {
+__global const Sphere *mapped_sphere__inner__gc(__global const MappedSphere *self) {
     return NULL;
 }
 
@@ -17,7 +17,7 @@ __global const SphereEu *mapped_sphere__shape__gc(__global const MappedSphere *s
 #define $geo eu
 #define $Map Shift3
 #define $map shf3
-#define $Shape SphereEu
+#define $Shape Sphere
 #define $shape sphere_eu
 #include <geometry/ray_map.inl>
 #include "mapped.inl"

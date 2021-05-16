@@ -4,7 +4,7 @@
 
 struct SceneTestHy {
     PointViewHy view;
-    ConstBgHy background;
+    ConstBg background;
 };
 
 __global const CoveredTestHy *scene_test_hy__object__gc(__global const SceneTestHy *self) {
@@ -15,7 +15,7 @@ __global const PointViewHy *scene_test_hy__view__gc(__global const SceneTestHy *
     return &self->view;
 }
 
-__global const ConstBgHy *scene_test_hy__background__gc(__global const SceneTestHy *self) {
+__global const ConstBg *scene_test_hy__background__gc(__global const SceneTestHy *self) {
     return &self->background;
 }
 
@@ -27,7 +27,7 @@ __global const ConstBgHy *scene_test_hy__background__gc(__global const SceneTest
 #define $object covered_test_hy
 #define $View PointViewHy
 #define $view point_view_hy
-#define $Background ConstBgHy
+#define $Background ConstBg
 #define $background const_bg_hy
 #define $light_hops 2
 #include <render/scene.inl>

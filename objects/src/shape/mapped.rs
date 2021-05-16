@@ -1,6 +1,4 @@
-use crate::Shape;
-use std::marker::PhantomData;
-use type_macros::*;
+use crate::{Mapped, Shape};
 use types::{
     include_template,
     prelude::*,
@@ -8,52 +6,29 @@ use types::{
     Config, Map, RayMap,
 };
 
-#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
-pub struct MappedShape<G: Geometry, M: Map<G::Pos, G::Dir>, T: Shape<G>> {
-    geometry: PhantomData<G>,
-    pub map: M,
-    #[getter]
-    pub shape: T,
-}
-
-impl<G: Geometry, M: Map<G::Pos, G::Dir>, T: Shape<G>> MappedShape<G, M, T> {
-    pub fn new(shape: T, map: M) -> Self {
-        Self {
-            shape,
-            map,
-            geometry: PhantomData,
-        }
-    }
-}
-
-impl<G: Geometry, M: Map<G::Pos, G::Dir>, T: Shape<G>> Sourced for MappedShape<G, M, T>
-where
-    Self: Entity,
-{
-    fn source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/mapped_shape_{}.hh", Self::type_tag()))
-            .tree(Self::type_source(cfg))
-            .tree(G::source(cfg))
-            .tree(M::source(cfg))
-            .tree(T::source(cfg))
+impl<G: Geometry, T: Shape<G>, M: Map<G::Pos, G::Dir>> Shape<G> for Mapped<G, T, M> {
+    fn shape_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/{}.hh", Self::shape_prefix(cfg)))
+            .tree(Self::source(cfg))
+            .tree(G::geometry_source(cfg))
+            .tree(M::map_source(cfg))
+            .tree(T::shape_source(cfg))
             .content(&include(&format!(
                 "geometry/ray_{}.hh",
-                &G::type_prefix(cfg)
+                &G::geometry_prefix(cfg)
             )))
             .tree(RayMap::<G, M>::source(cfg))
             .content(&include_template!(
                 "shape/mapped.inl",
                 "Self": &Self::type_name(cfg),
-                "self": &Self::type_prefix(cfg),
+                "self": &Self::shape_prefix(cfg),
                 "Geo": &G::type_name(cfg),
-                "geo": &G::type_prefix(cfg),
+                "geo": &G::geometry_prefix(cfg),
                 "Map": &M::type_name(cfg),
-                "map": &M::type_prefix(cfg),
+                "map": &M::map_prefix(cfg),
                 "Shape": &T::type_name(cfg),
-                "shape": &T::type_prefix(cfg),
+                "shape": &T::shape_prefix(cfg),
             ))
             .build()
     }
 }
-
-impl<G: Geometry, M: Map<G::Pos, G::Dir>, T: Shape<G>> Shape<G> for MappedShape<G, M, T> {}

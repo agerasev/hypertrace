@@ -2,7 +2,7 @@
 
 
 _ALLOW_UNUSED_PARAMETERS_
-real sphere_eu_detect(__global const void *shape, Context *context, real3 *normal, LightEu *light) {
+real sphere_eu_detect(__global const Sphere *shape, Context *context, real3 *normal, LightEu *light) {
     bool repeat = context_is_repeat(context);
     RayEu *ray = &light->ray;
 

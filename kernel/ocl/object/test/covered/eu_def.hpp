@@ -10,7 +10,7 @@
 typedef void CoveredTestEu;
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-__global const SphereEu *covered_test_eu__shape__gc(__global const CoveredTestEu *self) {
+__global const Sphere *covered_test_eu__shape__gc(__global const CoveredTestEu *self) {
     return NULL;
 }
 
@@ -24,7 +24,7 @@ __global const Lambertian *covered_test_eu__material__gc(__global const CoveredT
 #define $self covered_test_eu
 #define $Geo Eu
 #define $geo eu
-#define $Shape SphereEu
+#define $Shape Sphere
 #define $shape sphere_eu
 #define $Material Lambertian
 #define $material lambertian

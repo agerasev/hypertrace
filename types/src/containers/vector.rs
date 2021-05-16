@@ -55,10 +55,12 @@ impl<T: SizedEntity> Entity for Vec<T> {
         dst.align(Self::align(cfg))?;
         Ok(())
     }
+}
 
-    fn type_source(cfg: &Config) -> SourceTree {
+impl<T: SizedEntity> Sourced for Vec<T> {
+    fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/vector_{}.hh", Self::type_tag()))
-            .tree(T::type_source(cfg))
+            .tree(T::source(cfg))
             .content(&include_template!(
                 "container/vector.inl",
                 "Self": Self::type_name(cfg),
@@ -68,12 +70,6 @@ impl<T: SizedEntity> Entity for Vec<T> {
                 "element_size": format!("{}", T::type_size(cfg)),
             ))
             .build()
-    }
-}
-
-impl<T: SizedEntity> Sourced for Vec<T> {
-    fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
     }
 }
 

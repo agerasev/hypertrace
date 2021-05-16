@@ -1,6 +1,6 @@
 use crate::{Material, Object, Shape};
 use std::marker::PhantomData;
-use type_macros::{Entity, Named, SizedEntity};
+use type_macros::*;
 use types::{
     include_template,
     prelude::*,
@@ -8,7 +8,7 @@ use types::{
     Config,
 };
 
-#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
+#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity, Sourced)]
 pub struct Covered<G: Geometry, S: Shape<G>, M: Material> {
     geometry: PhantomData<G>,
     #[getter]
@@ -27,40 +27,35 @@ impl<G: Geometry, S: Shape<G>, M: Material> Covered<G, S, M> {
     }
 }
 
-impl<G: Geometry, S: Shape<G> + Sourced, M: Material + Sourced> Sourced for Covered<G, S, M>
+impl<G: Geometry, S: Shape<G>, M: Material> Object<G> for Covered<G, S, M>
 where
     Self: Entity,
 {
-    fn source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/covered_{}.hh", Self::type_tag()))
-            .tree(Self::type_source(cfg))
-            .tree(G::source(cfg))
-            .tree(S::source(cfg))
-            .tree(M::source(cfg))
+    fn object_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/{}.hh", Self::object_prefix(cfg)))
+            .tree(Self::source(cfg))
+            .tree(G::geometry_source(cfg))
+            .tree(S::shape_source(cfg))
+            .tree(M::material_source(cfg))
             .content(&include(&format!(
                 "geometry/ray_{}.hh",
-                G::type_prefix(cfg)
+                G::geometry_prefix(cfg)
             )))
             .content(&include(&format!(
                 "render/light/{}.hh",
-                G::type_prefix(cfg)
+                G::geometry_prefix(cfg)
             )))
             .content(&include_template!(
                 "object/covered.inl",
                 "Self": &Self::type_name(cfg),
-                "self": &Self::type_prefix(cfg),
+                "self": &Self::object_prefix(cfg),
                 "Geo": &G::type_name(cfg),
-                "geo": &G::type_prefix(cfg),
+                "geo": &G::geometry_prefix(cfg),
                 "Shape": &S::type_name(cfg),
-                "shape": &S::type_prefix(cfg),
+                "shape": &S::shape_prefix(cfg),
                 "Material": &M::type_name(cfg),
-                "material": &M::type_prefix(cfg),
+                "material": &M::material_prefix(cfg),
             ))
             .build()
     }
-}
-
-impl<G: Geometry, S: Shape<G> + Sourced, M: Material + Sourced> Object<G> for Covered<G, S, M> where
-    Self: Entity
-{
 }

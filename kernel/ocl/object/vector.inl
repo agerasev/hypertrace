@@ -30,8 +30,8 @@ real $2($self,_detect)(
     $2(Light,$Geo) min_light;
     $2($Object,Cache) min_cache;
     Hasher min_hasher;
-    for (usize index = 0; index < self->objects.size; ++index) {
-        __global const $Object *object = $3(vector__,$object,__element__gc)(&self->objects, index);
+    for (usize index = 0; index < self->size; ++index) {
+        __global const $Object *object = $3(vector__,$object,__element__gc)(self, index);
         $2(Light,$Geo) cur_light = *light;
         $2($Object,Cache) cur_cache;
         hash_usize(&context->hasher, index);
@@ -64,6 +64,6 @@ bool $2($self,_interact)(
     $2(Light,$Geo) *light,
     color3 *emission
 ) {
-    __global const $Object *object = $3(vector__,$object,__element__gc)(&self->objects, cache->index);
+    __global const $Object *object = $3(vector__,$object,__element__gc)(self, cache->index);
     return $2($object,_interact)(object, context, &cache->inner, light, emission);
 }

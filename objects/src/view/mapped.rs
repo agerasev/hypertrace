@@ -1,6 +1,4 @@
-use crate::View;
-use std::marker::PhantomData;
-use type_macros::*;
+use crate::{Mapped, View};
 use types::{
     include_template,
     prelude::*,
@@ -8,47 +6,28 @@ use types::{
     Config, Map,
 };
 
-#[derive(Clone, Debug, Named, Entity, SizedEntity)]
-pub struct MappedView<G: Geometry, V: View<G>, M: Map<G::Pos, G::Dir>> {
-    pub inner: V,
-    pub map: M,
-    geometry: PhantomData<G>,
-}
-
-impl<G: Geometry, V: View<G>, M: Map<G::Pos, G::Dir>> MappedView<G, V, M> {
-    pub fn new(inner: V, map: M) -> Self {
-        Self {
-            inner,
-            map,
-            geometry: PhantomData,
-        }
-    }
-}
-
-impl<G: Geometry, V: View<G>, M: Map<G::Pos, G::Dir>> Sourced for MappedView<G, V, M> {
-    fn source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/mapped_view_{}.hh", Self::type_tag()))
-            .tree(Self::type_source(cfg))
-            .tree(G::source(cfg))
-            .tree(M::source(cfg))
-            .tree(V::source(cfg))
+impl<G: Geometry, T: View<G>, M: Map<G::Pos, G::Dir>> View<G> for Mapped<G, T, M> {
+    fn view_source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/{}.hh", Self::type_prefix(cfg)))
+            .tree(Self::source(cfg))
+            .tree(G::geometry_source(cfg))
+            .tree(M::map_source(cfg))
+            .tree(T::view_source(cfg))
             .content(&include(&format!(
                 "geometry/ray_{}.hh",
-                &G::type_prefix(cfg)
+                &G::geometry_prefix(cfg)
             )))
             .content(&include_template!(
                 "view/mapped.inl",
                 "Self": &Self::type_name(cfg),
-                "self": &Self::type_prefix(cfg),
+                "self": &Self::view_prefix(cfg),
                 "Geo": &G::type_name(cfg),
-                "geo": &G::type_prefix(cfg),
+                "geo": &G::geometry_prefix(cfg),
                 "Map": &M::type_name(cfg),
-                "map": &M::type_prefix(cfg),
-                "View": &V::type_name(cfg),
-                "view": &V::type_prefix(cfg),
+                "map": &M::map_prefix(cfg),
+                "View": &T::type_name(cfg),
+                "view": &T::view_prefix(cfg),
             ))
             .build()
     }
 }
-
-impl<G: Geometry, V: View<G>, M: Map<G::Pos, G::Dir>> View<G> for MappedView<G, V, M> {}

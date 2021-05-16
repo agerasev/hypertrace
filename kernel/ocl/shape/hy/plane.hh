@@ -2,11 +2,10 @@
 
 #include <geometry/hyperbolic.hh>
 #include <render/light/hy.hh>
+#include <shape/basic.hh>
 
-typedef void PlaneHy;
-
-#define $Self PlaneHy
-#define $self PlaneHy
+#define $Self Plane
+#define $self plane_hy
 #define $Geo Hy
 #define $geo hy
 #include <shape/interface.inl>

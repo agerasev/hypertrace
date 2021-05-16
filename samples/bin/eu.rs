@@ -2,9 +2,10 @@ use ccgeom::{Euclidean3, Homogenous3};
 use objs::{
     background::GradBg,
     material::{Colored, Lambertian},
-    object::{Covered, ObjectVector},
-    shape::{euclidean::Sphere, MappedShape},
-    view::{MappedView, PointView},
+    object::Covered,
+    shape::Sphere,
+    view::PointView,
+    Mapped,
     SceneImpl,
 };
 use proc::{filter::GammaFilter, Context, Pipeline};
@@ -45,23 +46,23 @@ fn main() -> proc::Result<()> {
 
     let size = (800, 600);
 
-    let view = MappedView::new(PointView::new(1.0), Homogenous3::identity());
-    let objects = ObjectVector::from_objects(vec![
+    let view = Mapped::new(PointView::new(1.0), Homogenous3::identity());
+    let objects = vec![
         Covered::new(
-            MappedShape::new(
+            Mapped::new(
                 Sphere::default(),
                 Shift::from_vector([1.0, 0.0, 0.0].into()),
             ),
             Colored::new(Lambertian, [0.8, 0.2, 0.2].into()),
         ),
         Covered::new(
-            MappedShape::new(
+            Mapped::new(
                 Sphere::default(),
                 Shift::from_vector([-1.0, 0.0, 0.0].into()),
             ),
             Colored::new(Lambertian, [0.2, 0.2, 0.8].into()),
         ),
-    ]);
+    ];
     let background = GradBg::new(
         [0.0, 1.0, 0.0].into(),
         [[1.0, 1.0, 1.0].into(), [0.0, 0.0, 0.0].into()],

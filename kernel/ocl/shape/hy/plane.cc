@@ -2,7 +2,7 @@
 
 
 _ALLOW_UNUSED_PARAMETERS_
-real plane_hy_detect(__global const void *shape, Context *context, HyDir *normal, LightHy *light) {
+real plane_hy_detect(__global const Plane *shape, Context *context, HyDir *normal, LightHy *light) {
     // Line cannot intersect plane twice
     if (context_is_repeat(context)) {
         return -R1;

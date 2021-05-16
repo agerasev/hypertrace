@@ -33,9 +33,6 @@ macro_rules! impl_entity_unwrap {
         ) -> std::io::Result<()> {
             <Self as Into<$T>>::into(*self).store(cfg, dst)
         }
-        fn type_source(cfg: &crate::Config) -> crate::source::SourceTree {
-            <$T>::type_source(cfg)
-        }
     };
 }
 
@@ -50,7 +47,7 @@ macro_rules! impl_sized_entity_unwrap {
 macro_rules! impl_sourced_unwrap {
     ($T:ty) => {
         fn source(cfg: &crate::Config) -> crate::source::SourceTree {
-            <$T>::type_source(cfg)
+            <$T>::source(cfg)
         }
     };
 }

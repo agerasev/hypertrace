@@ -41,10 +41,6 @@ impl Entity for () {
     fn store<W: CntWrite>(&self, _: &Config, _: &mut W) -> io::Result<()> {
         Ok(())
     }
-
-    fn type_source(_: &Config) -> SourceTree {
-        SourceTree::new("types.hh")
-    }
 }
 
 impl SizedEntity for () {
@@ -54,8 +50,8 @@ impl SizedEntity for () {
 }
 
 impl Sourced for () {
-    fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+    fn source(_: &Config) -> SourceTree {
+        SourceTree::new("types.hh")
     }
 }
 
@@ -95,10 +91,6 @@ impl<T: 'static> Entity for PhantomData<T> {
     fn store<W: CntWrite>(&self, _: &Config, _: &mut W) -> io::Result<()> {
         Ok(())
     }
-
-    fn type_source(_: &Config) -> SourceTree {
-        SourceTree::new("types.hh")
-    }
 }
 
 impl<T: 'static> SizedEntity for PhantomData<T> {
@@ -108,7 +100,7 @@ impl<T: 'static> SizedEntity for PhantomData<T> {
 }
 
 impl<T: 'static> Sourced for PhantomData<T> {
-    fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+    fn source(_: &Config) -> SourceTree {
+        SourceTree::new("types.hh")
     }
 }

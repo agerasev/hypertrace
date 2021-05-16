@@ -13,9 +13,22 @@ use vecmat::{
     Matrix, Vector,
 };
 
-pub trait Map<P, D = P>: GeoMap<P, D> + SizedEntity + Sourced {}
+pub trait Map<P, D = P>: GeoMap<P, D> + SizedEntity {
+    fn map_prefix(cfg: &Config) -> String;
+    fn map_source(cfg: &Config) -> SourceTree;
+}
 
-impl<M, P, D> Map<P, D> for M where M: GeoMap<P, D> + SizedEntity + Sourced {}
+impl<M, P, D> Map<P, D> for M
+where
+    M: GeoMap<P, D> + SizedEntity,
+{
+    fn map_prefix(cfg: &Config) -> String {
+        Self::type_prefix(cfg)
+    }
+    fn map_source(cfg: &Config) -> SourceTree {
+        Self::source(cfg)
+    }
+}
 
 // Shift
 
@@ -228,26 +241,6 @@ where
         dst.align(Self::align(cfg))?;
         Ok(())
     }
-    fn type_source(cfg: &Config) -> SourceTree {
-        if TypeId::of::<Self>() == hom3_id() {
-            SourceTree::new("transform/homogenous.hh")
-        } else {
-            SourceBuilder::new(format!("generated/chain_{}.hh", Self::type_tag()))
-                .tree(A::type_source(cfg))
-                .tree(B::type_source(cfg))
-                .content(&include_template!(
-                    "transform/chain.inl",
-                    "Self": &Self::type_name(cfg),
-                    "self": &Self::type_prefix(cfg),
-                    "Outer": &A::type_name(cfg),
-                    "outer": &A::type_prefix(cfg),
-                    "Inner": &B::type_name(cfg),
-                    "inner": &B::type_prefix(cfg),
-                    "elem": &T::type_name(cfg),
-                ))
-                .build()
-        }
-    }
 }
 impl<A, B, T> SizedEntity for Chain<A, B, T>
 where
@@ -269,6 +262,23 @@ where
     T: SizedEntity + Copy,
 {
     fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+        if TypeId::of::<Self>() == hom3_id() {
+            SourceTree::new("transform/homogenous.hh")
+        } else {
+            SourceBuilder::new(format!("generated/chain_{}.hh", Self::type_tag()))
+                .tree(A::source(cfg))
+                .tree(B::source(cfg))
+                .content(&include_template!(
+                    "transform/chain.inl",
+                    "Self": &Self::type_name(cfg),
+                    "self": &Self::type_prefix(cfg),
+                    "Outer": &A::type_name(cfg),
+                    "outer": &A::type_prefix(cfg),
+                    "Inner": &B::type_name(cfg),
+                    "inner": &B::type_prefix(cfg),
+                    "elem": &T::type_name(cfg),
+                ))
+                .build()
+        }
     }
 }

@@ -46,9 +46,6 @@ macro_rules! impl_entity_native {
                     Endian::Little => dst.$write::<LittleEndian>(*self),
                 }
             }
-            fn type_source(_: &Config) -> SourceTree {
-                SourceTree::new("types.hh")
-            }
         }
         impl SizedEntity for $T {
             fn type_size(_cfg: &Config) -> usize {
@@ -56,8 +53,8 @@ macro_rules! impl_entity_native {
             }
         }
         impl Sourced for $T {
-            fn source(cfg: &Config) -> SourceTree {
-                Self::type_source(cfg)
+            fn source(_: &Config) -> SourceTree {
+                SourceTree::new("types.hh")
             }
         }
     };
@@ -93,9 +90,6 @@ macro_rules! impl_entity_byte {
             fn store<W: CntWrite>(&self, _cfg: &Config, dst: &mut W) -> io::Result<()> {
                 dst.$write(*self)
             }
-            fn type_source(_: &Config) -> SourceTree {
-                SourceTree::new("types.hh")
-            }
         }
         impl SizedEntity for $T {
             fn type_size(_cfg: &Config) -> usize {
@@ -103,8 +97,8 @@ macro_rules! impl_entity_byte {
             }
         }
         impl Sourced for $T {
-            fn source(cfg: &Config) -> SourceTree {
-                Self::type_source(cfg)
+            fn source(_: &Config) -> SourceTree {
+                SourceTree::new("types.hh")
             }
         }
     };
@@ -152,12 +146,6 @@ macro_rules! impl_entity_size {
                     AddressWidth::X64 => (*self as $T64).store(cfg, dst),
                 }
             }
-            fn type_source(cfg: &Config) -> SourceTree {
-                match cfg.address_width {
-                    AddressWidth::X32 => $T32::type_source(cfg),
-                    AddressWidth::X64 => $T64::type_source(cfg),
-                }
-            }
         }
         impl SizedEntity for $T {
             fn type_size(cfg: &Config) -> usize {
@@ -169,7 +157,10 @@ macro_rules! impl_entity_size {
         }
         impl Sourced for $T {
             fn source(cfg: &Config) -> SourceTree {
-                Self::type_source(cfg)
+                match cfg.address_width {
+                    AddressWidth::X32 => $T32::source(cfg),
+                    AddressWidth::X64 => $T64::source(cfg),
+                }
             }
         }
     };
@@ -240,13 +231,6 @@ impl Entity for f64 {
             (*self as f32).store(cfg, dst)
         }
     }
-    fn type_source(cfg: &Config) -> SourceTree {
-        if cfg.double_support {
-            SourceTree::new("types.hh")
-        } else {
-            f32::type_source(cfg)
-        }
-    }
 }
 impl SizedEntity for f64 {
     fn type_size(cfg: &Config) -> usize {
@@ -259,6 +243,10 @@ impl SizedEntity for f64 {
 }
 impl Sourced for f64 {
     fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+        if cfg.double_support {
+            SourceTree::new("types.hh")
+        } else {
+            f32::source(cfg)
+        }
     }
 }

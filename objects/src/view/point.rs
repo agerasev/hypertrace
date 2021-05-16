@@ -1,6 +1,6 @@
 use crate::View;
 use std::marker::PhantomData;
-use type_macros::{Entity, SizedEntity};
+use type_macros::*;
 use types::{
     prelude::*,
     source::{SourceBuilder, SourceTree},
@@ -33,8 +33,8 @@ impl<G: Geometry> Named for PointView<G> {
 
 impl<G: Geometry> Sourced for PointView<G> {
     fn source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("view/point/{}.hh", &G::type_prefix(cfg)))
-            .tree(G::source(cfg))
+        SourceBuilder::new(format!("view/point/{}.hh", &G::geometry_prefix(cfg)))
+            .tree(G::geometry_source(cfg))
             .build()
     }
 }

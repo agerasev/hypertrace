@@ -1,7 +1,10 @@
 use crate::{source::SourceTree, Config, Named, Sourced};
 use ccgeom::{Euclidean3, Hyperbolic3};
 
-pub trait Geometry: ccgeom::Geometry + Sourced {}
+pub trait Geometry: ccgeom::Geometry + Sourced {
+    fn geometry_prefix(cfg: &Config) -> String;
+    fn geometry_source(cfg: &Config) -> SourceTree;
+}
 
 // Euclidean
 
@@ -20,7 +23,14 @@ impl Sourced for Euclidean3 {
     }
 }
 
-impl Geometry for Euclidean3 {}
+impl Geometry for Euclidean3 {
+    fn geometry_prefix(cfg: &Config) -> String {
+        Self::type_prefix(cfg)
+    }
+    fn geometry_source(cfg: &Config) -> SourceTree {
+        Self::source(cfg)
+    }
+}
 
 // Hyperbolic
 
@@ -39,4 +49,11 @@ impl Sourced for Hyperbolic3 {
     }
 }
 
-impl Geometry for Hyperbolic3 {}
+impl Geometry for Hyperbolic3 {
+    fn geometry_prefix(cfg: &Config) -> String {
+        Self::type_prefix(cfg)
+    }
+    fn geometry_source(cfg: &Config) -> SourceTree {
+        Self::source(cfg)
+    }
+}

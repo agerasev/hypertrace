@@ -46,9 +46,6 @@ macro_rules! impl_entity {
                 }
                 Ok(())
             }
-            fn type_source(_: &Config) -> SourceTree {
-                SourceTree::new("algebra/vector.hh")
-            }
         }
         impl<T: PrimScal> SizedEntity for Vector<T, $N> {
             fn type_size(cfg: &Config) -> usize {
@@ -56,8 +53,8 @@ macro_rules! impl_entity {
             }
         }
         impl<T: PrimScal> Sourced for Vector<T, $N> {
-            fn source(cfg: &Config) -> SourceTree {
-                Self::type_source(cfg)
+            fn source(_: &Config) -> SourceTree {
+                SourceTree::new("algebra/vector.hh")
             }
         }
     };
@@ -105,9 +102,6 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
         dst.skip(T::type_size(cfg))?;
         Ok(())
     }
-    fn type_source(_: &Config) -> SourceTree {
-        SourceTree::new("algebra/vector.hh")
-    }
 }
 impl<T: PrimScal> SizedEntity for Vector<T, 3> {
     fn type_size(cfg: &Config) -> usize {
@@ -115,8 +109,8 @@ impl<T: PrimScal> SizedEntity for Vector<T, 3> {
     }
 }
 impl<T: PrimScal> Sourced for Vector<T, 3> {
-    fn source(cfg: &Config) -> SourceTree {
-        Self::type_source(cfg)
+    fn source(_: &Config) -> SourceTree {
+        SourceTree::new("algebra/vector.hh")
     }
 }
 

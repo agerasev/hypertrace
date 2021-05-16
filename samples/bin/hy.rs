@@ -2,9 +2,10 @@ use ccgeom::{Geometry3, Hyperbolic3};
 use objs::{
     background::ConstBg,
     material::{Colored, Lambertian},
-    object::{Covered, ObjectVector},
-    shape::{hyperbolic::Plane, MappedShape},
-    view::{MappedView, PointView},
+    object::Covered,
+    shape::Plane,
+    view::PointView,
+    Mapped,
     SceneImpl,
 };
 use proc::{filter::GammaFilter, Context, Pipeline};
@@ -43,30 +44,30 @@ fn main() -> proc::Result<()> {
 
     let size = (800, 600);
 
-    let view = MappedView::new(PointView::new(1.0), Moebius::identity());
-    let objects = ObjectVector::from_objects(vec![
+    let view = Mapped::new(PointView::new(1.0), Moebius::identity());
+    let objects = vec![
         Covered::new(
-            MappedShape::new(
+            Mapped::new(
                 Plane::default(),
                 Hyperbolic3::rotate_y(-0.25 * PI),
             ),
             Colored::new(Lambertian, [0.8, 0.2, 0.2].into()),
         ),
         Covered::new(
-            MappedShape::new(
+            Mapped::new(
                 Plane::default(),
                 Hyperbolic3::rotate_y(0.25 * PI),
             ),
             Colored::new(Lambertian, [0.2, 0.2, 0.8].into()),
         ),
         Covered::new(
-            MappedShape::new(
+            Mapped::new(
                 Plane::default(),
                 Hyperbolic3::rotate_y(0.25 * PI).chain(Hyperbolic3::shift_z(0.1)),
             ),
             Colored::new(Lambertian, [0.2, 0.8, 0.2].into()),
         ),
-    ]);
+    ];
     let background = ConstBg::new([1.0, 1.0, 1.0].into());
     let mut scene = SceneImpl::<_, _, _, _, 3>::new(view, objects, background);
     let filter = GammaFilter::new(&context.backend, 1.0 / 2.2)?;

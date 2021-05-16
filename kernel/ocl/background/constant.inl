@@ -1,16 +1,13 @@
 #include <macros.hh>
 #include <types.hh>
+#include "constant.hh"
 
 #if !defined($Geo) || !defined($geo)
 #error "All required macro parameters must be defined."
 #endif
 
-#define $Self $2(ConstBg,$Geo)
+#define $Self ConstBg
 #define $self $2(const_bg_,$geo)
-
-typedef struct $Self {
-    color3 color;
-} $Self;
 
 #include "interface.inl"
 

@@ -10,7 +10,7 @@ use vecmat::Vector;
 
 // Colored
 
-#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
+#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity, Sourced)]
 pub struct Colored<M: Material> {
     pub color: Vector<f32, 3>,
     #[getter]
@@ -26,30 +26,28 @@ impl<M: Material> Colored<M> {
     }
 }
 
-impl<M: Material> Sourced for Colored<M>
+impl<M: Material> Material for Colored<M>
 where
     Self: Entity,
 {
-    fn source(cfg: &Config) -> SourceTree {
+    fn material_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/colored_{}.hh", Self::type_tag()))
-            .tree(Self::type_source(cfg))
-            .tree(M::source(cfg))
+            .tree(Self::source(cfg))
+            .tree(M::material_source(cfg))
             .content(&include_template!(
                 "material/colored.inl",
                 "Self": &Self::type_name(cfg),
-                "self": &Self::type_prefix(cfg),
+                "self": &Self::material_prefix(cfg),
                 "Material": &M::type_name(cfg),
-                "material": &M::type_prefix(cfg),
+                "material": &M::material_prefix(cfg),
             ))
             .build()
     }
 }
 
-impl<M: Material> Material for Colored<M> {}
-
 // Emissive
 
-#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity)]
+#[derive(Clone, Copy, Debug, Named, Entity, SizedEntity, Sourced)]
 pub struct Emissive<M: Material> {
     pub emission: Vector<f32, 3>,
     #[getter]
@@ -65,23 +63,21 @@ impl<M: Material> Emissive<M> {
     }
 }
 
-impl<M: Material> Sourced for Emissive<M>
+impl<M: Material> Material for Emissive<M>
 where
     Self: Entity,
 {
-    fn source(cfg: &Config) -> SourceTree {
+    fn material_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/emissive_{}.hh", Self::type_tag()))
-            .tree(Self::type_source(cfg))
-            .tree(M::source(cfg))
+            .tree(Self::source(cfg))
+            .tree(M::material_source(cfg))
             .content(&include_template!(
                 "material/emissive.inl",
                 "Self": &Self::type_name(cfg),
-                "self": &Self::type_prefix(cfg),
+                "self": &Self::material_prefix(cfg),
                 "Material": &M::type_name(cfg),
-                "material": &M::type_prefix(cfg),
+                "material": &M::material_prefix(cfg),
             ))
             .build()
     }
 }
-
-impl<M: Material> Material for Emissive<M> {}

@@ -1,11 +1,23 @@
-pub mod euclidean;
-pub mod hyperbolic;
 mod mapped;
 mod vector;
 
-use types::prelude::*;
+mod cube;
+mod horosphere;
+mod plane;
+mod sphere;
 
-pub trait Shape<G: Geometry>: Entity {}
+use types::{prelude::*, source::SourceTree, Config};
 
-pub use mapped::MappedShape;
-pub use vector::ShapeVector;
+pub trait Shape<G: Geometry>: Entity {
+    fn shape_prefix(cfg: &Config) -> String {
+        Self::type_prefix(cfg)
+    }
+    fn shape_source(cfg: &Config) -> SourceTree {
+        Self::source(cfg)
+    }
+}
+
+pub use cube::*;
+pub use horosphere::*;
+pub use plane::*;
+pub use sphere::*;

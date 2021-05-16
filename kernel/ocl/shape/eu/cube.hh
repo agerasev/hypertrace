@@ -2,10 +2,9 @@
 
 #include <geometry/euclidean.hh>
 #include <render/light/eu.hh>
+#include <shape/basic.hh>
 
-typedef void CubeEu;
-
-#define $Self CubeEu
+#define $Self Cube
 #define $self cube_eu
 #define $Geo Eu
 #define $geo eu

@@ -13,7 +13,7 @@ pub struct Render<G: Geometry, S: Scene<G>> {
 
 impl<G: Geometry, S: Scene<G>> Render<G, S> {
     fn source(config: &Config) -> crate::Result<(String, Index)> {
-        let source = S::source(config);
+        let source = S::scene_source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
 
         let include = PathBuf::from(source.root());
@@ -39,7 +39,7 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
                 config.address_width.num_value(),
                 include,
                 S::type_name(config),
-                S::type_prefix(config),
+                S::scene_prefix(config),
             ),
         )?;
 

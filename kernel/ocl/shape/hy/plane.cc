@@ -4,7 +4,7 @@
 _ALLOW_UNUSED_PARAMETERS_
 real plane_hy_detect(__global const void *shape, Context *context, HyDir *normal, LightHy *light) {
     // Line cannot intersect plane twice
-    if (context->repeat) {
+    if (context_is_repeat(context)) {
         return -R1;
     }
 
@@ -16,21 +16,22 @@ real plane_hy_detect(__global const void *shape, Context *context, HyDir *normal
     if (fabs(pd) < EPS) {
         return -R1;
     }
-    real t = (R1 - length2(p))/(2*pd);
-    if (t < R0) {
+    real s = R1 - length2(p);
+    real t = s / (2 * pd);
+    if (t < -EPS) {
         return -R1;
     }
-    quat h = MAKE(quat)(p.xy + d.xy*t, 0, 0);
+    quat h = MAKE(quat)(p.xy + d.xy * t, 0, 0);
     
     real pxy2 = length2(h.xy);
     if (pxy2 > R1) {
         return -R1;
     }
-    h.z = sqrt(1 - pxy2);
+    h.z = sqrt(R1 - pxy2);
 
     light->ray.start = h;
     light->ray.direction = hy_dir_at(p, d, h);
-    *normal = h;
+    *normal = h * (-sign(s));
 
     return hy_distance(p, h);
 }
@@ -143,8 +144,7 @@ protected:
 };
 
 TEST_F(PlaneHyTest, detect) {
-    Context ctx;
-    ctx.repeat = false;
+    Context ctx = context_init();
     size_t hits = 0;
     for (int i = 0; i < TEST_ATTEMPTS; ++i) {
         quat start = hyrng.normal(), dir = quat(vrng.unit(), 0.0);
@@ -161,7 +161,7 @@ TEST_F(PlaneHyTest, detect) {
             ASSERT_EQ(length(light.ray.direction), approx(1));
 
             ASSERT_EQ(length(normal), approx(1));
-            ASSERT_EQ(normal, approx(light.ray.start));
+            ASSERT_EQ(normal * sign(length2(start) - 1.0), approx(light.ray.start));
         }
     }
     ASSERT_TRUE(hits > 0);

@@ -100,16 +100,23 @@ Linear3 rot3_to_linear(Rotation3 m) {
     ));
 }
 
-Rotation3 rot3_look_at(real3 d) {
+Rotation3 rot3_look_at_cont(real3 d) {
     real3 z = MAKE(real3)(R0, R0, -R1);
     real c2 = dot(d, z);
-    if (R1 + c2 < EPS) {
-        real3 y = MAKE(real3)(R0, R1, R0);
-        return rot3_from_axis(y, PI); 
-    }
     real c = sqrt((R1 + c2) / R2);
     real sm = R1 / (R2 * c);
     return rot3_new(MAKE(quat)(c, sm * cross(z, d)));
+}
+
+Rotation3 rot3_look_at(real3 d) {
+    if (d.z < R0) {
+        return rot3_look_at_cont(d);
+    } else {
+        return rot3_chain(
+            rot3_look_at_cont(-d),
+            rot3_from_axis(MAKE(real3)(R1, R0, R0), PI)
+        );
+    }
 }
 
 void rot3_shf3_reorder(Rotation3 *a, Shift3 *b) {

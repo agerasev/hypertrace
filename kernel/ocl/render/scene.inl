@@ -20,7 +20,10 @@ color3 $2($self,_sample)(__global const $Self *self, Context *context, real2 pix
 
     color3 emission = MAKE(color3)(0.0f);
 
+    context->prev_hash = hash_never();
     for (uint i = 0; i < $light_hops; ++i) {
+        context->hasher = hash_init();
+
         $2($Object,Cache) cache;
         real dist = $2($object,_detect)($2($self,__object__gc)(self), context, &cache, &light);
 
@@ -29,6 +32,7 @@ color3 $2($self,_sample)(__global const $Self *self, Context *context, real2 pix
             if (!ret) {
                 break;
             }
+            context->prev_hash = hash_finish(&context->hasher);
         } else {
             $2($background,_interact)($2($self,__background__gc)(self), context, &light, &emission);
             break;

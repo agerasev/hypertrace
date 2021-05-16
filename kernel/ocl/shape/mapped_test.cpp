@@ -7,12 +7,13 @@ struct MappedSphere {
     //Sphere inner;
 };
 
-__global const Sphere *mapped_sphere__inner__gc(__global const MappedSphere *self) {
+__global const Sphere *mapped__inner__gc(__global const MappedSphere *self) {
     return NULL;
 }
 
 #define $Self MappedSphere
 #define $self mapped_sphere
+#define $self_data mapped
 #define $Geo Eu
 #define $geo eu
 #define $Map Shift3
@@ -23,6 +24,7 @@ __global const Sphere *mapped_sphere__inner__gc(__global const MappedSphere *sel
 #include "mapped.inl"
 #undef $Self
 #undef $self
+#undef $self_data
 #undef $Geo
 #undef $geo
 #undef $Map

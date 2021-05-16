@@ -7,6 +7,9 @@ use types::{
 };
 
 impl<G: Geometry, T: Shape<G>, M: Map<G::Pos, G::Dir>> Shape<G> for Mapped<G, T, M> {
+    fn shape_prefix(cfg: &Config) -> String {
+        format!("shape_{}", Self::type_prefix(cfg))
+    }
     fn shape_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/{}.hh", Self::shape_prefix(cfg)))
             .tree(Self::source(cfg))
@@ -22,6 +25,7 @@ impl<G: Geometry, T: Shape<G>, M: Map<G::Pos, G::Dir>> Shape<G> for Mapped<G, T,
                 "shape/mapped.inl",
                 "Self": &Self::type_name(cfg),
                 "self": &Self::shape_prefix(cfg),
+                "self_data": &Self::type_prefix(cfg),
                 "Geo": &G::type_name(cfg),
                 "geo": &G::geometry_prefix(cfg),
                 "Map": &M::type_name(cfg),

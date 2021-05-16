@@ -17,7 +17,8 @@
 #undef $element_size
 
 #define $Self Vector_Sphere
-#define $self vector__sphere_eu
+#define $self shape_vector__sphere_eu
+#define $self_data vector__sphere_eu
 #define $Geo Eu
 #define $geo eu
 #define $Shape Sphere
@@ -25,6 +26,7 @@
 #include <shape/vector.inl>
 #undef $Self
 #undef $self
+#undef $self_data
 #undef $Geo
 #undef $geo
 #undef $Shape

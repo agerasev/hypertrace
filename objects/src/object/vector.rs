@@ -26,6 +26,7 @@ where
                 "object/vector.inl",
                 "Self": &Self::type_name(cfg),
                 "self": &Self::object_prefix(cfg),
+                "self_data": &Self::type_prefix(cfg),
                 "Geo": &G::type_name(cfg),
                 "geo": &G::geometry_prefix(cfg),
                 "Object": &T::type_name(cfg),

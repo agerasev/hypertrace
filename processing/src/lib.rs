@@ -5,6 +5,8 @@ pub mod error;
 pub mod filter;
 mod pipeline;
 mod render;
+#[cfg(test)]
+mod tests;
 
 pub use buffer::*;
 pub use canvas::*;

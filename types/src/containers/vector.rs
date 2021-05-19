@@ -8,11 +8,11 @@ use crate::{
 use std::io;
 
 impl<T: SizedEntity> EntityId for Vec<T> {
-    fn name() -> String {
-        format!("Vector_{}", T::name())
-    }
-    fn data_prefix() -> String {
-        format!("vector__{}", T::data_prefix())
+    fn name() -> (String, String) {
+        (
+            format!("Vector_{}", T::name().0),
+            format!("vector__{}", T::name().1),
+        )
     }
 }
 
@@ -23,13 +23,13 @@ impl<T: SizedEntity> Entity for Vec<T> {
 
     fn size(&self, cfg: &Config) -> usize {
         math::upper_multiple(
-            Self::min_size(cfg) + self.len() * T::type_size(cfg),
+            Self::min_size(cfg) + self.len() * T::static_size(cfg),
             Self::align(cfg),
         )
     }
 
     fn min_size(cfg: &Config) -> usize {
-        math::upper_multiple(usize::type_size(cfg), T::align(cfg))
+        math::upper_multiple(usize::static_size(cfg), T::align(cfg))
     }
 
     fn is_dyn_sized() -> bool {
@@ -58,16 +58,14 @@ impl<T: SizedEntity> Entity for Vec<T> {
 }
 
 impl<T: SizedEntity> EntitySource for Vec<T> {
-    fn data_source(cfg: &Config) -> SourceTree {
+    fn source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/vector_{}.hh", Self::tag()))
-            .tree(T::data_source(cfg))
+            .tree(T::source(cfg))
             .content(&include_template!(
                 "container/vector.inl",
-                "Self": Self::name(),
-                "self": Self::data_prefix(),
-                "Element": T::name(),
-                "element": T::data_prefix(),
-                "element_size": format!("{}", T::type_size(cfg)),
+                ("Self", "self") => Self::name(),
+                ("Element", "element") => T::name(),
+                "element_size" => format!("{}", T::static_size(cfg)),
             ))
             .build()
     }

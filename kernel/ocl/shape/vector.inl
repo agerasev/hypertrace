@@ -5,12 +5,14 @@
 #include <render/light/base.hh>
 
 #if \
-    !defined($Self) || !defined($self) || !defined($self_data) || \
+    !defined($Self) || !defined($self) || \
+    !defined($Base) || !defined($base) || \
     !defined($Geo) || !defined($geo) || \
     !defined($Shape) || !defined($shape)
 #error "All required macro parameters must be defined."
 #endif
 
+typedef $Base $Self;
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(__global const $Self *self, Context *context, $2($Geo,Dir) *normal, $2(Light,$Geo) *light) {
@@ -21,7 +23,7 @@ real $2($self,_detect)(__global const $Self *self, Context *context, $2($Geo,Dir
     $2(Light,$Geo) min_light;
     Hasher min_hasher;
     for (usize index = 0; index < self->size; ++index) {
-        __global const $Shape *shape = $2($self_data,__element__gc)(self, index);
+        __global const $Shape *shape = $2($base,__element__gc)(self, index);
         $2(Light,$Geo) cur_light = *light;
         $2($Geo,Dir) cur_normal;
         hash_usize(&context->hasher, index);

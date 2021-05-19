@@ -23,7 +23,7 @@ fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2)
             };
 
             let size = if index + 1 < field_count {
-                quote! { <#ty as types::SizedEntity>::type_size(cfg) }
+                quote! { <#ty as types::SizedEntity>::static_size(cfg) }
             } else {
                 quote! { <#ty as types::Entity>::min_size(cfg) }
             };
@@ -59,8 +59,8 @@ fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2)
                     size = types::math::upper_multiple(size, <#ty as types::Entity>::align(cfg)) + field_size;
                     align = types::math::lcm(align, <#ty as types::Entity>::align(cfg));
 
-                    let field_type_name = <#ty as types::EntityId>::name();
-                    let field_src = <#ty as types::EntitySource>::data_source(cfg);
+                    let field_type_name = <#ty as types::EntityId>::name().0;
+                    let field_src = <#ty as types::EntitySource>::source(cfg);
                     if <#ty as types::Entity>::is_dyn_sized() || field_size > 0 {
                         text += &format!("    {} {};\n", &field_type_name, #fname);
                     }
@@ -168,8 +168,8 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
         Data::Union(_) => panic!("Union derive is not supported yet"),
     };
     quote! {
-        let type_name = <Self as types::EntityId>::name();
-        let type_prefix = <Self as types::EntityId>::data_prefix();
+        let type_name = <Self as types::EntityId>::name().0;
+        let type_prefix = <Self as types::EntityId>::name().1;
         let file = format!("generated/type_{}.hh", <Self as types::EntityId>::tag());
         let mut tree = types::source::SourceTree::new(file.clone());
         let mut includes = std::collections::BTreeSet::<types::path::PathBuf>::new();

@@ -13,22 +13,22 @@ macro_rules! impl_entity {
     ($N:expr) => {
         impl<T: PrimScal> PrimVec for Vector<T, $N> {}
         impl<T: PrimScal> EntityId for Vector<T, $N> {
-            fn name() -> String {
-                format!("{}{}", &T::name(), $N)
-            }
-            fn data_prefix() -> String {
-                format!("{}{}", &T::data_prefix(), $N)
+            fn name() -> (String, String) {
+                (
+                    format!("{}{}", &T::name().0, $N),
+                    format!("{}{}", &T::name().1, $N),
+                )
             }
         }
         impl<T: PrimScal> Entity for Vector<T, $N> {
             fn align(cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn size(&self, cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn min_size(cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn is_dyn_sized() -> bool {
                 false
@@ -48,12 +48,12 @@ macro_rules! impl_entity {
             }
         }
         impl<T: PrimScal> SizedEntity for Vector<T, $N> {
-            fn type_size(cfg: &Config) -> usize {
-                T::type_size(cfg) * $N
+            fn static_size(cfg: &Config) -> usize {
+                T::static_size(cfg) * $N
             }
         }
         impl<T: PrimScal> EntitySource for Vector<T, $N> {
-            fn data_source(_: &Config) -> SourceTree {
+            fn source(_: &Config) -> SourceTree {
                 SourceTree::new("algebra/vector.hh")
             }
         }
@@ -67,22 +67,22 @@ impl_entity!(16);
 
 impl<T: PrimScal> PrimVec for Vector<T, 3> {}
 impl<T: PrimScal> EntityId for Vector<T, 3> {
-    fn name() -> String {
-        format!("{}3", &T::name())
-    }
-    fn data_prefix() -> String {
-        format!("{}3", &T::data_prefix())
+    fn name() -> (String, String) {
+        (
+            format!("{}3", &T::name().0),
+            format!("{}3", &T::name().1),
+        )
     }
 }
 impl<T: PrimScal> Entity for Vector<T, 3> {
     fn align(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn size(&self, cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn min_size(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn is_dyn_sized() -> bool {
         false
@@ -92,24 +92,24 @@ impl<T: PrimScal> Entity for Vector<T, 3> {
         for i in 0..3 {
             v[i] = T::load(cfg, src)?;
         }
-        src.skip(T::type_size(cfg))?;
+        src.skip(T::static_size(cfg))?;
         Ok(v)
     }
     fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
         for i in 0..3 {
             self[i].store(cfg, dst)?;
         }
-        dst.skip(T::type_size(cfg))?;
+        dst.skip(T::static_size(cfg))?;
         Ok(())
     }
 }
 impl<T: PrimScal> SizedEntity for Vector<T, 3> {
-    fn type_size(cfg: &Config) -> usize {
-        T::type_size(cfg) * 4
+    fn static_size(cfg: &Config) -> usize {
+        T::static_size(cfg) * 4
     }
 }
 impl<T: PrimScal> EntitySource for Vector<T, 3> {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/vector.hh")
     }
 }

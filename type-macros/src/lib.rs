@@ -37,11 +37,11 @@ pub fn derive_named(stream: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
         impl<#bindings> types::EntityId for #ty<#params> {
-            fn name() -> String {
-                format!("{}{}", #name, #tag)
-            }
-            fn data_prefix() -> String {
-                format!("{}{}{}", #prefix, #div, #tag)
+            fn name() -> (String, String) {
+                (
+                    format!("{}{}", #name, #tag),
+                    format!("{}{}{}", #prefix, #div, #tag),
+                )
             }
         }
     })
@@ -104,7 +104,7 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
     let input = parse_macro_input!(stream as DeriveInput);
 
     let ty = &input.ident;
-    let type_size = make_type_size(&input);
+    let static_size = make_type_size(&input);
     let (params, bindings) = make_params(&input);
     let mut where_clause = make_where_clause(&input, quote! { types::SizedEntity }, None);
     if !where_clause.is_empty() {
@@ -113,8 +113,8 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
 
     let expanded = quote! {
         impl<#bindings> types::SizedEntity for #ty<#params> #where_clause {
-            fn type_size(cfg: &types::Config) -> usize {
-                #type_size
+            fn static_size(cfg: &types::Config) -> usize {
+                #static_size
             }
         }
     };
@@ -140,7 +140,7 @@ pub fn derive_sourced(stream: TokenStream) -> TokenStream {
 
     TokenStream::from(quote! {
         impl<#bindings> types::EntitySource for #ty<#params> #where_clause {
-            fn data_source(cfg: &types::Config) -> types::source::SourceTree {
+            fn source(cfg: &types::Config) -> types::source::SourceTree {
                 #source
             }
         }

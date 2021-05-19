@@ -7,31 +7,30 @@ use types::{
 };
 
 impl<G: Geometry, T: Shape<G>, M: Map<G::Pos, G::Dir>> Shape<G> for Mapped<G, T, M> {
-    fn shape_prefix() -> String {
-        format!("shape_{}", Self::data_prefix())
+    fn shape_name() -> (String, String) {
+        (
+            format!("Shape{}", Self::name().0),
+            format!("shape_{}", Self::name().1),
+        )
     }
     fn shape_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/{}.hh", Self::shape_prefix()))
-            .tree(Self::data_source(cfg))
+        SourceBuilder::new(format!("generated/{}.hh", Self::shape_name().1))
+            .tree(Self::source(cfg))
             .tree(G::geometry_source(cfg))
             .tree(M::map_source(cfg))
             .tree(T::shape_source(cfg))
             .content(&include(&format!(
                 "geometry/ray_{}.hh",
-                &G::geometry_prefix()
+                &G::geometry_name().1
             )))
-            .tree(RayMap::<G, M>::data_source(cfg))
+            .tree(RayMap::<G, M>::source(cfg))
             .content(&include_template!(
                 "shape/mapped.inl",
-                "Self": &Self::name(),
-                "self": &Self::shape_prefix(),
-                "self_data": &Self::data_prefix(),
-                "Geo": &G::name(),
-                "geo": &G::geometry_prefix(),
-                "Map": &M::name(),
-                "map": &M::map_prefix(),
-                "Shape": &T::name(),
-                "shape": &T::shape_prefix(),
+                ("Self", "self") => Self::shape_name(),
+                ("Base", "base") => Self::name(),
+                ("Geo", "geo") => G::geometry_name(),
+                ("Map", "map") => M::map_name(),
+                ("Shape", "shape") => T::shape_name(),
             ))
             .build()
     }

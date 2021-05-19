@@ -9,11 +9,11 @@ mod sphere;
 use types::{prelude::*, source::SourceTree, Config};
 
 pub trait Shape<G: Geometry>: Entity {
-    fn shape_prefix() -> String {
-        Self::data_prefix()
+    fn shape_name() -> (String, String) {
+        Self::name()
     }
     fn shape_source(cfg: &Config) -> SourceTree {
-        Self::data_source(cfg)
+        Self::source(cfg)
     }
 }
 

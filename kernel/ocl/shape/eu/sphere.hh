@@ -4,7 +4,9 @@
 #include <render/light/eu.hh>
 #include <shape/basic.hh>
 
-#define $Self Sphere
+typedef Sphere SphereEu;
+
+#define $Self SphereEu
 #define $self sphere_eu
 #define $Geo Eu
 #define $geo eu

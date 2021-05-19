@@ -4,7 +4,9 @@
 #include <render/light/hy.hh>
 #include <shape/basic.hh>
 
-#define $Self Plane
+typedef Plane PlaneHy;
+
+#define $Self PlaneHy
 #define $self plane_hy
 #define $Geo Hy
 #define $geo hy

@@ -6,10 +6,12 @@
 typedef struct {
     PointViewEu inner;
     Affine3 map;
-} MapPointViewEu;
+} Mapped;
 
-#define $Self MapPointViewEu
-#define $self map_point_view_eu
+#define $Self ViewMapped
+#define $self view_mapped
+#define $Base Mapped
+#define $base mapped
 #define $Geo Eu
 #define $geo eu
 #define $Map Affine3
@@ -19,6 +21,8 @@ typedef struct {
 #include "mapped.inl"
 #undef $Self
 #undef $self
+#undef $Base
+#undef $base
 #undef $Geo
 #undef $geo
 #undef $Map

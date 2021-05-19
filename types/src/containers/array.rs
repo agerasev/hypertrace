@@ -9,12 +9,11 @@ use std::{hash::Hasher, io, iter};
 use vecmat::Vector;
 
 impl<T: SizedEntity, const N: usize> EntityId for [T; N] {
-    fn name() -> String {
-        format!("Array_{}_{}", T::name(), N)
-    }
-
-    fn data_prefix() -> String {
-        format!("array__{}__{}", T::data_prefix(), N)
+    fn name() -> (String, String) {
+        (
+            format!("Array_{}_{}", T::name().0, N),
+            format!("array__{}__{}", T::name().1, N),
+        )
     }
 
     fn id() -> u64 {
@@ -31,11 +30,11 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
     }
 
     fn size(&self, cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
 
     fn min_size(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
 
     fn is_dyn_sized() -> bool {
@@ -64,22 +63,20 @@ impl<T: SizedEntity, const N: usize> Entity for [T; N] {
 }
 
 impl<T: SizedEntity, const N: usize> SizedEntity for [T; N] {
-    fn type_size(cfg: &Config) -> usize {
-        T::type_size(cfg) * N
+    fn static_size(cfg: &Config) -> usize {
+        T::static_size(cfg) * N
     }
 }
 
 impl<T: SizedEntity, const N: usize> EntitySource for [T; N] {
-    fn data_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/array_{}.hh", Self::tag()))
-            .tree(T::data_source(cfg))
+    fn source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/{}.hh", Self::name().1))
+            .tree(T::source(cfg))
             .content(&include_template!(
                 "container/array.inl",
-                "Self": Self::name(),
-                "self": Self::data_prefix(),
-                "Element": T::name(),
-                "element": T::data_prefix(),
-                "size": format!("{}", N),
+                ("Self", "self") => Self::name(),
+                ("Element", "element") => T::name(),
+                "size" => format!("{}", N),
             ))
             .build()
     }

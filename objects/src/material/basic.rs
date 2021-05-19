@@ -6,7 +6,7 @@ use types::{prelude::*, source::SourceTree, Config};
 pub struct Absorbing;
 
 impl EntitySource for Absorbing {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("material/basic.hh")
     }
 }
@@ -17,7 +17,7 @@ impl Material for Absorbing {}
 pub struct Transparent;
 
 impl EntitySource for Transparent {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("material/basic.hh")
     }
 }
@@ -28,7 +28,7 @@ impl Material for Transparent {}
 pub struct Specular;
 
 impl EntitySource for Specular {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("material/basic.hh")
     }
 }
@@ -39,7 +39,7 @@ impl Material for Specular {}
 pub struct Lambertian;
 
 impl EntitySource for Lambertian {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("material/basic.hh")
     }
 }

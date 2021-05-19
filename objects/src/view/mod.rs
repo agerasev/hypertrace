@@ -4,11 +4,11 @@ mod point;
 use types::{prelude::*, source::SourceTree, Config};
 
 pub trait View<G: Geometry>: SizedEntity + EntitySource {
-    fn view_prefix() -> String {
-        Self::data_prefix()
+    fn view_name() -> (String, String) {
+        Self::name()
     }
     fn view_source(cfg: &Config) -> SourceTree {
-        Self::data_source(cfg)
+        Self::source(cfg)
     }
 }
 

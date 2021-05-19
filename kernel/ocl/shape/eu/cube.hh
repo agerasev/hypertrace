@@ -4,7 +4,9 @@
 #include <render/light/eu.hh>
 #include <shape/basic.hh>
 
-#define $Self Cube
+typedef Cube CubeEu;
+
+#define $Self CubeEu
 #define $self cube_eu
 #define $Geo Eu
 #define $geo eu

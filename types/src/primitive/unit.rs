@@ -8,12 +8,8 @@ use std::{io, marker::PhantomData};
 // Unit
 
 impl EntityId for () {
-    fn name() -> String {
-        String::from("void")
-    }
-
-    fn data_prefix() -> String {
-        String::from("empty")
+    fn name() -> (String, String) {
+        ("void".into(), "empty".into())
     }
 }
 
@@ -44,13 +40,13 @@ impl Entity for () {
 }
 
 impl SizedEntity for () {
-    fn type_size(_: &Config) -> usize {
+    fn static_size(_: &Config) -> usize {
         0
     }
 }
 
 impl EntitySource for () {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("types.hh")
     }
 }
@@ -58,12 +54,8 @@ impl EntitySource for () {
 // PhantomData
 
 impl<T: 'static> EntityId for PhantomData<T> {
-    fn name() -> String {
-        String::from("void")
-    }
-
-    fn data_prefix() -> String {
-        String::from("phantom")
+    fn name() -> (String, String) {
+        ("void".into(), "phantom".into())
     }
 }
 
@@ -94,13 +86,13 @@ impl<T: 'static> Entity for PhantomData<T> {
 }
 
 impl<T: 'static> SizedEntity for PhantomData<T> {
-    fn type_size(_: &Config) -> usize {
+    fn static_size(_: &Config) -> usize {
         0
     }
 }
 
 impl<T: 'static> EntitySource for PhantomData<T> {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("types.hh")
     }
 }

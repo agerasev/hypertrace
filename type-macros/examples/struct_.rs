@@ -15,7 +15,7 @@ struct B;
 struct C(A, #[getter] B);
 
 fn main() {
-    for (key, value) in C::data_source(&HOST_CONFIG).into_iter() {
+    for (key, value) in C::source(&HOST_CONFIG).into_iter() {
         println!("'{}':\n{}\n", key, value);
     }
 }

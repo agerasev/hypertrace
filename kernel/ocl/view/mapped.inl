@@ -2,11 +2,14 @@
 
 #if \
     !defined($Self) || !defined($self) || \
+    !defined($Base) || !defined($base) || \
     !defined($Geo) || !defined($geo) || \
     !defined($Map) || !defined($map) || \
     !defined($View) || !defined($view)
 #error "All required macro parameters must be defined."
 #endif
+
+typedef $Base $Self;
 
 #include "interface.inl"
 

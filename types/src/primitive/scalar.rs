@@ -14,22 +14,19 @@ macro_rules! impl_entity_native {
     ($T:ident, $K:expr, $read:ident, $write:ident) => {
         impl PrimScal for $T {}
         impl EntityId for $T {
-            fn name() -> String {
-                String::from($K)
-            }
-            fn data_prefix() -> String {
-                String::from($K)
+            fn name() -> (String, String) {
+                (String::from($K), String::from($K))
             }
         }
         impl Entity for $T {
             fn align(cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn size(&self, cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn min_size(cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn is_dyn_sized() -> bool {
                 false
@@ -48,12 +45,12 @@ macro_rules! impl_entity_native {
             }
         }
         impl SizedEntity for $T {
-            fn type_size(_cfg: &Config) -> usize {
+            fn static_size(_cfg: &Config) -> usize {
                 size_of::<Self>()
             }
         }
         impl EntitySource for $T {
-            fn data_source(_: &Config) -> SourceTree {
+            fn source(_: &Config) -> SourceTree {
                 SourceTree::new("types.hh")
             }
         }
@@ -64,22 +61,19 @@ macro_rules! impl_entity_byte {
     ($T:ident, $K:expr, $read:ident, $write:ident) => {
         impl PrimScal for $T {}
         impl EntityId for $T {
-            fn name() -> String {
-                String::from($K)
-            }
-            fn data_prefix() -> String {
-                String::from($K)
+            fn name() -> (String, String) {
+                (String::from($K), String::from($K))
             }
         }
         impl Entity for $T {
             fn align(cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn size(&self, cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn min_size(cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn is_dyn_sized() -> bool {
                 false
@@ -92,12 +86,12 @@ macro_rules! impl_entity_byte {
             }
         }
         impl SizedEntity for $T {
-            fn type_size(_cfg: &Config) -> usize {
+            fn static_size(_cfg: &Config) -> usize {
                 1
             }
         }
         impl EntitySource for $T {
-            fn data_source(_: &Config) -> SourceTree {
+            fn source(_: &Config) -> SourceTree {
                 SourceTree::new("types.hh")
             }
         }
@@ -108,22 +102,19 @@ macro_rules! impl_entity_size {
     ($T:ident, $K:expr, $T32:ident, $T64:ident) => {
         impl PrimScal for $T {}
         impl EntityId for $T {
-            fn name() -> String {
-                String::from($K)
-            }
-            fn data_prefix() -> String {
-                String::from($K)
+            fn name() -> (String, String) {
+                (String::from($K), String::from($K))
             }
         }
         impl Entity for $T {
             fn align(cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn size(&self, cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn min_size(cfg: &Config) -> usize {
-                Self::type_size(cfg)
+                Self::static_size(cfg)
             }
             fn is_dyn_sized() -> bool {
                 false
@@ -142,18 +133,18 @@ macro_rules! impl_entity_size {
             }
         }
         impl SizedEntity for $T {
-            fn type_size(cfg: &Config) -> usize {
+            fn static_size(cfg: &Config) -> usize {
                 match cfg.address_width {
-                    AddressWidth::X32 => $T32::type_size(cfg),
-                    AddressWidth::X64 => $T64::type_size(cfg),
+                    AddressWidth::X32 => $T32::static_size(cfg),
+                    AddressWidth::X64 => $T64::static_size(cfg),
                 }
             }
         }
         impl EntitySource for $T {
-            fn data_source(cfg: &Config) -> SourceTree {
+            fn source(cfg: &Config) -> SourceTree {
                 match cfg.address_width {
-                    AddressWidth::X32 => $T32::data_source(cfg),
-                    AddressWidth::X64 => $T64::data_source(cfg),
+                    AddressWidth::X32 => $T32::source(cfg),
+                    AddressWidth::X64 => $T64::source(cfg),
                 }
             }
         }
@@ -177,22 +168,19 @@ impl_entity_native!(f32, "float", read_f32, write_f32);
 
 impl PrimScal for f64 {}
 impl EntityId for f64 {
-    fn name() -> String {
-        String::from("real")
-    }
-    fn data_prefix() -> String {
-        String::from("real")
+    fn name() -> (String, String) {
+        (String::from("real"), String::from("real"))
     }
 }
 impl Entity for f64 {
     fn align(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn size(&self, cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn min_size(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn is_dyn_sized() -> bool {
         false
@@ -219,20 +207,20 @@ impl Entity for f64 {
     }
 }
 impl SizedEntity for f64 {
-    fn type_size(cfg: &Config) -> usize {
+    fn static_size(cfg: &Config) -> usize {
         if cfg.double_support {
             size_of::<Self>()
         } else {
-            f32::type_size(cfg)
+            f32::static_size(cfg)
         }
     }
 }
 impl EntitySource for f64 {
-    fn data_source(cfg: &Config) -> SourceTree {
+    fn source(cfg: &Config) -> SourceTree {
         if cfg.double_support {
             SourceTree::new("types.hh")
         } else {
-            f32::data_source(cfg)
+            f32::source(cfg)
         }
     }
 }

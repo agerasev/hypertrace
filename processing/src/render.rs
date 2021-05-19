@@ -12,7 +12,7 @@ pub struct Render<G: Geometry, S: Scene<G>> {
 }
 
 impl<G: Geometry, S: Scene<G>> Render<G, S> {
-    fn data_source(config: &Config) -> crate::Result<(String, Index)> {
+    fn source(config: &Config) -> crate::Result<(String, Index)> {
         let source = S::scene_source(config);
         let parser_builder = Parser::builder().add_source(&*kernel::SOURCE);
 
@@ -38,8 +38,8 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
             "#,
                 config.address_width.num_value(),
                 include,
-                S::name(),
-                S::scene_prefix(),
+                S::scene_name().0,
+                S::scene_name().1,
             ),
         )?;
 
@@ -71,7 +71,7 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
     }
 
     pub fn new(context: &Context) -> crate::Result<Self> {
-        let (text, index) = Self::data_source(&context.config)?;
+        let (text, index) = Self::source(&context.config)?;
         fs::write(
             "render.ocl",
             Regex::new(r#"\n\n+"#)

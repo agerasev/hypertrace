@@ -6,7 +6,7 @@
 
 #define $Self Vector_Sphere
 #define $self vector__sphere_eu
-#define $Element Sphere
+#define $Element SphereEu
 #define $element sphere_eu
 #define $element_size 0
 #include <container/vector.inl>
@@ -16,17 +16,19 @@
 #undef $element
 #undef $element_size
 
-#define $Self Vector_Sphere
+#define $Self ShapeVector_SphereEu
 #define $self shape_vector__sphere_eu
-#define $self_data vector__sphere_eu
+#define $Base Vector_Sphere
+#define $base vector__sphere_eu
 #define $Geo Eu
 #define $geo eu
-#define $Shape Sphere
+#define $Shape SphereEu
 #define $shape sphere_eu
 #include <shape/vector.inl>
 #undef $Self
 #undef $self
-#undef $self_data
+#undef $Base
+#undef $base
 #undef $Geo
 #undef $geo
 #undef $Shape

@@ -62,7 +62,7 @@ pub fn make_size(input: &DeriveInput) -> TokenStream2 {
                     &variant.fields,
                     bs.prefix,
                     quote! { types::math::upper_multiple(
-                        <usize as types::SizedEntity>::type_size(cfg),
+                        <usize as types::SizedEntity>::static_size(cfg),
                         <Self as types::Entity>::align(cfg),
                     ) },
                 );
@@ -94,7 +94,7 @@ fn make_min_size_fields(fields: &Fields, init: TokenStream2) -> TokenStream2 {
     iter.enumerate().fold(init, |accum, (index, field)| {
         let ty = &field.ty;
         let size = if index + 1 < len {
-            quote! { <#ty as types::SizedEntity>::type_size(cfg) }
+            quote! { <#ty as types::SizedEntity>::static_size(cfg) }
         } else {
             quote! { <#ty as types::Entity>::min_size(cfg) }
         };
@@ -109,7 +109,7 @@ fn make_type_size_fields(fields: &Fields, init: TokenStream2) -> TokenStream2 {
         let ty = &field.ty;
         quote! {
             types::math::upper_multiple(#accum, <#ty as types::Entity>::align(cfg)) +
-                <#ty as types::SizedEntity>::type_size(cfg)
+                <#ty as types::SizedEntity>::static_size(cfg)
         }
     })
 }
@@ -127,7 +127,7 @@ pub fn make_static_size<F: Fn(&Fields, TokenStream2) -> TokenStream2>(
                 .fold(quote! { 0usize }, |accum, variant| {
                     let variant_type_size = make_static_size_field(
                         &variant.fields,
-                        quote! { <usize as types::SizedEntity>::type_size(cfg) },
+                        quote! { <usize as types::SizedEntity>::static_size(cfg) },
                     );
                     quote! { std::cmp::max(#accum, #variant_type_size) }
                 })

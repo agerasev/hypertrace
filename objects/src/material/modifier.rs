@@ -31,15 +31,13 @@ where
     Self: Entity,
 {
     fn material_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/colored_{}.hh", Self::tag()))
-            .tree(Self::data_source(cfg))
+        SourceBuilder::new(format!("generated/{}.hh", Self::material_name().1))
+            .tree(Self::source(cfg))
             .tree(M::material_source(cfg))
             .content(&include_template!(
                 "material/colored.inl",
-                "Self": &Self::name(),
-                "self": &Self::material_prefix(),
-                "Material": &M::name(),
-                "material": &M::material_prefix(),
+                ("Self", "self") => Self::material_name(),
+                ("Material", "material") => M::material_name(),
             ))
             .build()
     }
@@ -68,15 +66,13 @@ where
     Self: Entity,
 {
     fn material_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/emissive_{}.hh", Self::tag()))
-            .tree(Self::data_source(cfg))
+        SourceBuilder::new(format!("generated/{}.hh", Self::material_name().1))
+            .tree(Self::source(cfg))
             .tree(M::material_source(cfg))
             .content(&include_template!(
                 "material/emissive.inl",
-                "Self": &Self::name(),
-                "self": &Self::material_prefix(),
-                "Material": &M::name(),
-                "material": &M::material_prefix(),
+                ("Self", "self") => Self::material_name(),
+                ("Material", "material") => M::material_name(),
             ))
             .build()
     }

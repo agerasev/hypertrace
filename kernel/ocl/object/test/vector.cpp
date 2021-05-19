@@ -18,9 +18,10 @@
 #undef $element
 #undef $element_size
 
-#define $Self Vector_CoveredTestEu
+#define $Self ObjectVector_CoveredTestEu
 #define $self object_vector__covered_test_eu
-#define $self_data vector__covered_test_eu
+#define $Base Vector_CoveredTestEu
+#define $base vector__covered_test_eu
 #define $Geo Eu
 #define $geo eu
 #define $Object CoveredTestEu
@@ -28,7 +29,8 @@
 #include <object/vector.inl>
 #undef $Self
 #undef $self
-#undef $self_data
+#undef $Base
+#undef $base
 #undef $Geo
 #undef $geo
 #undef $Object

@@ -10,22 +10,19 @@ use std::{
     io,
 };
 
-/// Something that could be identified.
+/// Identifiable entity.
 pub trait EntityId: 'static + Sized {
-    /// Type name on backend.
-    fn name() -> String;
+    /// Type name and prefix.
+    fn name() -> (String, String);
 
-    /// Prefix for type method (usually lower-case version of the name).
-    fn data_prefix() -> String;
-
-    /// Type identifier.
+    /// Type unique id.
     fn id() -> u64 {
         let mut hasher = DefaultHasher::default();
         TypeId::of::<Self>().hash(&mut hasher);
         hasher.finish()
     }
 
-    /// Type short text identifier.
+    /// Type short text representation of unique id.
     fn tag() -> String {
         format!("{:08X}", Self::id() as u32)
     }
@@ -34,7 +31,7 @@ pub trait EntityId: 'static + Sized {
 /// Trait to generate backend source code.
 pub trait EntitySource: EntityId {
     /// Returns backend source code tree.
-    fn data_source(cfg: &Config) -> SourceTree;
+    fn source(cfg: &Config) -> SourceTree;
 }
 
 /// Static entity type.
@@ -63,5 +60,5 @@ pub trait Entity: EntityId + EntitySource {
 /// Sized static entity.
 pub trait SizedEntity: Entity {
     /// Static size of type.
-    fn type_size(cfg: &Config) -> usize;
+    fn static_size(cfg: &Config) -> usize;
 }

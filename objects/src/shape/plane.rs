@@ -7,14 +7,14 @@ use types::{source::SourceTree, Config};
 pub struct Plane;
 
 impl EntitySource for Plane {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("shape/basic.hh")
     }
 }
 
 impl Shape<Hyperbolic3> for Plane {
-    fn shape_prefix() -> String {
-        "plane_hy".into()
+    fn shape_name() -> (String, String) {
+        ("PlaneHy".into(), "plane_hy".into())
     }
     fn shape_source(_: &Config) -> SourceTree {
         SourceTree::new("shape/hy/plane.hh")

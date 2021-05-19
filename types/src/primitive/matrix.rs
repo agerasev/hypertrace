@@ -10,22 +10,19 @@ use vecmat::{Complex, Matrix};
 // Real2x2
 
 impl EntityId for Matrix<f64, 2, 2> {
-    fn name() -> String {
-        String::from("real2x2")
-    }
-    fn data_prefix() -> String {
-        String::from("r22")
+    fn name() -> (String, String) {
+        ("real2x2".into(), "r22".into())
     }
 }
 impl Entity for Matrix<f64, 2, 2> {
     fn align(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn size(&self, cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn min_size(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn is_dyn_sized() -> bool {
         false
@@ -49,12 +46,12 @@ impl Entity for Matrix<f64, 2, 2> {
     }
 }
 impl SizedEntity for Matrix<f64, 2, 2> {
-    fn type_size(cfg: &Config) -> usize {
-        4 * f64::type_size(cfg)
+    fn static_size(cfg: &Config) -> usize {
+        4 * f64::static_size(cfg)
     }
 }
 impl EntitySource for Matrix<f64, 2, 2> {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/matrix.hh")
     }
 }
@@ -63,22 +60,19 @@ impl PrimVec for Matrix<f64, 2, 2> {}
 // Real4x4
 
 impl EntityId for Matrix<f64, 4, 4> {
-    fn name() -> String {
-        String::from("real4x4")
-    }
-    fn data_prefix() -> String {
-        String::from("r44")
+    fn name() -> (String, String) {
+        ("real4x4".into(), "r44".into())
     }
 }
 impl Entity for Matrix<f64, 4, 4> {
     fn align(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn size(&self, cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn min_size(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn is_dyn_sized() -> bool {
         false
@@ -102,12 +96,12 @@ impl Entity for Matrix<f64, 4, 4> {
     }
 }
 impl SizedEntity for Matrix<f64, 4, 4> {
-    fn type_size(cfg: &Config) -> usize {
-        16 * f64::type_size(cfg)
+    fn static_size(cfg: &Config) -> usize {
+        16 * f64::static_size(cfg)
     }
 }
 impl EntitySource for Matrix<f64, 4, 4> {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/matrix.hh")
     }
 }
@@ -116,22 +110,19 @@ impl PrimVec for Matrix<f64, 4, 4> {}
 // Real3x3
 
 impl EntityId for Matrix<f64, 3, 3> {
-    fn name() -> String {
-        String::from("real3x3")
-    }
-    fn data_prefix() -> String {
-        String::from("r33")
+    fn name() -> (String, String) {
+        ("real3x3".into(), "r33".into())
     }
 }
 impl Entity for Matrix<f64, 3, 3> {
     fn align(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn size(&self, cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn min_size(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn is_dyn_sized() -> bool {
         false
@@ -142,9 +133,9 @@ impl Entity for Matrix<f64, 3, 3> {
             for j in 0..3 {
                 v[(i, j)] = f64::load(cfg, src)?;
             }
-            src.skip(f64::type_size(cfg))?;
+            src.skip(f64::static_size(cfg))?;
         }
-        src.skip(4 * f64::type_size(cfg))?;
+        src.skip(4 * f64::static_size(cfg))?;
         Ok(v)
     }
     fn store<W: CntWrite>(&self, cfg: &Config, dst: &mut W) -> io::Result<()> {
@@ -162,12 +153,12 @@ impl Entity for Matrix<f64, 3, 3> {
     }
 }
 impl SizedEntity for Matrix<f64, 3, 3> {
-    fn type_size(cfg: &Config) -> usize {
-        16 * f64::type_size(cfg)
+    fn static_size(cfg: &Config) -> usize {
+        16 * f64::static_size(cfg)
     }
 }
 impl EntitySource for Matrix<f64, 3, 3> {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/matrix.hh")
     }
 }
@@ -176,22 +167,19 @@ impl PrimVec for Matrix<f64, 3, 3> {}
 // Complex2x2
 
 impl EntityId for Matrix<Complex<f64>, 2, 2> {
-    fn name() -> String {
-        String::from("comp2x2")
-    }
-    fn data_prefix() -> String {
-        String::from("c22")
+    fn name() -> (String, String) {
+        ("comp2x2".into(), "c22".into())
     }
 }
 impl Entity for Matrix<Complex<f64>, 2, 2> {
     fn align(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn size(&self, cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn min_size(cfg: &Config) -> usize {
-        Self::type_size(cfg)
+        Self::static_size(cfg)
     }
     fn is_dyn_sized() -> bool {
         false
@@ -215,12 +203,12 @@ impl Entity for Matrix<Complex<f64>, 2, 2> {
     }
 }
 impl SizedEntity for Matrix<Complex<f64>, 2, 2> {
-    fn type_size(cfg: &Config) -> usize {
-        8 * f64::type_size(cfg)
+    fn static_size(cfg: &Config) -> usize {
+        8 * f64::static_size(cfg)
     }
 }
 impl EntitySource for Matrix<Complex<f64>, 2, 2> {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("algebra/matrix.hh")
     }
 }

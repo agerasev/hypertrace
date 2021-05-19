@@ -2,18 +2,19 @@
 #include <geometry/euclidean.hh>
 #include "eu/sphere.hh"
 
-struct MappedSphere {
+struct Mapped {
     Shift3 map;
     //Sphere inner;
 };
 
-__global const Sphere *mapped__inner__gc(__global const MappedSphere *self) {
+__global const Sphere *mapped__inner__gc(__global const Mapped *self) {
     return NULL;
 }
 
-#define $Self MappedSphere
-#define $self mapped_sphere
-#define $self_data mapped
+#define $Self ShapeMapped
+#define $self shape_mapped
+#define $Base Mapped
+#define $base mapped
 #define $Geo Eu
 #define $geo eu
 #define $Map Shift3
@@ -24,7 +25,8 @@ __global const Sphere *mapped__inner__gc(__global const MappedSphere *self) {
 #include "mapped.inl"
 #undef $Self
 #undef $self
-#undef $self_data
+#undef $Base
+#undef $base
 #undef $Geo
 #undef $geo
 #undef $Map

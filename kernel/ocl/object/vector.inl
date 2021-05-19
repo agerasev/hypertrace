@@ -5,11 +5,14 @@
 #include <render/light/base.hh>
 
 #if \
-    !defined($Self) || !defined($self) || !defined($self_data) || \
+    !defined($Self) || !defined($self) || \
+    !defined($Base) || !defined($base) || \
     !defined($Geo) || !defined($geo) || \
     !defined($Object) || !defined($object)
 #error "All required macro parameters must be defined."
 #endif
+
+typedef $Base $Self;
 
 typedef struct $2($Self,Cache) {
     $2($Object,Cache) inner;
@@ -31,7 +34,7 @@ real $2($self,_detect)(
     $2($Object,Cache) min_cache;
     Hasher min_hasher;
     for (usize index = 0; index < self->size; ++index) {
-        __global const $Object *object = $2($self_data,__element__gc)(self, index);
+        __global const $Object *object = $2($base,__element__gc)(self, index);
         $2(Light,$Geo) cur_light = *light;
         $2($Object,Cache) cur_cache;
         hash_usize(&context->hasher, index);
@@ -64,6 +67,6 @@ bool $2($self,_interact)(
     $2(Light,$Geo) *light,
     color3 *emission
 ) {
-    __global const $Object *object = $2($self_data,__element__gc)(self, cache->index);
+    __global const $Object *object = $2($base,__element__gc)(self, cache->index);
     return $2($object,_interact)(object, context, &cache->inner, light, emission);
 }

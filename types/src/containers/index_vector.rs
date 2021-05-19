@@ -13,12 +13,11 @@ pub struct IndexVector<T: Entity> {
 }
 
 impl<T: Entity> EntityId for IndexVector<T> {
-    fn name() -> String {
-        format!("IndexVector_{}", T::name())
-    }
-
-    fn data_prefix() -> String {
-        format!("index_vector_{}", T::data_prefix())
+    fn name() -> (String, String) {
+        (
+            format!("IndexVector_{}", T::name().0),
+            format!("index_vector_{}", T::name().1),
+        )
     }
 }
 
@@ -58,7 +57,7 @@ impl<T: Entity> Entity for IndexVector<T> {
     fn size(&self, cfg: &Config) -> usize {
         math::upper_multiple(
             math::upper_multiple(
-                usize::type_size(cfg) * (1 + self.items().len()),
+                usize::static_size(cfg) * (1 + self.items().len()),
                 T::align(cfg),
             ) + self.items().iter().fold(0, |st, item| st + item.size(cfg)),
             Self::align(cfg),
@@ -66,7 +65,7 @@ impl<T: Entity> Entity for IndexVector<T> {
     }
 
     fn min_size(cfg: &Config) -> usize {
-        math::upper_multiple(usize::type_size(cfg), T::align(cfg))
+        math::upper_multiple(usize::static_size(cfg), T::align(cfg))
     }
 
     fn is_dyn_sized() -> bool {
@@ -119,15 +118,13 @@ impl<T: Entity> Entity for IndexVector<T> {
 }
 
 impl<T: Entity> EntitySource for IndexVector<T> {
-    fn data_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/index_vector_{}.hh", Self::tag()))
-            .tree(T::data_source(cfg))
+    fn source(cfg: &Config) -> SourceTree {
+        SourceBuilder::new(format!("generated/{}.hh", Self::name().1))
+            .tree(T::source(cfg))
             .content(&include_template!(
                 "container/index_vector.inl",
-                "Self": &Self::name(),
-                "self": &Self::data_prefix(),
-                "Elem": &T::name(),
-                "elem": &T::data_prefix(),
+                ("Self", "self") => Self::name(),
+                ("Elem", "elem") => T::name(),
             ))
             .build()
     }

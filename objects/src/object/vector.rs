@@ -10,27 +10,27 @@ impl<G: Geometry, T: Object<G>> Object<G> for Vec<T>
 where
     Self: Entity,
 {
-    fn object_prefix() -> String {
-        format!("object_{}", Self::data_prefix())
+    fn object_name() -> (String, String) {
+        (
+            format!("Object{}", Self::name().0),
+            format!("object_{}", Self::name().1),
+        )
     }
     fn object_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/{}.hh", Self::object_prefix()))
-            .tree(Self::data_source(cfg))
+        SourceBuilder::new(format!("generated/{}.hh", Self::object_name().1))
+            .tree(Self::source(cfg))
             .tree(G::geometry_source(cfg))
             .tree(T::object_source(cfg))
             .content(&include(&format!(
                 "render/light/{}.hh",
-                G::geometry_prefix()
+                G::geometry_name().1,
             )))
             .content(&include_template!(
                 "object/vector.inl",
-                "Self": &Self::name(),
-                "self": &Self::object_prefix(),
-                "self_data": &Self::data_prefix(),
-                "Geo": &G::name(),
-                "geo": &G::geometry_prefix(),
-                "Object": &T::name(),
-                "object": &T::object_prefix(),
+                ("Self", "self") => Self::object_name(),
+                ("Base", "base") => Self::name(),
+                ("Geo", "geo") => G::geometry_name(),
+                ("Object", "object") => T::object_name(),
             ))
             .build()
     }

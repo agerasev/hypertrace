@@ -27,5 +27,5 @@ pub use primitive::*;
 pub use ray::*;
 
 pub mod prelude {
-    pub use crate::{Entity, Geometry, EntityId, SizedEntity, EntitySource};
+    pub use crate::{Entity, Geometry, EntityId, SizedEntity, EntitySource, Config, source::{SourceTree, SourceBuilder}};
 }

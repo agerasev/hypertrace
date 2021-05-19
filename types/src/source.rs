@@ -140,13 +140,27 @@ pub fn include_template<P: AsRef<Path>>(path: P, map: &BTreeMap<String, String>)
     }
     lines.join("")
 }
+pub fn type_alias(dst: &str, src: &str) -> String {
+    format!("typedef {} {};\n", src, dst)
+}
 
 #[macro_export]
-macro_rules! include_template {
-    ($path:expr, $($name:literal: $value:expr),* $(,)?) => {
-        $crate::source::include_template(
-            $path,
-            &vec![$((String::from($name), String::from($value))),*].into_iter().collect(),
-        )
+macro_rules! _include_template_unwind {
+    ($map:ident, $name:literal => $value:expr) => {
+        assert!($map.insert(String::from($name), $value).is_none());
     };
+    ($map:ident, ($type_name:literal, $prefix:literal) => $value:expr) => {
+        assert!($map.insert(String::from($type_name), $value.0).is_none());
+        assert!($map.insert(String::from($prefix), $value.1).is_none());
+    };
+}
+#[macro_export]
+macro_rules! include_template {
+    ($path:expr, $($key:tt => $value:expr),* $(,)?) => {{
+        let mut args = std::collections::BTreeMap::new();
+        $(
+            $crate::_include_template_unwind!(args, $key => $value);
+        )*
+        $crate::source::include_template($path, &args)
+    }};
 }

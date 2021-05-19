@@ -22,29 +22,31 @@ impl ConstBg {
 }
 
 impl EntitySource for ConstBg {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("background/constant.hh")
     }
 }
 
 impl<G: Geometry> Background<G> for ConstBg {
-    fn background_prefix() -> String {
-        format!("const_bg_{}", G::geometry_prefix())
+    fn background_name() -> (String, String) {
+        (
+            format!("ConstBg{}", G::geometry_name().0),
+            format!("const_bg_{}", G::geometry_name().1),
+        )
     }
     fn background_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!(
             "generated/const_bg_{}.hh",
-            &G::geometry_prefix()
+            &G::geometry_name().1,
         ))
         .tree(G::geometry_source(cfg))
         .content(&include(&format!(
             "render/light/{}.hh",
-            &G::geometry_prefix()
+            &G::geometry_name().1,
         )))
         .content(&include_template!(
             "background/constant.inl",
-            "Geo": &G::name(),
-            "geo": &G::geometry_prefix(),
+            ("Geo", "geo") => G::geometry_name(),
         ))
         .build()
     }
@@ -70,7 +72,7 @@ impl GradBg {
 }
 
 impl EntitySource for GradBg {
-    fn data_source(_: &Config) -> SourceTree {
+    fn source(_: &Config) -> SourceTree {
         SourceTree::new("background/gradient.hh")
     }
 }

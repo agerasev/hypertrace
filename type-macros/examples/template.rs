@@ -11,7 +11,7 @@ struct A<T: Copy + 'static, U: Copy + 'static, V: 'static> {
 }
 
 fn main() {
-    for (key, value) in A::<i32, u8, usize>::data_source(&HOST_CONFIG).into_iter() {
+    for (key, value) in A::<i32, u8, usize>::source(&HOST_CONFIG).into_iter() {
         println!("'{}':\n{}\n", key, value);
     }
 }

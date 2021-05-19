@@ -9,11 +9,11 @@ use types::{
 };
 
 pub trait Scene<G: Geometry>: EntityId + Entity + EntitySource {
-    fn scene_prefix() -> String {
-        Self::data_prefix()
+    fn scene_name() -> (String, String) {
+        Self::name()
     }
     fn scene_source(cfg: &Config) -> SourceTree {
-        Self::data_source(cfg)
+        Self::source(cfg)
     }
 }
 
@@ -47,25 +47,20 @@ where
     Self: Entity,
 {
     fn scene_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/scene_{}.hh", Self::tag()))
-            .tree(Self::data_source(cfg))
+        SourceBuilder::new(format!("generated/{}.hh", Self::scene_name().1))
+            .tree(Self::source(cfg))
             .tree(G::geometry_source(cfg))
             .tree(V::view_source(cfg))
             .tree(T::object_source(cfg))
             .tree(B::background_source(cfg))
             .content(&include_template!(
                 "render/scene.inl",
-                "Self": Self::name(),
-                "self": Self::scene_prefix(),
-                "Geo": G::name(),
-                "geo": G::geometry_prefix(),
-                "View": V::name(),
-                "view": V::view_prefix(),
-                "Object": T::name(),
-                "object": T::object_prefix(),
-                "Background": B::name(),
-                "background": B::background_prefix(),
-                "light_hops": format!("{}", H),
+                ("Self", "self") => Self::scene_name(),
+                ("Geo", "geo") => G::geometry_name(),
+                ("View", "view") => V::view_name(),
+                ("Object", "object") => T::object_name(),
+                ("Background", "background") => B::background_name(),
+                "light_hops" => format!("{}", H),
             ))
             .build()
     }

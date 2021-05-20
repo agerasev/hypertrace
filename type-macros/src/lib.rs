@@ -6,7 +6,7 @@ mod utils;
 use crate::{
     entity::{
         make_align, make_is_dyn_sized, make_load, make_min_size, make_size, make_store,
-        make_type_size,
+        make_static_size,
     },
     generic::{make_params, make_where_clause},
     source::make_source,
@@ -104,7 +104,7 @@ pub fn derive_sized_entity(stream: TokenStream) -> TokenStream {
     let input = parse_macro_input!(stream as DeriveInput);
 
     let ty = &input.ident;
-    let static_size = make_type_size(&input);
+    let static_size = make_static_size(&input);
     let (params, bindings) = make_params(&input);
     let mut where_clause = make_where_clause(&input, quote! { types::SizedEntity }, None);
     if !where_clause.is_empty() {

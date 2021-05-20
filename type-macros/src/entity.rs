@@ -1,10 +1,10 @@
-use crate::utils::{fields_iter, make_bindings};
+use crate::utils::{fields_iter, FieldsIter, make_bindings};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use std::iter::Iterator;
 use syn::{self, Data, DeriveInput, Fields, Index};
 
-fn make_align_fields(fields: &Fields) -> TokenStream2 {
+fn make_align_fields<FI: FieldsIter>(fields: &FI) -> TokenStream2 {
     fields_iter(fields).fold(quote! { 1usize }, |accum, field| {
         let ty = &field.ty;
         quote! { types::math::lcm(#accum, <#ty as types::Entity>::align(cfg)) }
@@ -14,6 +14,7 @@ fn make_align_fields(fields: &Fields) -> TokenStream2 {
 pub fn make_align(input: &DeriveInput) -> TokenStream2 {
     match &input.data {
         Data::Struct(struct_data) => make_align_fields(&struct_data.fields),
+        Data::Union(union_data) => make_align_fields(&union_data.fields),
         Data::Enum(enum_data) => {
             enum_data
                 .variants
@@ -23,11 +24,10 @@ pub fn make_align(input: &DeriveInput) -> TokenStream2 {
                     quote! { types::math::lcm(#accum, #variant_align) }
                 })
         }
-        Data::Union(_) => panic!("Union derive is not supported yet"),
     }
 }
 
-fn make_size_fields(fields: &Fields, prefix: TokenStream2, init: TokenStream2) -> TokenStream2 {
+fn make_size_fields<FI: FieldsIter>(fields: &FI, prefix: TokenStream2, init: TokenStream2, fold_fn: TokenStream2) -> TokenStream2 {
     fields_iter(fields)
         .enumerate()
         .fold(init, |accum, (index, field)| {
@@ -41,8 +41,11 @@ fn make_size_fields(fields: &Fields, prefix: TokenStream2, init: TokenStream2) -
                 None => quote! { #tuple_index },
             };
             quote! {
-                types::math::upper_multiple(#accum, <#ty as types::Entity>::align(cfg)) +
-                    <#ty as types::Entity>::size(#prefix #field_name, cfg)
+                #fold_fn(
+                    #accum,
+                    <#ty as types::Entity>::size(#prefix #field_name, cfg),
+                    <#ty as types::Entity>::align(cfg),
+                )   
             }
         })
 }
@@ -51,8 +54,20 @@ pub fn make_size(input: &DeriveInput) -> TokenStream2 {
     let ty = &input.ident;
     let unaligned_size = match &input.data {
         Data::Struct(struct_data) => {
-            make_size_fields(&struct_data.fields, quote! { &self. }, quote! { 0usize })
+            make_size_fields(
+                &struct_data.fields,
+                quote! { &self. },
+                quote! { 0usize },
+                quote! { types::math::aligned_add },
+            )
         }
+        Data::Union(_) => quote! {
+            if !<Self as types::Entity>::is_dyn_sized() {
+                <Self as types::Entity>::min_size(cfg)
+            } else {
+                panic!("Size of dynamically-sized unions cannot be found directly")
+            }
+        },
         Data::Enum(enum_data) => {
             let matches = enum_data.variants.iter().fold(quote! {}, |accum, variant| {
                 let var = &variant.ident;
@@ -65,6 +80,7 @@ pub fn make_size(input: &DeriveInput) -> TokenStream2 {
                         <usize as types::SizedEntity>::static_size(cfg),
                         <Self as types::Entity>::align(cfg),
                     ) },
+                    quote!{ types::math::aligned_add },
                 );
                 quote! {
                     #accum
@@ -80,7 +96,6 @@ pub fn make_size(input: &DeriveInput) -> TokenStream2 {
                 }
             }
         }
-        Data::Union(_) => panic!("Union derive is not supported yet"),
     };
     quote! { types::math::upper_multiple(
         #unaligned_size,
@@ -88,7 +103,7 @@ pub fn make_size(input: &DeriveInput) -> TokenStream2 {
     ) }
 }
 
-fn make_min_size_fields(fields: &Fields, init: TokenStream2) -> TokenStream2 {
+fn make_min_size_fields<FI: FieldsIter>(fields: &FI, init: TokenStream2, fold_fn: TokenStream2) -> TokenStream2 {
     let iter = fields_iter(fields);
     let len = iter.len();
     iter.enumerate().fold(init, |accum, (index, field)| {
@@ -99,56 +114,67 @@ fn make_min_size_fields(fields: &Fields, init: TokenStream2) -> TokenStream2 {
             quote! { <#ty as types::Entity>::min_size(cfg) }
         };
         quote! {
-            types::math::upper_multiple(#accum, <#ty as types::Entity>::align(cfg)) + #size
+            #fold_fn(#accum, #size, <#ty as types::Entity>::align(cfg))
         }
     })
 }
 
-fn make_type_size_fields(fields: &Fields, init: TokenStream2) -> TokenStream2 {
+fn make_static_size_fields<FI: FieldsIter>(fields: &FI, init: TokenStream2, fold_fn: TokenStream2) -> TokenStream2 {
     fields_iter(fields).fold(init, |accum, field| {
         let ty = &field.ty;
         quote! {
-            types::math::upper_multiple(#accum, <#ty as types::Entity>::align(cfg)) +
-                <#ty as types::SizedEntity>::static_size(cfg)
+            #fold_fn(
+                #accum,
+                <#ty as types::SizedEntity>::static_size(cfg),
+                <#ty as types::Entity>::align(cfg),
+            )
         }
     })
 }
 
-pub fn make_static_size<F: Fn(&Fields, TokenStream2) -> TokenStream2>(
-    input: &DeriveInput,
-    make_static_size_field: F,
-) -> TokenStream2 {
-    let unaligned_type_size = match &input.data {
-        Data::Struct(struct_data) => make_static_size_field(&struct_data.fields, quote! { 0usize }),
-        Data::Enum(enum_data) => {
-            enum_data
-                .variants
-                .iter()
-                .fold(quote! { 0usize }, |accum, variant| {
-                    let variant_type_size = make_static_size_field(
-                        &variant.fields,
-                        quote! { <usize as types::SizedEntity>::static_size(cfg) },
-                    );
-                    quote! { std::cmp::max(#accum, #variant_type_size) }
-                })
-        }
-        Data::Union(_) => panic!("Union derive is not supported yet"),
-    };
-    quote! { types::math::upper_multiple(
-        #unaligned_type_size,
-        <Self as types::Entity>::align(cfg),
-    ) }
+macro_rules! make_type_size {
+    ($input:expr, $make_type_size_fields:ident) => {{
+        let unaligned_type_size = match &$input.data {
+            Data::Struct(struct_data) => $make_type_size_fields(
+                &struct_data.fields,
+                quote! { 0usize },
+                quote! { types::math::aligned_add },
+            ),
+            Data::Union(union_data) => $make_type_size_fields(
+                &union_data.fields,
+                quote! { 0usize },
+                quote! { types::math::aligned_max },
+            ),
+            Data::Enum(enum_data) => {
+                enum_data
+                    .variants
+                    .iter()
+                    .fold(quote! { 0usize }, |accum, variant| {
+                        let variant_type_size = $make_type_size_fields(
+                            &variant.fields,
+                            quote! { <usize as types::SizedEntity>::static_size(cfg) },
+                            quote! { types::math::aligned_add },
+                        );
+                        quote! { std::cmp::max(#accum, #variant_type_size) }
+                    })
+            },
+        };
+        quote! { types::math::upper_multiple(
+            #unaligned_type_size,
+            <Self as types::Entity>::align(cfg),
+        ) }
+    }};
 }
 
 pub fn make_min_size(input: &DeriveInput) -> TokenStream2 {
-    make_static_size(input, make_min_size_fields)
+    make_type_size!(input, make_min_size_fields)
 }
 
-pub fn make_type_size(input: &DeriveInput) -> TokenStream2 {
-    make_static_size(input, make_type_size_fields)
+pub fn make_static_size(input: &DeriveInput) -> TokenStream2 {
+    make_type_size!(input, make_static_size_fields)
 }
 
-fn make_is_dyn_sized_fields(fields: &Fields) -> TokenStream2 {
+fn make_is_dyn_sized_fields<FI: FieldsIter>(fields: &FI) -> TokenStream2 {
     fields_iter(fields)
         .last()
         .map(|field| {
@@ -161,6 +187,7 @@ fn make_is_dyn_sized_fields(fields: &Fields) -> TokenStream2 {
 pub fn make_is_dyn_sized(input: &DeriveInput) -> TokenStream2 {
     match &input.data {
         Data::Struct(struct_data) => make_is_dyn_sized_fields(&struct_data.fields),
+        Data::Union(union_data) => make_is_dyn_sized_fields(&union_data.fields),
         Data::Enum(enum_data) => {
             enum_data
                 .variants
@@ -170,7 +197,6 @@ pub fn make_is_dyn_sized(input: &DeriveInput) -> TokenStream2 {
                     quote! { #accum || #variant_is_dyn_sized }
                 })
         }
-        Data::Union(_) => panic!("Union derive is not supported yet"),
     }
 }
 
@@ -229,7 +255,9 @@ pub fn make_load(input: &DeriveInput) -> TokenStream2 {
                 }
             }
         }
-        Data::Union(_) => panic!("Union derive is not supported yet"),
+        Data::Union(_) => return quote!{
+            Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unions cannot be loaded directly"))
+        },
     };
     quote! {
         let self_ = { #unaligned_load };
@@ -294,7 +322,9 @@ pub fn make_store(input: &DeriveInput) -> TokenStream2 {
                     }
                 }
             }
-            Data::Union(_) => panic!("Union derive is not supported yet"),
+            Data::Union(_) => return quote!{
+                Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unions cannot be stored directly"))
+            },
         };
     quote! {
         #unaligned_store

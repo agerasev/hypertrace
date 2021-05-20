@@ -1,15 +1,15 @@
-use crate::utils::fields_iter;
+use crate::utils::FieldsIter;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, ToTokens};
 use std::iter::Iterator;
-use syn::{self, Data, DeriveInput, Fields, GenericParam};
+use syn::{self, Data, DeriveInput, GenericParam};
 
-fn make_where_clause_fields(
-    fields: &Fields,
+fn make_where_clause_fields<FI: FieldsIter>(
+    fields: &FI,
     bound: &TokenStream2,
     last_bound: Option<&TokenStream2>,
 ) -> TokenStream2 {
-    let iter = fields_iter(fields);
+    let iter = fields.fields_iter();
     let len = iter.len();
     iter.enumerate().fold(quote! {}, |accum, (index, field)| {
         let ty = &field.ty;
@@ -33,7 +33,7 @@ pub fn make_where_clause(
     match &input.data {
         Data::Struct(struct_data) => {
             make_where_clause_fields(&struct_data.fields, &bound, last_bound.as_ref())
-        }
+        },
         Data::Enum(enum_data) => enum_data.variants.iter().fold(quote! {}, |accum, variant| {
             let variant_clause =
                 make_where_clause_fields(&variant.fields, &bound, last_bound.as_ref());
@@ -42,7 +42,9 @@ pub fn make_where_clause(
                 #variant_clause
             }
         }),
-        Data::Union(_) => panic!("Union derive is not supported yet"),
+        Data::Union(union_data) => {
+            make_where_clause_fields(&union_data.fields, &bound, last_bound.as_ref())
+        },
     }
 }
 

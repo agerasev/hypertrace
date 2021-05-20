@@ -1,14 +1,36 @@
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use std::iter::{self, ExactSizeIterator};
-use syn::{self, Field, Fields, Ident};
+use syn::{self, Field, Fields, FieldsNamed, FieldsUnnamed, Ident};
 
-pub fn fields_iter<'a>(fields: &'a Fields) -> Box<dyn ExactSizeIterator<Item = &'a Field> + 'a> {
-    match fields {
-        Fields::Named(named_fields) => Box::new(named_fields.named.iter()),
-        Fields::Unnamed(unnamed_fields) => Box::new(unnamed_fields.unnamed.iter()),
-        Fields::Unit => Box::new(iter::empty()),
+pub type FieldsIterator<'a> = Box<dyn ExactSizeIterator<Item = &'a Field> + 'a>;
+
+pub trait FieldsIter {
+    fn fields_iter(&self) -> FieldsIterator<'_>;
+}
+
+impl FieldsIter for Fields {
+    fn fields_iter(&self) -> FieldsIterator<'_> {
+        match self {
+            Fields::Named(named_fields) => named_fields.fields_iter(),
+            Fields::Unnamed(unnamed_fields) => unnamed_fields.fields_iter(),
+            Fields::Unit => Box::new(iter::empty()),
+        }
     }
+}
+impl FieldsIter for FieldsNamed {
+    fn fields_iter(&self) -> FieldsIterator<'_> {
+        Box::new(self.named.iter())
+    }
+}
+impl FieldsIter for FieldsUnnamed {
+    fn fields_iter(&self) -> FieldsIterator<'_> {
+        Box::new(self.unnamed.iter())
+    }
+}
+
+pub fn fields_iter<FI: FieldsIter>(fields: &FI) -> FieldsIterator<'_> {
+    fields.fields_iter()
 }
 
 pub struct Bindings {

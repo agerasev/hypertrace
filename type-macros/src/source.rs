@@ -1,8 +1,8 @@
-use crate::utils::fields_iter;
+use crate::utils::{FieldsIter, fields_iter};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use std::iter::Iterator;
-use syn::{self, Attribute, Data, DeriveInput, Fields};
+use syn::{self, Attribute, Data, DeriveInput};
 
 fn getter_required(attrs: &[Attribute]) -> bool {
     attrs
@@ -11,7 +11,7 @@ fn getter_required(attrs: &[Attribute]) -> bool {
         .any(|i| i == "getter")
 }
 
-fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2) -> TokenStream2 {
+fn make_source_fields<FI: FieldsIter>(fields: &FI, storage: TokenStream2, name: TokenStream2, prefix: TokenStream2) -> TokenStream2 {
     let fields_list = fields_iter(fields).collect::<Vec<_>>();
     if !fields_list.is_empty() {
         let field_count = fields_list.len();
@@ -75,7 +75,7 @@ fn make_source_fields(fields: &Fields, name: TokenStream2, prefix: TokenStream2)
         quote! {
             let mut size = 0;
             let mut align = 0;
-            text += &format!("typedef struct {} {{\n", &#name);
+            text += &format!("typedef {} {} {{\n", &#storage, &#name);
             #content
             text += &format!("}} {};\n", &#name);
         }
@@ -90,6 +90,13 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
     let content = match &input.data {
         Data::Struct(struct_data) => make_source_fields(
             &struct_data.fields,
+            quote! { "struct "},
+            quote! { type_name },
+            quote! { type_prefix },
+        ),
+        Data::Union(union_data) => make_source_fields(
+            &union_data.fields,
+            quote! { "union "},
             quote! { type_name },
             quote! { type_prefix },
         ),
@@ -98,6 +105,7 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
             let enums = variant_iter.enumerate().fold(quote!{}, |accum, (index, variant)| {
                 let enum_source = make_source_fields(
                     &variant.fields,
+                    quote! { "struct "},
                     quote!{ enum_name },
                     quote!{ enum_prefix },
                 );
@@ -165,7 +173,6 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
                 ].join("");
             }
         }
-        Data::Union(_) => panic!("Union derive is not supported yet"),
     };
     quote! {
         let type_name = <Self as types::EntityId>::name().0;

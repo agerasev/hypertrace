@@ -8,6 +8,14 @@ pub fn upper_multiple(x: usize, m: usize) -> usize {
     m * div_floor(x + m - 1, m)
 }
 
+pub fn aligned_add(a: usize, b: usize, m: usize) -> usize {
+    upper_multiple(a, m) + b
+}
+
+pub fn aligned_max(a: usize, b: usize, m: usize) -> usize {
+    upper_multiple(max(a, b), m)
+}
+
 pub fn ceil_pow2(mut n: usize) -> usize {
     n -= 1;
     let mut p = 1;

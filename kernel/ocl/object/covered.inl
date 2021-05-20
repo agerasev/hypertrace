@@ -16,6 +16,8 @@ typedef struct $2($Self,Cache) {
     $2($Geo,Dir) normal;
 } $2($Self,Cache);
 
+#include "interface.inl"
+
 _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(
     __global const $Self *self,

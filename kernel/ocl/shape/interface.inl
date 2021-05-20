@@ -1,6 +1,5 @@
 #include <macros.hh>
 #include <render/context.hh>
-#include <hash.hh>
 
 #if \
     !defined($Self)  || !defined($self) || \

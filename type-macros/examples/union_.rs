@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use hypertrace_type_macros::{Entity, EntityId, SizedEntity, EntitySource};
 use types::{config::HOST_CONFIG, EntitySource};
 

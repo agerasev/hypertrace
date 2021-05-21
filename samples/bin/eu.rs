@@ -7,7 +7,7 @@ use objs::{
     view::PointView,
     Mapped,
     SceneImpl,
-    object_choice,
+    shape_choice,
 };
 use proc::{filter::GammaFilter, Context, Pipeline};
 use std::{
@@ -25,10 +25,10 @@ use vecmat::{
 use view::{controllers::IsotropicController, Controller, Window, PollStatus};
 use lib::cli::{OclApp, get_ocl_context};
 
-object_choice! {
-    Choice(ChoiceCache) {
-        Sphere(Covered<Euclidean3, Mapped<Euclidean3, Sphere, Shift<f64, 3>>, Colored<Lambertian>>),
-        Cube(Covered<Euclidean3, Mapped<Euclidean3, Cube, Shift<f64, 3>>, Colored<Lambertian>>),
+shape_choice! {
+    Choice {
+        Sphere(Sphere),
+        Cube(Cube),
     }
 }
 
@@ -55,21 +55,21 @@ fn main() -> proc::Result<()> {
     let size = (800, 600);
 
     let view = Mapped::new(PointView::new(1.0), Homogenous3::identity());
-    let objects: Vec<Choice> = vec![
+    let objects = vec![
         Covered::new(
             Mapped::new(
-                Sphere::default(),
+                Choice::from(Sphere::default()),
                 Shift::from_vector([0.0, 1.0, 0.0].into()),
             ),
             Colored::new(Lambertian, [0.8, 0.2, 0.2].into()),
-        ).into(),
+        ),
         Covered::new(
             Mapped::new(
-                Cube::default(),
+                Choice::from(Cube::default()),
                 Shift::from_vector([0.0, -1.0, 0.0].into()),
             ),
             Colored::new(Lambertian, [0.2, 0.2, 0.8].into()),
-        ).into(),
+        ),
     ];
     let background = GradBg::new(
         [0.0, 1.0, 0.0].into(),

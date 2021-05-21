@@ -53,7 +53,7 @@ real cube_eu_detect(__global const Cube *shape, Context *context, real3 *normal,
     real w = 2 * EPS * (2 * repeat - 1);
     if (dist < w) {
         dist = dist_out;
-        norm = norm_out;
+        norm = -norm_out;
         if (dist < w) {
             return -R1;
         }

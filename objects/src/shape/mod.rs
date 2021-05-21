@@ -1,5 +1,6 @@
 mod mapped;
 mod vector;
+mod choice;
 
 mod cube;
 mod horosphere;

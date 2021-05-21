@@ -1,6 +1,6 @@
 use crate::utils::FieldsIter;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{quote, ToTokens};
+use quote::quote;
 use std::iter::Iterator;
 use syn::{self, Data, DeriveInput, GenericParam};
 
@@ -30,7 +30,7 @@ pub fn make_where_clause(
     bound: TokenStream2,
     last_bound: Option<TokenStream2>,
 ) -> TokenStream2 {
-    match &input.data {
+    let generated = match &input.data {
         Data::Struct(struct_data) => {
             make_where_clause_fields(&struct_data.fields, &bound, last_bound.as_ref())
         },
@@ -45,12 +45,16 @@ pub fn make_where_clause(
         Data::Union(union_data) => {
             make_where_clause_fields(&union_data.fields, &bound, last_bound.as_ref())
         },
-    }
+    };
+    let existing = input.generics.where_clause.as_ref().map_or(quote!{}, |w| {
+        let wp = &w.predicates;
+        let comma = if wp.trailing_punct() { quote!{} } else { quote!{,} };
+        quote! { #wp #comma }
+    });
+    quote!{ #existing #generated }
 }
 
 pub fn make_params(input: &DeriveInput) -> (TokenStream2, TokenStream2) {
-    assert!(input.generics.where_clause.is_none());
-
     let params = input
         .generics
         .params
@@ -67,5 +71,6 @@ pub fn make_params(input: &DeriveInput) -> (TokenStream2, TokenStream2) {
             }
         });
 
-    (params, input.generics.params.to_token_stream())
+    let generated = &input.generics.params;
+    (params, quote! { #generated })
 }

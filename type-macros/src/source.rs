@@ -102,28 +102,28 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
         ),
         Data::Enum(enum_data) => {
             let variant_iter = enum_data.variants.iter();
-            let enums = variant_iter.enumerate().fold(quote!{}, |accum, (index, variant)| {
+            let enums = variant_iter.fold(quote!{}, |accum, variant| {
                 let enum_source = make_source_fields(
                     &variant.fields,
                     quote! { "struct "},
                     quote!{ enum_name },
                     quote!{ enum_prefix },
                 );
-
+                let ident = variant.ident.to_string();
                 let getter = if getter_required(&variant.attrs) {
                     quote!{
                         for (ns, nsp) in &namespaces {
                             getter_text += &format!(
-                                "{ns}{} *{}__variant_{}{nsp}({ns}{} *self) {{\n",
+                                "{ns}{} *{}__{}{nsp}({ns}{} *self) {{\n",
                                 &enum_name,
                                 &type_prefix,
-                                #index,
+                                #ident,
                                 &type_name,
                                 ns = ns,
                                 nsp = nsp,
                             );
                             if size > 0 {
-                                getter_text += &format!("    return &self->variant_{};\n", #index);
+                                getter_text += &format!("    return &self->{};\n", #ident);
                             } else {
                                 getter_text += "    return NULL;\n";
                             }
@@ -137,15 +137,15 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
                 quote!{
                     #accum
                     {
-                        let enum_name = format!("{}__Variant{}", type_name, #index);
-                        let enum_prefix = format!("{}__variant_{}", type_prefix, #index);
+                        let enum_name = format!("{}__{}", type_name, #ident);
+                        let enum_prefix = format!("{}__{}", type_prefix, #ident);
                         let mut size = 0;
                         let mut align = 1;
                         #enum_source
                         enum_size = std::cmp::max(enum_size, size);
                         enum_align = types::math::lcm(enum_align, align);
                         if size > 0 {
-                            enum_text += &format!("        {} variant_{};\n", enum_name, #index);
+                            enum_text += &format!("        {} {};\n", enum_name, #ident);
                         }
 
                         #getter

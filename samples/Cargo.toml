@@ -21,6 +21,7 @@ clap = "2.33"
 sdl2 = "0.34"
 ocl = "0.19"
 types = { package = "hypertrace-types", path = "../types" }
+type_macros = { package = "hypertrace-type-macros", path = "../type-macros" }
 view = { package = "hypertrace-viewer", path = "../viewer" }
 objs = { package = "hypertrace-objects", path = "../objects" }
 proc = { package = "hypertrace-processing", path = "../processing", features = ["backend_ocl"] }

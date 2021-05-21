@@ -35,8 +35,17 @@ pub fn derive_named(stream: TokenStream) -> TokenStream {
         )
     };
 
+    let mut where_clause = make_where_clause(
+        &input,
+        quote! { types::EntityId },
+        None,
+    );
+    if !where_clause.is_empty() {
+        where_clause = quote! { where #where_clause };
+    }
+
     TokenStream::from(quote! {
-        impl<#bindings> types::EntityId for #ty<#params> {
+        impl<#bindings> types::EntityId for #ty<#params> #where_clause {
             fn name() -> (String, String) {
                 (
                     format!("{}{}", #name, #tag),

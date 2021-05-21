@@ -8,7 +8,7 @@ use types::{
 };
 
 #[derive(Clone, Copy, Debug, EntityId, Entity, SizedEntity, EntitySource)]
-pub struct Cache<T: SizedEntity> {
+pub struct ObjectVectorCache<T: SizedEntity> {
     pub index: usize,
     pub inner: T,
 }
@@ -17,7 +17,7 @@ impl<G: Geometry, T: Object<G>> Object<G> for Vec<T>
 where
     Self: Entity,
 {
-    type Cache = Cache<T::Cache>;
+    type Cache = ObjectVectorCache<T::Cache>;
 
     fn object_name() -> (String, String) {
         (

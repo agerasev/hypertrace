@@ -3,10 +3,11 @@ use objs::{
     background::GradBg,
     material::{Colored, Lambertian},
     object::Covered,
-    shape::Sphere,
+    shape::{Sphere, Cube},
     view::PointView,
     Mapped,
     SceneImpl,
+    object_choice,
 };
 use proc::{filter::GammaFilter, Context, Pipeline};
 use std::{
@@ -23,6 +24,13 @@ use vecmat::{
 };
 use view::{controllers::IsotropicController, Controller, Window, PollStatus};
 use lib::cli::{OclApp, get_ocl_context};
+
+object_choice! {
+    Choice(ChoiceCache) {
+        Sphere(Covered<Euclidean3, Mapped<Euclidean3, Sphere, Shift<f64, 3>>, Colored<Lambertian>>),
+        Cube(Covered<Euclidean3, Mapped<Euclidean3, Cube, Shift<f64, 3>>, Colored<Lambertian>>),
+    }
+}
 
 fn main() -> proc::Result<()> {
     let matches = clap::App::new("Sample")
@@ -47,21 +55,21 @@ fn main() -> proc::Result<()> {
     let size = (800, 600);
 
     let view = Mapped::new(PointView::new(1.0), Homogenous3::identity());
-    let objects = vec![
+    let objects: Vec<Choice> = vec![
         Covered::new(
             Mapped::new(
                 Sphere::default(),
-                Shift::from_vector([1.0, 0.0, 0.0].into()),
+                Shift::from_vector([0.0, 1.0, 0.0].into()),
             ),
             Colored::new(Lambertian, [0.8, 0.2, 0.2].into()),
-        ),
+        ).into(),
         Covered::new(
             Mapped::new(
-                Sphere::default(),
-                Shift::from_vector([-1.0, 0.0, 0.0].into()),
+                Cube::default(),
+                Shift::from_vector([0.0, -1.0, 0.0].into()),
             ),
             Colored::new(Lambertian, [0.2, 0.2, 0.8].into()),
-        ),
+        ).into(),
     ];
     let background = GradBg::new(
         [0.0, 1.0, 0.0].into(),
@@ -77,7 +85,7 @@ fn main() -> proc::Result<()> {
 
     let mut controller = IsotropicController::<Euclidean3>::new(
         Homogenous3::new(
-            Shift::from(Vector::from([0.0, 0.0, 2.0])),
+            Shift::from(Vector::from([0.0, 0.5, 2.0])),
             Rotation3::identity(),
         ),
         1.0,

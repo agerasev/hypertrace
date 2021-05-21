@@ -18,7 +18,7 @@ pub struct Covered<G: Geometry, S: Shape<G>, M: Material> {
 }
 
 #[derive(Clone, Copy, Debug, EntityId, Entity, SizedEntity, EntitySource)]
-pub struct Cache<G: Geometry> {
+pub struct CoveredCache<G: Geometry> {
     pub normal: G::Dir,
 }
 
@@ -36,7 +36,7 @@ impl<G: Geometry, S: Shape<G>, M: Material> Object<G> for Covered<G, S, M>
 where
     Self: Entity,
 {
-    type Cache = Cache<G>;
+    type Cache = CoveredCache<G>;
 
     fn object_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/{}.hh", Self::object_name().1))

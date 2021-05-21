@@ -4,6 +4,8 @@ mod vector;
 use types::{prelude::*, source::SourceTree, Config};
 
 pub trait Object<G: Geometry>: Entity {
+    type Cache: SizedEntity;
+
     fn object_name() -> (String, String) {
         Self::name()
     }
@@ -12,5 +14,4 @@ pub trait Object<G: Geometry>: Entity {
     }
 }
 
-pub use covered::*;
-pub use vector::*;
+pub use covered::Covered;

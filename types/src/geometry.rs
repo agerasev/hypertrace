@@ -1,7 +1,11 @@
-use crate::{source::SourceTree, Config, EntityId, EntitySource};
+use crate::{source::SourceTree, Config, EntityId, EntitySource, SizedEntity, Map};
 use ccgeom::{Euclidean3, Hyperbolic3};
 
-pub trait Geometry: ccgeom::Geometry + EntitySource {
+pub trait Geometry: EntitySource {
+    type Pos: SizedEntity;
+    type Dir: SizedEntity;
+    type Map: Map<Self::Pos, Self::Dir> + SizedEntity;
+
     fn geometry_name() -> (String, String);
     fn geometry_source(cfg: &Config) -> SourceTree;
 }
@@ -20,15 +24,6 @@ impl EntitySource for Euclidean3 {
     }
 }
 
-impl Geometry for Euclidean3 {
-    fn geometry_name() -> (String, String) {
-        Self::name()
-    }
-    fn geometry_source(cfg: &Config) -> SourceTree {
-        Self::source(cfg)
-    }
-}
-
 // Hyperbolic
 
 impl EntityId for Hyperbolic3 {
@@ -43,7 +38,13 @@ impl EntitySource for Hyperbolic3 {
     }
 }
 
-impl Geometry for Hyperbolic3 {
+// Geometry
+
+impl<G: ccgeom::Geometry> Geometry for G where Self: EntitySource, G::Pos: SizedEntity, G::Dir: SizedEntity, G::Map: SizedEntity {
+    type Pos = G::Pos;
+    type Dir = G::Dir;
+    type Map = G::Map;
+
     fn geometry_name() -> (String, String) {
         Self::name()
     }

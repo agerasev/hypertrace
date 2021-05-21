@@ -59,6 +59,7 @@ where
                 ("Geo", "geo") => G::geometry_name(),
                 ("View", "view") => V::view_name(),
                 ("Object", "object") => T::object_name(),
+                ("ObjectCache", "object_cache") => T::Cache::name(),
                 ("Background", "background") => B::background_name(),
                 "light_hops" => format!("{}", H),
             ))

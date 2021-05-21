@@ -9,6 +9,10 @@
 
 typedef void CoveredTestHy;
 
+typedef struct CoveredTestHyCache {
+    HyDir normal;
+} CoveredTestHyCache;
+
 _ALLOW_MULTIPLE_DEFINITIONS_
 __global const Horosphere *covered_test_hy__shape__gc(__global const CoveredTestHy *self) {
     return NULL;
@@ -28,12 +32,16 @@ __global const Lambertian *covered_test_hy__material__gc(__global const CoveredT
 #define $shape horosphere
 #define $Material Lambertian
 #define $material lambertian
+#define $Cache CoveredTestHyCache
+#define $cache covered_test_hy_cache
 #include <object/covered.inl>
 #undef $Self
 #undef $self
 #undef $Geo
 #undef $geo
-#undef $Map
-#undef $map
-#undef $Shape
-#undef $shape
+#define $Shape
+#define $shape
+#define $Material
+#define $material
+#define $Cache
+#define $cache

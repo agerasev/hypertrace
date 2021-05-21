@@ -7,6 +7,7 @@
     !defined($Geo)   || !defined($geo) || \
     !defined($View)   || !defined($view) || \
     !defined($Object) || !defined($object) || \
+    !defined($ObjectCache) || !defined($object_cache) || \
     !defined($Background) || !defined($background) || \
     !defined($light_hops)
 #error "All required macro parameters must be defined."
@@ -24,7 +25,7 @@ color3 $2($self,_sample)(__global const $Self *self, Context *context, real2 pix
     for (uint i = 0; i < $light_hops; ++i) {
         context->hasher = hash_init();
 
-        $2($Object,Cache) cache;
+        $ObjectCache cache;
         real dist = $2($object,_detect)($2($self,__object__gc)(self), context, &cache, &light);
 
         if (dist > (real)-0.5f) {

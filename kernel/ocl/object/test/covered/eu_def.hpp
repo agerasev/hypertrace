@@ -9,6 +9,10 @@
 
 typedef void CoveredTestEu;
 
+typedef struct CoveredTestEuCache {
+    EuDir normal;
+} CoveredTestEuCache;
+
 _ALLOW_MULTIPLE_DEFINITIONS_
 __global const Sphere *covered_test_eu__shape__gc(__global const CoveredTestEu *self) {
     return NULL;
@@ -28,12 +32,16 @@ __global const Lambertian *covered_test_eu__material__gc(__global const CoveredT
 #define $shape sphere_eu
 #define $Material Lambertian
 #define $material lambertian
+#define $Cache CoveredTestEuCache
+#define $cache covered_test_eu_cache
 #include <object/covered.inl>
 #undef $Self
 #undef $self
 #undef $Geo
 #undef $geo
-#undef $Map
-#undef $map
-#undef $Shape
-#undef $shape
+#define $Shape
+#define $shape
+#define $Material
+#define $material
+#define $Cache
+#define $cache

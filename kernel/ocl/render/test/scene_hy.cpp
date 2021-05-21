@@ -25,6 +25,8 @@ __global const ConstBg *scene_test_hy__background__gc(__global const SceneTestHy
 #define $geo hy
 #define $Object CoveredTestHy
 #define $object covered_test_hy
+#define $ObjectCache CoveredTestHyCache
+#define $object_cache covered_test_hy_cache
 #define $View PointViewHy
 #define $view point_view_hy
 #define $Background ConstBg
@@ -37,6 +39,8 @@ __global const ConstBg *scene_test_hy__background__gc(__global const SceneTestHy
 #undef $geo
 #undef $Object
 #undef $object
+#undef $ObjectCache
+#undef $object_cache
 #undef $View
 #undef $view
 #undef $Background

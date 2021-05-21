@@ -25,6 +25,8 @@ __global const GradBg *scene_test_eu__background__gc(__global const SceneTestEu 
 #define $geo eu
 #define $Object CoveredTestEu
 #define $object covered_test_eu
+#define $ObjectCache CoveredTestEuCache
+#define $object_cache covered_test_eu_cache
 #define $View PointViewEu
 #define $view point_view_eu
 #define $Background GradBg
@@ -37,6 +39,8 @@ __global const GradBg *scene_test_eu__background__gc(__global const SceneTestEu 
 #undef $geo
 #undef $Object
 #undef $object
+#undef $ObjectCache
+#undef $object_cache
 #undef $View
 #undef $view
 #undef $Background

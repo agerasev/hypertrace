@@ -8,13 +8,10 @@
     !defined($Self) || !defined($self) || \
     !defined($Geo) || !defined($geo) || \
     !defined($Shape) || !defined($shape) || \
-    !defined($Material) || !defined($material)
+    !defined($Material) || !defined($material) || \
+    !defined($Cache) || !defined($cache)
 #error "All required macro parameters must be defined."
 #endif
-
-typedef struct $2($Self,Cache) {
-    $2($Geo,Dir) normal;
-} $2($Self,Cache);
 
 #include "interface.inl"
 
@@ -22,7 +19,7 @@ _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(
     __global const $Self *self,
     Context *context,
-    $2($Self,Cache) *cache,
+    $Cache *cache,
     $2(Light,$Geo) *light
 ) {
     return $2($shape,_detect)(
@@ -37,7 +34,7 @@ _ALLOW_MULTIPLE_DEFINITIONS_
 bool $2($self,_interact)(
     __global const $Self *self,
     Context *context,
-    $2($Self,Cache) *cache,
+    $Cache *cache,
     $2(Light,$Geo) *light,
     color3 *emission
 ) {

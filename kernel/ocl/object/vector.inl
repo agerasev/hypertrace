@@ -7,17 +7,12 @@
 #if \
     !defined($Self) || !defined($self) || \
     !defined($Base) || !defined($base) || \
+    !defined($Cache) || !defined($cache) || \
     !defined($Geo) || !defined($geo) || \
-    !defined($Object) || !defined($object)
+    !defined($Object) || !defined($object) || \
+    !defined($ObjectCache) || !defined($object_cache)
 #error "All required macro parameters must be defined."
 #endif
-
-typedef $Base $Self;
-
-typedef struct $2($Self,Cache) {
-    $2($Object,Cache) inner;
-    usize index;
-} $2($Self,Cache);
 
 #include "interface.inl"
 
@@ -25,7 +20,7 @@ _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(
     __global const $Self *self,
     Context *context,
-    $2($Self,Cache) *cache,
+    $Cache *cache,
     $2(Light,$Geo) *light
 ) {
     Hasher orig_hasher = context->hasher;
@@ -33,12 +28,12 @@ real $2($self,_detect)(
     real min_dist = -R1;
     usize min_index;
     $2(Light,$Geo) min_light;
-    $2($Object,Cache) min_cache;
+    $ObjectCache min_cache;
     Hasher min_hasher;
     for (usize index = 0; index < self->size; ++index) {
         __global const $Object *object = $2($base,__element__gc)(self, index);
         $2(Light,$Geo) cur_light = *light;
-        $2($Object,Cache) cur_cache;
+        $ObjectCache cur_cache;
         hash_usize(&context->hasher, index);
         real dist = $2($object,_detect)(object, context, &cur_cache, &cur_light);
         if (dist > -EPS && (min_dist <= -EPS || dist < min_dist)) {
@@ -65,7 +60,7 @@ _ALLOW_MULTIPLE_DEFINITIONS_
 bool $2($self,_interact)(
     __global const $Self *self,
     Context *context,
-    $2($Self,Cache) *cache,
+    $Cache *cache,
     $2(Light,$Geo) *light,
     color3 *emission
 ) {

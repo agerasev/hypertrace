@@ -65,30 +65,66 @@ fn main() -> proc::Result<()> {
 
     let view = Mapped::new(PointView::new(1.0), Moebius::identity());
     let objects = vec![
-        Covered::new(
-            Mapped::new(
-                Plane::default(),
-                Hyperbolic3::rotate_y(-0.25 * PI),
+        Mapped::new(
+            Covered::new(
+                Choice::from(Plane::default()),
+                Mixture::new(
+                    (Colored::new(Lambertian, [0.4, 0.8, 0.2].into()), 1.0).into(),
+                    (Specular, 0.0).into(),
+                    (Colored::new(Refractive::default(), [1.0, 1.0, 1.0].into()), 0.0).into(),
+                ),
             ),
-            Colored::new(Lambertian, [0.8, 0.2, 0.2].into()),
+            Hyperbolic3::rotate_x(0.5 * PI),
         ),
-        Covered::new(
-            Mapped::new(
-                Plane::default(),
-                Hyperbolic3::rotate_y(0.25 * PI),
+        Mapped::new(
+            Covered::new(
+                Choice::from(Horosphere::default()),
+                Mixture::new(
+                    (Colored::new(Lambertian, [0.2, 0.2, 0.8].into()), 0.9).into(),
+                    (Specular, 0.1).into(),
+                    (Colored::new(Refractive::default(), [1.0, 1.0, 1.0].into()), 0.0).into(),
+                ),
             ),
-            Colored::new(Lambertian, [0.2, 0.2, 0.8].into()),
+            Hyperbolic3::shift_z(-1.0).chain(Hyperbolic3::rotate_x(PI)),
         ),
-        Covered::new(
-            Mapped::new(
-                Plane::default(),
-                Hyperbolic3::rotate_y(0.25 * PI).chain(Hyperbolic3::shift_z(0.1)),
+        Mapped::new(
+            Covered::new(
+                Choice::from(Horosphere::default()),
+                Mixture::new(
+                    (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.0).into(),
+                    (Specular, 0.2).into(),
+                    (Colored::new(Refractive::new(1.2), [1.0, 1.0, 0.2].into()), 0.8).into(),
+                ),
             ),
-            Colored::new(Lambertian, [0.2, 0.8, 0.2].into()),
+            Hyperbolic3::rotate_x(-0.5 * PI),
         ),
+        Mapped::new(
+            Covered::new(
+                Choice::from(Plane::default()),
+                Mixture::new(
+                    (Colored::new(Lambertian, [0.2, 0.8, 0.8].into()), 1.0).into(),
+                    (Specular, 0.0).into(),
+                    (Colored::new(Refractive::default(), [1.0, 1.0, 1.0].into()), 0.0).into(),
+                ),
+            ),
+            Hyperbolic3::shift_x(-1.0).chain(Hyperbolic3::rotate_y(0.5 * PI)),
+        ),
+        /*
+        Mapped::new(
+            Covered::new(
+                Choice::from(Plane::default()),
+                Mixture::new(
+                    (Colored::new(Lambertian, [0.8, 0.2, 0.8].into()), 1.0).into(),
+                    (Specular, 0.0).into(),
+                    (Colored::new(Refractive::default(), [1.0, 1.0, 1.0].into()), 0.0).into(),
+                ),
+            ),
+            Hyperbolic3::shift_y(2.0).chain(Hyperbolic3::rotate_x(-0.5 * PI)),
+        ),
+        */
     ];
     let background = ConstBg::new([1.0, 1.0, 1.0].into());
-    let mut scene = SceneImpl::<Hyperbolic3, _, _, _, 3>::new(view, objects, background);
+    let mut scene = SceneImpl::<Hyperbolic3, _, _, _, 4>::new(view, objects, background);
     let filter = GammaFilter::new(&context.backend, 1.0 / 2.2)?;
     let mut pipeline = Pipeline::new(&context, size, &scene, filter)?;
 
@@ -96,7 +132,7 @@ fn main() -> proc::Result<()> {
     let mut window = Window::new(sdl_context, size, "Sample")?;
 
     let mut controller = IsotropicController::<Hyperbolic3>::new(
-        Hyperbolic3::shift_z(2.0),
+        Hyperbolic3::shift_z(1.0),
         1.0,
     );
 

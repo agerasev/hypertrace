@@ -7,6 +7,12 @@ pub struct Refractive {
     pub index: f64,
 }
 
+impl Default for Refractive {
+    fn default() -> Self {
+        Self::new(1.0)
+    }
+}
+
 impl Refractive {
     pub fn new(index: f64) -> Self {
         Self { index }

@@ -40,6 +40,7 @@ set(SRC
     "ocl/geometry/ray_test.cpp"
 
     "ocl/shape/eu/sphere.cc"
+    "ocl/shape/eu/sphere.cc"
     "ocl/shape/eu/cube.cc"
     "ocl/shape/hy/plane.cc"
     "ocl/shape/hy/horosphere.cc"

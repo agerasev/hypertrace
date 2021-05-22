@@ -15,7 +15,7 @@ real sphere_eu_detect(__global const SphereEu *shape, Context *context, real3 *n
     }
     d = sqrt(d);
     real e = b - d;
-    real w = 2 * EPS * (2 * repeat - 1);
+    real w = EPS * (2 * repeat - 1);
     if (e < w) {
         e = b + d;
         if (e < w) {

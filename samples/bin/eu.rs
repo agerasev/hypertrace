@@ -3,7 +3,7 @@ use objs::{
     background::GradBg,
     material::{Colored, Specular, Lambertian, Refractive},
     object::Covered,
-    shape::{Sphere, Cube},
+    shape::{Plane, Sphere, Cube},
     view::PointView,
     Mapped,
     SceneImpl,
@@ -28,6 +28,7 @@ use lib::cli::{OclApp, get_ocl_context};
 
 shape_choice! {
     Choice {
+        Plane(Plane),
         Sphere(Sphere),
         Cube(Cube),
     }
@@ -87,13 +88,24 @@ fn main() -> proc::Result<()> {
                 (Colored::new(Refractive::new(1.2), [0.2, 1.0, 1.0].into()), 0.9).into(),
             ),
         ),
+        Covered::new(
+            Mapped::new(
+                Choice::from(Plane::default()),
+                Shift::from_vector([0.0, 0.0, -1.0].into()),
+            ),
+            Mixture::new(
+                (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.8).into(),
+                (Specular, 0.2).into(),
+                (Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()), 0.0).into(),
+            ),
+        ),
     ];
     let background = GradBg::new(
         [0.0, 1.0, 0.0].into(),
         [[1.0, 1.0, 1.0].into(), [0.0, 0.0, 0.0].into()],
         2.4,
     );
-    let mut scene = SceneImpl::<_, _, _, _, 8>::new(view, objects, background);
+    let mut scene = SceneImpl::<_, _, _, _, 4>::new(view, objects, background);
     let filter = GammaFilter::new(&context.backend, 1.0 / 2.2)?;
     let mut pipeline = Pipeline::new(&context, size, &scene, filter)?;
 

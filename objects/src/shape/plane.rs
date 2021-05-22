@@ -1,5 +1,5 @@
 use super::*;
-use ccgeom::Hyperbolic3;
+use ccgeom::{Euclidean3, Hyperbolic3};
 use type_macros::*;
 use types::{source::SourceTree, Config};
 
@@ -9,6 +9,15 @@ pub struct Plane;
 impl EntitySource for Plane {
     fn source(_: &Config) -> SourceTree {
         SourceTree::new("shape/basic.hh")
+    }
+}
+
+impl Shape<Euclidean3> for Plane {
+    fn shape_name() -> (String, String) {
+        ("PlaneEu".into(), "plane_eu".into())
+    }
+    fn shape_source(_: &Config) -> SourceTree {
+        SourceTree::new("shape/eu/plane.hh")
     }
 }
 

@@ -69,7 +69,7 @@ fn main() -> proc::Result<()> {
         ),
     ];
     let background = ConstBg::new([1.0, 1.0, 1.0].into());
-    let mut scene = SceneImpl::<_, _, _, _, 3>::new(view, objects, background);
+    let mut scene = SceneImpl::<Hyperbolic3, _, _, _, 3>::new(view, objects, background);
     let filter = GammaFilter::new(&context.backend, 1.0 / 2.2)?;
     let mut pipeline = Pipeline::new(&context, size, &scene, filter)?;
 

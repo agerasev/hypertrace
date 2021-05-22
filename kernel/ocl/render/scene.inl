@@ -28,16 +28,18 @@ color3 $2($self,_sample)(__global const $Self *self, Context *context, real2 pix
         $ObjectCache cache;
         real dist = $2($object,_detect)($2($self,__object__gc)(self), context, &cache, &light);
 
+        LightLocal light_local = $3(light_,$geo,_to_local)(&light);
         if (dist > (real)-0.5f) {
-            bool ret = $2($object,_interact)($2($self,__object__gc)(self), context, &cache, &light, &emission);
+            bool ret = $2($object,_interact)($2($self,__object__gc)(self), context, &cache, &light_local, &emission);
             if (!ret) {
                 break;
             }
             context->prev_hash = hash_finish(&context->hasher);
         } else {
-            $2($background,_interact)($2($self,__background__gc)(self), context, &light, &emission);
+            $2($background,_interact)($2($self,__background__gc)(self), context, &light_local, &emission);
             break;
         }
+        $3(light_,$geo,_update_local)(&light, light_local);
     }
 
     return emission;

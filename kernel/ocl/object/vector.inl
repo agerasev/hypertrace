@@ -61,7 +61,7 @@ bool $2($self,_interact)(
     __global const $Self *self,
     Context *context,
     $Cache *cache,
-    $2(Light,$Geo) *light,
+    LightLocal *light,
     color3 *emission
 ) {
     __global const $Object *object = $2($base,__element__gc)(self, cache->index);

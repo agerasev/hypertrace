@@ -2,6 +2,7 @@
 #include <types.hh>
 #include <algebra/color.hh>
 #include <render/context.hh>
+#include <render/light/base.hh>
 
 #if \
     !defined($Self) || !defined($self) || \
@@ -34,7 +35,7 @@ bool $2($self,_interact)(
     __global const $Self *self,
     Context *context,
     $Cache *cache,
-    $2(Light,$Geo) *light,
+    LightLocal *light,
     color3 *emission
 ) {
     switch (self->index) {

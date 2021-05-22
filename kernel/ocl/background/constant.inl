@@ -12,7 +12,7 @@
 #include "interface.inl"
 
 _ALLOW_MULTIPLE_DEFINITIONS_
-void $2($self,_interact)(__global const $Self *self, Context *context, const $2(Light,$Geo) *light, color3 *emission) {
+void $2($self,_interact)(__global const $Self *self, Context *context, const LightLocal *light, color3 *emission) {
     *emission += self->color * light->base.intensity;
 }
 

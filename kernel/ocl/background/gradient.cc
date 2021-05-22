@@ -1,9 +1,9 @@
 #include "gradient.hh"
 
-void grad_bg_interact(__global const GradBg *self, Context *context, const LightEu *light, color3 *emission) {
+void grad_bg_interact(__global const GradBg *self, Context *context, const LightLocal *light, color3 *emission) {
     float factor = pow(
         clamp(
-            0.5f * ((float)dot(light->ray.direction, self->direction) + 1.0f),
+            0.5f * ((float)dot(light->direction, self->direction) + 1.0f),
             0.0f, 1.0f
         ),
         self->power

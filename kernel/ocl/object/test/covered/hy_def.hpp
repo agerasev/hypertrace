@@ -10,7 +10,7 @@
 typedef void CoveredTestHy;
 
 typedef struct CoveredTestHyCache {
-    HyDir normal;
+    EuDir normal;
 } CoveredTestHyCache;
 
 _ALLOW_MULTIPLE_DEFINITIONS_

@@ -50,6 +50,7 @@ set(SRC
     "ocl/material/basic/transparent.cc"
     "ocl/material/basic/specular.cc"
     "ocl/material/basic/lambertian.cc"
+    "ocl/material/basic/refractive.cc"
     "ocl/material/test/modifier.cpp"
 
     "ocl/object/test/covered/eu.cpp"

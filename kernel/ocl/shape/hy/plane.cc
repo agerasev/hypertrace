@@ -31,7 +31,7 @@ real plane_hy_detect(__global const Plane *shape, Context *context, HyDir *norma
 
     light->ray.start = h;
     light->ray.direction = hy_dir_at(p, d, h);
-    *normal = h * (-sign(s));
+    *normal = -h;
 
     return hy_distance(p, h);
 }
@@ -161,7 +161,7 @@ TEST_F(PlaneHyTest, detect) {
             ASSERT_EQ(length(light.ray.direction), approx(1));
 
             ASSERT_EQ(length(normal), approx(1));
-            ASSERT_EQ(normal * sign(length2(start) - 1.0), approx(light.ray.start));
+            ASSERT_EQ(normal, approx(-light.ray.start));
         }
     }
     ASSERT_TRUE(hits > 0);

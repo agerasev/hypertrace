@@ -1,8 +1,7 @@
 #include "sphere.hh"
 
-
 _ALLOW_UNUSED_PARAMETERS_
-real sphere_eu_detect(__global const Sphere *shape, Context *context, real3 *normal, LightEu *light) {
+real sphere_eu_detect(__global const SphereEu *shape, Context *context, real3 *normal, LightEu *light) {
     bool repeat = context_is_repeat(context);
     RayEu *ray = &light->ray;
 
@@ -15,18 +14,16 @@ real sphere_eu_detect(__global const Sphere *shape, Context *context, real3 *nor
         return -R1;
     }
     d = sqrt(d);
-    real f = R1;
     real e = b - d;
     real w = 2 * EPS * (2 * repeat - 1);
     if (e < w) {
         e = b + d;
-        f = -R1;
         if (e < w) {
             return -R1;
         }
     }
     real3 h = normalize(pos + dir * e);
-    *normal = h * f;
+    *normal = h;
     ray->start = h;
     return e;
 }

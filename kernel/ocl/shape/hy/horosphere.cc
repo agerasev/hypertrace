@@ -15,11 +15,9 @@ real horosphere_detect(__global const void *shape, Context *context, HyDir *norm
     
     real dt = sqrt(p.z*p.z - dxy*dxy);
     real t = p.z*d.z - dt;
-    real f = -R1;
     real w = EPS * (2 * repeat - 1);
     if (t < w) {
         t += 2*dt;
-        f = R1;
         if (t < w) {
             return -R1;
         }
@@ -30,7 +28,7 @@ real horosphere_detect(__global const void *shape, Context *context, HyDir *norm
 
     light->ray.start = h;
     light->ray.direction = hy_dir_at(p, d, h);
-    *normal = MAKE(quat)(0, 0, f, 0);
+    *normal = MAKE(quat)(0, 0, -1, 0);
 
     return hy_distance(p, h);
 }
@@ -58,7 +56,7 @@ TEST_F(HorosphereTest, detect) {
 
         if (start.z > R1 + EPS) {
             ASSERT_TRUE(dist > -EPS);
-            ASSERT_EQ(normal, approx(quat(0,0,1,0)));
+            ASSERT_EQ(normal, approx(quat(0,0,-1,0)));
         }
         if (dist > -EPS) {
             ASSERT_EQ(light.ray.start.z, approx(1));

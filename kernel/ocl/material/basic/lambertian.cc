@@ -4,6 +4,9 @@
 
 _ALLOW_UNUSED_PARAMETERS_
 bool lambertian_interact(__global const Lambertian *self, Context *context, real3 normal, LightLocal *light, float3 *emission) {
+    if (dot(light->direction, normal) > 0) {
+        normal = -normal;
+    }
     real3 rand = random_hemisphere_cosine(&context->rng);
     Rotation3 rot = rot3_look_at(-normal);
     light->direction = rot3_apply_dir(rot, MAKE(real3)(R0), rand);

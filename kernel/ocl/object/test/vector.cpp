@@ -1,7 +1,6 @@
 #include <types.hh>
 #include <geometry/euclidean.hh>
 #include <geometry/ray_eu.hh>
-#include <material/basic.hh>
 #include <render/light/eu.hh>
 
 #include "covered/eu_def.hpp"

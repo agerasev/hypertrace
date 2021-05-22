@@ -4,7 +4,7 @@
 #include <geometry/euclidean.hh>
 #include <geometry/ray_eu.hh>
 #include <shape/eu/sphere.hh>
-#include <material/basic.hh>
+#include <material/basic/lambertian.hh>
 #include <render/light/eu.hh>
 
 typedef void CoveredTestEu;
@@ -39,9 +39,9 @@ __global const Lambertian *covered_test_eu__material__gc(__global const CoveredT
 #undef $self
 #undef $Geo
 #undef $geo
-#define $Shape
-#define $shape
-#define $Material
-#define $material
-#define $Cache
-#define $cache
+#undef $Shape
+#undef $shape
+#undef $Material
+#undef $material
+#undef $Cache
+#undef $cache

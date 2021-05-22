@@ -87,6 +87,8 @@ fn union_() {
         let mut offsets_vec = vec![0; output.len()];
         offsets.read(&mut offsets_vec).enq().unwrap();
 
+        pro_que.finish().unwrap();
+
         for s in sizes_vec {
             assert_eq!(s, 8);
         }
@@ -150,6 +152,8 @@ fn zst() {
 
         let mut vec = vec![0u64; buffer.len()];
         buffer.read(&mut vec).enq().unwrap();
+
+        pro_que.finish().unwrap();
 
         for s in vec {
             assert_eq!(s, 0);

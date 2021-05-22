@@ -4,7 +4,7 @@
 #include <geometry/hyperbolic.hh>
 #include <geometry/ray_hy.hh>
 #include <shape/hy/horosphere.hh>
-#include <material/basic.hh>
+#include <material/basic/lambertian.hh>
 #include <render/light/hy.hh>
 
 typedef void CoveredTestHy;
@@ -39,9 +39,9 @@ __global const Lambertian *covered_test_hy__material__gc(__global const CoveredT
 #undef $self
 #undef $Geo
 #undef $geo
-#define $Shape
-#define $shape
-#define $Material
-#define $material
-#define $Cache
-#define $cache
+#undef $Shape
+#undef $shape
+#undef $Material
+#undef $material
+#undef $Cache
+#undef $cache

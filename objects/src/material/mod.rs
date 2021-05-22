@@ -1,5 +1,6 @@
 mod basic;
 mod modifier;
+mod mixture;
 
 use types::{prelude::*, source::SourceTree, Config};
 
@@ -14,3 +15,4 @@ pub trait Material: SizedEntity {
 
 pub use basic::*;
 pub use modifier::*;
+pub use mixture::*;

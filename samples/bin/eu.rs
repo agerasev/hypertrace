@@ -1,13 +1,14 @@
 use ccgeom::{Euclidean3, Homogenous3};
 use objs::{
     background::GradBg,
-    material::{Colored, Lambertian},
+    material::{Colored, Specular, Lambertian},
     object::Covered,
     shape::{Sphere, Cube},
     view::PointView,
     Mapped,
     SceneImpl,
     shape_choice,
+    mixture,
 };
 use proc::{filter::GammaFilter, Context, Pipeline};
 use std::{
@@ -29,6 +30,13 @@ shape_choice! {
     Choice {
         Sphere(Sphere),
         Cube(Cube),
+    }
+}
+
+mixture! {
+    Mixture {
+        diffuse: Colored<Lambertian>,
+        specular: Specular,
     }
 }
 
@@ -61,14 +69,20 @@ fn main() -> proc::Result<()> {
                 Choice::from(Sphere::default()),
                 Shift::from_vector([0.0, 1.0, 0.0].into()),
             ),
-            Colored::new(Lambertian, [0.8, 0.2, 0.2].into()),
+            Mixture::new(
+                (Colored::new(Lambertian, [1.0, 0.2, 0.2].into()), 0.8).into(),
+                (Specular, 0.2).into(),
+            ),
         ),
         Covered::new(
             Mapped::new(
                 Choice::from(Cube::default()),
                 Shift::from_vector([0.0, -1.0, 0.0].into()),
             ),
-            Colored::new(Lambertian, [0.2, 0.2, 0.8].into()),
+            Mixture::new(
+                (Colored::new(Lambertian, [0.2, 0.2, 1.0].into()), 0.8).into(),
+                (Specular, 0.2).into(),
+            ),
         ),
     ];
     let background = GradBg::new(

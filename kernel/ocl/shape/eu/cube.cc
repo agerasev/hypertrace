@@ -42,7 +42,7 @@ real cube_eu_detect(__global const Cube *shape, Context *context, real3 *normal,
 
     real3 norm_out = MAKE(real3)(R0);
     float dist_out = -cube_eu_detect_nearest(-far, &norm_out);
-    norm_out *= sign(ray->direction);
+    norm_out *= -sign(ray->direction);
 
     if (dist_in > dist_out) {
         return -R1;
@@ -53,7 +53,7 @@ real cube_eu_detect(__global const Cube *shape, Context *context, real3 *normal,
     real w = 2 * EPS * (2 * repeat - 1);
     if (dist < w) {
         dist = dist_out;
-        norm = -norm_out;
+        norm = norm_out;
         if (dist < w) {
             return -R1;
         }

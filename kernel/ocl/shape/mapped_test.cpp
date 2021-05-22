@@ -7,6 +7,7 @@ struct Mapped {
     //Sphere inner;
 };
 
+_ALLOW_MULTIPLE_DEFINITIONS_
 __global const Sphere *mapped__inner__gc(__global const Mapped *self) {
     return NULL;
 }

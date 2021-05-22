@@ -1,30 +1,32 @@
-use ccgeom::{Euclidean3, Homogenous3};
-use objs::{
-    background::GradBg,
-    material::{Colored, Specular, Lambertian, Refractive},
-    object::Covered,
-    shape::{Plane, Sphere, Cube},
-    view::PointView,
-    Mapped,
-    SceneImpl,
-    shape_choice,
-    mixture,
-};
-use proc::{filter::GammaFilter, Context, Pipeline};
 use std::{
     rc::Rc,
     time::{Duration, Instant},
-};
-use types::{
-    config::{AddressWidth, Endian},
-    Config,
 };
 use vecmat::{
     transform::{Rotation3, Shift},
     Transform, Vector,
 };
-use view::{controllers::IsotropicController, Controller, Window, PollStatus};
-use lib::cli::{OclApp, get_ocl_context};
+use ccgeom::{Euclidean3, Homogenous3};
+use hypertrace::{
+    objects::{
+        background::GradBg,
+        material::{Colored, Specular, Lambertian, Refractive},
+        object::Covered,
+        shape::{Plane, Sphere, Cube},
+        view::PointView,
+        Mapped,
+        SceneImpl,
+        shape_choice,
+        mixture,
+    },
+    proc::{filter::GammaFilter, Context, Pipeline},
+    types::{
+        config::{AddressWidth, Endian},
+        Config,
+    },
+    view::{controllers::IsotropicController, Controller, Window, PollStatus},
+    cli::{OclApp, get_ocl_context},
+};
 
 shape_choice! {
     Choice {
@@ -66,38 +68,38 @@ fn main() -> proc::Result<()> {
 
     let view = Mapped::new(PointView::new(1.0), Homogenous3::identity());
     let objects = vec![
-        Covered::new(
-            Mapped::new(
+        Mapped::new(
+            Covered::new(
                 Choice::from(Sphere::default()),
-                Shift::from_vector([0.0, 1.0, 0.0].into()),
+                Mixture::new(
+                    (Colored::new(Lambertian, [1.0, 0.2, 0.2].into()), 0.0).into(),
+                    (Specular, 0.1).into(),
+                    (Colored::new(Refractive::new(1.2), [1.0, 1.0, 0.2].into()), 0.9).into(),
+                ),
             ),
-            Mixture::new(
-                (Colored::new(Lambertian, [1.0, 0.2, 0.2].into()), 0.0).into(),
-                (Specular, 0.1).into(),
-                (Colored::new(Refractive::new(1.2), [1.0, 1.0, 0.2].into()), 0.9).into(),
-            ),
+            Shift::from_vector([0.0, 1.0, 0.0].into()),
         ),
-        Covered::new(
-            Mapped::new(
+        Mapped::new(
+            Covered::new(
                 Choice::from(Cube::default()),
-                Shift::from_vector([0.0, -1.0, 0.0].into()),
+                Mixture::new(
+                    (Colored::new(Lambertian, [0.2, 0.8, 0.8].into()), 1.0).into(),
+                    (Specular, 0.0).into(),
+                    (Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()), 0.0).into(),
+                ),
             ),
-            Mixture::new(
-                (Colored::new(Lambertian, [0.2, 0.2, 1.0].into()), 0.0).into(),
-                (Specular, 0.1).into(),
-                (Colored::new(Refractive::new(1.2), [0.2, 1.0, 1.0].into()), 0.9).into(),
-            ),
+            Shift::from_vector([0.0, -1.0, 0.0].into()),
         ),
-        Covered::new(
-            Mapped::new(
+        Mapped::new(
+            Covered::new(
                 Choice::from(Plane::default()),
-                Shift::from_vector([0.0, 0.0, -1.0].into()),
+                Mixture::new(
+                    (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.9).into(),
+                    (Specular, 0.1).into(),
+                    (Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()), 0.0).into(),
+                ),
             ),
-            Mixture::new(
-                (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.8).into(),
-                (Specular, 0.2).into(),
-                (Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()), 0.0).into(),
-            ),
+            Shift::from_vector([0.0, 0.0, -1.0].into()),
         ),
     ];
     let background = GradBg::new(

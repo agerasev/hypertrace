@@ -11,5 +11,5 @@ members = [
     "objects",
     "processing",
     "viewer",
-    "samples",
+    "main",
 ]

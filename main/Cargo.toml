@@ -1,20 +1,8 @@
 [package]
-name = "hypertrace-samples"
+name = "hypertrace"
 version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
-
-[lib]
-name = "lib"
-path = "src/lib.rs"
-
-[[bin]]
-name = "eu"
-path = "bin/eu.rs"
-
-[[bin]]
-name = "hy"
-path = "bin/hy.rs"
 
 [dependencies]
 clap = "2.33"
@@ -23,7 +11,7 @@ ocl = "0.19"
 types = { package = "hypertrace-types", path = "../types" }
 type_macros = { package = "hypertrace-type-macros", path = "../type-macros" }
 view = { package = "hypertrace-viewer", path = "../viewer" }
-objs = { package = "hypertrace-objects", path = "../objects" }
+objects = { package = "hypertrace-objects", path = "../objects" }
 proc = { package = "hypertrace-processing", path = "../processing", features = ["backend_ocl"] }
 vecmat = { path = "../vecmat" }
 ccgeom = { path = "../ccgeom" }

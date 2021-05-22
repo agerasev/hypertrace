@@ -1,6 +1,7 @@
 mod covered;
 mod vector;
 mod choice;
+mod mapped;
 
 use types::{prelude::*, source::SourceTree, Config};
 

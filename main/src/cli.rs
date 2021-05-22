@@ -31,12 +31,17 @@ pub fn get_ocl_context(matches: &clap::ArgMatches) -> proc::Result<Option<OclCon
     if matches.is_present("list") {
         for (pi, platform) in ocl::Platform::list().into_iter().enumerate() {
             for (di, device) in ocl::Device::list_all(&platform)?.into_iter().enumerate() {
-                println!("Platform [{}]: {}", pi, platform.name()?);
+                println!(
+                    "Platform [{}]: {}, {}",
+                    pi,
+                    platform.name()?,
+                    platform.version()?,
+                );
                 println!(
                     "    Device [{}]: {} {}",
                     di,
                     device.vendor()?,
-                    device.name()?
+                    device.name()?,
                 );
             }
         }

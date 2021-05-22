@@ -1,26 +1,45 @@
-use ccgeom::{Geometry3, Hyperbolic3};
-use objs::{
-    background::ConstBg,
-    material::{Colored, Lambertian},
-    object::Covered,
-    shape::Plane,
-    view::PointView,
-    Mapped,
-    SceneImpl,
-};
-use proc::{filter::GammaFilter, Context, Pipeline};
 use std::{
     rc::Rc,
     time::{Duration, Instant},
     f64::consts::PI,
 };
-use types::{
-    config::{AddressWidth, Endian},
-    Config,
-};
 use vecmat::{transform::{Moebius}};
-use view::{controllers::IsotropicController, Controller, Window, PollStatus};
-use lib::cli::{OclApp, get_ocl_context};
+use ccgeom::{Geometry3, Hyperbolic3};
+use hypertrace::{
+    objects::{
+        background::ConstBg,
+        material::{Colored, Lambertian, Specular, Refractive},
+        object::Covered,
+        shape::{Plane, Horosphere},
+        view::PointView,
+        Mapped,
+        SceneImpl,
+        shape_choice,
+        mixture,
+    },
+    proc::{filter::GammaFilter, Context, Pipeline},
+    types::{
+        config::{AddressWidth, Endian},
+        Config,
+    },
+    view::{controllers::IsotropicController, Controller, Window, PollStatus},
+    cli::{OclApp, get_ocl_context},
+};
+
+shape_choice! {
+    Choice {
+        Plane(Plane),
+        Horosphere(Horosphere),
+    }
+}
+
+mixture! {
+    Mixture {
+        diffuse: Colored<Lambertian>,
+        specular: Specular,
+        refractive: Colored<Refractive>,
+    }
+}
 
 fn main() -> proc::Result<()> {
     let matches = clap::App::new("Sample")

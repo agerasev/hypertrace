@@ -15,7 +15,6 @@ include_directories("ocl")
 
 set(SRC
     "ocl/types.cc"
-    "ocl/math.cc"
     "ocl/macros_test.cpp"
 
     "ocl/algebra/real.cc"
@@ -58,6 +57,7 @@ set(SRC
     "ocl/object/test/covered/hy.cpp"
     "ocl/object/test/vector.cpp"
     "ocl/object/test/mapped.cpp"
+    "ocl/object/hy/tiled_horosphere/test.cpp"
 
     "ocl/background/gradient.cc"
     "ocl/background/test/constant/eu.cpp"

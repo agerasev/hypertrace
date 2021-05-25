@@ -8,13 +8,13 @@ use ccgeom::{Geometry3, Hyperbolic3};
 use hypertrace::{
     objects::{
         background::ConstBg,
-        material::{Colored, Lambertian, Specular, Refractive},
-        object::Covered,
-        shape::{Plane, Horosphere},
+        material::{Colored, Lambertian, Specular},
+        object::{Covered, TiledHorosphere, tiling},
+        shape::Plane,
         view::PointView,
         Mapped,
         SceneImpl,
-        shape_choice,
+        object_choice,
         mixture,
     },
     proc::{filter::GammaFilter, Context, Pipeline},
@@ -26,18 +26,17 @@ use hypertrace::{
     cli::{OclApp, get_ocl_context},
 };
 
-shape_choice! {
-    Choice {
-        Plane(Plane),
-        Horosphere(Horosphere),
-    }
-}
-
 mixture! {
     Mixture {
         diffuse: Colored<Lambertian>,
         specular: Specular,
-        refractive: Colored<Refractive>,
+    }
+}
+
+object_choice! {
+    Choice(ChoiceCache) {
+        Plane(Covered<Hyperbolic3, Plane, Mixture>),
+        Horosphere(TiledHorosphere<Mixture, tiling::Hexagonal, 3>),
     }
 }
 
@@ -66,65 +65,102 @@ fn main() -> proc::Result<()> {
     let view = Mapped::new(PointView::new(1.0), Moebius::identity());
     let objects = vec![
         Mapped::new(
-            Covered::new(
-                Choice::from(Plane::default()),
+            Choice::from(TiledHorosphere::new(
+                [
+                    Mixture::new(
+                        (Colored::new(Lambertian, [0.99, 0.01, 0.01].into()), 0.9).into(),
+                        (Specular, 0.1).into(),
+                    ),
+                    Mixture::new(
+                        (Colored::new(Lambertian, [1.0, 0.66, 0.01].into()), 0.9).into(),
+                        (Specular, 0.1).into(),
+                    ),
+                    Mixture::new(
+                        (Colored::new(Lambertian, [0.21, 0.68, 0.68].into()), 0.9).into(),
+                        (Specular, 0.1).into(),
+                    ),
+                ],
+                0.5,
+                0.02,
                 Mixture::new(
-                    (Colored::new(Lambertian, [0.4, 0.8, 0.2].into()), 1.0).into(),
-                    (Specular, 0.0).into(),
-                    (Colored::new(Refractive::default(), [1.0, 1.0, 1.0].into()), 0.0).into(),
+                    (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.9).into(),
+                    (Specular, 0.1).into(),
+                ),
+            )),
+            Hyperbolic3::shift_z(-1.0).chain(Hyperbolic3::rotate_x(PI)),
+        ),
+        Mapped::new(
+            Choice::from(
+                Covered::new(
+                    Plane::default(),
+                    Mixture::new(
+                        (Colored::new(Lambertian, [0.4, 0.8, 0.2].into()), 1.0).into(),
+                        (Specular, 0.0).into(),
+                    ),
                 ),
             ),
             Hyperbolic3::rotate_x(0.5 * PI),
         ),
         Mapped::new(
-            Covered::new(
-                Choice::from(Horosphere::default()),
-                Mixture::new(
-                    (Colored::new(Lambertian, [0.2, 0.2, 0.8].into()), 0.9).into(),
-                    (Specular, 0.1).into(),
-                    (Colored::new(Refractive::default(), [1.0, 1.0, 1.0].into()), 0.0).into(),
-                ),
-            ),
-            Hyperbolic3::shift_z(-1.0).chain(Hyperbolic3::rotate_x(PI)),
-        ),
-        Mapped::new(
-            Covered::new(
-                Choice::from(Horosphere::default()),
-                Mixture::new(
-                    (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.0).into(),
-                    (Specular, 0.2).into(),
-                    (Colored::new(Refractive::new(1.2), [1.0, 1.0, 0.2].into()), 0.8).into(),
-                ),
-            ),
-            Hyperbolic3::rotate_x(-0.5 * PI),
-        ),
-        Mapped::new(
-            Covered::new(
-                Choice::from(Plane::default()),
-                Mixture::new(
-                    (Colored::new(Lambertian, [0.2, 0.8, 0.8].into()), 1.0).into(),
-                    (Specular, 0.0).into(),
-                    (Colored::new(Refractive::default(), [1.0, 1.0, 1.0].into()), 0.0).into(),
+            Choice::from(
+                Covered::new(
+                    Plane::default(),
+                    Mixture::new(
+                        (Colored::new(Lambertian, [0.4, 0.4, 0.4].into()), 0.8).into(),
+                        (Specular, 0.2).into(),
+                    ),
                 ),
             ),
             Hyperbolic3::shift_x(-1.0).chain(Hyperbolic3::rotate_y(0.5 * PI)),
         ),
         /*
-        Mapped::new(
-            Covered::new(
-                Choice::from(Plane::default()),
-                Mixture::new(
-                    (Colored::new(Lambertian, [0.8, 0.2, 0.8].into()), 1.0).into(),
-                    (Specular, 0.0).into(),
-                    (Colored::new(Refractive::default(), [1.0, 1.0, 1.0].into()), 0.0).into(),
-                ),
+        make_horosphere(
+            Moebius<comp>::identity(),
+            MyHorosphere::Tiling::HEXAGONAL,
+            MyHorosphereMaterials(
+                make_material(make_color(0xfe0000), 0.1, 0.1),
+                make_material(make_color(0xffaa01), 0.1, 0.1),
+                make_material(make_color(0x35adae), 0.1, 0.1)
             ),
-            Hyperbolic3::shift_y(2.0).chain(Hyperbolic3::rotate_x(-0.5 * PI)),
+            0.5, 0.02,
+            make_material(border_color, 0.0, 0, float3(1.0))
+        ),
+        make_horosphere(
+            Moebius<comp>(1_r, math::sqrt(2_r), 0_r, 1_r)*Hy::xrotate(PI),
+            MyHorosphere::Tiling::SQUARE,
+            MyHorosphereMaterials(
+                make_material(make_color(0xfe7401), 0.1, 0.1),
+                make_material(make_color(0xfe0000), 0.1, 0.1),
+                make_material(make_color(0xffaa01), 0.1, 0.1),
+                make_material(make_color(0xfed601), 0.1, 0.1)
+            ),
+            0.5, 0.02,
+            make_material(border_color, 0.0, 0, float3(1.0))
+        ),
+        make_plane(
+            Moebius<comp>::identity(),
+            MyPlane::Tiling::PENTASTAR,
+            MyPlaneMaterials(
+                make_material(make_color(0xfe7401), 0.1),
+                make_material(make_color(0x35adae), 0.1)
+            ),
+            0.01,
+            make_material(border_color, 0.0, 0, float3(1.0))
+        ),
+        make_plane(
+            Moebius<comp>(1_r, 2*1_i, 0_r, 1_r),
+            MyPlane::Tiling::PENTAGONAL,
+            MyPlaneMaterials(
+                make_material(make_color(0xfe0000), 0.1),
+                make_material(make_color(0xfed601), 0.1)
+            ),
+            0.02,
+            make_material(border_color, 0.0, 0, float3(1.0))
         ),
         */
     ];
     let background = ConstBg::new([1.0, 1.0, 1.0].into());
-    let mut scene = SceneImpl::<Hyperbolic3, _, _, _, 4>::new(view, objects, background);
+    let mut scene = SceneImpl::<Hyperbolic3, _, _, _, 3>::new(view, objects, background);
     let filter = GammaFilter::new(&context.backend, 1.0 / 2.2)?;
     let mut pipeline = Pipeline::new(&context, size, &scene, filter)?;
 

@@ -2,6 +2,8 @@ mod covered;
 mod vector;
 mod choice;
 mod mapped;
+pub mod tiled_horosphere;
+pub mod tiling;
 
 use types::{prelude::*, source::SourceTree, Config};
 
@@ -17,3 +19,5 @@ pub trait Object<G: Geometry>: Entity {
 }
 
 pub use covered::Covered;
+pub use tiled_horosphere::TiledHorosphere;
+pub use tiling::Tiling;

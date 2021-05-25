@@ -160,3 +160,66 @@ fn zst() {
         }
     })
 }
+
+
+#[test]
+fn tiled_horosphere_size() {
+    run_for_each_device(|platform, device_spec| {
+        let src = r#"
+            typedef struct Material {
+                float4 a;
+                float b;
+                float d;
+            } Material;
+            typedef struct {
+                Material a[3];
+                Material b;
+                float c;
+                float d;
+            } Object;
+            typedef struct {
+                uint i;
+                Material a;
+                Object c;
+            } Choice;
+            __kernel void test(__global ulong *sizes) {
+                if (get_global_id(0) == 0) {
+                    Material x;
+                    sizes[0] = sizeof(x);
+                } else if (get_global_id(0) == 1) {
+                    Object x;
+                    sizes[1] = sizeof(x);
+                } else if (get_global_id(0) == 2) {
+                    Choice x;
+                    sizes[2] = sizeof(x);
+                }
+            }
+        "#;
+
+        let pro_que = ProQue::builder()
+            .platform(platform)
+            .device(device_spec)
+            .src(src)
+            .dims(3)
+            .build()
+            .unwrap();
+
+        let buffer = pro_que.create_buffer::<u64>().unwrap();
+
+        let kernel = pro_que.kernel_builder("test")
+            .arg(&buffer)
+            .build()
+            .unwrap();
+
+        unsafe { kernel.enq() }.unwrap();
+
+        let mut vec = vec![0u64; buffer.len()];
+        buffer.read(&mut vec).enq().unwrap();
+
+        pro_que.finish().unwrap();
+
+        assert_eq!(vec[0], 2*4*4);
+        assert_eq!(vec[1], 4*2*4*4 + 4*4);
+        assert_eq!(vec[2], 4*4 + 2*4*4 + 4*2*4*4 + 4*4);
+    })
+}

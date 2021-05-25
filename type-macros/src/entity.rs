@@ -98,7 +98,7 @@ pub fn make_size(input: &DeriveInput) -> TokenStream2 {
         }
     };
     quote! { types::math::upper_multiple(
-        #unaligned_size,
+        std::cmp::max(#unaligned_size, <Self as types::Entity>::min_size(cfg)),
         <Self as types::Entity>::align(cfg),
     ) }
 }
@@ -206,7 +206,7 @@ fn make_load_fields(fields: &Fields, ident: TokenStream2) -> TokenStream2 {
         let value = quote! {
             {
                 src.align(<#ty as types::Entity>::align(cfg))?;
-                <#ty as types::Entity>::load(cfg, src)?
+                <R as types::io::EntityReader>::read_entity::<#ty>(src, cfg)?
             }
         };
         let named_value = match &field.ident {
@@ -247,12 +247,19 @@ pub fn make_load(input: &DeriveInput) -> TokenStream2 {
                         }
                     });
             quote! {
-                let index = usize::load(cfg, src)?;
+                let pp = src.position();
+                let index = <R as types::io::EntityReader>::read_entity::<usize>(src, cfg)?;
                 src.align(<Self as types::Entity>::align(cfg))?;
-                match index {
+                let ret = match index {
                     #matches
                     _ => { return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Enum index is out of range")); },
+                };
+                let ws = src.position() - pp;
+                let ms = <Self as types::Entity>::min_size(cfg);
+                if (ws < ms) {
+                    src.skip(ms - ws)?;
                 }
+                ret
             }
         }
         Data::Union(_) => return quote!{
@@ -282,7 +289,7 @@ fn make_store_fields(fields: &Fields, prefix: TokenStream2) -> TokenStream2 {
             let command = quote! {
                 {
                     dst.align(<#ty as types::Entity>::align(cfg))?;
-                    <#ty as types::Entity>::store(#prefix #field_name, cfg, dst)?;
+                    <W as types::io::EntityWriter>::write_entity::<#ty>(dst, cfg, #prefix #field_name)?;
                 }
             };
             quote! {
@@ -309,7 +316,7 @@ pub fn make_store(input: &DeriveInput) -> TokenStream2 {
                             #accum
                             #ty::#var #bindings => {
                                 #wrapper
-                                <usize as types::Entity>::store(&#index, cfg, dst)?;
+                                <W as types::io::EntityWriter>::write_entity::<usize>(dst, cfg, &#index)?;
                                 dst.align(<Self as types::Entity>::align(cfg))?;
                                 #store
                             },
@@ -317,8 +324,14 @@ pub fn make_store(input: &DeriveInput) -> TokenStream2 {
                     },
                 );
                 quote! {
-                    match self {
+                    let pp = dst.position();
+                    let ret = match self {
                         #matches
+                    };
+                    let ws = dst.position() - pp;
+                    let ms = <Self as types::Entity>::min_size(cfg);
+                    if (ws < ms) {
+                        dst.skip(ms - ws)?;
                     }
                 }
             }

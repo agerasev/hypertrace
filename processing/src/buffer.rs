@@ -1,6 +1,6 @@
 use crate::Context;
 use std::marker::PhantomData;
-use types::{io::CntWrapper, Entity};
+use types::{io::{CntWrapper, EntityWriter}, Entity};
 
 pub struct EntityBuffer<T: Entity> {
     buffer: ocl::Buffer<u8>,
@@ -14,7 +14,7 @@ impl<T: Entity> EntityBuffer<T> {
         if size == 0 {
             buffer.push(0);
         }
-        value.store(&context.config, &mut CntWrapper::new(&mut buffer))?;
+        CntWrapper::new(&mut buffer).write_entity::<T>(&context.config, &value)?;
         Ok(Self {
             buffer: ocl::Buffer::builder()
                 .queue(context.backend.queue.clone())

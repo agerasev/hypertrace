@@ -144,17 +144,7 @@ T abs(T a) {
     return std::abs(a);
 }
 
-
-template <typename T, typename U>
-std::common_type_t<T, U> upper_multiple(U x, T m) {
-    return ((x + m - 1)/m)*m;
-}
-
-#else // !HOST
-
-#define upper_multiple(m, x) \
-    (((x + m - 1)/m)*m)
-
 #endif // HOST
 
-int mod(int a, int b);
+#define rem(a, b) \
+    ((a % b) + b) % b

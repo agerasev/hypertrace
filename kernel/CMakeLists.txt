@@ -58,6 +58,7 @@ set(SRC
     "ocl/object/test/vector.cpp"
     "ocl/object/test/mapped.cpp"
     "ocl/object/hy/tiled_horosphere/test.cpp"
+    "ocl/object/hy/tiled_plane/test.cpp"
 
     "ocl/background/gradient.cc"
     "ocl/background/test/constant/eu.cpp"

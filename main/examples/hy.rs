@@ -9,7 +9,7 @@ use hypertrace::{
     objects::{
         background::ConstBg,
         material::{Colored, Lambertian, Specular},
-        object::{Covered, TiledHorosphere, tiling},
+        object::{Covered, TiledHorosphere, TiledPlane, tiling},
         shape::Plane,
         view::PointView,
         Mapped,
@@ -35,7 +35,7 @@ mixture! {
 
 object_choice! {
     Choice(ChoiceCache) {
-        Plane(Covered<Hyperbolic3, Plane, Mixture>),
+        Plane(TiledPlane<Mixture, tiling::Pentastar, 2>),
         Horosphere(TiledHorosphere<Mixture, tiling::Hexagonal, 3>),
     }
 }
@@ -90,28 +90,25 @@ fn main() -> proc::Result<()> {
             Hyperbolic3::shift_z(-1.0).chain(Hyperbolic3::rotate_x(PI)),
         ),
         Mapped::new(
-            Choice::from(
-                Covered::new(
-                    Plane::default(),
+            Choice::from(TiledPlane::new(
+                [
                     Mixture::new(
-                        (Colored::new(Lambertian, [0.4, 0.8, 0.2].into()), 1.0).into(),
-                        (Specular, 0.0).into(),
+                        (Colored::new(Lambertian, [0.99, 0.49, 0.01].into()), 0.9).into(),
+                        (Specular, 0.1).into(),
                     ),
+                    Mixture::new(
+                        (Colored::new(Lambertian, [0.21, 0.68, 0.68].into()), 0.9).into(),
+                        (Specular, 0.1).into(),
+                    ),
+                ],
+                std::f64::NAN,
+                0.01,
+                Mixture::new(
+                    (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.9).into(),
+                    (Specular, 0.1).into(),
                 ),
-            ),
+            )),
             Hyperbolic3::rotate_x(0.5 * PI),
-        ),
-        Mapped::new(
-            Choice::from(
-                Covered::new(
-                    Plane::default(),
-                    Mixture::new(
-                        (Colored::new(Lambertian, [0.4, 0.4, 0.4].into()), 0.8).into(),
-                        (Specular, 0.2).into(),
-                    ),
-                ),
-            ),
-            Hyperbolic3::shift_x(-1.0).chain(Hyperbolic3::rotate_y(0.5 * PI)),
         ),
         /*
         make_horosphere(
@@ -168,7 +165,7 @@ fn main() -> proc::Result<()> {
     let mut window = Window::new(sdl_context, size, "Sample")?;
 
     let mut controller = IsotropicController::<Hyperbolic3>::new(
-        Hyperbolic3::shift_z(1.0),
+        Hyperbolic3::shift_y(0.2),
         1.0,
     );
 

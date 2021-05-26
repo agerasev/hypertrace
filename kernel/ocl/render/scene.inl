@@ -16,10 +16,10 @@
 _ALLOW_MULTIPLE_DEFINITIONS_
 color3 $2($self,_sample)(__global const $Self *self, Context *context, real2 pix_pos, real2 pix_size) {
     $2(Light,$Geo) light;
-    light.base.intensity = MAKE(color3)(1.0f);
+    light.base.intensity = make(color3)(1.0f);
     light.ray = $2($view,_sample)($2($self,__view__gc)(self), context, pix_pos, pix_size);
 
-    color3 emission = MAKE(color3)(0.0f);
+    color3 emission = make(color3)(0.0f);
 
     context->prev_hash = hash_never();
     for (uint i = 0; i < $light_hops; ++i) {

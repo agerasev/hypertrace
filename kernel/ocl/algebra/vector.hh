@@ -57,11 +57,11 @@ VECTOR_ALL_N(double, double)
 #endif // DEV_F64
 VECTOR_ALL_N(real,   real)
 
-#define MAKE(x) x
+#define make(x) x
 
 #else // !HOST
 
-#define MAKE(x) (x)
+#define make(x) (x)
 
 #ifdef DOUBLE_PRECISION
 typedef double2  real2;
@@ -80,9 +80,9 @@ typedef float16 real16;
 #endif // HOST
 
 
-#define r2_new MAKE(real2)
-#define r3_new MAKE(real3)
-#define r4_new MAKE(real4)
+#define r2_new make(real2)
+#define r3_new make(real3)
+#define r4_new make(real4)
 
 #ifdef DOUBLE_PRECISION
 #define convert_real2  convert_double2

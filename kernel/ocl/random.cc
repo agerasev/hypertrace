@@ -13,20 +13,20 @@ real random_uniform(Rng *rng) {
     return (real)rng_next(rng)/(real)((ulong)1 << 32);
 }
 real2 random_uniform2(Rng *rng) {
-    return MAKE(real2)(
+    return make(real2)(
         random_uniform(rng),
         random_uniform(rng)
     );
 }
 real3 random_uniform3(Rng *rng) {
-    return MAKE(real3)(
+    return make(real3)(
         random_uniform(rng),
         random_uniform(rng),
         random_uniform(rng)
     );
 }
 real4 random_uniform4(Rng *rng) {
-    return MAKE(real4)(
+    return make(real4)(
         random_uniform(rng),
         random_uniform(rng),
         random_uniform(rng),
@@ -35,7 +35,7 @@ real4 random_uniform4(Rng *rng) {
 }
 
 real3 _sphere_point(real cos_theta, real sin_theta, real phi) {
-    return MAKE(real3)(cos(phi)*sin_theta, sin(phi)*sin_theta, cos_theta);
+    return make(real3)(cos(phi)*sin_theta, sin(phi)*sin_theta, cos_theta);
 }
 real3 random_sphere(Rng *rng) {
     real phi = 2*PI*random_uniform(rng);

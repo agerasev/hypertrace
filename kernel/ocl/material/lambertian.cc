@@ -9,7 +9,7 @@ bool lambertian_interact(__global const Lambertian *self, Context *context, real
     }
     real3 rand = random_hemisphere_cosine(&context->rng);
     Rotation3 rot = rot3_look_at(-normal);
-    light->direction = rot3_apply_dir(rot, MAKE(real3)(R0), rand);
+    light->direction = rot3_apply_dir(rot, make(real3)(R0), rand);
     return true;
 }
 
@@ -58,7 +58,7 @@ TEST_F(MaterialTest, lambertian) {
         ASSERT_EQ(length(odir), approx(1));
         ASSERT_GT(dot(odir, normal), R0);
 
-        real3 ldir = rot3_apply_dir(loc, MAKE(real3)(R0), odir);
+        real3 ldir = rot3_apply_dir(loc, make(real3)(R0), odir);
         sum += ldir;
         grid[ldir.xy] += 1.0;
     }

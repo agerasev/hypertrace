@@ -59,7 +59,7 @@ Linear3 lin3_look_at(real3 dir) {
 Linear3 lin3_look_at_up(real3 dir, real3 up) {
     real3 right = normalize(cross(dir, up));
     real3 up_ort = cross(right, dir);
-    return lin3_new(r33_transpose(MAKE(real3x3)(
+    return lin3_new(r33_transpose(make(real3x3)(
         r4_new(right, R0),
         r4_new(up_ort, R0),
         r4_new(-dir, R0),

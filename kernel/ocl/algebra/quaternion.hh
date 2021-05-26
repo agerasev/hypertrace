@@ -5,7 +5,7 @@
 
 
 typedef real4 quat;
-#define q_new MAKE(quat)
+#define q_new make(quat)
 
 #define Q0 q_new(R0, R0, R0, R0)
 #define Q1 q_new(R1, R0, R0, R0)

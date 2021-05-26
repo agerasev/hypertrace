@@ -21,7 +21,7 @@ real plane_hy_detect(__global const Plane *shape, Context *context, HyDir *norma
     if (t < -EPS) {
         return -R1;
     }
-    quat h = MAKE(quat)(p.xy + d.xy * t, 0, 0);
+    quat h = make(quat)(p.xy + d.xy * t, 0, 0);
     
     real pxy2 = length2(h.xy);
     if (pxy2 > R1) {

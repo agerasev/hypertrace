@@ -15,7 +15,7 @@ real plane_eu_detect(__global const PlaneEu *shape, Context *context, real3 *nor
     }
 
     real t = -pos.z / dir.z;
-    ray->start = MAKE(real3)(pos.xy + dir.xy * t, R0);
-    *normal = MAKE(real3)(0, 0, -1);
+    ray->start = make(real3)(pos.xy + dir.xy * t, R0);
+    *normal = make(real3)(0, 0, -1);
     return t;
 }

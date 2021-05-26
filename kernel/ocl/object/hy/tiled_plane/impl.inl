@@ -78,7 +78,7 @@ bool $2($self,_interact)(
             bool a[3] = {false, false, false};
             for (int i = 0; i < 3 - e; ++i) {
                 real o = 2 * PI * (i - 1) / 5;
-                real2 d = MAKE(real2)(cos(o), sin(o));
+                real2 d = make(real2)(cos(o), sin(o));
                 a[i] = (dot(d, p.xy) < L);
             }
             a[2] = a[2] || e;
@@ -113,7 +113,7 @@ bool $2($self,_interact)(
         bool bh = 0;
         for (int i = 0; i < 5; ++i) {
             real o = 2 * PI * i / 5;
-            real2 d = MAKE(real2)(cos(o), sin(o));
+            real2 d = make(real2)(cos(o), sin(o));
             bh = bh || (dot(d, p.xy) > (L - br * p.z));
 #if $tiling_type == PLANE_HY_TILING_PENTASTAR
             real ps = K + dot(d, p.xy);

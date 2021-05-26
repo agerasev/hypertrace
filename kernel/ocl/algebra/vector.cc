@@ -6,16 +6,16 @@
 
 TEST(VectorTest, approx) {
     ASSERT_EQ(
-        MAKE(real2)(R1 + EPS/2, R0 - EPS/2),
-        approx(MAKE(real2)(R1, R0))
+        make(real2)(R1 + EPS/2, R0 - EPS/2),
+        approx(make(real2)(R1, R0))
     );
 }
 TEST(VectorTest, contruction) {
-    auto a = MAKE(int3)(-1);
+    auto a = make(int3)(-1);
     for (int i = 0; i < a.SIZE; ++i) {
         ASSERT_EQ(a[i], -1);
     }
-    auto b = MAKE(int4)(0, 1, 2, 3);
+    auto b = make(int4)(0, 1, 2, 3);
     for (int i = 0; i < b.SIZE; ++i) {
         ASSERT_EQ(b[i], i);
     }

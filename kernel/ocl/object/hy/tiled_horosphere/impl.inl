@@ -66,14 +66,14 @@ bool $2($self,_interact)(
     }
 
 #elif $tiling_type == HOROSPHERE_TILING_HEXAGONAL
-    real2 bx = MAKE(real2)(2 / sqrt((real)3), 0);
-    real2 by = MAKE(real2)(-1 / sqrt((real)3), 1);
+    real2 bx = make(real2)(2 / sqrt((real)3), 0);
+    real2 by = make(real2)(-1 / sqrt((real)3), 1);
     real s = self->cell_size * sqrt((real)3) / 2;
-    real2 h = MAKE(real2)(dot(bx, g), dot(by, g))/s;
+    real2 h = make(real2)(dot(bx, g), dot(by, g))/s;
     int hx = (int)floor((floor(h.x) - floor(h.y)) / 3);
     int hy = (int)floor((floor(h.x + h.y) - hx) / 2);
 
-    h -= hx * MAKE(real2)(2, -1) + hy * MAKE(real2)(1, 1);
+    h -= hx * make(real2)(2, -1) + hy * make(real2)(1, 1);
     if (
         fabs(h.x - 1) > 1 - br ||
         fabs(h.y) > 1 - br ||

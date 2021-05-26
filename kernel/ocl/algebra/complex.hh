@@ -4,7 +4,7 @@
 
 
 typedef real2 comp;
-#define c_new MAKE(comp)
+#define c_new make(comp)
 
 #define C0 c_new(R0, R0)
 #define C1 c_new(R1, R0)

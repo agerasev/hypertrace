@@ -12,7 +12,7 @@ typedef real16 real4x4;
 typedef real8 comp2x2;
 
 
-#define r22_new MAKE(real2x2)
+#define r22_new make(real2x2)
 
 real2x2 r22_zero();
 real2x2 r22_one();
@@ -30,7 +30,7 @@ real2x2 r22_inverse(real2x2 m);
 
 real2x2 r22_from_comp(comp c);
 
-#define r33_new MAKE(real3x3)
+#define r33_new make(real3x3)
 
 real3x3 r33_zero();
 real3x3 r33_one();
@@ -47,7 +47,7 @@ real r33_det(real3x3 m);
 real3x3 r33_inverse(real3x3 m);
 
 
-#define r44_new MAKE(real4x4)
+#define r44_new make(real4x4)
 
 real4x4 r44_zero();
 real4x4 r44_one();
@@ -64,7 +64,7 @@ real4x4 r44_clip_to_r33(real3x3 m);
 
 real4x4 r44_from_quat(quat q);
 
-#define c22_new MAKE(comp2x2)
+#define c22_new make(comp2x2)
 
 comp2x2 c22_zero();
 comp2x2 c22_one();

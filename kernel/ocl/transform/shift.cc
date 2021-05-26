@@ -9,7 +9,7 @@ Shift2 shf2_new(real2 v) {
 }
 
 Shift2 shf2_identity() {
-    return shf2_new(MAKE(real2)(R0));
+    return shf2_new(make(real2)(R0));
 }
 
 real2 shf2_apply_pos(Shift2 m, real2 p) {
@@ -38,7 +38,7 @@ Shift3 shf3_new(real3 v) {
 }
 
 Shift3 shf3_identity() {
-    return shf3_new(MAKE(real3)(R0));
+    return shf3_new(make(real3)(R0));
 }
 
 real3 shf3_apply_pos(Shift3 m, real3 p) {

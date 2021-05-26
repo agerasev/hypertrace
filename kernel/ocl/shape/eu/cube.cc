@@ -6,7 +6,7 @@ real cube_eu_detect_nearest(real3 near, real3 *normal) {
     bool yz = near.y > near.z;
     bool xz = near.x > near.z;
     real dist = R0;
-    //*normal = MAKE(real3)(R0);
+    //*normal = make(real3)(R0);
     if (xy && xz) {
         dist = near.x;
         normal->x = R1;
@@ -25,8 +25,8 @@ real cube_eu_detect(__global const CubeEu *shape, Context *context, real3 *norma
     bool repeat = context_is_repeat(context);
     RayEu *ray = &light->ray;
 
-    const real3 cmax = MAKE(real3)(R1);
-    const real3 cmin = MAKE(real3)(-R1);
+    const real3 cmax = make(real3)(R1);
+    const real3 cmin = make(real3)(-R1);
 
     real3 inv_dir = R1/ray->direction;
 
@@ -36,11 +36,11 @@ real cube_eu_detect(__global const CubeEu *shape, Context *context, real3 *norma
     real3 near = fmin(vmin, vmax);
     real3 far = fmax(vmin, vmax);
 
-    real3 norm_in = MAKE(real3)(R0);
+    real3 norm_in = make(real3)(R0);
     float dist_in = cube_eu_detect_nearest(near, &norm_in);
     norm_in *= -sign(ray->direction);
 
-    real3 norm_out = MAKE(real3)(R0);
+    real3 norm_out = make(real3)(R0);
     float dist_out = -cube_eu_detect_nearest(-far, &norm_out);
     norm_out *= sign(ray->direction);
 

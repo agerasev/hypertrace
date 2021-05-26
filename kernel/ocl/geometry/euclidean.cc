@@ -3,10 +3,10 @@
 
 
 EuPos eu_origin() {
-    return MAKE(real3)(R0);
+    return make(real3)(R0);
 }
 EuDir eu_default_dir() {
-    return MAKE(real3)(R0, R0, -R1);
+    return make(real3)(R0, R0, -R1);
 }
 
 real eu_length(EuPos a) {

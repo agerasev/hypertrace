@@ -24,7 +24,7 @@ real hy_distance(HyPos a, HyPos b) {
 
 HyDir hy_dir_at(HyDir src_pos, HyDir src_dir, HyDir dst_pos) {
     quat p = src_pos, d = src_dir, h = dst_pos;
-    return MAKE(HyDir)(
+    return make(HyDir)(
         h.z/p.z*d.x,
         h.z/p.z*d.y,
         d.z - length(p.xy - h.xy)/p.z*length(d.xy),

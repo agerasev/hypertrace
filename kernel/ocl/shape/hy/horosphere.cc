@@ -24,11 +24,11 @@ real horosphere_detect(__global const void *shape, Context *context, HyDir *norm
     }
 
     t /= dxy*dxy;
-    quat h = MAKE(quat)(p.xy + d.xy*t, 1, 0);
+    quat h = make(quat)(p.xy + d.xy*t, 1, 0);
 
     light->ray.start = h;
     light->ray.direction = hy_dir_at(p, d, h);
-    *normal = MAKE(quat)(0, 0, -1, 0);
+    *normal = make(quat)(0, 0, -1, 0);
 
     return hy_distance(p, h);
 }

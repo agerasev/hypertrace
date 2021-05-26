@@ -8,7 +8,7 @@ add_definitions(
     "-DDEBUG"
     "-DHOST"
     "-DUNITTEST"
-    "-DVARIADIC_MACROS"
+    #"-DVARIADIC_MACROS"
 )
 
 include_directories("ocl")

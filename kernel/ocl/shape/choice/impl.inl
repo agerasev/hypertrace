@@ -2,6 +2,7 @@
 #include <types.hh>
 #include <algebra/color.hh>
 #include <render/context.hh>
+#include <shape/interface.hh>
 
 #if \
     !defined($Self) || !defined($self) || \
@@ -10,7 +11,10 @@
 #error "All required macro parameters must be defined."
 #endif
 
-#include <shape/interface.inl>
+define_shape_interface(
+    $Self, $self,
+    $Geo, $geo
+)
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(

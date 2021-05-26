@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algebra/vector.hh>
+#include "interface.hh"
 
 // Shift2
 
@@ -10,13 +11,7 @@ typedef struct {
 
 Shift2 shf2_new(real2 v);
 
-#define $Self Shift2
-#define $self shf2
-#define $elem real2
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Shift2, shf2, real2)
 
 #ifdef HOST
 template <>
@@ -35,13 +30,7 @@ typedef struct {
 
 Shift3 shf3_new(real3 v);
 
-#define $Self Shift3
-#define $self shf3
-#define $elem real3
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Shift3, shf3, real3)
 
 #ifdef HOST
 template <>

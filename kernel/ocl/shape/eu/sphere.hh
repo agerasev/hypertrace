@@ -3,18 +3,14 @@
 #include <geometry/euclidean.hh>
 #include <render/light/eu.hh>
 #include <shape/primitive.hh>
+#include <shape/interface.hh>
 
 typedef Sphere SphereEu;
 
-#define $Self SphereEu
-#define $self sphere_eu
-#define $Geo Eu
-#define $geo eu
-#include <shape/interface.inl>
-#undef $Self
-#undef $self
-#undef $Geo
-#undef $geo
+define_shape_interface(
+    SphereEu, sphere_eu,
+    Eu, eu
+)
 
 #ifndef HOST
 #include "sphere.cc"

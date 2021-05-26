@@ -1,5 +1,6 @@
 #include <types.hh>
 #include <math.hh>
+#include <object/interface.hh>
 #include "def.hh"
 
 #if \
@@ -18,11 +19,12 @@ typedef struct $Self {
 
 #define $Cache TiledHorosphereCache
 #define $cache tiled_horosphere_cache
-#define $Geo Hy
-#define $geo hy
-#include <object/interface.inl>
-#undef $Geo
-#undef $geo
+
+define_object_interface(
+    $Self, $self,
+    $Cache, $cache,
+    Hy, hy
+)
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(

@@ -3,18 +3,14 @@
 #include <geometry/hyperbolic.hh>
 #include <render/light/hy.hh>
 #include <shape/primitive.hh>
+#include <shape/interface.hh>
 
 typedef Plane PlaneHy;
 
-#define $Self PlaneHy
-#define $self plane_hy
-#define $Geo Hy
-#define $geo hy
-#include <shape/interface.inl>
-#undef $Self
-#undef $self
-#undef $Geo
-#undef $geo
+define_shape_interface(
+    PlaneHy, plane_hy,
+    Hy, hy
+)
 
 #ifndef HOST
 #include "plane.cc"

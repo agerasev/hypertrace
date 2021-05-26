@@ -1,6 +1,7 @@
 #include <macros.hh>
 #include <types.hh>
 #include <render/context.hh>
+#include "interface.hh"
 
 #if \
     !defined($Self)  || !defined($self) || \
@@ -12,6 +13,11 @@
 #endif
 
 typedef $Base $Self;
+
+define_shape_interface(
+    $Self, $self,
+    $Geo, $geo
+)
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(__global const $Self *self, Context *context, $2($Geo,Dir) *normal, $2(Light,$Geo) *light) {

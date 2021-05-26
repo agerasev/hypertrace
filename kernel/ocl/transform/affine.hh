@@ -3,18 +3,13 @@
 #include <algebra/matrix.hh>
 #include "linear.hh"
 #include "shift.hh"
+#include "interface.hh"
 
 typedef struct {
     real4x4 v;
 } Affine3;
 
-#define $Self Affine3
-#define $self aff3
-#define $elem real3
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Affine3, aff3, real3)
 
 Affine3 aff3_new(Linear3 m, Shift3 v);
 Affine3 aff3_from_raw(real4x4 v);

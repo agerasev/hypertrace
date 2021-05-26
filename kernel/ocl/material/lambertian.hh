@@ -1,12 +1,10 @@
 #pragma once
 
+#include "interface.hh"
+
 typedef void Lambertian;
 
-#define $Self Lambertian
-#define $self lambertian
-#include <material/interface.inl>
-#undef $Self
-#undef $self
+define_material_interface(Lambertian, lambertian)
 
 #ifndef HOST
 #include "lambertian.cc"

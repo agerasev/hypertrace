@@ -1,12 +1,10 @@
 #pragma once
 
+#include "interface.hh"
+
 typedef void Transparent;
 
-#define $Self Transparent
-#define $self transparent
-#include <material/interface.inl>
-#undef $Self
-#undef $self
+define_material_interface(Transparent, transparent)
 
 #ifndef HOST
 #include "transparent.cc"

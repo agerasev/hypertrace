@@ -4,6 +4,7 @@
 #include <algebra/complex.hh>
 #include <algebra/quaternion.hh>
 #include "linear.hh"
+#include "interface.hh"
 
 // Rotation2
 
@@ -13,13 +14,7 @@ typedef struct {
 
 Rotation2 rot2_new(comp v);
 
-#define $Self Rotation2
-#define $self rot2
-#define $elem real2
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Rotation2, rot2, real2)
 
 Rotation2 rot2_from_angle(real angle);
 Rotation2 rot2_look_at_cont(real2 pos);
@@ -47,13 +42,7 @@ typedef struct {
 
 Rotation3 rot3_new(quat v);
 
-#define $Self Rotation3
-#define $self rot3
-#define $elem real3
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Rotation3, rot3, real3)
 
 Rotation3 rot3_from_axis(real3 axis, real angle);
 

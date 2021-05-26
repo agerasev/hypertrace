@@ -1,4 +1,5 @@
 #include <macros.hh>
+#include "interface.hh"
 
 #if \
     !defined($Self) || !defined($self) || \
@@ -11,7 +12,10 @@
 
 typedef $Base $Self;
 
-#include "interface.inl"
+define_view_interface(
+    $Self, $self,
+    $Geo, $geo
+)
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 $2(Ray,$Geo) $2($self,_sample)(__global const $Self *view, Context *context, real2 pixel_pos, real2 pixel_size) {

@@ -3,6 +3,7 @@
 #include <algebra/complex.hh>
 #include <algebra/quaternion.hh>
 #include <algebra/matrix.hh>
+#include "interface.hh"
 
 typedef struct {
     comp2x2 v;
@@ -16,13 +17,7 @@ quat mo_apply_q(Moebius m, quat p);
 comp mo_deriv_c(Moebius m, comp p);
 quat mo_deriv_q(Moebius m, quat p, quat v);
 
-#define $Self Moebius
-#define $self mo
-#define $elem quat
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Moebius, mo, quat)
 
 Moebius mo_interpolate(Moebius a, Moebius b, real t);
 

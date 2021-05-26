@@ -3,13 +3,14 @@
 #include <algebra/color.hh>
 #include <render/context.hh>
 #include <random.hh>
+#include <material/interface.hh>
 
 #if !defined($Self) || !defined($self) || \
     !defined($mixture_interact_list)
 #error "All required macro parameters must be defined."
 #endif
 
-#include <material/interface.inl>
+define_material_interface($Self, $self)
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 bool $2($self,_interact)(

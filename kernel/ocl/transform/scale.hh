@@ -2,6 +2,7 @@
 
 #include <algebra/real.hh>
 #include "shift.hh"
+#include "interface.hh"
 
 typedef struct {
     real v;
@@ -22,13 +23,7 @@ typedef Scale Scale2;
 
 Scale2 scl2_new(real v);
 
-#define $Self Scale2
-#define $self scl2
-#define $elem real2
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Scale2, scl2, real2)
 
 void scl2_shf2_reorder(Scale2 *a, Shift2 *b);
 void shf2_scl2_reorder(Shift2 *a, Scale2 *b);
@@ -39,13 +34,7 @@ typedef Scale Scale3;
 
 Scale3 scl3_new(real v);
 
-#define $Self Scale3
-#define $self scl3
-#define $elem real3
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Scale3, scl3, real3)
 
 void scl3_shf3_reorder(Scale3 *a, Shift3 *b);
 void shf3_scl3_reorder(Shift3 *a, Scale3 *b);

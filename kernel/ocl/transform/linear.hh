@@ -2,6 +2,7 @@
 
 #include <algebra/matrix.hh>
 #include "shift.hh"
+#include "interface.hh"
 
 // Linear2
 
@@ -11,13 +12,7 @@ typedef struct {
 
 Linear2 lin2_new(real2x2 v);
 
-#define $Self Linear2
-#define $self lin2
-#define $elem real2
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Linear2, lin2, real2)
 
 void lin2_shf2_reorder(Linear2 *a, Shift2 *b);
 void shf2_lin2_reorder(Shift2 *a, Linear2 *b);
@@ -39,13 +34,7 @@ typedef struct {
 
 Linear3 lin3_new(real3x3 v);
 
-#define $Self Linear3
-#define $self lin3
-#define $elem real3
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $elem
+define_transform_interface(Linear3, lin3, real3)
 
 Linear3 lin3_look_at(real3 dir);
 Linear3 lin3_look_at_up(real3 dir, real3 up);

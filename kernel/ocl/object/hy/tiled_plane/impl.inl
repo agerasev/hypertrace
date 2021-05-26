@@ -1,5 +1,6 @@
 #include <types.hh>
 #include <math.hh>
+#include <object/interface.hh>
 
 #define PLANE_HY_TILING_UNIFORM    0
 #define PLANE_HY_TILING_PENTAGONAL 1
@@ -12,11 +13,11 @@
 #error "All required macro parameters must be defined."
 #endif
 
-#define $Geo Hy
-#define $geo hy
-#include <object/interface.inl>
-#undef $Geo
-#undef $geo
+define_object_interface(
+    $Self, $self,
+    $Cache, $cache,
+    Hy, hy
+)
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(

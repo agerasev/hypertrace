@@ -1,5 +1,6 @@
 #include <macros.hh>
 #include <types.hh>
+#include "interface.hh"
 
 #if \
     !defined($Self) || !defined($self) || \
@@ -22,7 +23,7 @@ $Self $2($self,_new)($Outer outer, $Inner inner) {
     return m;
 }
 
-#include "interface.inl"
+define_transform_interface($Self, $self, $elem)
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 $Self $2($self,_identity)() {

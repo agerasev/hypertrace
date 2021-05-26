@@ -1,6 +1,7 @@
 #include <macros.hh>
 #include <types.hh>
 #include <render/context.hh>
+#include "interface.hh"
 
 #if \
     !defined($Self)  || !defined($self) || \
@@ -13,6 +14,12 @@
 #endif
 
 typedef $Base $Self;
+
+define_object_interface(
+    $Self, $self,
+    $Cache, $cache,
+    $Geo, $geo
+)
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(

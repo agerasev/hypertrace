@@ -1,12 +1,10 @@
 #pragma once
 
+#include "interface.hh"
+
 typedef void Specular;
 
-#define $Self Specular
-#define $self specular
-#include <material/interface.inl>
-#undef $Self
-#undef $self
+define_material_interface(Specular, specular)
 
 #ifndef HOST
 #include "specular.cc"

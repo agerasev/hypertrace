@@ -1,12 +1,10 @@
 #pragma once
 
+#include "interface.hh"
+
 typedef void Absorbing;
 
-#define $Self Absorbing
-#define $self absorbing
-#include <material/interface.inl>
-#undef $Self
-#undef $self
+define_material_interface(Absorbing, absorbing)
 
 #ifndef HOST
 #include "absorbing.cc"

@@ -4,6 +4,7 @@
 #include <algebra/color.hh>
 #include <geometry/euclidean.hh>
 #include <render/light/eu.hh>
+#include "interface.hh"
 
 typedef struct GradBg {
     real3 direction;
@@ -11,15 +12,10 @@ typedef struct GradBg {
     float power;
 } GradBg;
 
-#define $Self GradBg
-#define $self grad_bg
-#define $Geo Eu
-#define $geo eu
-#include "interface.inl"
-#undef $Self
-#undef $self
-#undef $Geo
-#undef $geo
+define_background_interface(
+    GradBg, grad_bg,
+    Eu, eu
+)
 
 #ifndef HOST
 #include "gradient.cc"

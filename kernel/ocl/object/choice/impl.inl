@@ -2,6 +2,7 @@
 #include <types.hh>
 #include <algebra/color.hh>
 #include <render/context.hh>
+#include <object/interface.hh>
 
 #if \
     !defined($Self) || !defined($self) || \
@@ -12,7 +13,11 @@
 #error "All required macro parameters must be defined."
 #endif
 
-#include <object/interface.inl>
+define_object_interface(
+    $Self, $self,
+    $Cache, $cache,
+    $Geo, $geo
+)
 
 _ALLOW_MULTIPLE_DEFINITIONS_
 real $2($self,_detect)(

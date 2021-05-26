@@ -2,18 +2,14 @@
 
 #include <geometry/hyperbolic.hh>
 #include <render/light/hy.hh>
+#include <shape/interface.hh>
 
 typedef void Horosphere;
 
-#define $Self Horosphere
-#define $self horosphere
-#define $Geo Hy
-#define $geo hy
-#include <shape/interface.inl>
-#undef $Self
-#undef $self
-#undef $Geo
-#undef $geo
+define_shape_interface(
+    Horosphere, horosphere,
+    Hy, hy
+)
 
 #ifndef HOST
 #include "horosphere.cc"

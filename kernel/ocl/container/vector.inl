@@ -12,7 +12,7 @@ typedef struct $Self {
 #endif
 } $Self;
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $Element *$2($self,__element)($Self *self, usize index) {
 #if $element_size != 0
     return &self->elements[index];
@@ -21,7 +21,7 @@ $Element *$2($self,__element)($Self *self, usize index) {
 #endif
 }
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 const $Element *$2($self,__element__c)(const $Self *self, usize index) {
 #if $element_size != 0
     return &self->elements[index];
@@ -30,7 +30,7 @@ const $Element *$2($self,__element__c)(const $Self *self, usize index) {
 #endif
 }
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 __global $Element *$2($self,__element__g)(__global $Self *self, usize index) {
 #if $element_size != 0
     return &self->elements[index];
@@ -39,7 +39,7 @@ __global $Element *$2($self,__element__g)(__global $Self *self, usize index) {
 #endif
 }
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 __global const $Element *$2($self,__element__gc)(__global const $Self *self, usize index) {
 #if $element_size != 0
     return &self->elements[index];

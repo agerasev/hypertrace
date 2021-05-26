@@ -1,6 +1,6 @@
 #include "absorbing.hh"
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 bool absorbing_interact(__global const Absorbing *self, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     return false;
 }

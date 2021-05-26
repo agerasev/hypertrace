@@ -15,7 +15,7 @@ define_background_interface(
     $Geo, $geo
 )
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 void $2($self,_interact)(__global const $Self *self, Context *context, const $2(Light,$Geo) *light, color3 *emission) {
     *emission += self->color * light->base.intensity;
 }

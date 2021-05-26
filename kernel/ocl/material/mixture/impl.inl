@@ -12,7 +12,7 @@
 
 define_material_interface($Self, $self)
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 bool $2($self,_interact)(
     __global const $Self *self,
     Context *context,

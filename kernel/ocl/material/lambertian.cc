@@ -2,7 +2,7 @@
 
 #include <transform/rotation.hh>
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 bool lambertian_interact(__global const Lambertian *self, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     if (dot(light->direction, normal) > 0) {
         normal = -normal;

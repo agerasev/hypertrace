@@ -1,6 +1,6 @@
 #include "sphere.hh"
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 real sphere_eu_detect(__global const SphereEu *shape, Context *context, real3 *normal, LightEu *light) {
     bool repeat = context_is_repeat(context);
     RayEu *ray = &light->ray;

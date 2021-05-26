@@ -1,6 +1,6 @@
 #include "refractive.hh"
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 bool refractive_interact(__global const Refractive *self, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     real3 d = light->direction;
     real k = self->index;

@@ -7,7 +7,7 @@ struct Mapped {
     //CoveredTestEu inner;
 };
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+static
 __global const CoveredTestEu *mapped__inner__gc(__global const Mapped *self) {
     return NULL;
 }

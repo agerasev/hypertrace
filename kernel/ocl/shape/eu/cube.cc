@@ -20,7 +20,7 @@ real cube_eu_detect_nearest(real3 near, real3 *normal) {
     return dist;
 }
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 real cube_eu_detect(__global const CubeEu *shape, Context *context, real3 *normal, LightEu *light) {
     bool repeat = context_is_repeat(context);
     RayEu *ray = &light->ray;

@@ -1,7 +1,7 @@
 #include "horosphere.hh"
 
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 real horosphere_detect(__global const void *shape, Context *context, HyDir *normal, LightHy *light) {
     bool repeat = context_is_repeat(context);
 

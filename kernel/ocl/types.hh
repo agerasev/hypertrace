@@ -58,9 +58,9 @@ typedef long  isize;
 #endif // HOST
 
 #ifdef HOST
-#define _ALLOW_UNUSED_PARAMETERS_ _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"");
-#define _ALLOW_MULTIPLE_DEFINITIONS_ inline
+#define __allow_unused_params__ _Pragma("GCC diagnostic ignored \"-Wunused-parameter\"");
+#define __allow_multiple__ inline
 #else // !HOST
-#define _ALLOW_UNUSED_PARAMETERS_
-#define _ALLOW_MULTIPLE_DEFINITIONS_
+#define __allow_unused_params__
+#define __allow_multiple__
 #endif // HOST

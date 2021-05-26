@@ -15,7 +15,7 @@ typedef struct {
     $Inner inner;
 } $Self;
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $Self $2($self,_new)($Outer outer, $Inner inner) {
     $Self m;
     m.outer = outer;
@@ -25,7 +25,7 @@ $Self $2($self,_new)($Outer outer, $Inner inner) {
 
 define_transform_interface($Self, $self, $elem)
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $Self $2($self,_identity)() {
     return $2($self,_new)(
         $2($outer,_identity)(),
@@ -33,11 +33,11 @@ $Self $2($self,_identity)() {
     );
 }
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $elem $2($self,_apply_pos)($Self m, $elem p) {
     return $2($outer,_apply_pos)(m.outer, $2($inner,_apply_pos)(m.inner, p));
 }
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $elem $2($self,_apply_dir)($Self m, $elem p, $elem d) {
     return $2($outer,_apply_dir)(
         m.outer,
@@ -45,7 +45,7 @@ $elem $2($self,_apply_dir)($Self m, $elem p, $elem d) {
         $2($inner,_apply_dir)(m.inner, p, d)
     );
 }
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $elem $2($self,_apply_normal)($Self m, $elem p, $elem d) {
     return $2($outer,_apply_normal)(
         m.outer,
@@ -54,7 +54,7 @@ $elem $2($self,_apply_normal)($Self m, $elem p, $elem d) {
     );
 }
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $Self $2($self,_chain)($Self a, $Self b) {
     $4($inner,_,$outer,_reorder)(&a.inner, &b.outer);
     return $2($self,_new)(
@@ -62,7 +62,7 @@ $Self $2($self,_chain)($Self a, $Self b) {
         $2($inner,_chain)(a.inner, b.inner)
     );
 }
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $Self $2($self,_inverse)($Self m) {
     $Self s = $2($self,_new)(
         $2($outer,_inverse)(m.outer),

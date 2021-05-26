@@ -12,7 +12,7 @@
 #define $postfix_ $postfix
 #endif
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $2(Ray,$Geo) $4(ray_,$geo,_map,$postfix_)($2(Ray,$Geo) ray, $Map map) {
     $2(Ray,$Geo) r;
     r.start = $2($map,_apply_pos)(map, ray.start);

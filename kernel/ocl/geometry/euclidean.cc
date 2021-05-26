@@ -16,18 +16,18 @@ real eu_distance(EuPos a, EuPos b) {
     return distance(a, b);
 }
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 EuDir eu_dir_to_local(EuPos pos, EuDir dir) {
     return dir;
 }
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 EuDir eu_dir_from_local(EuPos pos, EuDir ldir) {
     return ldir;
 }
 
 // Returns the direction of the line at point `dst_pos`
 // when we know that the line at the point `src_pos` has direction of `src_dir`.
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 EuDir eu_dir_at(EuPos src_pos, EuDir src_dir, EuPos dst_pos) {
     return src_dir;
 }

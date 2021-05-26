@@ -17,7 +17,7 @@ typedef struct {
 #undef $map
 #undef $postfix
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $2(Ray,$Geo) $3(ray_,$geo,_advance)($2(Ray,$Geo) ray, real l) {
     $2($Geo,Map) map = $2($geo,_move_to)(ray.direction, l);
     return $3(ray_,$geo,_map)(ray, map);

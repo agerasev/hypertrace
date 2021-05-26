@@ -13,7 +13,7 @@
 #error "All required macro parameters must be defined."
 #endif
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 color3 $2($self,_sample)(__global const $Self *self, Context *context, real2 pix_pos, real2 pix_size) {
     $2(Light,$Geo) light;
     light.base.intensity = make(color3)(1.0f);

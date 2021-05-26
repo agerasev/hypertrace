@@ -1,6 +1,6 @@
 #include "specular.hh"
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 bool specular_interact(__global const Specular *self, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     light->direction -= (2 * dot(light->direction, normal)) * normal;
     return true;

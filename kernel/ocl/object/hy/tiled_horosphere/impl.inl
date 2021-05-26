@@ -26,7 +26,7 @@ define_object_interface(
     Hy, hy
 )
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 real $2($self,_detect)(
     __global const $Self *self,
     Context *context,
@@ -41,7 +41,7 @@ real $2($self,_detect)(
     );
 }
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 bool $2($self,_interact)(
     __global const $Self *self,
     Context *context,

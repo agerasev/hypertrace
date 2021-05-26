@@ -8,7 +8,7 @@ typedef struct ColoredLambertian {
     // Lambertian inner;
 } ColoredLambertian;
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+static
 __global const Lambertian *colored_lambertian__inner__gc(__global const ColoredLambertian *self) {
     return NULL;
 }

@@ -20,7 +20,7 @@ define_shape_interface(
     $Geo, $geo
 )
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 real $2($self,_detect)(__global const $Self *self, Context *context, $2($Geo,Dir) *normal, $2(Light,$Geo) *light) {
     Hasher orig_hasher = context->hasher;
 

@@ -1,6 +1,6 @@
 #include "transparent.hh"
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 bool transparent_interact(__global const Transparent *self, Context *context, real3 normal, LightLocal *light, float3 *emission) {
     return true;
 }

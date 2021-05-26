@@ -5,11 +5,11 @@ HyDir hy_origin() {
     return QJ;
 }
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 EuDir hy_dir_to_local(HyPos pos, HyDir dir) {
     return dir.xyz;
 }
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 HyDir hy_dir_from_local(HyPos pos, EuDir ldir) {
     return q_new(ldir, R0);
 }

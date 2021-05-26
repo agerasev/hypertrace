@@ -1,6 +1,6 @@
 #include "plane.hh"
 
-_ALLOW_UNUSED_PARAMETERS_
+__allow_unused_params__
 real plane_eu_detect(__global const PlaneEu *shape, Context *context, real3 *normal, LightEu *light) {
     // Line cannot intersect plane twice
     if (context_is_repeat(context)) {

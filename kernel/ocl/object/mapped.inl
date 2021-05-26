@@ -21,7 +21,7 @@ define_object_interface(
     $Geo, $geo
 )
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 real $2($self,_detect)(
     __global const $Self *self,
     Context *context,
@@ -35,7 +35,7 @@ real $2($self,_detect)(
     return dist;
 }
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 bool $2($self,_interact)(
     __global const $Self *self,
     Context *context,

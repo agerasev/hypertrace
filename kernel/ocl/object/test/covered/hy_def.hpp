@@ -13,12 +13,12 @@ typedef struct CoveredTestHyCache {
     HyDir normal;
 } CoveredTestHyCache;
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+inline
 __global const Horosphere *covered_test_hy__shape__gc(__global const CoveredTestHy *self) {
     return NULL;
 }
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+inline
 __global const Lambertian *covered_test_hy__material__gc(__global const CoveredTestHy *self) {
     return NULL;
 }

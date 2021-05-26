@@ -15,7 +15,7 @@ define_view_interface(
     $Geo, $geo
 )
 
-_ALLOW_MULTIPLE_DEFINITIONS_
+__allow_multiple__
 $2(Ray,$Geo) $3(point_view_,$geo,_sample)(__global const $2(PointView,$Geo) *view, Context *context, real2 pixel_pos, real2 pixel_size) {
     $2(Ray,$Geo) ray;
     real2 sampled_pos = pixel_pos + pixel_size * (random_uniform2(&context->rng) - (real)0.5f);

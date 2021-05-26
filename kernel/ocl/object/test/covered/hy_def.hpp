@@ -4,7 +4,7 @@
 #include <geometry/hyperbolic.hh>
 #include <geometry/ray_hy.hh>
 #include <shape/hy/horosphere.hh>
-#include <material/basic/lambertian.hh>
+#include <material/lambertian.hh>
 #include <render/light/hy.hh>
 
 typedef void CoveredTestHy;

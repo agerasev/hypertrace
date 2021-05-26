@@ -8,7 +8,7 @@ pub struct Plane;
 
 impl EntitySource for Plane {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("shape/basic.hh")
+        SourceTree::new("shape/primitive.hh")
     }
 }
 

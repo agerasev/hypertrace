@@ -2,7 +2,7 @@
 
 #include <geometry/euclidean.hh>
 #include <render/light/eu.hh>
-#include <shape/basic.hh>
+#include <shape/primitive.hh>
 
 typedef Plane PlaneEu;
 

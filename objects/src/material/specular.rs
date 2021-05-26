@@ -3,12 +3,12 @@ use type_macros::*;
 use types::{prelude::*, source::SourceTree, Config};
 
 #[derive(Clone, Copy, Debug, EntityId, Entity, SizedEntity)]
-pub struct Transparent;
+pub struct Specular;
 
-impl EntitySource for Transparent {
+impl EntitySource for Specular {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("material/basic/transparent.hh")
+        SourceTree::new("material/specular.hh")
     }
 }
 
-impl Material for Transparent {}
+impl Material for Specular {}

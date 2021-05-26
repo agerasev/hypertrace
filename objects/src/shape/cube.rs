@@ -8,7 +8,7 @@ pub struct Cube;
 
 impl EntitySource for Cube {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("shape/basic.hh")
+        SourceTree::new("shape/primitive.hh")
     }
 }
 

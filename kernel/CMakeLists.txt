@@ -46,11 +46,11 @@ set(SRC
     "ocl/shape/mapped_test.cpp"
     "ocl/shape/vector_test.cpp"
 
-    "ocl/material/basic/absorbing.cc"
-    "ocl/material/basic/transparent.cc"
-    "ocl/material/basic/specular.cc"
-    "ocl/material/basic/lambertian.cc"
-    "ocl/material/basic/refractive.cc"
+    "ocl/material/absorbing.cc"
+    "ocl/material/transparent.cc"
+    "ocl/material/specular.cc"
+    "ocl/material/lambertian.cc"
+    "ocl/material/refractive.cc"
     "ocl/material/test/modifier.cpp"
 
     "ocl/object/test/covered/eu.cpp"

@@ -8,7 +8,7 @@ pub struct Sphere;
 
 impl EntitySource for Sphere {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("shape/basic.hh")
+        SourceTree::new("shape/primitive.hh")
     }
 }
 

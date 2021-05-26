@@ -21,7 +21,7 @@ impl Refractive {
 
 impl EntitySource for Refractive {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("material/basic/refractive.hh")
+        SourceTree::new("material/refractive.hh")
     }
 }
 

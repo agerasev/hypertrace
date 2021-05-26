@@ -7,7 +7,7 @@ pub struct Absorbing;
 
 impl EntitySource for Absorbing {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("material/basic/absorbing.hh")
+        SourceTree::new("material/absorbing.hh")
     }
 }
 

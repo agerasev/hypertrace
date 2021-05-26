@@ -1,6 +1,6 @@
 #ifdef UNITTEST
 
-#include "../basic/transparent.hh"
+#include "../transparent.hh"
 
 struct ColoredTransparent {
     // Transparent inner;

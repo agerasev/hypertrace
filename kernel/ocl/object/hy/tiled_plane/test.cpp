@@ -1,4 +1,4 @@
-#include <material/basic/lambertian.hh>
+#include <material/lambertian.hh>
 #include <shape/hy/plane.hh>
 #include <render/light/hy.hh>
 

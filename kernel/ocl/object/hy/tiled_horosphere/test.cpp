@@ -1,4 +1,4 @@
-#include <material/basic/lambertian.hh>
+#include <material/lambertian.hh>
 #include <shape/hy/horosphere.hh>
 #include <render/light/hy.hh>
 #include "def.hh"

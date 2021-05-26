@@ -4,7 +4,7 @@
 #include <geometry/euclidean.hh>
 #include <geometry/ray_eu.hh>
 #include <shape/eu/sphere.hh>
-#include <material/basic/lambertian.hh>
+#include <material/lambertian.hh>
 #include <render/light/eu.hh>
 
 typedef void CoveredTestEu;

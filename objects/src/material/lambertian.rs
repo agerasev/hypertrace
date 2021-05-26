@@ -7,7 +7,7 @@ pub struct Lambertian;
 
 impl EntitySource for Lambertian {
     fn source(_: &Config) -> SourceTree {
-        SourceTree::new("material/basic/lambertian.hh")
+        SourceTree::new("material/lambertian.hh")
     }
 }
 

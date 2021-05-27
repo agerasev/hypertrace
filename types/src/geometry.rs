@@ -1,10 +1,10 @@
 use crate::{source::SourceTree, Config, EntityId, EntitySource, SizedEntity, Map};
 use ccgeom::{Euclidean3, Hyperbolic3};
 
-pub trait Geometry: EntitySource {
-    type Pos: SizedEntity;
-    type Dir: SizedEntity;
-    type Map: Map<Self::Pos, Self::Dir> + SizedEntity;
+pub trait Geometry: EntitySource + Clone {
+    type Pos: SizedEntity + Clone;
+    type Dir: SizedEntity + Clone;
+    type Map: Map<Self::Pos, Self::Dir> + SizedEntity + Clone;
 
     fn geometry_name() -> (String, String);
     fn geometry_source(cfg: &Config) -> SourceTree;

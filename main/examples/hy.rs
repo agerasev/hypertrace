@@ -1,16 +1,16 @@
 use std::{
     rc::Rc,
     time::{Duration, Instant},
-    f64::consts::PI,
+    f64::{NAN, consts::PI},
 };
-use vecmat::{transform::{Moebius}};
+use vecmat::{transform::{Moebius}, Vector, Matrix, Complex};
 use ccgeom::{Geometry3, Hyperbolic3};
 use hypertrace::{
     objects::{
         background::ConstBg,
-        material::{Colored, Lambertian, Specular},
+        material::*,
         object::{Covered, TiledHorosphere, TiledPlane, tiling},
-        shape::Plane,
+        shape::{Plane, Horosphere},
         view::PointView,
         Mapped,
         SceneImpl,
@@ -26,17 +26,48 @@ use hypertrace::{
     cli::{OclApp, get_ocl_context},
 };
 
+fn unpack_color(rgb: u32) -> Vector<f32, 3> {
+    make_color((Vector::from([rgb >> 16, rgb >> 8, rgb]) & Vector::fill(0xff)).map(|x| (x as f32) / 255.0))
+}
+
+fn make_color(rgb: Vector<f32, 3>) -> Vector<f32, 3> {
+    rgb.powf(2.2)
+}
+
 mixture! {
     Mixture {
         diffuse: Colored<Lambertian>,
         specular: Specular,
+        transparent: Transparent,
     }
 }
 
+fn make_material(
+    diffuse: Vector<f32, 3>,
+    specularity: f64,
+    transparency: f64,
+    emission: Option<Vector<f32, 3>>,
+) -> Emissive<Mixture> {
+    Emissive::new(
+        Mixture::new(
+            (Colored::new(Lambertian, diffuse), 1.0 - specularity - transparency).into(),
+            (Specular, specularity).into(),
+            (Transparent, transparency).into(),
+        ),
+        emission.unwrap_or([0.0, 0.0, 0.0].into()),
+    )
+}
+
+type MyMaterial = Emissive<Mixture>;
+
 object_choice! {
     Choice(ChoiceCache) {
-        Plane(TiledPlane<Mixture, tiling::Pentastar, 2>),
-        Horosphere(TiledHorosphere<Mixture, tiling::Hexagonal, 3>),
+        Plane(Covered<Hyperbolic3, Plane, MyMaterial>),
+        PlaneStar(TiledPlane<MyMaterial, tiling::Pentastar, 2>),
+        PlanePenta(TiledPlane<MyMaterial, tiling::Pentagonal, 2>),
+        Horosphere(Covered<Hyperbolic3, Horosphere, MyMaterial>),
+        HoroHexa(TiledHorosphere<MyMaterial, tiling::Hexagonal, 3>),
+        HoroSquare(TiledHorosphere<MyMaterial, tiling::Square, 4>),
     }
 }
 
@@ -63,7 +94,10 @@ fn main() -> proc::Result<()> {
     let size = (800, 600);
 
     let view = Mapped::new(PointView::new(1.0), Moebius::identity());
+
+    let border_material = make_material(unpack_color(0xe4e4e4), 0.0, 0.0, Some(make_color(Vector::fill(1.0))));
     let objects = vec![
+        /*
         Mapped::new(
             Choice::from(TiledHorosphere::new(
                 [
@@ -110,51 +144,64 @@ fn main() -> proc::Result<()> {
             )),
             Hyperbolic3::rotate_x(0.5 * PI),
         ),
-        /*
-        make_horosphere(
-            Moebius<comp>::identity(),
-            MyHorosphere::Tiling::HEXAGONAL,
-            MyHorosphereMaterials(
-                make_material(make_color(0xfe0000), 0.1, 0.1),
-                make_material(make_color(0xffaa01), 0.1, 0.1),
-                make_material(make_color(0x35adae), 0.1, 0.1)
-            ),
-            0.5, 0.02,
-            make_material(border_color, 0.0, 0, float3(1.0))
-        ),
-        make_horosphere(
-            Moebius<comp>(1_r, math::sqrt(2_r), 0_r, 1_r)*Hy::xrotate(PI),
-            MyHorosphere::Tiling::SQUARE,
-            MyHorosphereMaterials(
-                make_material(make_color(0xfe7401), 0.1, 0.1),
-                make_material(make_color(0xfe0000), 0.1, 0.1),
-                make_material(make_color(0xffaa01), 0.1, 0.1),
-                make_material(make_color(0xfed601), 0.1, 0.1)
-            ),
-            0.5, 0.02,
-            make_material(border_color, 0.0, 0, float3(1.0))
-        ),
-        make_plane(
-            Moebius<comp>::identity(),
-            MyPlane::Tiling::PENTASTAR,
-            MyPlaneMaterials(
-                make_material(make_color(0xfe7401), 0.1),
-                make_material(make_color(0x35adae), 0.1)
-            ),
-            0.01,
-            make_material(border_color, 0.0, 0, float3(1.0))
-        ),
-        make_plane(
-            Moebius<comp>(1_r, 2*1_i, 0_r, 1_r),
-            MyPlane::Tiling::PENTAGONAL,
-            MyPlaneMaterials(
-                make_material(make_color(0xfe0000), 0.1),
-                make_material(make_color(0xfed601), 0.1)
-            ),
-            0.02,
-            make_material(border_color, 0.0, 0, float3(1.0))
-        ),
         */
+        Mapped::new(
+            Choice::HoroHexa(TiledHorosphere::new(
+                [
+                    make_material(unpack_color(0xfe0000), 0.1, 0.1, None),
+                    make_material(unpack_color(0xffaa01), 0.1, 0.1, None),
+                    make_material(unpack_color(0x35adae), 0.1, 0.1, None),
+                ],
+                0.5,
+                0.02,
+                border_material.clone(),
+            )),
+            Moebius::identity(),
+        ),
+        Mapped::new(
+            Choice::HoroSquare(TiledHorosphere::new(
+                [
+                    make_material(unpack_color(0xfe7401), 0.1, 0.1, None),
+                    make_material(unpack_color(0xfe0000), 0.1, 0.1, None),
+                    make_material(unpack_color(0xffaa01), 0.1, 0.1, None),
+                    make_material(unpack_color(0xfed601), 0.1, 0.1, None),
+                ],
+                0.5,
+                0.02,
+                border_material.clone(),
+            )),
+            Moebius::from(Matrix::from([
+                [Complex::new(1.0, 0.0), Complex::new(2.0f64.sqrt(), 0.0)],
+                [Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)],
+            ])).chain(Hyperbolic3::rotate_x(PI)),
+        ),
+        Mapped::new(
+            Choice::PlaneStar(TiledPlane::new(
+                [
+                    make_material(unpack_color(0xfe7401), 0.1, 0.0, None),
+                    make_material(unpack_color(0x35adae), 0.1, 0.0, None)
+                ],
+                NAN,
+                0.01,
+                border_material.clone(),
+            )),
+            Moebius::identity(),
+        ),
+        Mapped::new(
+            Choice::PlanePenta(TiledPlane::new(
+                [
+                    make_material(unpack_color(0xfe0000), 0.1, 0.0, None),
+                    make_material(unpack_color(0xfed601), 0.1, 0.0, None)
+                ],
+                NAN,
+                0.02,
+                border_material.clone(),
+            )),
+            Moebius::from(Matrix::from([
+                [Complex::new(1.0, 0.0), Complex::new(0.0, 2.0)],
+                [Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)],
+            ])),
+        ),
     ];
     let background = ConstBg::new([1.0, 1.0, 1.0].into());
     let mut scene = SceneImpl::<Hyperbolic3, _, _, _, 3>::new(view, objects, background);

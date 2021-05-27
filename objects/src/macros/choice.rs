@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! entity_choice {
     { $self:ident { $( $variant:ident($vtype:ty) ),* $(,)? } } => {
-        #[derive(type_macros::EntityId, type_macros::Entity, type_macros::SizedEntity, type_macros::EntitySource)]
+        #[derive(Clone, type_macros::EntityId, type_macros::Entity, type_macros::SizedEntity, type_macros::EntitySource)]
         pub enum $self {
             $(
                 #[getter]

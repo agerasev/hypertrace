@@ -28,7 +28,7 @@ impl<M: Material> types::EntityId for Component<M> {
 #[macro_export]
 macro_rules! mixture {
     { $self:ident { $( $component:ident : $mtype:ty ),* $(,)? } } => {
-        #[derive(type_macros::EntityId, type_macros::Entity, type_macros::SizedEntity, type_macros::EntitySource)]
+        #[derive(Clone, type_macros::EntityId, type_macros::Entity, type_macros::SizedEntity, type_macros::EntitySource)]
         pub struct $self {
             $(
                 pub $component: $crate::material::Component<$mtype>,

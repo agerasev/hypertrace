@@ -8,7 +8,7 @@ macro_rules! object_choice {
         }
 
         #[allow(non_snake_case)]
-        #[derive(type_macros::EntityId, type_macros::Entity, type_macros::SizedEntity, type_macros::EntitySource)]
+        #[derive(Clone, type_macros::EntityId, type_macros::Entity, type_macros::SizedEntity, type_macros::EntitySource)]
         pub struct $cache<G: types::Geometry>
         where
             $(

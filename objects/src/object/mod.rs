@@ -9,7 +9,7 @@ pub mod tiling;
 use types::{prelude::*, source::SourceTree, Config};
 
 pub trait Object<G: Geometry>: Entity {
-    type Cache: SizedEntity;
+    type Cache: SizedEntity + Clone;
 
     fn object_name() -> (String, String) {
         Self::name()

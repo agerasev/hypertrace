@@ -8,7 +8,7 @@ use types::{
     Config,
 };
 
-#[derive(Clone, Copy, Debug, EntityId, Entity, SizedEntity, EntitySource)]
+#[derive(Clone, EntityId, Entity, SizedEntity, EntitySource)]
 pub struct Covered<G: Geometry, S: Shape<G>, M: Material> {
     geometry: PhantomData<G>,
     #[getter]
@@ -17,7 +17,7 @@ pub struct Covered<G: Geometry, S: Shape<G>, M: Material> {
     pub shape: S,
 }
 
-#[derive(Clone, Copy, Debug, EntityId, Entity, SizedEntity, EntitySource)]
+#[derive(Clone, Copy, EntityId, Entity, SizedEntity, EntitySource)]
 pub struct CoveredCache<G: Geometry> {
     pub normal: G::Dir,
 }

@@ -9,7 +9,8 @@ use hypertrace::{
     objects::{
         background::ConstBg,
         material::*,
-        object::{TiledHorosphere, TiledPlane, tiling},
+        object::{Covered, TiledHorosphere, TiledPlane, tiling},
+        shape::{Plane, Horosphere},
         view::PointView,
         Mapped,
         SceneImpl,
@@ -61,8 +62,10 @@ type MyMaterial = Emissive<Mixture>;
 
 object_choice! {
     Choice(ChoiceCache) {
+        Plane(Covered<Hyperbolic3, Plane, MyMaterial>),
         PlaneStar(TiledPlane<MyMaterial, tiling::Pentastar, 2>),
         PlanePenta(TiledPlane<MyMaterial, tiling::Pentagonal, 2>),
+        Horo(Covered<Hyperbolic3, Horosphere, MyMaterial>),
         HoroHexa(TiledHorosphere<MyMaterial, tiling::Hexagonal, 3>),
         HoroSquare(TiledHorosphere<MyMaterial, tiling::Square, 4>),
     }
@@ -152,6 +155,18 @@ fn main() -> proc::Result<()> {
                 [Complex::new(1.0, 0.0), Complex::new(0.0, 2.0)],
                 [Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)],
             ])),
+        ),
+        Mapped::new(
+            Choice::Horo(Covered::new(
+                Horosphere,
+                make_material(unpack_color(0x279eff), 0.1, 0.1, None),
+            )),
+            Moebius::from(Matrix::from([
+                [Complex::new(1.0, 0.0), Complex::new(0.0, 2.0)],
+                [Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)],
+            ]))
+                .chain(Hyperbolic3::shift_x(2.0))
+                .chain(Hyperbolic3::rotate_y(PI / 2.0)),
         ),
     ];
 

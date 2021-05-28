@@ -1,7 +1,6 @@
 use std::{
     rc::Rc,
     time::{Duration, Instant},
-    f64::consts::PI,
 };
 use vecmat::{transform::{Moebius}};
 use ccgeom::{Geometry3, Hyperbolic3};

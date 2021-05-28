@@ -9,8 +9,7 @@ use hypertrace::{
     objects::{
         background::ConstBg,
         material::*,
-        object::{Covered, TiledHorosphere, TiledPlane, tiling},
-        shape::{Plane, Horosphere},
+        object::{TiledHorosphere, TiledPlane, tiling},
         view::PointView,
         Mapped,
         SceneImpl,
@@ -54,7 +53,7 @@ fn make_material(
             (Specular, specularity).into(),
             (Transparent, transparency).into(),
         ),
-        emission.unwrap_or([0.0, 0.0, 0.0].into()),
+        emission.unwrap_or_else(|| [0.0, 0.0, 0.0].into()),
     )
 }
 
@@ -62,17 +61,16 @@ type MyMaterial = Emissive<Mixture>;
 
 object_choice! {
     Choice(ChoiceCache) {
-        Plane(Covered<Hyperbolic3, Plane, MyMaterial>),
         PlaneStar(TiledPlane<MyMaterial, tiling::Pentastar, 2>),
         PlanePenta(TiledPlane<MyMaterial, tiling::Pentagonal, 2>),
-        Horosphere(Covered<Hyperbolic3, Horosphere, MyMaterial>),
         HoroHexa(TiledHorosphere<MyMaterial, tiling::Hexagonal, 3>),
         HoroSquare(TiledHorosphere<MyMaterial, tiling::Square, 4>),
     }
 }
 
 fn main() -> proc::Result<()> {
-    let matches = clap::App::new("Sample")
+    let title = "Hyperbolic";
+    let matches = clap::App::new(title)
         .about("Hypertrace sample")
         .ocl_args()
         .get_matches();
@@ -95,56 +93,9 @@ fn main() -> proc::Result<()> {
 
     let view = Mapped::new(PointView::new(1.0), Moebius::identity());
 
+    let background = ConstBg::new(unpack_color(0xeeeeee));
     let border_material = make_material(unpack_color(0xe4e4e4), 0.0, 0.0, Some(make_color(Vector::fill(1.0))));
     let objects = vec![
-        /*
-        Mapped::new(
-            Choice::from(TiledHorosphere::new(
-                [
-                    Mixture::new(
-                        (Colored::new(Lambertian, [0.99, 0.01, 0.01].into()), 0.9).into(),
-                        (Specular, 0.1).into(),
-                    ),
-                    Mixture::new(
-                        (Colored::new(Lambertian, [1.0, 0.66, 0.01].into()), 0.9).into(),
-                        (Specular, 0.1).into(),
-                    ),
-                    Mixture::new(
-                        (Colored::new(Lambertian, [0.21, 0.68, 0.68].into()), 0.9).into(),
-                        (Specular, 0.1).into(),
-                    ),
-                ],
-                0.5,
-                0.02,
-                Mixture::new(
-                    (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.9).into(),
-                    (Specular, 0.1).into(),
-                ),
-            )),
-            Hyperbolic3::shift_z(-1.0).chain(Hyperbolic3::rotate_x(PI)),
-        ),
-        Mapped::new(
-            Choice::from(TiledPlane::new(
-                [
-                    Mixture::new(
-                        (Colored::new(Lambertian, [0.99, 0.49, 0.01].into()), 0.9).into(),
-                        (Specular, 0.1).into(),
-                    ),
-                    Mixture::new(
-                        (Colored::new(Lambertian, [0.21, 0.68, 0.68].into()), 0.9).into(),
-                        (Specular, 0.1).into(),
-                    ),
-                ],
-                std::f64::NAN,
-                0.01,
-                Mixture::new(
-                    (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.9).into(),
-                    (Specular, 0.1).into(),
-                ),
-            )),
-            Hyperbolic3::rotate_x(0.5 * PI),
-        ),
-        */
         Mapped::new(
             Choice::HoroHexa(TiledHorosphere::new(
                 [
@@ -203,16 +154,18 @@ fn main() -> proc::Result<()> {
             ])),
         ),
     ];
-    let background = ConstBg::new([1.0, 1.0, 1.0].into());
+
     let mut scene = SceneImpl::<Hyperbolic3, _, _, _, 3>::new(view, objects, background);
     let filter = GammaFilter::new(&context.backend, 1.0 / 2.2)?;
     let mut pipeline = Pipeline::new(&context, size, &scene, filter)?;
 
     let sdl_context = Rc::new(sdl2::init()?);
-    let mut window = Window::new(sdl_context, size, "Sample")?;
+    let mut window = Window::new(sdl_context, size, title)?;
 
     let mut controller = IsotropicController::<Hyperbolic3>::new(
-        Hyperbolic3::shift_y(0.2),
+        Hyperbolic3::rotate_z(5.0 * PI / 6.0)
+            .chain(Hyperbolic3::rotate_x(2.0 * PI / 5.0))
+            .chain(Hyperbolic3::shift_z(2.0)),
         1.0,
     );
 

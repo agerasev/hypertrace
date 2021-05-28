@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 lazy_static = "1.4"
-ocl-include = { path = "../includer" }
+ocl-include = "0.5"
 uni-path = "1"
 
 [build-dependencies]

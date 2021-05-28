@@ -1,5 +1,5 @@
 use super::*;
-use ccgeom::Euclidean3;
+use base::ccgeom::Euclidean3;
 use type_macros::*;
 use types::{source::SourceTree, Config};
 

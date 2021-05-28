@@ -80,7 +80,7 @@ macro_rules! object_choice {
 #[cfg(test)]
 mod tests {
     use crate::{object_choice, object::Covered, shape::{Sphere, Cube}, material::{Lambertian, Specular}};
-    use ccgeom::Euclidean3;
+    use base::ccgeom::Euclidean3;
 
     object_choice! {
         TestChoice(TestChoiceCache) {

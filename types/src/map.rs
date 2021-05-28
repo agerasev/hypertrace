@@ -5,13 +5,15 @@ use crate::{
     source::{SourceBuilder, SourceTree},
     Config, Entity, EntityId, SizedEntity, EntitySource,
 };
-use ccgeom::Map as GeoMap;
-use std::{any::TypeId, io};
-use vecmat::{
-    complex::{Complex, Quaternion},
-    transform::{Chain, Linear, Moebius, Reorder, Rotation2, Rotation3, Shift},
-    Matrix, Vector,
+use base::{
+    ccgeom::Map as GeoMap,
+    vecmat::{
+        complex::{Complex, Quaternion},
+        transform::{Chain, Linear, Moebius, Reorder, Rotation2, Rotation3, Shift},
+        Matrix, Vector,
+    },
 };
+use std::{any::TypeId, io};
 
 pub trait Map<P, D = P>: GeoMap<P, D> + SizedEntity {
     fn map_name() -> (String, String);

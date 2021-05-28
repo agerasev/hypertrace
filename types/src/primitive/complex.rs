@@ -2,7 +2,7 @@ use crate::{
     primitive::{PrimScal, PrimVec},
     Entity, EntityId, SizedEntity, EntitySource,
 };
-use vecmat::{Complex, Quaternion, Vector};
+use base::vecmat::{Complex, Quaternion, Vector};
 
 impl<T: PrimScal> EntityId for Complex<T> {
     impl_named_unwrap!(Vector<T, 2>);

@@ -1,5 +1,4 @@
 use crate::Background;
-use ccgeom::Euclidean3;
 use type_macros::*;
 use types::{
     include_template,
@@ -7,7 +6,10 @@ use types::{
     source::{include, SourceBuilder, SourceTree},
     Config,
 };
-use vecmat::Vector;
+use base::{
+    vecmat::Vector,
+    ccgeom::Euclidean3,
+};
 
 /// Constant color background.
 #[derive(Clone, Debug, EntityId, Entity, SizedEntity)]

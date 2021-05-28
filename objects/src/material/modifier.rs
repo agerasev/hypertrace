@@ -6,7 +6,7 @@ use types::{
     source::{SourceBuilder, SourceTree},
     Config,
 };
-use vecmat::Vector;
+use base::vecmat::Vector;
 
 // Colored
 

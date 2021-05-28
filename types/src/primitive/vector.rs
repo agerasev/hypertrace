@@ -5,7 +5,7 @@ use crate::{
     Config, Entity, EntityId, SizedEntity, EntitySource,
 };
 use std::{fmt::Debug, io};
-use vecmat::Vector;
+use base::vecmat::Vector;
 
 pub trait PrimVec: SizedEntity + Copy + Default + Debug + 'static {}
 

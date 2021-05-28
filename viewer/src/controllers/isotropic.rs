@@ -1,5 +1,5 @@
 use crate::{Controller, Motion};
-use ccgeom::{Geometry3, Map};
+use base::ccgeom::{Geometry3, Map};
 
 pub struct IsotropicController<G: Geometry3> {
     map: G::Map,

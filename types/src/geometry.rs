@@ -1,5 +1,5 @@
 use crate::{source::SourceTree, Config, EntityId, EntitySource, SizedEntity, Map};
-use ccgeom::{Euclidean3, Hyperbolic3};
+use base::ccgeom::{self, Euclidean3, Hyperbolic3};
 
 pub trait Geometry: EntitySource + Clone {
     type Pos: SizedEntity + Clone;

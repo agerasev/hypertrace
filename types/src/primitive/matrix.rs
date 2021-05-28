@@ -5,7 +5,7 @@ use crate::{
     Config, Entity, EntityId, SizedEntity, EntitySource,
 };
 use std::io;
-use vecmat::{Complex, Matrix};
+use base::vecmat::{Complex, Matrix};
 
 // Real2x2
 

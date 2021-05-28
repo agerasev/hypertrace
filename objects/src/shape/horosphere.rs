@@ -1,5 +1,5 @@
 use super::*;
-use ccgeom::Hyperbolic3;
+use base::ccgeom::Hyperbolic3;
 use type_macros::*;
 use types::{source::SourceTree, Config};
 

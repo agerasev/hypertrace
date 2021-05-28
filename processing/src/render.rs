@@ -1,6 +1,6 @@
 use crate::{Canvas, Context, EntityBuffer};
 use objects::Scene;
-use ocl_include::{source, Index, Parser};
+use kernel::includer::{source, Index, Parser};
 use regex::{Captures, Regex};
 use std::{fs, marker::PhantomData};
 use types::{prelude::*, Config};

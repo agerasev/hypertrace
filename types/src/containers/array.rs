@@ -6,7 +6,7 @@ use crate::{
     Config, Entity, EntityId, SizedEntity, EntitySource,
 };
 use std::{hash::Hasher, io, iter};
-use vecmat::Vector;
+use base::vecmat::Vector;
 
 impl<T: SizedEntity, const N: usize> EntityId for [T; N] {
     fn name() -> (String, String) {

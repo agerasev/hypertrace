@@ -13,5 +13,7 @@ type_macros = { package = "hypertrace-type-macros", path = "../type-macros" }
 view = { package = "hypertrace-viewer", path = "../viewer" }
 objects = { package = "hypertrace-objects", path = "../objects" }
 proc = { package = "hypertrace-processing", path = "../processing", features = ["backend_ocl"] }
-vecmat = { path = "../vecmat" }
-ccgeom = { path = "../ccgeom" }
+
+[dev-dependencies]
+vecmat = "0.7"
+ccgeom = "0.1"

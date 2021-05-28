@@ -7,7 +7,7 @@ use types::{
     source::{include, SourceBuilder, SourceTree},
     Config,
 };
-use ccgeom::{Hyperbolic3};
+use base::ccgeom::{Hyperbolic3};
 
 pub trait HorosphereTiling: Tiling {
     fn name() -> String;

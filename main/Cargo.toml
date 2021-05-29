@@ -1,0 +1,19 @@
+[package]
+name = "hypertrace"
+version = "0.0.0"
+authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+clap = "2.33"
+sdl2 = "0.34"
+ocl = "0.19"
+types = { package = "hypertrace-types", path = "../types" }
+type_macros = { package = "hypertrace-type-macros", path = "../type-macros" }
+view = { package = "hypertrace-viewer", path = "../viewer" }
+objects = { package = "hypertrace-objects", path = "../objects" }
+proc = { package = "hypertrace-processing", path = "../processing", features = ["backend_ocl"] }
+
+[dev-dependencies]
+vecmat = "0.7"
+ccgeom = "0.1"

@@ -1,0 +1,14 @@
+[package]
+name = "hypertrace-types"
+version = "0.0.0"
+authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+base = { package = "hypertrace-base", path = "../base" }
+byteorder = "1"
+num-integer = "0.1"
+num-traits = "0.2"
+ref-cast = "1.0"
+fxhash = "0.2"
+uni-path = "1"

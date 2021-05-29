@@ -1,9 +1,8 @@
+/target
+/Cargo.lock
 /build
-/output
-.coverage.info
-*.png
-*.mp4
-*.stackdump
+
+__pycache__
 
 /.vscode
 *.code-workspace

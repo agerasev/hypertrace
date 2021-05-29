@@ -1,0 +1,12 @@
+[workspace]
+
+members = [
+    "kernel",
+    "base",
+    "types",
+    "type-macros",
+    "objects",
+    "processing",
+    "viewer",
+    "main",
+]

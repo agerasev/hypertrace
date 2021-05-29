@@ -1,28 +1,21 @@
-language: cpp
-
-compiler:
-  - gcc
-  - clang
+language: rust
 
 os: linux
-#dist: bionic
+dist: bionic
 
-#before_install:
-#  - sudo apt-get update
-#install:
-#  - sudo apt-get install -y ocl-icd-opencl-dev pocl-opencl-icd libpocl-dev
+rust: stable
 
 addons:
   apt:
     packages:
+      - clang
       - cmake
-      - catch
-      - lcov
-      - curl
+      - make
+
+before_install:
+  - sudo apt-get update
+install:
+  - sudo apt-get install -y libgtest-dev libsdl2-dev ocl-icd-opencl-dev pocl-opencl-icd libpocl-dev
 
 script:
-  - ./script/test.sh
-
-#after_success:
-#  - ./script/cov.sh
-#  - bash <(curl -s https://codecov.io/bash) -f .coverage.info || echo "Codecov did not collect coverage reports"
+  - cargo test

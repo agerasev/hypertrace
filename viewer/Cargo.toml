@@ -1,0 +1,9 @@
+[package]
+name = "hypertrace-viewer"
+version = "0.0.0"
+authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+sdl2 = { version = "0.34", features = ["unsafe_textures"] }
+base = { package = "hypertrace-base", path = "../base" }

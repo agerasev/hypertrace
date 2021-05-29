@@ -1,0 +1,9 @@
+[package]
+name = "hypertrace-base"
+version = "0.0.0"
+authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+vecmat = "0.7"
+ccgeom = "0.1"

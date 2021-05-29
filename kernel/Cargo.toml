@@ -1,0 +1,19 @@
+[package]
+name = "hypertrace-kernel"
+version = "0.0.0"
+authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+lazy_static = "1.4"
+ocl-include = "0.5"
+uni-path = "1"
+
+[build-dependencies]
+walkdir = "2"
+cmake = { version = "0.1", optional = true }
+num_cpus = { version = "1.0", optional = true }
+
+[features]
+default = ["host_tests"]
+host_tests = ["cmake", "num_cpus"]

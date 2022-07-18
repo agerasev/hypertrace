@@ -78,7 +78,7 @@ set(SRC
 )
 
 enable_testing()
-add_subdirectory("/usr/src/gtest" ${CMAKE_BINARY_DIR}/gtest)
+add_subdirectory("/usr/src/googletest" ${CMAKE_BINARY_DIR}/gtest)
 include_directories(${GTEST_INCLUDE_DIR})
 
 macro(add_test_target TARGET)

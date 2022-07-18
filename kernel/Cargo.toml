@@ -15,5 +15,5 @@ cmake = { version = "0.1", optional = true }
 num_cpus = { version = "1.0", optional = true }
 
 [features]
-default = ["host_tests"]
+default = []
 host_tests = ["cmake", "num_cpus"]

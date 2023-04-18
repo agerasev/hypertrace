@@ -1,14 +1,11 @@
 use crate::Background;
+use base::{ccgeom::Euclidean3, vecmat::Vector};
 use type_macros::*;
 use types::{
     include_template,
     prelude::*,
     source::{include, SourceBuilder, SourceTree},
     Config,
-};
-use base::{
-    vecmat::Vector,
-    ccgeom::Euclidean3,
 };
 
 /// Constant color background.
@@ -37,20 +34,17 @@ impl<G: Geometry> Background<G> for ConstBg {
         )
     }
     fn background_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!(
-            "generated/const_bg_{}.hh",
-            &G::geometry_name().1,
-        ))
-        .tree(G::geometry_source(cfg))
-        .content(&include(&format!(
-            "render/light/{}.hh",
-            &G::geometry_name().1,
-        )))
-        .content(&include_template!(
-            "background/constant.inl",
-            ("Geo", "geo") => G::geometry_name(),
-        ))
-        .build()
+        SourceBuilder::new(format!("generated/const_bg_{}.hh", &G::geometry_name().1,))
+            .tree(G::geometry_source(cfg))
+            .content(&include(format!(
+                "render/light/{}.hh",
+                &G::geometry_name().1,
+            )))
+            .content(&include_template!(
+                "background/constant.inl",
+                ("Geo", "geo") => G::geometry_name(),
+            ))
+            .build()
     }
 }
 

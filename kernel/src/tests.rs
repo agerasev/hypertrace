@@ -1,7 +1,10 @@
 use std::process::Command;
 
 fn run_bin(name: &str) {
-    assert!(Command::new(format!("{}/bin/{}", env!("OUT_DIR"), name)).status().unwrap().success());
+    assert!(Command::new(format!("{}/bin/{}", env!("OUT_DIR"), name))
+        .status()
+        .unwrap()
+        .success());
 }
 
 #[test]

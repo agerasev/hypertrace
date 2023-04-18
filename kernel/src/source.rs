@@ -1,6 +1,6 @@
-use uni_path::Path;
 use lazy_static::lazy_static;
 use ocl_include::source::Mem as MemSource;
+use std::path::Path;
 
 include!(concat!(env!("OUT_DIR"), "/kernel_source.rs"));
 

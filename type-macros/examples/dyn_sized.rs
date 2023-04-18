@@ -17,6 +17,6 @@ enum E {
 
 fn main() {
     for (key, value) in E::source(&HOST_CONFIG).into_iter() {
-        println!("'{}':\n{}\n", key, value);
+        println!("{:?}:\n{}\n", key, value);
     }
 }

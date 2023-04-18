@@ -1,29 +1,28 @@
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-};
-use vecmat::{transform::{Moebius}};
 use ccgeom::{Geometry3, Hyperbolic3};
 use hypertrace::{
+    cli::{get_ocl_context, OclApp},
     objects::{
         background::ConstBg,
-        material::{Colored, Lambertian, Specular, Absorbing, Emissive},
-        object::Covered,
-        shape::{Plane, Horosphere},
-        view::PointView,
-        Mapped,
-        SceneImpl,
-        shape_choice,
+        material::{Absorbing, Colored, Emissive, Lambertian, Specular},
         mixture,
+        object::Covered,
+        shape::{Horosphere, Plane},
+        shape_choice,
+        view::PointView,
+        Mapped, SceneImpl,
     },
     proc::{filter::GammaFilter, Context, Pipeline},
     types::{
         config::{AddressWidth, Endian},
         Config,
     },
-    view::{controllers::IsotropicController, Controller, Window, PollStatus},
-    cli::{OclApp, get_ocl_context},
+    view::{controllers::IsotropicController, Controller, PollStatus, Window},
 };
+use std::{
+    rc::Rc,
+    time::{Duration, Instant},
+};
+use vecmat::transform::Moebius;
 
 shape_choice! {
     Choice {
@@ -48,7 +47,9 @@ fn main() -> proc::Result<()> {
 
     let ocl_context = match get_ocl_context(&matches)? {
         Some(ctx) => ctx,
-        None => { return Ok(()); },
+        None => {
+            return Ok(());
+        }
     };
     let config = Config {
         address_width: AddressWidth::X32,
@@ -109,10 +110,7 @@ fn main() -> proc::Result<()> {
     let sdl_context = Rc::new(sdl2::init()?);
     let mut window = Window::new(sdl_context, size, "Sample")?;
 
-    let mut controller = IsotropicController::<Hyperbolic3>::new(
-        Hyperbolic3::shift_z(1.0),
-        1.0,
-    );
+    let mut controller = IsotropicController::<Hyperbolic3>::new(Hyperbolic3::shift_z(1.0), 1.0);
 
     let delay = 0.04;
     loop {

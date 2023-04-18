@@ -1,8 +1,10 @@
-use std::collections::{
-    btree_map::{BTreeMap, Entry},
-    HashSet,
+use std::{
+    collections::{
+        btree_map::{BTreeMap, Entry},
+        HashSet,
+    },
+    path::{Path, PathBuf},
 };
-use uni_path::{Path, PathBuf};
 
 #[derive(Clone, Debug)]
 pub struct ContentMismatchError {
@@ -14,7 +16,7 @@ pub struct ContentMismatchError {
 impl From<ContentMismatchError> for String {
     fn from(err: ContentMismatchError) -> String {
         format!(
-            "Files '{}' has the same path but different content",
+            "Files {:?} has the same path but different content",
             err.path
         )
     }
@@ -115,7 +117,7 @@ impl SourceBuilder {
         self
     }
     pub fn content(mut self, text: &str) -> Self {
-        self.content.push_str(&text);
+        self.content.push_str(text);
         self
     }
     pub fn build(mut self) -> SourceTree {
@@ -127,14 +129,14 @@ impl SourceBuilder {
 }
 
 pub fn include<P: AsRef<Path>>(path: P) -> String {
-    format!("#include <{}>\n", path.as_ref())
+    format!("#include <{}>\n", path.as_ref().to_str().unwrap())
 }
 pub fn include_template<P: AsRef<Path>>(path: P, map: &BTreeMap<String, String>) -> String {
     let mut lines = Vec::new();
     for (key, value) in map.iter() {
         lines.push(format!("#define ${} {}\n", key, value));
     }
-    lines.push(format!("#include <{}>\n", path.as_ref()));
+    lines.push(format!("#include <{}>\n", path.as_ref().to_str().unwrap()));
     for (key, _) in map.iter() {
         lines.push(format!("#undef ${}\n", key));
     }

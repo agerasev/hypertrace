@@ -1,4 +1,4 @@
-use crate::utils::{fields_iter, FieldsIter, make_bindings};
+use crate::utils::{fields_iter, make_bindings, FieldsIter};
 use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::quote;
 use std::iter::Iterator;
@@ -27,7 +27,12 @@ pub fn make_align(input: &DeriveInput) -> TokenStream2 {
     }
 }
 
-fn make_size_fields<FI: FieldsIter>(fields: &FI, prefix: TokenStream2, init: TokenStream2, fold_fn: TokenStream2) -> TokenStream2 {
+fn make_size_fields<FI: FieldsIter>(
+    fields: &FI,
+    prefix: TokenStream2,
+    init: TokenStream2,
+    fold_fn: TokenStream2,
+) -> TokenStream2 {
     fields_iter(fields)
         .enumerate()
         .fold(init, |accum, (index, field)| {
@@ -45,7 +50,7 @@ fn make_size_fields<FI: FieldsIter>(fields: &FI, prefix: TokenStream2, init: Tok
                     #accum,
                     <#ty as types::Entity>::size(#prefix #field_name, cfg),
                     <#ty as types::Entity>::align(cfg),
-                )   
+                )
             }
         })
 }
@@ -53,14 +58,12 @@ fn make_size_fields<FI: FieldsIter>(fields: &FI, prefix: TokenStream2, init: Tok
 pub fn make_size(input: &DeriveInput) -> TokenStream2 {
     let ty = &input.ident;
     let unaligned_size = match &input.data {
-        Data::Struct(struct_data) => {
-            make_size_fields(
-                &struct_data.fields,
-                quote! { &self. },
-                quote! { 0usize },
-                quote! { types::math::aligned_add },
-            )
-        }
+        Data::Struct(struct_data) => make_size_fields(
+            &struct_data.fields,
+            quote! { &self. },
+            quote! { 0usize },
+            quote! { types::math::aligned_add },
+        ),
         Data::Union(_) => quote! {
             if !<Self as types::Entity>::is_dyn_sized() {
                 <Self as types::Entity>::min_size(cfg)
@@ -80,7 +83,7 @@ pub fn make_size(input: &DeriveInput) -> TokenStream2 {
                         <usize as types::SizedEntity>::static_size(cfg),
                         <Self as types::Entity>::align(cfg),
                     ) },
-                    quote!{ types::math::aligned_add },
+                    quote! { types::math::aligned_add },
                 );
                 quote! {
                     #accum
@@ -103,7 +106,11 @@ pub fn make_size(input: &DeriveInput) -> TokenStream2 {
     ) }
 }
 
-fn make_min_size_fields<FI: FieldsIter>(fields: &FI, init: TokenStream2, fold_fn: TokenStream2) -> TokenStream2 {
+fn make_min_size_fields<FI: FieldsIter>(
+    fields: &FI,
+    init: TokenStream2,
+    fold_fn: TokenStream2,
+) -> TokenStream2 {
     let iter = fields_iter(fields);
     let len = iter.len();
     iter.enumerate().fold(init, |accum, (index, field)| {
@@ -119,7 +126,11 @@ fn make_min_size_fields<FI: FieldsIter>(fields: &FI, init: TokenStream2, fold_fn
     })
 }
 
-fn make_static_size_fields<FI: FieldsIter>(fields: &FI, init: TokenStream2, fold_fn: TokenStream2) -> TokenStream2 {
+fn make_static_size_fields<FI: FieldsIter>(
+    fields: &FI,
+    init: TokenStream2,
+    fold_fn: TokenStream2,
+) -> TokenStream2 {
     fields_iter(fields).fold(init, |accum, field| {
         let ty = &field.ty;
         quote! {
@@ -157,7 +168,7 @@ macro_rules! make_type_size {
                         );
                         quote! { std::cmp::max(#accum, #variant_type_size) }
                     })
-            },
+            }
         };
         quote! { types::math::upper_multiple(
             #unaligned_type_size,
@@ -262,9 +273,11 @@ pub fn make_load(input: &DeriveInput) -> TokenStream2 {
                 ret
             }
         }
-        Data::Union(_) => return quote!{
-            Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unions cannot be loaded directly"))
-        },
+        Data::Union(_) => {
+            return quote! {
+                Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unions cannot be loaded directly"))
+            }
+        }
     };
     quote! {
         let self_ = { #unaligned_load };
@@ -301,11 +314,10 @@ fn make_store_fields(fields: &Fields, prefix: TokenStream2) -> TokenStream2 {
 
 pub fn make_store(input: &DeriveInput) -> TokenStream2 {
     let ty = &input.ident;
-    let unaligned_store =
-        match &input.data {
-            Data::Struct(struct_data) => make_store_fields(&struct_data.fields, quote! { &self. }),
-            Data::Enum(enum_data) => {
-                let matches = enum_data.variants.iter().enumerate().fold(
+    let unaligned_store = match &input.data {
+        Data::Struct(struct_data) => make_store_fields(&struct_data.fields, quote! { &self. }),
+        Data::Enum(enum_data) => {
+            let matches = enum_data.variants.iter().enumerate().fold(
                     quote! {},
                     |accum, (index, variant)| {
                         let var = &variant.ident;
@@ -323,22 +335,24 @@ pub fn make_store(input: &DeriveInput) -> TokenStream2 {
                         }
                     },
                 );
-                quote! {
-                    let pp = dst.position();
-                    let ret = match self {
-                        #matches
-                    };
-                    let ws = dst.position() - pp;
-                    let ms = <Self as types::Entity>::min_size(cfg);
-                    if (ws < ms) {
-                        dst.skip(ms - ws)?;
-                    }
+            quote! {
+                let pp = dst.position();
+                let ret = match self {
+                    #matches
+                };
+                let ws = dst.position() - pp;
+                let ms = <Self as types::Entity>::min_size(cfg);
+                if (ws < ms) {
+                    dst.skip(ms - ws)?;
                 }
             }
-            Data::Union(_) => return quote!{
+        }
+        Data::Union(_) => {
+            return quote! {
                 Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "Unions cannot be stored directly"))
-            },
-        };
+            }
+        }
+    };
     quote! {
         #unaligned_store
         dst.align(<Self as types::Entity>::align(cfg))?;

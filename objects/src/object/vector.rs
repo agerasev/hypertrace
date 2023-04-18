@@ -31,7 +31,7 @@ where
             .tree(G::geometry_source(cfg))
             .tree(T::object_source(cfg))
             .tree(Self::Cache::source(cfg))
-            .content(&include(&format!(
+            .content(&include(format!(
                 "render/light/{}.hh",
                 G::geometry_name().1,
             )))

@@ -45,11 +45,11 @@ where
             .tree(S::shape_source(cfg))
             .tree(M::material_source(cfg))
             .tree(Self::Cache::source(cfg))
-            .content(&include(&format!(
+            .content(&include(format!(
                 "geometry/ray_{}.hh",
                 G::geometry_name().1,
             )))
-            .content(&include(&format!(
+            .content(&include(format!(
                 "render/light/{}.hh",
                 G::geometry_name().1,
             )))

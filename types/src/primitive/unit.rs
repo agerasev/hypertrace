@@ -1,7 +1,7 @@
 use crate::{
     io::{CntRead, CntWrite},
     source::SourceTree,
-    Config, Entity, EntityId, SizedEntity, EntitySource,
+    Config, Entity, EntityId, EntitySource, SizedEntity,
 };
 use std::{io, marker::PhantomData};
 

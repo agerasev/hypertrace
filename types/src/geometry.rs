@@ -1,4 +1,4 @@
-use crate::{source::SourceTree, Config, EntityId, EntitySource, SizedEntity, Map};
+use crate::{source::SourceTree, Config, EntityId, EntitySource, Map, SizedEntity};
 use base::ccgeom::{self, Euclidean3, Hyperbolic3};
 
 pub trait Geometry: EntitySource + Clone {
@@ -40,7 +40,13 @@ impl EntitySource for Hyperbolic3 {
 
 // Geometry
 
-impl<G: ccgeom::Geometry> Geometry for G where Self: EntitySource, G::Pos: SizedEntity, G::Dir: SizedEntity, G::Map: SizedEntity {
+impl<G: ccgeom::Geometry> Geometry for G
+where
+    Self: EntitySource,
+    G::Pos: SizedEntity,
+    G::Dir: SizedEntity,
+    G::Map: SizedEntity,
+{
     type Pos = G::Pos;
     type Dir = G::Dir;
     type Map = G::Map;

@@ -1,4 +1,5 @@
 use crate::Material;
+use base::vecmat::Vector;
 use type_macros::*;
 use types::{
     include_template,
@@ -6,7 +7,6 @@ use types::{
     source::{SourceBuilder, SourceTree},
     Config,
 };
-use base::vecmat::Vector;
 
 // Colored
 

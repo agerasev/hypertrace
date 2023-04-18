@@ -1,4 +1,4 @@
-use type_macros::{Entity, EntityId, SizedEntity, EntitySource};
+use type_macros::{Entity, EntityId, EntitySource, SizedEntity};
 use types::{
     config::{self, Config},
     Entity, SizedEntity,

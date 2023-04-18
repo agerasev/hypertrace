@@ -1,4 +1,4 @@
-use crate::utils::{FieldsIter, fields_iter};
+use crate::utils::{fields_iter, FieldsIter};
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use std::iter::Iterator;
@@ -11,7 +11,12 @@ fn getter_required(attrs: &[Attribute]) -> bool {
         .any(|i| i == "getter")
 }
 
-fn make_source_fields<FI: FieldsIter>(fields: &FI, storage: TokenStream2, name: TokenStream2, prefix: TokenStream2) -> TokenStream2 {
+fn make_source_fields<FI: FieldsIter>(
+    fields: &FI,
+    storage: TokenStream2,
+    name: TokenStream2,
+    prefix: TokenStream2,
+) -> TokenStream2 {
     let fields_list = fields_iter(fields).collect::<Vec<_>>();
     if !fields_list.is_empty() {
         let field_count = fields_list.len();
@@ -102,16 +107,16 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
         ),
         Data::Enum(enum_data) => {
             let variant_iter = enum_data.variants.iter();
-            let enums = variant_iter.fold(quote!{}, |accum, variant| {
+            let enums = variant_iter.fold(quote! {}, |accum, variant| {
                 let enum_source = make_source_fields(
                     &variant.fields,
                     quote! { "struct "},
-                    quote!{ enum_name },
-                    quote!{ enum_prefix },
+                    quote! { enum_name },
+                    quote! { enum_prefix },
                 );
                 let ident = variant.ident.to_string();
                 let getter = if getter_required(&variant.attrs) {
-                    quote!{
+                    quote! {
                         for (ns, nsp) in &namespaces {
                             getter_text += &format!(
                                 "{ns}{} *{}__{}{nsp}({ns}{} *self) {{\n",
@@ -131,10 +136,10 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
                         }
                     }
                 } else {
-                    quote!{}
+                    quote! {}
                 };
 
-                quote!{
+                quote! {
                     #accum
                     {
                         let enum_name = format!("{}__{}", type_name, #ident);
@@ -179,14 +184,14 @@ pub fn make_source(input: &DeriveInput) -> TokenStream2 {
         let type_prefix = <Self as types::EntityId>::name().1;
         let file = format!("generated/type_{}.hh", <Self as types::EntityId>::tag());
         let mut tree = types::source::SourceTree::new(file.clone());
-        let mut includes = std::collections::BTreeSet::<types::path::PathBuf>::new();
+        let mut includes = std::collections::BTreeSet::<std::path::PathBuf>::new();
         let mut text = String::new();
         let mut getter_text = String::new();
         let namespaces = [("", ""), ("const ", "__c"), ("__global ", "__g"), ("__global const ", "__gc")];
         #content
         let final_text = [
             "#pragma once\n".into(),
-            includes.into_iter().map(|path| format!("#include <{}>\n", path)).collect::<String>(),
+            includes.into_iter().map(|path| format!("#include <{}>\n", path.to_str().unwrap())).collect::<String>(),
             "\n".into(),
             text,
             "\n".into(),

@@ -1,3 +1,23 @@
+use ccgeom::{Euclidean3, Homogenous3};
+use hypertrace::{
+    cli::{get_ocl_context, OclApp},
+    objects::{
+        background::GradBg,
+        material::{Colored, Lambertian, Refractive, Specular},
+        mixture,
+        object::Covered,
+        shape::{Cube, Plane, Sphere},
+        shape_choice,
+        view::PointView,
+        Mapped, SceneImpl,
+    },
+    proc::{filter::GammaFilter, Context, Pipeline},
+    types::{
+        config::{AddressWidth, Endian},
+        Config,
+    },
+    view::{controllers::IsotropicController, Controller, PollStatus, Window},
+};
 use std::{
     rc::Rc,
     time::{Duration, Instant},
@@ -5,27 +25,6 @@ use std::{
 use vecmat::{
     transform::{Rotation3, Shift},
     Transform, Vector,
-};
-use ccgeom::{Euclidean3, Homogenous3};
-use hypertrace::{
-    objects::{
-        background::GradBg,
-        material::{Colored, Specular, Lambertian, Refractive},
-        object::Covered,
-        shape::{Plane, Sphere, Cube},
-        view::PointView,
-        Mapped,
-        SceneImpl,
-        shape_choice,
-        mixture,
-    },
-    proc::{filter::GammaFilter, Context, Pipeline},
-    types::{
-        config::{AddressWidth, Endian},
-        Config,
-    },
-    view::{controllers::IsotropicController, Controller, Window, PollStatus},
-    cli::{OclApp, get_ocl_context},
 };
 
 shape_choice! {
@@ -52,7 +51,9 @@ fn main() -> proc::Result<()> {
 
     let ocl_context = match get_ocl_context(&matches)? {
         Some(ctx) => ctx,
-        None => { return Ok(()); },
+        None => {
+            return Ok(());
+        }
     };
     let config = Config {
         address_width: AddressWidth::X32,
@@ -74,7 +75,11 @@ fn main() -> proc::Result<()> {
                 Mixture::new(
                     (Colored::new(Lambertian, [1.0, 0.2, 0.2].into()), 0.0).into(),
                     (Specular, 0.1).into(),
-                    (Colored::new(Refractive::new(1.2), [1.0, 1.0, 0.2].into()), 0.9).into(),
+                    (
+                        Colored::new(Refractive::new(1.2), [1.0, 1.0, 0.2].into()),
+                        0.9,
+                    )
+                        .into(),
                 ),
             ),
             Shift::from_vector([0.0, 1.0, 0.0].into()),
@@ -85,7 +90,11 @@ fn main() -> proc::Result<()> {
                 Mixture::new(
                     (Colored::new(Lambertian, [0.2, 0.8, 0.8].into()), 1.0).into(),
                     (Specular, 0.0).into(),
-                    (Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()), 0.0).into(),
+                    (
+                        Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()),
+                        0.0,
+                    )
+                        .into(),
                 ),
             ),
             Shift::from_vector([0.0, -1.0, 0.0].into()),
@@ -96,7 +105,11 @@ fn main() -> proc::Result<()> {
                 Mixture::new(
                     (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.9).into(),
                     (Specular, 0.1).into(),
-                    (Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()), 0.0).into(),
+                    (
+                        Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()),
+                        0.0,
+                    )
+                        .into(),
                 ),
             ),
             Shift::from_vector([0.0, 0.0, -1.0].into()),

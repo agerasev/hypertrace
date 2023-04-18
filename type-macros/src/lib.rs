@@ -5,8 +5,8 @@ mod utils;
 
 use crate::{
     entity::{
-        make_align, make_is_dyn_sized, make_load, make_min_size, make_size, make_store,
-        make_static_size,
+        make_align, make_is_dyn_sized, make_load, make_min_size, make_size, make_static_size,
+        make_store,
     },
     generic::{make_params, make_where_clause},
     source::make_source,
@@ -29,17 +29,10 @@ pub fn derive_named(stream: TokenStream) -> TokenStream {
     let (tag, div) = if input.generics.params.is_empty() {
         (quote! { "" }, quote! { "" })
     } else {
-        (
-            quote! { <Self as types::EntityId>::tag() },
-            quote! { "_" },
-        )
+        (quote! { <Self as types::EntityId>::tag() }, quote! { "_" })
     };
 
-    let mut where_clause = make_where_clause(
-        &input,
-        quote! { types::EntityId },
-        None,
-    );
+    let mut where_clause = make_where_clause(&input, quote! { types::EntityId }, None);
     if !where_clause.is_empty() {
         where_clause = quote! { where #where_clause };
     }

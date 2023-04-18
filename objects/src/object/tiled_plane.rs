@@ -1,4 +1,9 @@
-use crate::{Material, Shape, Object, object::tiling::{self, Tiling}, shape::Plane};
+use crate::{
+    object::tiling::{self, Tiling},
+    shape::Plane,
+    Material, Object, Shape,
+};
+use base::ccgeom::Hyperbolic3;
 use std::marker::PhantomData;
 use type_macros::*;
 use types::{
@@ -7,7 +12,6 @@ use types::{
     source::{include, SourceBuilder, SourceTree},
     Config,
 };
-use base::ccgeom::{Hyperbolic3};
 
 pub trait PlaneTiling<G: Geometry>: Tiling {
     fn name() -> String;
@@ -43,12 +47,7 @@ pub struct TiledPlaneCache<G: Geometry> {
 }
 
 impl<M: Material, K: Tiling, const N: usize> TiledPlane<M, K, N> {
-    pub fn new(
-        materials: [M; N],
-        cell_size: f64,
-        border_width: f64,
-        border_material: M,
-    ) -> Self {
+    pub fn new(materials: [M; N], cell_size: f64, border_width: f64, border_material: M) -> Self {
         Self {
             tiling: PhantomData,
             materials,
@@ -59,7 +58,9 @@ impl<M: Material, K: Tiling, const N: usize> TiledPlane<M, K, N> {
     }
 }
 
-impl<M: Material, K: PlaneTiling<Hyperbolic3>, const N: usize> Object<Hyperbolic3> for TiledPlane<M, K, N> {
+impl<M: Material, K: PlaneTiling<Hyperbolic3>, const N: usize> Object<Hyperbolic3>
+    for TiledPlane<M, K, N>
+{
     type Cache = TiledPlaneCache<Hyperbolic3>;
 
     fn object_source(cfg: &Config) -> SourceTree {
@@ -68,7 +69,7 @@ impl<M: Material, K: PlaneTiling<Hyperbolic3>, const N: usize> Object<Hyperbolic
             .tree(Self::Cache::source(cfg))
             .tree(M::material_source(cfg))
             .tree(<Plane as Shape<Hyperbolic3>>::shape_source(cfg))
-            .content(&include(&"render/light/hy.hh"))
+            .content(&include("render/light/hy.hh"))
             .content(&include_template!(
                 "object/hy/tiled_plane/impl.inl",
                 ("Self", "self") => Self::object_name(),

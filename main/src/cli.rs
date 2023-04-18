@@ -4,10 +4,12 @@ pub trait OclApp {
     fn ocl_args(self) -> Self;
 }
 
-impl<'a, 'b> OclApp for clap::App<'a, 'b> where 'a: 'b {
+impl<'a, 'b> OclApp for clap::App<'a, 'b>
+where
+    'a: 'b,
+{
     fn ocl_args(self) -> Self {
-        self
-        .arg(
+        self.arg(
             clap::Arg::with_name("platform_no")
                 .help("Platform number")
                 .index(1),
@@ -30,7 +32,7 @@ impl<'a, 'b> OclApp for clap::App<'a, 'b> where 'a: 'b {
 pub fn get_ocl_context(matches: &clap::ArgMatches) -> proc::Result<Option<OclContext>> {
     if matches.is_present("list") {
         for (pi, platform) in ocl::Platform::list().into_iter().enumerate() {
-            for (di, device) in ocl::Device::list_all(&platform)?.into_iter().enumerate() {
+            for (di, device) in ocl::Device::list_all(platform)?.into_iter().enumerate() {
                 println!(
                     "Platform [{}]: {}, {}",
                     pi,
@@ -58,7 +60,7 @@ pub fn get_ocl_context(matches: &clap::ArgMatches) -> proc::Result<Option<OclCon
         .unwrap_or(0);
 
     let platform = *ocl::Platform::list().get(platform_no).unwrap();
-    let device = *ocl::Device::list_all(&platform)?.get(device_no).unwrap();
+    let device = *ocl::Device::list_all(platform)?.get(device_no).unwrap();
 
     let context = ocl::Context::builder()
         .platform(platform)

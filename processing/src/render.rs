@@ -1,10 +1,9 @@
 use crate::{Canvas, Context, EntityBuffer};
-use objects::Scene;
 use kernel::includer::{source, Index, Parser};
+use objects::Scene;
 use regex::{Captures, Regex};
-use std::{fs, marker::PhantomData};
+use std::{fs, marker::PhantomData, path::PathBuf};
 use types::{prelude::*, Config};
-use uni_path::PathBuf;
 
 pub struct Render<G: Geometry, S: Scene<G>> {
     kernel: ocl::Kernel,
@@ -37,7 +36,7 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
                 #include <render/render.cl>
             "#,
                 config.address_width.num_value(),
-                include,
+                include.to_str().unwrap(),
                 S::scene_name().0,
                 S::scene_name().1,
             ),
@@ -62,7 +61,7 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
                     let origin = cap[2].parse::<usize>().unwrap() - 2; // `ocl` workaround
                     let (file, line) = index
                         .search(origin)
-                        .map(|(f, l)| (String::from(f), l))
+                        .map(|(f, l)| (String::from(f.to_str().unwrap()), l))
                         .unwrap_or((cap[1].into(), origin));
                     format!("{}:{}:{}", file, line, &cap[3])
                 })
@@ -87,7 +86,7 @@ impl<G: Geometry, S: Scene<G>> Render<G, S> {
         let kernel = ocl::Kernel::builder()
             .program(&program)
             .name("render")
-            .arg_named("shape", &ocl::prm::Uint2::new(0, 0))
+            .arg_named("shape", ocl::prm::Uint2::new(0, 0))
             .arg_named("scene", None::<&ocl::Buffer<u8>>)
             .arg_named("canvas", None::<&ocl::Buffer<f32>>)
             .arg_named("seeds", None::<&ocl::Buffer<u32>>)

@@ -1,10 +1,10 @@
-mod covered;
-mod vector;
 mod choice;
+mod covered;
 mod mapped;
 pub mod tiled_horosphere;
 pub mod tiled_plane;
 pub mod tiling;
+mod vector;
 
 use types::{prelude::*, source::SourceTree, Config};
 

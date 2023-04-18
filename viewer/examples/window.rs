@@ -1,4 +1,4 @@
-use hypertrace_viewer::{Controller, Motion, Window, PollStatus};
+use hypertrace_viewer::{Controller, Motion, PollStatus, Window};
 use std::{rc::Rc, thread::sleep, time::Duration};
 
 pub struct DummyController;

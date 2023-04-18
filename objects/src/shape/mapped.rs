@@ -19,7 +19,7 @@ impl<G: Geometry, T: Shape<G>, M: Map<G::Pos, G::Dir>> Shape<G> for Mapped<G, T,
             .tree(G::geometry_source(cfg))
             .tree(M::map_source(cfg))
             .tree(T::shape_source(cfg))
-            .content(&include(&format!(
+            .content(&include(format!(
                 "geometry/ray_{}.hh",
                 &G::geometry_name().1
             )))

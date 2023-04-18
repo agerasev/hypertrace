@@ -1,7 +1,7 @@
 use super::*;
 use base::ccgeom::Euclidean3;
 use type_macros::*;
-use types::{source::{SourceTree}, Config};
+use types::{source::SourceTree, Config};
 
 #[derive(Clone, Default, Debug, EntityId, Entity, SizedEntity)]
 pub struct Cube;

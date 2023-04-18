@@ -6,8 +6,7 @@ edition = "2018"
 
 [dependencies]
 lazy_static = "1.4"
-ocl-include = "0.5"
-uni-path = "1"
+ocl-include = "0.6"
 
 [build-dependencies]
 walkdir = "2"

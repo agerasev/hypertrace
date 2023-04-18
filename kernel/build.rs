@@ -1,4 +1,8 @@
-use std::{env, fs, path::{Path, PathBuf}, collections::BTreeMap};
+use std::{
+    collections::BTreeMap,
+    env, fs,
+    path::{Path, PathBuf},
+};
 use walkdir::WalkDir;
 
 fn str_text(value: &str) -> String {
@@ -8,9 +12,12 @@ fn str_text(value: &str) -> String {
 fn dict_text(name: &str, dict: &BTreeMap<String, String>) -> String {
     [
         format!("pub const {}: [(&str, &str); {}] = [\n", name, dict.len()),
-        dict.iter().map(|(k, v)| format!("    ({}, {}),\n", str_text(k), str_text(v))).fold(String::new(), |a, b| a + &b),
+        dict.iter()
+            .map(|(k, v)| format!("    ({}, {}),\n", str_text(k), str_text(v)))
+            .fold(String::new(), |a, b| a + &b),
         String::from("];\n"),
-    ].join("")
+    ]
+    .join("")
 }
 
 fn out_path() -> PathBuf {
@@ -36,16 +43,20 @@ fn embed_kernel_source() {
     for entry in WalkDir::new(&src_path).into_iter().filter_map(|e| e.ok()) {
         if entry.file_type().is_file() {
             let r = dict.insert(
-                format!("{}", remount_path(entry.path(), &src_path, &dst_path).display()),
+                format!(
+                    "{}",
+                    remount_path(entry.path(), &src_path, &dst_path).display()
+                ),
                 fs::read_to_string(entry.path()).unwrap(),
             );
             assert!(r.is_none());
         }
     }
     fs::write(
-        &out_path().join("kernel_source.rs"),
+        out_path().join("kernel_source.rs"),
         dict_text("FILES_STATIC", &dict),
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 fn rerun_if_source_changed() {
@@ -53,7 +64,10 @@ fn rerun_if_source_changed() {
     let src_path = kernel_src_path();
     for entry in WalkDir::new(&src_path).into_iter().filter_map(|e| e.ok()) {
         if entry.file_type().is_dir() {
-            println!("cargo:rerun-if-changed={}", entry.path().strip_prefix(&base_path).unwrap().display());
+            println!(
+                "cargo:rerun-if-changed={}",
+                entry.path().strip_prefix(&base_path).unwrap().display()
+            );
         }
     }
 }

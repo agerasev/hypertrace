@@ -6,7 +6,7 @@ use types::{
     Config, Map,
 };
 
-impl<G: Geometry, T: View<G>, M: Map<G::Pos, G::Dir>> View<G> for Mapped<G, T, M>{
+impl<G: Geometry, T: View<G>, M: Map<G::Pos, G::Dir>> View<G> for Mapped<G, T, M> {
     fn view_name() -> (String, String) {
         (
             format!("View{}", Self::name().0),
@@ -19,7 +19,7 @@ impl<G: Geometry, T: View<G>, M: Map<G::Pos, G::Dir>> View<G> for Mapped<G, T, M
             .tree(G::geometry_source(cfg))
             .tree(M::map_source(cfg))
             .tree(T::view_source(cfg))
-            .content(&include(&format!(
+            .content(&include(format!(
                 "geometry/ray_{}.hh",
                 &G::geometry_name().1
             )))

@@ -1,10 +1,10 @@
 mod absorbing;
-mod transparent;
-mod specular;
 mod lambertian;
-mod refractive;
-mod modifier;
 mod mixture;
+mod modifier;
+mod refractive;
+mod specular;
+mod transparent;
 
 use types::{prelude::*, source::SourceTree, Config};
 
@@ -18,9 +18,9 @@ pub trait Material: SizedEntity {
 }
 
 pub use absorbing::*;
-pub use transparent::*;
-pub use specular::*;
 pub use lambertian::*;
-pub use refractive::*;
-pub use modifier::*;
 pub use mixture::*;
+pub use modifier::*;
+pub use refractive::*;
+pub use specular::*;
+pub use transparent::*;

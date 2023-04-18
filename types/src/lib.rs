@@ -16,8 +16,6 @@ pub mod primitive;
 mod ray;
 pub mod source;
 
-pub use uni_path as path;
-
 pub use config::Config;
 pub use containers::*;
 pub use entity::*;
@@ -27,5 +25,8 @@ pub use primitive::*;
 pub use ray::*;
 
 pub mod prelude {
-    pub use crate::{Entity, Geometry, EntityId, SizedEntity, EntitySource, Config, source::{SourceTree, SourceBuilder}};
+    pub use crate::{
+        source::{SourceBuilder, SourceTree},
+        Config, Entity, EntityId, EntitySource, Geometry, SizedEntity,
+    };
 }

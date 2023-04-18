@@ -1,4 +1,9 @@
-use crate::{Material, Shape, Object, object::tiling::{self, Tiling}, shape::Horosphere};
+use crate::{
+    object::tiling::{self, Tiling},
+    shape::Horosphere,
+    Material, Object, Shape,
+};
+use base::ccgeom::Hyperbolic3;
 use std::marker::PhantomData;
 use type_macros::*;
 use types::{
@@ -7,7 +12,6 @@ use types::{
     source::{include, SourceBuilder, SourceTree},
     Config,
 };
-use base::ccgeom::{Hyperbolic3};
 
 pub trait HorosphereTiling: Tiling {
     fn name() -> String;
@@ -49,12 +53,7 @@ impl EntitySource for TiledHorosphereCache {
 }
 
 impl<M: Material, K: HorosphereTiling, const N: usize> TiledHorosphere<M, K, N> {
-    pub fn new(
-        materials: [M; N],
-        cell_size: f64,
-        border_width: f64,
-        border_material: M,
-    ) -> Self {
+    pub fn new(materials: [M; N], cell_size: f64, border_width: f64, border_material: M) -> Self {
         Self {
             tiling: PhantomData,
             materials,
@@ -70,7 +69,7 @@ impl<M: Material, K: HorosphereTiling, const N: usize> EntitySource for TiledHor
         SourceBuilder::new(format!("generated/{}.hh", Self::object_name().1))
             .tree(M::material_source(cfg))
             .tree(Horosphere::shape_source(cfg))
-            .content(&include(&"render/light/hy.hh"))
+            .content(&include("render/light/hy.hh"))
             .content(&include_template!(
                 "object/hy/tiled_horosphere/impl.inl",
                 ("Self", "self") => Self::object_name(),
@@ -82,6 +81,8 @@ impl<M: Material, K: HorosphereTiling, const N: usize> EntitySource for TiledHor
     }
 }
 
-impl<M: Material, K: HorosphereTiling, const N: usize> Object<Hyperbolic3> for TiledHorosphere<M, K, N> {
+impl<M: Material, K: HorosphereTiling, const N: usize> Object<Hyperbolic3>
+    for TiledHorosphere<M, K, N>
+{
     type Cache = TiledHorosphereCache;
 }

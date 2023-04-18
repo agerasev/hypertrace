@@ -1,6 +1,6 @@
 use crate::{
     primitive::{PrimScal, PrimVec},
-    Entity, EntityId, SizedEntity, EntitySource,
+    Entity, EntityId, EntitySource, SizedEntity,
 };
 use base::vecmat::{Complex, Quaternion, Vector};
 

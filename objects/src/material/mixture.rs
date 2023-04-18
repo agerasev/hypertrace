@@ -1,18 +1,16 @@
+use crate::Material;
 use type_macros::*;
-use crate::{Material};
 
 #[derive(Clone, Copy, Debug, EntitySource, Entity, SizedEntity)]
 pub struct Component<M: Material> {
-    #[getter] pub material: M,
+    #[getter]
+    pub material: M,
     pub portion: f64,
 }
 
 impl<M: Material> From<(M, f64)> for Component<M> {
     fn from((material, portion): (M, f64)) -> Self {
-        Component {
-            material,
-            portion,
-        }
+        Component { material, portion }
     }
 }
 
@@ -82,7 +80,10 @@ macro_rules! mixture {
 
 #[cfg(test)]
 mod tests {
-    use crate::{mixture, material::{Specular, Lambertian}};
+    use crate::{
+        material::{Lambertian, Specular},
+        mixture,
+    };
 
     mixture! {
         TestMixture {

@@ -1,7 +1,7 @@
 use crate::{
     include_template,
     source::{SourceBuilder, SourceTree},
-    Config, Geometry, Map, EntityId, EntitySource,
+    Config, EntityId, EntitySource, Geometry, Map,
 };
 use std::marker::PhantomData;
 

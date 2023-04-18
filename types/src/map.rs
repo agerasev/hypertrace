@@ -3,7 +3,7 @@ use crate::{
     io::{CntRead, CntWrite},
     math,
     source::{SourceBuilder, SourceTree},
-    Config, Entity, EntityId, SizedEntity, EntitySource,
+    Config, Entity, EntityId, EntitySource, SizedEntity,
 };
 use base::{
     ccgeom::Map as GeoMap,

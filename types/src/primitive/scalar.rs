@@ -2,7 +2,7 @@ use crate::{
     config::{AddressWidth, Config, Endian},
     io::{CntRead, CntWrite},
     source::SourceTree,
-    Entity, EntityId, SizedEntity, EntitySource,
+    Entity, EntityId, EntitySource, SizedEntity,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use num_traits::Num;

@@ -55,7 +55,7 @@ macro_rules! object_choice {
                     )*
                     .tree(<Self::Cache as types::EntitySource>::source(cfg))
                     .content(&types::source::type_alias(
-                        &Self::object_name().0, 
+                        &Self::object_name().0,
                         &<Self as types::EntityId>::name().0,
                     ))
                     .content(&types::source::include("object/choice/macros.hh"))
@@ -79,7 +79,12 @@ macro_rules! object_choice {
 
 #[cfg(test)]
 mod tests {
-    use crate::{object_choice, object::Covered, shape::{Sphere, Cube}, material::{Lambertian, Specular}};
+    use crate::{
+        material::{Lambertian, Specular},
+        object::Covered,
+        object_choice,
+        shape::{Cube, Sphere},
+    };
     use base::ccgeom::Euclidean3;
 
     object_choice! {

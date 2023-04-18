@@ -1,4 +1,7 @@
-use crate::{handler::{Handler, PollStatus}, Controller};
+use crate::{
+    handler::{Handler, PollStatus},
+    Controller,
+};
 use base::Image;
 use sdl2::{
     self,

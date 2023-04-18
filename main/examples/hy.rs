@@ -1,32 +1,33 @@
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-    f64::{NAN, consts::PI},
-};
-use vecmat::{transform::{Moebius}, Vector, Matrix, Complex};
 use ccgeom::{Geometry3, Hyperbolic3};
 use hypertrace::{
+    cli::{get_ocl_context, OclApp},
     objects::{
         background::ConstBg,
         material::*,
-        object::{TiledHorosphere, TiledPlane, tiling},
-        view::PointView,
-        Mapped,
-        SceneImpl,
-        object_choice,
         mixture,
+        object::{tiling, TiledHorosphere, TiledPlane},
+        object_choice,
+        view::PointView,
+        Mapped, SceneImpl,
     },
     proc::{filter::GammaFilter, Context, Pipeline},
     types::{
         config::{AddressWidth, Endian},
         Config,
     },
-    view::{controllers::IsotropicController, Controller, Window, PollStatus},
-    cli::{OclApp, get_ocl_context},
+    view::{controllers::IsotropicController, Controller, PollStatus, Window},
 };
+use std::{
+    f64::{consts::PI, NAN},
+    rc::Rc,
+    time::{Duration, Instant},
+};
+use vecmat::{transform::Moebius, Complex, Matrix, Vector};
 
 fn unpack_color(rgb: u32) -> Vector<f32, 3> {
-    make_color((Vector::from([rgb >> 16, rgb >> 8, rgb]) & Vector::fill(0xff)).map(|x| (x as f32) / 255.0))
+    make_color(
+        (Vector::from([rgb >> 16, rgb >> 8, rgb]) & Vector::fill(0xff)).map(|x| (x as f32) / 255.0),
+    )
 }
 
 fn make_color(rgb: Vector<f32, 3>) -> Vector<f32, 3> {
@@ -49,7 +50,11 @@ fn make_material(
 ) -> Emissive<Mixture> {
     Emissive::new(
         Mixture::new(
-            (Colored::new(Lambertian, diffuse), 1.0 - specularity - transparency).into(),
+            (
+                Colored::new(Lambertian, diffuse),
+                1.0 - specularity - transparency,
+            )
+                .into(),
             (Specular, specularity).into(),
             (Transparent, transparency).into(),
         ),
@@ -77,7 +82,9 @@ fn main() -> proc::Result<()> {
 
     let ocl_context = match get_ocl_context(&matches)? {
         Some(ctx) => ctx,
-        None => { return Ok(()); },
+        None => {
+            return Ok(());
+        }
     };
     let config = Config {
         address_width: AddressWidth::X32,
@@ -94,7 +101,12 @@ fn main() -> proc::Result<()> {
     let view = Mapped::new(PointView::new(1.0), Moebius::identity());
 
     let background = ConstBg::new(unpack_color(0xeeeeee));
-    let border_material = make_material(unpack_color(0xe4e4e4), 0.0, 0.0, Some(make_color(Vector::fill(1.0))));
+    let border_material = make_material(
+        unpack_color(0xe4e4e4),
+        0.0,
+        0.0,
+        Some(make_color(Vector::fill(1.0))),
+    );
     let objects = vec![
         Mapped::new(
             Choice::HoroHexa(TiledHorosphere::new(
@@ -124,13 +136,14 @@ fn main() -> proc::Result<()> {
             Moebius::from(Matrix::from([
                 [Complex::new(1.0, 0.0), Complex::new(2.0f64.sqrt(), 0.0)],
                 [Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)],
-            ])).chain(Hyperbolic3::rotate_x(PI)),
+            ]))
+            .chain(Hyperbolic3::rotate_x(PI)),
         ),
         Mapped::new(
             Choice::PlaneStar(TiledPlane::new(
                 [
                     make_material(unpack_color(0xfe7401), 0.1, 0.0, None),
-                    make_material(unpack_color(0x35adae), 0.1, 0.0, None)
+                    make_material(unpack_color(0x35adae), 0.1, 0.0, None),
                 ],
                 NAN,
                 0.01,
@@ -142,11 +155,11 @@ fn main() -> proc::Result<()> {
             Choice::PlanePenta(TiledPlane::new(
                 [
                     make_material(unpack_color(0xfe0000), 0.1, 0.0, None),
-                    make_material(unpack_color(0xfed601), 0.1, 0.0, None)
+                    make_material(unpack_color(0xfed601), 0.1, 0.0, None),
                 ],
                 NAN,
                 0.02,
-                border_material.clone(),
+                border_material,
             )),
             Moebius::from(Matrix::from([
                 [Complex::new(1.0, 0.0), Complex::new(0.0, 2.0)],

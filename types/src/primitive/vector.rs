@@ -2,10 +2,10 @@ use crate::{
     io::{CntRead, CntWrite},
     primitive::PrimScal,
     source::SourceTree,
-    Config, Entity, EntityId, SizedEntity, EntitySource,
+    Config, Entity, EntityId, EntitySource, SizedEntity,
 };
-use std::{fmt::Debug, io};
 use base::vecmat::Vector;
+use std::{fmt::Debug, io};
 
 pub trait PrimVec: SizedEntity + Copy + Default + Debug + 'static {}
 
@@ -68,10 +68,7 @@ impl_entity!(16);
 impl<T: PrimScal> PrimVec for Vector<T, 3> {}
 impl<T: PrimScal> EntityId for Vector<T, 3> {
     fn name() -> (String, String) {
-        (
-            format!("{}3", &T::name().0),
-            format!("{}3", &T::name().1),
-        )
+        (format!("{}3", &T::name().0), format!("{}3", &T::name().1))
     }
 }
 impl<T: PrimScal> Entity for Vector<T, 3> {

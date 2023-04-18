@@ -20,7 +20,7 @@ impl<G: Geometry, T: Object<G>, M: Map<G::Pos, G::Dir>> Object<G> for Mapped<G, 
             .tree(G::geometry_source(cfg))
             .tree(M::map_source(cfg))
             .tree(T::object_source(cfg))
-            .content(&include(&format!(
+            .content(&include(format!(
                 "geometry/ray_{}.hh",
                 &G::geometry_name().1
             )))

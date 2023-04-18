@@ -1,9 +1,9 @@
-use ocl::{Platform, Device, builders::DeviceSpecifier, ProQue};
+use ocl::{builders::DeviceSpecifier, Device, Platform, ProQue};
 
 fn run_for_each_device<F: Fn(Platform, DeviceSpecifier)>(f: F) {
     for platform in Platform::list() {
         println!("Platform: {}", platform.name().unwrap());
-        for device in Device::list_all(&platform).unwrap() {
+        for device in Device::list_all(platform).unwrap() {
             println!(
                 "    Device: {} {}",
                 device.vendor().unwrap(),
@@ -57,7 +57,8 @@ fn union_() {
         let sizes = pro_que.create_buffer::<u64>().unwrap();
         let offsets = pro_que.create_buffer::<u64>().unwrap();
 
-        let kernel = pro_que.kernel_builder("test")
+        let kernel = pro_que
+            .kernel_builder("test")
             .arg(&input)
             .arg(&output)
             .arg(&sizes)
@@ -65,13 +66,15 @@ fn union_() {
             .build()
             .unwrap();
 
-        let input_vec = (0..n).map(|i| {
-            if i % 2 == 0 {
-                i as u64
-            } else {
-                (i as f32).to_bits() as u64
-            }
-        }).collect::<Vec<_>>();
+        let input_vec = (0..n)
+            .map(|i| {
+                if i % 2 == 0 {
+                    i as u64
+                } else {
+                    (i as f32).to_bits() as u64
+                }
+            })
+            .collect::<Vec<_>>();
         println!("{:?}", input_vec);
         input.write(&input_vec).enq().unwrap();
 
@@ -143,10 +146,7 @@ fn zst() {
 
         let buffer = pro_que.create_buffer::<u64>().unwrap();
 
-        let kernel = pro_que.kernel_builder("test")
-            .arg(&buffer)
-            .build()
-            .unwrap();
+        let kernel = pro_que.kernel_builder("test").arg(&buffer).build().unwrap();
 
         unsafe { kernel.enq() }.unwrap();
 
@@ -160,7 +160,6 @@ fn zst() {
         }
     })
 }
-
 
 #[test]
 fn tiled_horosphere_size() {
@@ -206,10 +205,7 @@ fn tiled_horosphere_size() {
 
         let buffer = pro_que.create_buffer::<u64>().unwrap();
 
-        let kernel = pro_que.kernel_builder("test")
-            .arg(&buffer)
-            .build()
-            .unwrap();
+        let kernel = pro_que.kernel_builder("test").arg(&buffer).build().unwrap();
 
         unsafe { kernel.enq() }.unwrap();
 
@@ -218,8 +214,8 @@ fn tiled_horosphere_size() {
 
         pro_que.finish().unwrap();
 
-        assert_eq!(vec[0], 2*4*4);
-        assert_eq!(vec[1], 4*2*4*4 + 4*4);
-        assert_eq!(vec[2], 4*4 + 2*4*4 + 4*2*4*4 + 4*4);
+        assert_eq!(vec[0], 2 * 4 * 4);
+        assert_eq!(vec[1], 4 * 2 * 4 * 4 + 4 * 4);
+        assert_eq!(vec[2], 4 * 4 + 2 * 4 * 4 + 4 * 2 * 4 * 4 + 4 * 4);
     })
 }

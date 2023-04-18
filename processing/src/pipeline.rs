@@ -28,7 +28,7 @@ impl<G: Geometry, S: Scene<G>, F: FilterSequence> Pipeline<G, S, F> {
     ) -> crate::Result<Self> {
         Ok(Self {
             context: context.clone(),
-            scene_buffer: EntityBuffer::new(&context, scene)?,
+            scene_buffer: EntityBuffer::new(context, scene)?,
             render: Render::new(context)?,
             extractor: Extractor::new(&context.backend)?,
             packer: Packer::new(&context.backend)?,

@@ -3,7 +3,7 @@ use crate::{
     io::{CntRead, CntWrite, EntityReader, EntityWriter},
     math,
     source::{SourceBuilder, SourceTree},
-    Config, Entity, EntityId, SizedEntity, EntitySource,
+    Config, Entity, EntityId, EntitySource, SizedEntity,
 };
 use std::io;
 

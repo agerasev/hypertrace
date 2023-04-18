@@ -2,10 +2,10 @@ use crate::{
     io::{CntRead, CntWrite},
     primitive::PrimVec,
     source::SourceTree,
-    Config, Entity, EntityId, SizedEntity, EntitySource,
+    Config, Entity, EntityId, EntitySource, SizedEntity,
 };
-use std::io;
 use base::vecmat::{Complex, Matrix};
+use std::io;
 
 // Real2x2
 

@@ -38,7 +38,7 @@ macro_rules! shape_choice {
                         .tree(<$vtype>::shape_source(cfg))
                     )*
                     .content(&types::source::type_alias(
-                        &Self::shape_name().0, 
+                        &Self::shape_name().0,
                         &<Self as types::EntityId>::name().0,
                     ))
                     .content(&types::source::include("shape/choice/macros.hh"))
@@ -58,7 +58,10 @@ macro_rules! shape_choice {
 
 #[cfg(test)]
 mod tests {
-    use crate::{shape_choice, shape::{Sphere, Cube}};
+    use crate::{
+        shape::{Cube, Sphere},
+        shape_choice,
+    };
 
     shape_choice! {
         TestChoice {

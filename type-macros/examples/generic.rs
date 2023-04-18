@@ -1,4 +1,4 @@
-use hypertrace_type_macros::{Entity, EntityId, SizedEntity, EntitySource};
+use hypertrace_type_macros::{Entity, EntityId, EntitySource, SizedEntity};
 use std::marker::PhantomData;
 use types::{config::HOST_CONFIG, EntitySource};
 
@@ -12,6 +12,6 @@ struct A<T: Copy + 'static, U: Copy + 'static, V: 'static> {
 
 fn main() {
     for (key, value) in A::<i32, u8, usize>::source(&HOST_CONFIG).into_iter() {
-        println!("'{}':\n{}\n", key, value);
+        println!("{:?}:\n{}\n", key, value);
     }
 }

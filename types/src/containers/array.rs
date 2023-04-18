@@ -3,10 +3,10 @@ use crate::{
     include_template,
     io::{CntRead, CntWrite},
     source::{SourceBuilder, SourceTree},
-    Config, Entity, EntityId, SizedEntity, EntitySource,
+    Config, Entity, EntityId, EntitySource, SizedEntity,
 };
-use std::{hash::Hasher, io, iter};
 use base::vecmat::Vector;
+use std::{hash::Hasher, io, iter};
 
 impl<T: SizedEntity, const N: usize> EntityId for [T; N] {
     fn name() -> (String, String) {

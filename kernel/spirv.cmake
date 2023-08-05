@@ -7,8 +7,8 @@ set(CMAKE_CXX_COMPILER clang++-15)
 set(CMAKE_C_COMPILER_FORCED TRUE)
 set(CMAKE_CXX_COMPILER_FORCED TRUE)
 
-set(CMAKE_C_FLAGS "-c -target spir -O0 -emit-llvm")
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -cl-std=clc++2021")
+set(CMAKE_C_FLAGS "-c -target spir -O0 -emit-llvm -ffreestanding")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -cl-std=clc++2021 -stdlib=c++ -stdlib=libc++")
 
 set(CMAKE_C_OUTPUT_EXTENSION ".bc")
 set(CMAKE_CXX_OUTPUT_EXTENSION ${CMAKE_C_OUTPUT_EXTENSION})

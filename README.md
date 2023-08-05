@@ -4,6 +4,7 @@
 
 + `cmake`
 + `clang-15`
++ `libc++-15-dev`
 + `llvm-spirv-15`
 + `*-opencl-dev`
 + `libsdl2-dev`

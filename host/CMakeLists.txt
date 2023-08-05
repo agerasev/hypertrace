@@ -5,6 +5,8 @@ project(hypertrace)
 set(CMAKE_C_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -std=c++20 -fno-exceptions")
 
+add_subdirectory("../common" "common")
+
 include_directories(
     "${CMAKE_SOURCE_DIR}"
 )
@@ -19,6 +21,7 @@ add_executable(${PROJECT_NAME}
     ${SRC}
 )
 target_link_libraries(${PROJECT_NAME}
+    common
     OpenCL
     SDL2
     SDL2_image

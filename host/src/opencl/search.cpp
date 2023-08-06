@@ -22,21 +22,14 @@ std::vector<cl_device_id> cl::get_devices(cl_platform_id platform) {
     assert(device_count > 0);
 
     std::vector<cl_device_id> devices(device_count, 0);
-    assert(clGetDeviceIDs(
-        platform, CL_DEVICE_TYPE_ALL,
-        devices.size(), devices.data(), nullptr
-    ) == CL_SUCCESS);
+    assert(clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, devices.size(), devices.data(), nullptr) == CL_SUCCESS);
 
     return devices;
 }
 
-void cl::print_platform_info(
-    cl_platform_id platform,
-    const char *prefix,
-    std::ostream &ostream
-) {
+void cl::print_platform_info(cl_platform_id platform, const char *prefix, std::ostream &ostream) {
     cl_platform_info params[] = {CL_PLATFORM_VERSION, CL_PLATFORM_NAME, CL_PLATFORM_VENDOR};
-    for (size_t i = 0; i < sizeof(params)/sizeof(cl_platform_info); ++i) {
+    for (size_t i = 0; i < sizeof(params) / sizeof(cl_platform_info); ++i) {
         const cl_platform_info &p = params[i];
         size_t ret_size = 0;
         assert(clGetPlatformInfo(platform, p, 0, nullptr, &ret_size) == CL_SUCCESS);
@@ -50,13 +43,9 @@ void cl::print_platform_info(
     }
 }
 
-void cl::print_device_info(
-    cl_device_id device,
-    const char *prefix,
-    std::ostream &ostream
-) {
+void cl::print_device_info(cl_device_id device, const char *prefix, std::ostream &ostream) {
     cl_device_info params[] = {CL_DEVICE_VERSION, CL_DEVICE_NAME, CL_DEVICE_VENDOR};
-    for (size_t i = 0; i < sizeof(params)/sizeof(cl_device_info); ++i) {
+    for (size_t i = 0; i < sizeof(params) / sizeof(cl_device_info); ++i) {
         const cl_device_info &p = params[i];
         size_t ret_size = 0;
         assert(clGetDeviceInfo(device, p, 0, nullptr, &ret_size) == CL_SUCCESS);
@@ -87,14 +76,10 @@ cl_device_id cl::search_device(int platform_no, int device_no) {
         platform_devices[i] = std::move(devices);
     }
 
-    if(
-        (platform_no < 0 || platform_no >= int(platforms.size())) ||
-        (device_no < 0 || device_no >= int(platform_devices[platform_no].size()))
-    ) {
-        std::cout << "Available platforms and devices:" << std::endl <<
-            sstream.str() << std::endl;
-        std::cerr << "Cannot find device " << device_no <<
-            " at platform " << platform_no << std::endl;
+    if ((platform_no < 0 || platform_no >= int(platforms.size()))
+        || (device_no < 0 || device_no >= int(platform_devices[platform_no].size()))) {
+        std::cout << "Available platforms and devices:" << std::endl << sstream.str() << std::endl;
+        std::cerr << "Cannot find device " << device_no << " at platform " << platform_no << std::endl;
         exit(1);
     }
 

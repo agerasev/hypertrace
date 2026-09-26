@@ -4,7 +4,7 @@ use hypertrace_wgpu::{Gpu, Renderer, Result};
 use std::{
     fs::File,
     io::{BufWriter, Write},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 mod support;
@@ -56,6 +56,15 @@ fn main() -> Result<()> {
         renderer.set_samples_per_dispatch(batch)?;
         renderer.render();
         remaining -= batch;
+        // Bound queued work for high-sample offline renders. Otherwise the
+        // final snapshot's completion timeout includes the entire image.
+        if (samples - remaining).is_multiple_of(128) {
+            gpu.device.poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: Some(Duration::from_secs(60)),
+            })?;
+            eprintln!("{name}: {}/{} samples", samples - remaining, samples);
+        }
     }
     let pixels = renderer.snapshot()?;
     ensure!(

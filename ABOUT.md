@@ -18,6 +18,12 @@ Hyperbolic space uses the upper half-space model; stored isometries are complex
 2×2 Möbius matrices. Quaternion values are temporary intermediates for applying
 those maps and transporting directions.
 
+The [theory guide](https://agerasev.github.io/hypertrace/theory.html) develops the
+metric, geodesics, Möbius action and its differential, surface types, path tracing,
+alternative models, and numerical limitations. Its source is
+[site/theory.html](site/theory.html), expanding on the
+[original article](https://agerasev.github.io/2020/03/12/hypertrace.html).
+
 Custom shapes and materials implement the corresponding `objects` trait and
 provide WGSL lowering hooks. A custom shader leaf carries its source, entry
 point, and parameter layout; no central renderer dispatch enum needs editing.

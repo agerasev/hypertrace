@@ -7,6 +7,10 @@ viewer powered by [`wgame`](https://github.com/agerasev/wgame).
 This project is primarily educational. Euclidean and hyperbolic geometries are
 supported; spherical geometry is planned.
 
+[Scene gallery and web demos](https://agerasev.github.io/hypertrace/) ·
+[Theory](https://agerasev.github.io/hypertrace/theory.html) ·
+[Original video](https://www.youtube.com/watch?v=LGWusRNcJ6A)
+
 ## Requirements
 
 - Current stable Rust and Cargo.
@@ -70,6 +74,9 @@ Trunk downloads a matching `wasm-bindgen` tool on the first build if needed.
 Browser validation was performed in headed Chromium on the local Intel GPU,
 with `--enable-unsafe-webgpu` to enable WebGPU on that Linux setup. Whether a
 browser exposes WebGPU without flags depends on its platform and GPU support.
+
+To reproduce the high-quality previews and publish the gallery, video link,
+theory page, and viewer together, see [site/README.md](site/README.md).
 
 ## Development
 

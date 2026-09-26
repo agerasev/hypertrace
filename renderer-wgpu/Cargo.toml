@@ -6,6 +6,7 @@ edition = "2024"
 [features]
 default = []
 viewer = ["dep:wgame"]
+web = ["viewer", "dep:wasm-bindgen"]
 
 [dependencies]
 anyhow = "1"
@@ -14,8 +15,19 @@ bytemuck = { version = "1", features = ["derive"] }
 ccgeom = "0.1"
 futures = { version = "0.3", features = ["executor"] }
 vecmat = "0.7"
-wgpu = { version = "30.0.1", default-features = false, features = ["std", "wgsl", "vulkan", "metal", "dx12", "gles"] }
+wgpu = { version = "30.0.1", default-features = false, features = ["std", "wgsl"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wgpu = { version = "30.0.1", default-features = false, features = ["vulkan", "metal", "dx12", "gles"] }
 wgame = { path = "../../wgame/wgame", default-features = false, features = ["desktop"], optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+# Features unify with Wgame's WGPU dependency, adding compute-capable WebGPU
+# alongside the WebGL backend selected by its existing web runtime feature.
+wgpu = { version = "30.0.1", default-features = false, features = ["webgpu"] }
+wgame = { path = "../../wgame/wgame", default-features = false, features = ["web"], optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
 
 [[example]]
 name = "viewer"

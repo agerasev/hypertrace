@@ -1,7 +1,9 @@
 use bytemuck::Zeroable;
 use wgpu::util::DeviceExt;
 
-use crate::{Camera, Object, Result, Scene, read_buffer, scene::Params};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::read_buffer;
+use crate::{Camera, Object, Result, Scene, scene::Params};
 
 /// Readable, flattened WGSL for diagnostics and reproducible shader experiments.
 pub fn shader_source() -> String {
@@ -48,7 +50,21 @@ pub struct Renderer {
 }
 
 impl Renderer {
+    /// Blocking native convenience wrapper for [`Self::new_async`].
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        size: (u32, u32),
+        scene: Scene,
+        seed: u32,
+    ) -> Result<Self> {
+        futures::executor::block_on(Self::new_async(device, queue, size, scene, seed))
+    }
+
+    /// Create a renderer, yielding while the GPU validates the scene program.
+    /// Browser hosts must await this rather than block the JavaScript event loop.
+    pub async fn new_async(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         size: (u32, u32),
@@ -58,7 +74,7 @@ impl Renderer {
         validate_size(device, size)?;
         validate_scene(device, &scene)?;
         let source = scene_shader_source(&scene);
-        let pipeline = create_pipeline(device, &source)?;
+        let pipeline = create_pipeline(device, &source).await?;
         let params = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("trace params"),
             contents: bytemuck::bytes_of(&Params::new(&scene, size, 1)),
@@ -116,15 +132,21 @@ impl Renderer {
         &self.params
     }
 
+    /// Blocking native convenience wrapper for [`Self::update_scene_async`].
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn update_scene(&mut self, scene: Scene) -> Result<()> {
+        futures::executor::block_on(self.update_scene_async(scene))
+    }
+
     /// Update data, compiling only if the scene's shader structure changes.
     /// A failed compilation leaves the previous renderer usable.
     /// Buffers grow only when needed.
     /// A geometry/camera/material change always invalidates accumulated samples.
-    pub fn update_scene(&mut self, scene: Scene) -> Result<()> {
+    pub async fn update_scene_async(&mut self, scene: Scene) -> Result<()> {
         validate_scene(&self.device, &scene)?;
         let source = scene_shader_source(&scene);
         let new_pipeline = if source != self.source {
-            Some(create_pipeline(&self.device, &source)?)
+            Some(create_pipeline(&self.device, &source).await?)
         } else {
             None
         };
@@ -237,6 +259,7 @@ impl Renderer {
 
     /// Top-to-bottom linear RGBA; RGB is averaged, alpha is one after at least
     /// one sample (zero before any samples). No display transfer is applied.
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn snapshot(&self) -> Result<Vec<[f32; 4]>> {
         let bytes = read_buffer(
             &self.device,
@@ -321,7 +344,7 @@ fn material_buffer(device: &wgpu::Device, scene: &Scene) -> wgpu::Buffer {
     })
 }
 
-fn create_pipeline(device: &wgpu::Device, source: &str) -> Result<wgpu::ComputePipeline> {
+async fn create_pipeline(device: &wgpu::Device, source: &str) -> Result<wgpu::ComputePipeline> {
     let scope = device.push_error_scope(wgpu::ErrorFilter::Validation);
     // Specialization can remove every access to some bindings; an explicit
     // layout preserves the ABI even for empty scenes and parameterless leaves.
@@ -364,7 +387,7 @@ fn create_pipeline(device: &wgpu::Device, source: &str) -> Result<wgpu::ComputeP
         compilation_options: Default::default(),
         cache: None,
     });
-    if let Some(error) = futures::executor::block_on(scope.pop()) {
+    if let Some(error) = scope.pop().await {
         anyhow::bail!("WGSL pipeline: {error}");
     }
     Ok(pipeline)

@@ -1,23 +1,39 @@
-//! Native viewer. WASD/arrows move, Space/C move vertically, Q/E roll,
+//! Native and web viewer. WASD/arrows move, Space/C move vertically, Q/E roll,
 //! left-drag looks around, scroll changes field of view, R resets, Esc closes.
 //! `--scene eu|hy --smoke` processes twelve frames with a small binding limit,
 //! resizing across that limit and back, camera updates and one discarded frame.
 
-use std::time::Instant;
-
 use hypertrace_wgpu::{Presenter, Renderer, Scene, fit_render_size};
 use wgame::{
     Window, WindowConfig,
+    app::time::Instant,
     canvas::{Button, Event, Key},
     gfx::Target,
 };
 
 mod support;
+#[cfg(target_arch = "wasm32")]
+#[path = "support/web.rs"]
+mod web;
 
 const SEED: u32 = 1;
 
 #[wgame::app]
 async fn main() -> wgame::Result<()> {
+    let result = start().await;
+    #[cfg(target_arch = "wasm32")]
+    {
+        if let Err(error) = result {
+            web::set_status(&format!("Unable to render: {error:#}"), true);
+        }
+        Ok(())
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    result
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn options() -> wgame::Result<(String, bool)> {
     let mut scene = "hy".to_owned();
     let mut smoke = false;
     let mut args = std::env::args().skip(1);
@@ -33,10 +49,28 @@ async fn main() -> wgame::Result<()> {
                 println!(
                     "viewer [--scene eu|hy] [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; scroll: zoom; R: reset; Esc: close"
                 );
-                return Ok(());
+                return Ok((String::new(), false));
             }
             _ => anyhow::bail!("unknown option {arg}; use --help"),
         }
+    }
+    Ok((scene, smoke))
+}
+
+async fn start() -> wgame::Result<()> {
+    #[cfg(not(target_arch = "wasm32"))]
+    let (scene, smoke) = options()?;
+    #[cfg(target_arch = "wasm32")]
+    let (scene, smoke) = {
+        anyhow::ensure!(
+            web::supported(),
+            "WebGPU is unavailable. Use a WebGPU-capable browser on HTTPS or localhost."
+        );
+        web::set_status("Preparing scene…", false);
+        (web::scene_name(), false)
+    };
+    if scene.is_empty() {
+        return Ok(());
     }
     let initial_scene = support::scene(&scene)?;
     let config = WindowConfig::default()
@@ -53,12 +87,19 @@ async fn main() -> wgame::Result<()> {
         })
         .use_adapter_buffer_limits(!smoke);
     wgame::within_window(config, async move |window| {
-        run(window, initial_scene, smoke).await
+        run(window, initial_scene, scene, smoke).await
     })
     .await
 }
 
-async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame::Result<()> {
+async fn run(
+    mut window: Window<'_>,
+    initial_scene: Scene,
+    _scene_name: String,
+    smoke: bool,
+) -> wgame::Result<()> {
+    #[cfg(target_arch = "wasm32")]
+    let (mut scene_name, mut initial_scene) = (_scene_name, initial_scene);
     let graphics = window.graphics().clone();
     eprintln!("Adapter: {:?}", graphics.adapter().get_info());
     let raw = window.raw();
@@ -70,18 +111,24 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
         limits.max_buffer_size / (1 << 20)
     );
     let initial_size = (initial_size.width.max(1), initial_size.height.max(1));
-    let render_size = fit_render_size(&limits, initial_size)?;
+    #[cfg(target_arch = "wasm32")]
+    anyhow::ensure!(
+        graphics.adapter().get_info().backend == wgpu::Backend::BrowserWebGpu,
+        "this browser did not provide a WebGPU adapter"
+    );
+    let render_size = viewer_render_size(&limits, initial_size)?;
     let mut was_scaled = render_size != initial_size;
     if was_scaled {
         report_scaled_size(initial_size, render_size);
     }
-    let mut renderer = Renderer::new(
+    let mut renderer = Renderer::new_async(
         graphics.device(),
         graphics.queue(),
         render_size,
         initial_scene.clone(),
         SEED,
-    )?;
+    )
+    .await?;
     let mut presenter = Presenter::new(graphics.device(), graphics.format(), &renderer);
     let mut camera = initial_scene.camera;
     let mut fov = initial_scene.fov;
@@ -90,7 +137,25 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
     let mut smoke_resized = false;
     let mut smoke_scaled = false;
     let mut smoke_restored = false;
+    #[cfg(target_arch = "wasm32")]
+    let mut samples = 0u64;
+    #[cfg(target_arch = "wasm32")]
+    web::set_status("Ready · click the scene to explore", false);
     while let Some(mut frame) = window.next_frame().await? {
+        #[cfg(target_arch = "wasm32")]
+        if web::scene_name() != scene_name {
+            frame.discard();
+            web::set_status("Preparing scene…", false);
+            scene_name = web::scene_name();
+            initial_scene = support::scene(&scene_name)?;
+            renderer.update_scene_async(initial_scene.clone()).await?;
+            presenter.rebind(graphics.device(), &renderer);
+            camera = initial_scene.camera;
+            fov = initial_scene.fov;
+            samples = 0;
+            web::set_status("Ready · click the scene to explore", false);
+            continue;
+        }
         let now = Instant::now();
         // Integrate elapsed time, bounding a stalled/minimized window's first
         // movement update so resuming cannot cause a large camera jump.
@@ -101,7 +166,7 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
             frame.discard();
             continue;
         }
-        let render_size = fit_render_size(&limits, size)?;
+        let render_size = viewer_render_size(&limits, size)?;
         let scaled = render_size != size;
         if scaled && !was_scaled {
             report_scaled_size(size, render_size);
@@ -115,6 +180,10 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
             smoke_restored |= smoke_scaled && !scaled;
         }
         if renderer.resize(render_size)? {
+            #[cfg(target_arch = "wasm32")]
+            {
+                samples = 0;
+            }
             presenter.rebind(graphics.device(), &renderer);
             if frames > 0 {
                 smoke_resized = true;
@@ -122,16 +191,25 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
         }
         let input = frame.input();
         let mut reset = false;
+        #[cfg(target_arch = "wasm32")]
+        {
+            reset |= web::take_reset();
+        }
         let mut zoom = 0.0;
         for event in &input.events {
             match event {
                 Event::Key {
                     key: Key::Escape,
                     pressed: true,
-                    ..
+                    repeat: false,
                 } => {
-                    frame.discard();
-                    return Ok(());
+                    #[cfg(target_arch = "wasm32")]
+                    web::toggle_pause();
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
+                        frame.discard();
+                        return Ok(());
+                    }
                 }
                 Event::Key {
                     key: Key::Character('r'),
@@ -145,7 +223,11 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
         if reset {
             camera = initial_scene.camera;
             fov = initial_scene.fov;
-            renderer.update_scene(initial_scene.clone())?;
+            renderer.update_scene_async(initial_scene.clone()).await?;
+            #[cfg(target_arch = "wasm32")]
+            {
+                samples = 0;
+            }
         }
         let key = |letter| input.key_down(Key::Character(letter));
         let axis = |positive: bool, negative: bool| f64::from(positive) - f64::from(negative);
@@ -178,8 +260,29 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
             camera.move_local(translation, rotation);
             fov = (fov * (-zoom * 0.002).exp()).clamp(0.05, 10.0);
             renderer.update_camera(camera, fov)?;
+            #[cfg(target_arch = "wasm32")]
+            {
+                samples = 0;
+            }
         }
-        renderer.encode(frame.encoder());
+        #[cfg(not(target_arch = "wasm32"))]
+        let paused = false;
+        #[cfg(target_arch = "wasm32")]
+        let paused = web::paused();
+        // Keep a visible preview after resetting/changing a paused scene.
+        #[cfg(not(target_arch = "wasm32"))]
+        let needs_preview = false;
+        #[cfg(target_arch = "wasm32")]
+        let needs_preview = samples == 0;
+        if !paused || needs_preview {
+            renderer.encode(frame.encoder());
+            #[cfg(target_arch = "wasm32")]
+            {
+                samples += 1;
+            }
+        }
+        #[cfg(target_arch = "wasm32")]
+        web::set_stats(render_size.0, render_size.1, samples as f64);
         let view = frame.view().clone();
         presenter.draw(frame.encoder(), &view);
         if smoke && frames == 7 {
@@ -208,6 +311,23 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
         }
     }
     Ok(())
+}
+
+fn viewer_render_size(limits: &wgpu::Limits, size: (u32, u32)) -> wgame::Result<(u32, u32)> {
+    #[cfg(target_arch = "wasm32")]
+    let size = {
+        let cap = web::resolution();
+        let longest = size.0.max(size.1);
+        if cap > 0 && longest > cap {
+            (
+                ((u64::from(size.0) * u64::from(cap) / u64::from(longest)) as u32).max(1),
+                ((u64::from(size.1) * u64::from(cap) / u64::from(longest)) as u32).max(1),
+            )
+        } else {
+            size
+        }
+    };
+    fit_render_size(limits, size)
 }
 
 fn report_scaled_size(window: (u32, u32), render: (u32, u32)) {

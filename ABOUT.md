@@ -9,7 +9,9 @@ Hypertrace separates Rust scene construction from GPU rendering:
   schemas describe structure separately from parameter values so ordinary scene
   edits can reuse compiled pipelines.
 - `renderer-wgpu`: compute pipelines, progressive accumulation, explicit CPU
-  snapshots, and direct GPU presentation through the optional Wgame viewer.
+  snapshots on native platforms, and direct GPU presentation through the optional
+  Wgame viewer. The same viewer runs in the browser using WebAssembly and WebGPU;
+  Trunk bundles it with the HTML controls in `renderer-wgpu/web`.
 
 Host-side camera transforms use f64. GPU storage and tracing use f32.
 Hyperbolic space uses the upper half-space model; stored isometries are complex

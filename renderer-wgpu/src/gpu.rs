@@ -1,3 +1,4 @@
+#[cfg(not(target_arch = "wasm32"))]
 use std::{sync::mpsc, time::Duration};
 
 use anyhow::Context;
@@ -50,6 +51,7 @@ impl Gpu {
 
 /// Explicit, blocking snapshot for native tools/tests. Interactive rendering
 /// never calls this: it presents directly from GPU accumulation storage.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn read_buffer(
     device: &wgpu::Device,
     queue: &wgpu::Queue,

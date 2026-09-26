@@ -1,8 +1,9 @@
-# Native WGPU backend
+# WGPU renderer
 
 The renderer compiles the generic Rust `eu` and `hy` scene builders to WGSL
 compute shaders. It includes headless tools and a `wgame` viewer with direct GPU
-presentation.
+presentation on native platforms and the web. See the repository
+[web viewer instructions](../README.md#web-viewer) for Trunk setup and controls.
 
 ## Run
 
@@ -40,7 +41,13 @@ requested image dimensions: an unsupported size returns a diagnostic error.
 
 ## Renderer contract
 
-`Renderer::new` accepts an existing device and queue. Request
+`Renderer::new_async` accepts an existing device and queue. Await pipeline
+validation in browser code; `Renderer::new` is a blocking native convenience
+wrapper. Likewise, use `update_scene_async` on the web; `update_scene` is native
+only. Blocking `snapshot` and `read_buffer` are native-only tools. Normal browser
+frames encode compute and presentation on the GPU with no CPU pixel readback.
+
+Request
 `wgpu::Limits::default()` or equivalent compute/storage limits; `wgame`'s default
 WebGL2 limits disable compute. No optional WGPU features are required.
 The portable storage-binding default is 128 MiB, enough for 8,388,608 pixels at
@@ -80,15 +87,15 @@ Host camera composition remains f64; upload converts to f32. Hyperbolic geometry
 remains the upper half-space model, with complex 2×2 Möbius matrices. Quaternions
 are temporary values for the action and tangent transport, not stored isometries.
 Nearby distance evaluation, vertical horosphere intersections, and plane hits
-near the ideal boundary are stabilized in both backends. Upload rejects transforms
+near the ideal boundary are stabilized in the shared shaders. Upload rejects transforms
 that become singular after f32 conversion (for example, a horizontal boost of
 18 units). This does not remove all f32 limitations near the ideal boundary;
 camera-relative coordinate frames remain a separate implementation step.
 
 ## Generic scene builders
 
-`hypertrace-scenes` contains the shared `eu` and `hy` factories used by both
-backends. The WGPU examples lower those builders as follows:
+`hypertrace-scenes` contains the shared `eu` and `hy` factories used by native and
+browser viewers. The WGPU examples lower those builders as follows:
 
 ```rust,ignore
 use objects::Scene as _;

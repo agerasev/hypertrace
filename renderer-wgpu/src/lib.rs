@@ -1,4 +1,4 @@
-//! Native WGPU path tracing with GPU presentation and explicit snapshots.
+//! WGPU path tracing with native and browser GPU presentation.
 //!
 //! Generic Rust builders lower through a CPU-only scene compiler to generated
 //! WGSL and explicit storage records. Camera transforms remain f64 on the CPU
@@ -7,7 +7,9 @@
 #![forbid(unsafe_code)]
 
 mod gpu;
-pub use gpu::{Gpu, read_buffer};
+pub use gpu::Gpu;
+#[cfg(not(target_arch = "wasm32"))]
+pub use gpu::read_buffer;
 pub mod scene;
 pub use scene::{Background, Camera, Material, Object, Scene};
 mod renderer;

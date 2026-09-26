@@ -12,4 +12,12 @@ impl EntitySource for Horosphere {
     }
 }
 
-impl Shape<Hyperbolic3> for Horosphere {}
+impl Shape<Hyperbolic3> for Horosphere {
+    fn wgsl_shape_schema() -> crate::wgsl::Result<crate::wgsl::ShapeSchema> {
+        Ok(crate::wgsl::ShapeSchema::Horosphere)
+    }
+
+    fn wgsl_shape(&self) -> crate::wgsl::Result<crate::wgsl::ShapeValue> {
+        Ok(crate::wgsl::ShapeValue::horosphere())
+    }
+}

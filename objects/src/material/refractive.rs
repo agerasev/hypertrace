@@ -25,4 +25,12 @@ impl EntitySource for Refractive {
     }
 }
 
-impl Material for Refractive {}
+impl Material for Refractive {
+    fn wgsl_material_schema() -> crate::wgsl::Result<crate::wgsl::MaterialSchema> {
+        Ok(crate::wgsl::MaterialSchema::Refractive)
+    }
+
+    fn wgsl_material(&self) -> crate::wgsl::Result<crate::wgsl::MaterialValue> {
+        crate::wgsl::MaterialValue::refractive(self.index)
+    }
+}

@@ -15,18 +15,30 @@ use types::{
 
 pub trait HorosphereTiling: Tiling {
     fn name() -> String;
+    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
+        Err(crate::wgsl::unsupported::<Self>())
+    }
 }
 impl HorosphereTiling for tiling::Uniform {
+    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
+        Ok(crate::wgsl::Tiling::Uniform)
+    }
     fn name() -> String {
         "HOROSPHERE_TILING_UNIFORM".into()
     }
 }
 impl HorosphereTiling for tiling::Square {
+    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
+        Ok(crate::wgsl::Tiling::Square)
+    }
     fn name() -> String {
         "HOROSPHERE_TILING_SQUARE".into()
     }
 }
 impl HorosphereTiling for tiling::Hexagonal {
+    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
+        Ok(crate::wgsl::Tiling::Hexagonal)
+    }
     fn name() -> String {
         "HOROSPHERE_TILING_HEXAGONAL".into()
     }
@@ -85,4 +97,30 @@ impl<M: Material, K: HorosphereTiling, const N: usize> Object<Hyperbolic3>
     for TiledHorosphere<M, K, N>
 {
     type Cache = TiledHorosphereCache;
+
+    fn wgsl_register(registry: &mut crate::wgsl::Registry) -> crate::wgsl::Result<()> {
+        registry.shape(crate::wgsl::ShapeSchema::Horosphere);
+        registry.material(M::wgsl_material_schema()?);
+        Ok(())
+    }
+
+    fn wgsl_object(&self) -> crate::wgsl::Result<crate::wgsl::ObjectNode> {
+        let tiling = K::wgsl_tiling()?;
+        Ok(crate::wgsl::ObjectNode::Tiled {
+            shape: crate::wgsl::ShapeValue::horosphere(),
+            materials: self
+                .materials
+                .iter()
+                .map(M::wgsl_material)
+                .collect::<crate::wgsl::Result<Vec<_>>>()?,
+            border_material: self.border_material.wgsl_material()?,
+            tiling,
+            cell_size: if tiling == crate::wgsl::Tiling::Uniform {
+                1.0
+            } else {
+                self.cell_size
+            },
+            border_width: self.border_width,
+        })
+    }
 }

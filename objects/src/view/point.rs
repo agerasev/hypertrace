@@ -40,4 +40,11 @@ impl<G: Geometry> EntitySource for PointView<G> {
     }
 }
 
-impl<G: Geometry> View<G> for PointView<G> {}
+impl<G: Geometry> View<G> for PointView<G> {
+    fn wgsl_view(&self) -> crate::wgsl::Result<crate::wgsl::View> {
+        Ok(crate::wgsl::View {
+            map: crate::wgsl::Transform::identity(crate::wgsl::geometry::<G>()?),
+            fov: self.fov,
+        })
+    }
+}

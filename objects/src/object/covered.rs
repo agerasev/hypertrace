@@ -38,6 +38,19 @@ where
 {
     type Cache = CoveredCache<G>;
 
+    fn wgsl_register(registry: &mut crate::wgsl::Registry) -> crate::wgsl::Result<()> {
+        registry.shape(S::wgsl_shape_schema()?);
+        registry.material(M::wgsl_material_schema()?);
+        Ok(())
+    }
+
+    fn wgsl_object(&self) -> crate::wgsl::Result<crate::wgsl::ObjectNode> {
+        Ok(crate::wgsl::ObjectNode::Covered {
+            shape: self.shape.wgsl_shape()?,
+            material: self.material.wgsl_material()?,
+        })
+    }
+
     fn object_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/{}.hh", Self::object_name().1))
             .tree(Self::source(cfg))

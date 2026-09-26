@@ -6,6 +6,7 @@ pub mod object;
 pub mod scene;
 pub mod shape;
 pub mod view;
+pub mod wgsl;
 
 pub use background::Background;
 pub use mapped::Mapped;

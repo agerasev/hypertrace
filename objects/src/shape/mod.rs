@@ -10,6 +10,16 @@ mod sphere;
 use types::{prelude::*, source::SourceTree, Config};
 
 pub trait Shape<G: Geometry>: Entity {
+    /// Describe the WGSL implementation independently of the current value.
+    fn wgsl_shape_schema() -> crate::wgsl::Result<crate::wgsl::ShapeSchema> {
+        Err(crate::wgsl::unsupported::<Self>())
+    }
+
+    /// Lower this shape's parameters to the portable scene representation.
+    fn wgsl_shape(&self) -> crate::wgsl::Result<crate::wgsl::ShapeValue> {
+        Err(crate::wgsl::unsupported::<Self>())
+    }
+
     fn shape_name() -> (String, String) {
         Self::name()
     }

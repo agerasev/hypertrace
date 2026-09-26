@@ -1,5 +1,5 @@
 use crate::{Background, Object, View};
-use std::marker::PhantomData;
+use std::{convert::TryFrom, marker::PhantomData};
 use type_macros::*;
 use types::{
     include_template,
@@ -9,6 +9,11 @@ use types::{
 };
 
 pub trait Scene<G: Geometry>: EntityId + Entity + EntitySource {
+    /// Lower a scene without requiring OpenCL or a WGPU device.
+    fn wgsl_scene(&self) -> crate::wgsl::Result<crate::wgsl::SceneDefinition> {
+        Err(crate::wgsl::unsupported::<Self>())
+    }
+
     fn scene_name() -> (String, String) {
         Self::name()
     }
@@ -46,6 +51,19 @@ impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize> Sc
 where
     Self: Entity,
 {
+    fn wgsl_scene(&self) -> crate::wgsl::Result<crate::wgsl::SceneDefinition> {
+        let mut registry = crate::wgsl::Registry::default();
+        T::wgsl_register(&mut registry)?;
+        Ok(crate::wgsl::SceneDefinition {
+            view: self.view.wgsl_view()?,
+            background: self.background.wgsl_background()?,
+            bounces: u32::try_from(H)?,
+            object: self.object.wgsl_object()?,
+            material_schemas: registry.material_schemas,
+            shape_schemas: registry.shape_schemas,
+        })
+    }
+
     fn scene_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/{}.hh", Self::scene_name().1))
             .tree(Self::source(cfg))

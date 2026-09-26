@@ -10,6 +10,21 @@ impl<G: Geometry, T: Shape<G>> Shape<G> for Vec<T>
 where
     Self: Entity,
 {
+    fn wgsl_shape_schema() -> crate::wgsl::Result<crate::wgsl::ShapeSchema> {
+        Ok(crate::wgsl::ShapeSchema::Vector(Box::new(
+            T::wgsl_shape_schema()?,
+        )))
+    }
+
+    fn wgsl_shape(&self) -> crate::wgsl::Result<crate::wgsl::ShapeValue> {
+        crate::wgsl::ShapeValue::vector(
+            T::wgsl_shape_schema()?,
+            self.iter()
+                .map(T::wgsl_shape)
+                .collect::<crate::wgsl::Result<Vec<_>>>()?,
+        )
+    }
+
     fn shape_name() -> (String, String) {
         (
             format!("Shape{}", Self::name().0),

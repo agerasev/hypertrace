@@ -18,8 +18,16 @@ real hy_length(HyPos a) {
     return hy_distance(a, hy_origin());
 }
 real hy_distance(HyPos a, HyPos b) {
-    real x = 1 + length2(a - b)/(2*a.z*b.z);
-    return log(x + sqrt(x*x - 1));
+    // acosh(1 + x) loses short distances when 1 + x rounds to 1.
+    // Scale the norm and take the square roots separately: neither the
+    // coordinate squares nor a.z*b.z need to fit in a real.
+    quat delta = a - b;
+    real scale = fmax(fmax(fabs(delta.x), fabs(delta.y)), fabs(delta.z));
+    if (scale == R0) {
+        return R0;
+    }
+    real norm = length(delta / scale) * scale;
+    return 2 * asinh((norm / sqrt(a.z)) / sqrt(b.z) / 2);
 }
 
 HyDir hy_dir_at(HyDir src_pos, HyDir src_dir, HyDir dst_pos) {

@@ -30,6 +30,16 @@ impl<M: Material> Material for Colored<M>
 where
     Self: Entity,
 {
+    fn wgsl_material_schema() -> crate::wgsl::Result<crate::wgsl::MaterialSchema> {
+        Ok(crate::wgsl::MaterialSchema::Colored(Box::new(
+            M::wgsl_material_schema()?,
+        )))
+    }
+
+    fn wgsl_material(&self) -> crate::wgsl::Result<crate::wgsl::MaterialValue> {
+        self.inner.wgsl_material()?.colored(self.color.into_array())
+    }
+
     fn material_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/{}.hh", Self::material_name().1))
             .tree(Self::source(cfg))
@@ -65,6 +75,18 @@ impl<M: Material> Material for Emissive<M>
 where
     Self: Entity,
 {
+    fn wgsl_material_schema() -> crate::wgsl::Result<crate::wgsl::MaterialSchema> {
+        Ok(crate::wgsl::MaterialSchema::Emissive(Box::new(
+            M::wgsl_material_schema()?,
+        )))
+    }
+
+    fn wgsl_material(&self) -> crate::wgsl::Result<crate::wgsl::MaterialValue> {
+        self.inner
+            .wgsl_material()?
+            .emissive(self.emission.into_array())
+    }
+
     fn material_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/{}.hh", Self::material_name().1))
             .tree(Self::source(cfg))

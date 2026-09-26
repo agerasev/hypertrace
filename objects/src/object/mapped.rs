@@ -8,6 +8,18 @@ use types::{
 
 impl<G: Geometry, T: Object<G>, M: Map<G::Pos, G::Dir>> Object<G> for Mapped<G, T, M> {
     type Cache = T::Cache;
+
+    fn wgsl_register(registry: &mut crate::wgsl::Registry) -> crate::wgsl::Result<()> {
+        T::wgsl_register(registry)
+    }
+
+    fn wgsl_object(&self) -> crate::wgsl::Result<crate::wgsl::ObjectNode> {
+        Ok(crate::wgsl::ObjectNode::Mapped {
+            map: crate::wgsl::transform::<G, M>(&self.map)?,
+            inner: Box::new(self.inner.wgsl_object()?),
+        })
+    }
+
     fn object_name() -> (String, String) {
         (
             format!("Object{}", Self::name().0),

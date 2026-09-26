@@ -1,4 +1,5 @@
 [workspace]
+resolver = "2"
 
 members = [
     "kernel",
@@ -9,4 +10,7 @@ members = [
     "processing",
     "viewer",
     "main",
+    "renderer-wgpu",
+    "scene",
+    "scenes",
 ]

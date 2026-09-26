@@ -1,16 +1,6 @@
-use ccgeom::{Euclidean3, Homogenous3};
+use ccgeom::Euclidean3;
 use hypertrace::{
     cli::{get_ocl_context, OclApp},
-    objects::{
-        background::GradBg,
-        material::{Colored, Lambertian, Refractive, Specular},
-        mixture,
-        object::Covered,
-        shape::{Cube, Plane, Sphere},
-        shape_choice,
-        view::PointView,
-        Mapped, SceneImpl,
-    },
     proc::{filter::GammaFilter, Context, Pipeline},
     types::{
         config::{AddressWidth, Endian},
@@ -22,26 +12,8 @@ use std::{
     rc::Rc,
     time::{Duration, Instant},
 };
-use vecmat::{
-    transform::{Rotation3, Shift},
-    Transform, Vector,
-};
-
-shape_choice! {
-    Choice {
-        Plane(Plane),
-        Sphere(Sphere),
-        Cube(Cube),
-    }
-}
-
-mixture! {
-    Mixture {
-        diffuse: Colored<Lambertian>,
-        specular: Specular,
-        refractive: Colored<Refractive>,
-    }
-}
+#[path = "support/eu.rs"]
+mod example_scene;
 
 fn main() -> proc::Result<()> {
     let matches = clap::App::new("Sample")
@@ -67,73 +39,14 @@ fn main() -> proc::Result<()> {
 
     let size = (800, 600);
 
-    let view = Mapped::new(PointView::new(1.0), Homogenous3::identity());
-    let objects = vec![
-        Mapped::new(
-            Covered::new(
-                Choice::from(Sphere::default()),
-                Mixture::new(
-                    (Colored::new(Lambertian, [1.0, 0.2, 0.2].into()), 0.0).into(),
-                    (Specular, 0.1).into(),
-                    (
-                        Colored::new(Refractive::new(1.2), [1.0, 1.0, 0.2].into()),
-                        0.9,
-                    )
-                        .into(),
-                ),
-            ),
-            Shift::from_vector([0.0, 1.0, 0.0].into()),
-        ),
-        Mapped::new(
-            Covered::new(
-                Choice::from(Cube::default()),
-                Mixture::new(
-                    (Colored::new(Lambertian, [0.2, 0.8, 0.8].into()), 1.0).into(),
-                    (Specular, 0.0).into(),
-                    (
-                        Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()),
-                        0.0,
-                    )
-                        .into(),
-                ),
-            ),
-            Shift::from_vector([0.0, -1.0, 0.0].into()),
-        ),
-        Mapped::new(
-            Covered::new(
-                Choice::from(Plane::default()),
-                Mixture::new(
-                    (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.9).into(),
-                    (Specular, 0.1).into(),
-                    (
-                        Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()),
-                        0.0,
-                    )
-                        .into(),
-                ),
-            ),
-            Shift::from_vector([0.0, 0.0, -1.0].into()),
-        ),
-    ];
-    let background = GradBg::new(
-        [0.0, 1.0, 0.0].into(),
-        [[1.0, 1.0, 1.0].into(), [0.0, 0.0, 0.0].into()],
-        2.4,
-    );
-    let mut scene = SceneImpl::<_, _, _, _, 4>::new(view, objects, background);
+    let mut scene = example_scene::scene::<4>();
     let filter = GammaFilter::new(&context.backend, 1.0 / 2.2)?;
     let mut pipeline = Pipeline::new(&context, size, &scene, filter)?;
 
     let sdl_context = Rc::new(sdl2::init()?);
     let mut window = Window::new(sdl_context, size, "Sample")?;
 
-    let mut controller = IsotropicController::<Euclidean3>::new(
-        Homogenous3::new(
-            Shift::from(Vector::from([0.0, 0.5, 2.0])),
-            Rotation3::identity(),
-        ),
-        1.0,
-    );
+    let mut controller = IsotropicController::<Euclidean3>::new(example_scene::camera(), 1.0);
 
     let delay = 0.04;
     loop {

@@ -6,24 +6,36 @@ real horosphere_detect(__global const void *shape, Context *context, HyDir *norm
     bool repeat = context_is_repeat(context);
 
     quat p = light->ray.start, d = light->ray.direction;
-    real dxy = length(d.xy);
-    // FIXME: check (dxy < EPS)
-
-    if (p.z < dxy) {
-        return -R1;
-    }
-    
-    real dt = sqrt(p.z*p.z - dxy*dxy);
-    real t = p.z*d.z - dt;
     real w = EPS * (2 * repeat - 1);
-    if (t < w) {
-        t += 2*dt;
+    real a = length2(d.xy);
+    real t;
+    if (a == R0) {
+        // The geodesic is a vertical line, not a circle of infinite radius.
+        t = (R1 - p.z) * (R1 + p.z) / (2 * p.z * d.z);
         if (t < w) {
             return -R1;
         }
+    } else {
+        real dxy = sqrt(a);
+        if (p.z < dxy) {
+            return -R1;
+        }
+        real dt = sqrt((p.z - dxy) * (p.z + dxy));
+        real b = p.z * d.z;
+        real q = b + copysign(dt, b);
+        // The product of the roots is (1-p.z*p.z)/a. Recovering the
+        // smaller root this way avoids cancellation for near-vertical rays.
+        real first = q / a;
+        real second = q == R0 ? R0 : (R1 - p.z) * (R1 + p.z) / q;
+        t = fmin(first, second);
+        if (t < w) {
+            t = fmax(first, second);
+            if (t < w) {
+                return -R1;
+            }
+        }
     }
 
-    t /= dxy*dxy;
     quat h = make(quat)(p.xy + d.xy*t, 1, 0);
 
     light->ray.start = h;

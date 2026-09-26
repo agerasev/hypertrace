@@ -51,6 +51,19 @@ macro_rules! mixture {
                 $mtype: $crate::Material,
             )*
         {
+            fn wgsl_material_schema() -> $crate::wgsl::Result<$crate::wgsl::MaterialSchema> {
+                Ok($crate::wgsl::MaterialSchema::Mixture(vec![
+                    $( <$mtype as $crate::Material>::wgsl_material_schema()?, )*
+                ]))
+            }
+
+            fn wgsl_material(&self) -> $crate::wgsl::Result<$crate::wgsl::MaterialValue> {
+                $crate::wgsl::MaterialValue::mixture(vec![
+                    $( (self.$component.portion,
+                        <$mtype as $crate::Material>::wgsl_material(&self.$component.material)?), )*
+                ])
+            }
+
             fn material_source(cfg: &types::Config) -> types::source::SourceTree {
                 let mcfs = vec![
                     $((

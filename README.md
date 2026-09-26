@@ -1,6 +1,6 @@
 # Hypertrace
 
-Physically-based non-Euclidean ray tracer powered by OpenCL.
+Physically-based non-Euclidean ray tracer with OpenCL and a native WGPU backend.
 
 *This project is done mostly for educational purpose.*
 
@@ -11,6 +11,18 @@ Physically-based non-Euclidean ray tracer powered by OpenCL.
 + [ ] Spherical geometry (planning).
 
 ## Requirements
+
+The WGPU backend compiles the shared generic `eu` and `hy` scene builders to
+WGSL and renders headlessly or through
+[`wgame`](../wgame). It does not depend on OpenCL or SDL. See the
+[WGPU guide](renderer-wgpu/README.md) for requirements, commands, tests, and the
+remaining migration work.
+
+```bash
+cargo run -p hypertrace-wgpu --features viewer --example viewer -- --scene hy
+```
+
+### Legacy OpenCL backend
 
 + Rustc and Cargo
 + OpenCL 1.2 support

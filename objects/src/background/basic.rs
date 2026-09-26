@@ -27,6 +27,10 @@ impl EntitySource for ConstBg {
 }
 
 impl<G: Geometry> Background<G> for ConstBg {
+    fn wgsl_background(&self) -> crate::wgsl::Result<crate::wgsl::Background> {
+        Ok(crate::wgsl::Background::Constant(self.color.into_array()))
+    }
+
     fn background_name() -> (String, String) {
         (
             format!("ConstBg{}", G::geometry_name().0),
@@ -73,4 +77,16 @@ impl EntitySource for GradBg {
     }
 }
 
-impl Background<Euclidean3> for GradBg {}
+impl Background<Euclidean3> for GradBg {
+    fn wgsl_background(&self) -> crate::wgsl::Result<crate::wgsl::Background> {
+        let mut axis = [0.0; 3];
+        for (dst, src) in axis.iter_mut().zip(self.direction.into_array()) {
+            *dst = crate::wgsl::finite_f32(src)?;
+        }
+        Ok(crate::wgsl::Background::Gradient {
+            colors: self.colors.map(Vector::into_array),
+            axis,
+            power: self.power,
+        })
+    }
+}

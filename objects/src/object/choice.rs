@@ -30,6 +30,18 @@ macro_rules! object_choice {
         {
             type Cache = $cache<G>;
 
+            fn wgsl_register(registry: &mut $crate::wgsl::Registry) -> $crate::wgsl::Result<()> {
+                $( <$vtype as $crate::Object<G>>::wgsl_register(registry)?; )*
+                Ok(())
+            }
+
+            fn wgsl_object(&self) -> $crate::wgsl::Result<$crate::wgsl::ObjectNode> {
+                match self {
+                    $( Self::$variant(value) => <$vtype as $crate::Object<G>>::wgsl_object(value), )*
+                }
+            }
+
+
             fn object_name() -> (String, String) {
                 (
                     format!("Object{}", <Self as types::EntityId>::name().0),

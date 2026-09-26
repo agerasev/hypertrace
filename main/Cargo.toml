@@ -17,3 +17,4 @@ proc = { package = "hypertrace-processing", path = "../processing", features = [
 [dev-dependencies]
 vecmat = "0.7"
 ccgeom = "0.1"
+scenes = { package = "hypertrace-scenes", path = "../scenes" }

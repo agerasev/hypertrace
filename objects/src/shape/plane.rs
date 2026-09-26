@@ -13,6 +13,14 @@ impl EntitySource for Plane {
 }
 
 impl Shape<Euclidean3> for Plane {
+    fn wgsl_shape_schema() -> crate::wgsl::Result<crate::wgsl::ShapeSchema> {
+        Ok(crate::wgsl::ShapeSchema::Plane)
+    }
+
+    fn wgsl_shape(&self) -> crate::wgsl::Result<crate::wgsl::ShapeValue> {
+        Ok(crate::wgsl::ShapeValue::plane())
+    }
+
     fn shape_name() -> (String, String) {
         ("PlaneEu".into(), "plane_eu".into())
     }
@@ -22,6 +30,14 @@ impl Shape<Euclidean3> for Plane {
 }
 
 impl Shape<Hyperbolic3> for Plane {
+    fn wgsl_shape_schema() -> crate::wgsl::Result<crate::wgsl::ShapeSchema> {
+        Ok(crate::wgsl::ShapeSchema::Plane)
+    }
+
+    fn wgsl_shape(&self) -> crate::wgsl::Result<crate::wgsl::ShapeValue> {
+        Ok(crate::wgsl::ShapeValue::plane())
+    }
+
     fn shape_name() -> (String, String) {
         ("PlaneHy".into(), "plane_hy".into())
     }

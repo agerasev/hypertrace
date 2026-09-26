@@ -8,3 +8,4 @@ edition = "2018"
 base = { package = "hypertrace-base", path = "../base" }
 types = { package = "hypertrace-types", path = "../types" }
 type-macros = { package = "hypertrace-type-macros", path = "../type-macros" }
+scene = { package = "hypertrace-scene", path = "../scene" }

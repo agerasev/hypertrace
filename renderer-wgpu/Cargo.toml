@@ -1,0 +1,28 @@
+[package]
+name = "hypertrace-wgpu"
+version = "0.0.0"
+edition = "2024"
+
+[features]
+default = []
+viewer = ["dep:wgame"]
+
+[dependencies]
+anyhow = "1"
+scene_ir = { package = "hypertrace-scene", path = "../scene" }
+bytemuck = { version = "1", features = ["derive"] }
+ccgeom = "0.1"
+futures = { version = "0.3", features = ["executor"] }
+vecmat = "0.7"
+wgpu = { version = "30.0.1", default-features = false, features = ["std", "wgsl", "vulkan", "metal", "dx12", "gles"] }
+wgame = { path = "../../wgame/wgame", default-features = false, features = ["desktop"], optional = true }
+
+[[example]]
+name = "viewer"
+required-features = ["viewer"]
+
+[dev-dependencies]
+objects = { package = "hypertrace-objects", path = "../objects" }
+scenes = { package = "hypertrace-scenes", path = "../scenes" }
+types = { package = "hypertrace-types", path = "../types" }
+type_macros = { package = "hypertrace-type-macros", path = "../type-macros" }

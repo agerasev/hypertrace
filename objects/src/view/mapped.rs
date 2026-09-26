@@ -7,6 +7,12 @@ use types::{
 };
 
 impl<G: Geometry, T: View<G>, M: Map<G::Pos, G::Dir>> View<G> for Mapped<G, T, M> {
+    fn wgsl_view(&self) -> crate::wgsl::Result<crate::wgsl::View> {
+        let mut view = self.inner.wgsl_view()?;
+        view.map = crate::wgsl::transform::<G, M>(&self.map)?.chain(&view.map)?;
+        Ok(view)
+    }
+
     fn view_name() -> (String, String) {
         (
             format!("View{}", Self::name().0),

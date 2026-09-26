@@ -15,18 +15,30 @@ use types::{
 
 pub trait PlaneTiling<G: Geometry>: Tiling {
     fn name() -> String;
+    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
+        Err(crate::wgsl::unsupported::<Self>())
+    }
 }
 impl PlaneTiling<Hyperbolic3> for tiling::Uniform {
+    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
+        Ok(crate::wgsl::Tiling::Uniform)
+    }
     fn name() -> String {
         "PLANE_HY_TILING_UNIFORM".into()
     }
 }
 impl PlaneTiling<Hyperbolic3> for tiling::Pentagonal {
+    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
+        Ok(crate::wgsl::Tiling::Pentagonal)
+    }
     fn name() -> String {
         "PLANE_HY_TILING_PENTAGONAL".into()
     }
 }
 impl PlaneTiling<Hyperbolic3> for tiling::Pentastar {
+    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
+        Ok(crate::wgsl::Tiling::Pentastar)
+    }
     fn name() -> String {
         "PLANE_HY_TILING_PENTASTAR".into()
     }
@@ -62,6 +74,28 @@ impl<M: Material, K: PlaneTiling<Hyperbolic3>, const N: usize> Object<Hyperbolic
     for TiledPlane<M, K, N>
 {
     type Cache = TiledPlaneCache<Hyperbolic3>;
+
+    fn wgsl_register(registry: &mut crate::wgsl::Registry) -> crate::wgsl::Result<()> {
+        registry.shape(crate::wgsl::ShapeSchema::Plane);
+        registry.material(M::wgsl_material_schema()?);
+        Ok(())
+    }
+
+    fn wgsl_object(&self) -> crate::wgsl::Result<crate::wgsl::ObjectNode> {
+        Ok(crate::wgsl::ObjectNode::Tiled {
+            shape: crate::wgsl::ShapeValue::plane(),
+            materials: self
+                .materials
+                .iter()
+                .map(M::wgsl_material)
+                .collect::<crate::wgsl::Result<Vec<_>>>()?,
+            border_material: self.border_material.wgsl_material()?,
+            tiling: K::wgsl_tiling()?,
+            // Plane tilings do not use cell_size; legacy builders may store NaN.
+            cell_size: 1.0,
+            border_width: self.border_width,
+        })
+    }
 
     fn object_source(cfg: &Config) -> SourceTree {
         SourceBuilder::new(format!("generated/{}.hh", Self::object_name().1))

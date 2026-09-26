@@ -9,11 +9,11 @@ real plane_hy_detect(__global const Plane *shape, Context *context, HyDir *norma
     }
 
     quat p = light->ray.start, d = light->ray.direction;
-    //real dxy = sqrt(d.x*d.x + d.y*d.y);
-    // FIXME: check (dxy < EPS)
 
     real pd = dot(p, d);
-    if (fabs(pd) < EPS) {
+    // The magnitude scales with position. A fixed epsilon would reject even
+    // vertical intersections when p.z is small near the ideal boundary.
+    if (pd == R0) {
         return -R1;
     }
     real s = R1 - length2(p);
@@ -24,7 +24,8 @@ real plane_hy_detect(__global const Plane *shape, Context *context, HyDir *norma
     quat h = make(quat)(p.xy + d.xy * t, 0, 0);
     
     real pxy2 = length2(h.xy);
-    if (pxy2 > R1) {
+    // A point at z=0 is at infinity, not a finite intersection.
+    if (pxy2 >= R1) {
         return -R1;
     }
     h.z = sqrt(R1 - pxy2);

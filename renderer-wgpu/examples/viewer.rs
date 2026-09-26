@@ -1,11 +1,11 @@
 //! Native viewer. WASD/arrows move, Space/C move vertically, Q/E roll,
 //! left-drag looks around, scroll changes field of view, R resets, Esc closes.
-//! `--scene eu|hy --smoke` processes twelve frames, including a resize, camera
-//! updates and one intentionally discarded frame.
+//! `--scene eu|hy --smoke` processes twelve frames with a small binding limit,
+//! resizing across that limit and back, camera updates and one discarded frame.
 
 use std::time::Instant;
 
-use hypertrace_wgpu::{Presenter, Renderer, Scene};
+use hypertrace_wgpu::{Presenter, Renderer, Scene, fit_render_size};
 use wgame::{
     Window, WindowConfig,
     canvas::{Button, Event, Key},
@@ -42,7 +42,16 @@ async fn main() -> wgame::Result<()> {
     let config = WindowConfig::default()
         .title(&format!("Hypertrace · WGPU · {scene}"))
         .size(if smoke { (320, 240) } else { (960, 720) })
-        .required_limits(wgpu::Limits::default());
+        .required_limits(wgpu::Limits {
+            // Exercise the hardware-limit fallback with small window sizes.
+            max_storage_buffer_binding_size: if smoke {
+                2 << 20
+            } else {
+                wgpu::Limits::default().max_storage_buffer_binding_size
+            },
+            ..Default::default()
+        })
+        .use_adapter_buffer_limits(!smoke);
     wgame::within_window(config, async move |window| {
         run(window, initial_scene, smoke).await
     })
@@ -54,10 +63,22 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
     eprintln!("Adapter: {:?}", graphics.adapter().get_info());
     let raw = window.raw();
     let initial_size = raw.inner_size();
+    let limits = graphics.device().limits();
+    eprintln!(
+        "Buffer limits: storage binding {} MiB, allocation {} MiB",
+        limits.max_storage_buffer_binding_size / (1 << 20),
+        limits.max_buffer_size / (1 << 20)
+    );
+    let initial_size = (initial_size.width.max(1), initial_size.height.max(1));
+    let render_size = fit_render_size(&limits, initial_size)?;
+    let mut was_scaled = render_size != initial_size;
+    if was_scaled {
+        report_scaled_size(initial_size, render_size);
+    }
     let mut renderer = Renderer::new(
         graphics.device(),
         graphics.queue(),
-        (initial_size.width.max(1), initial_size.height.max(1)),
+        render_size,
         initial_scene.clone(),
         SEED,
     )?;
@@ -67,6 +88,8 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
     let mut previous = Instant::now();
     let mut frames = 0;
     let mut smoke_resized = false;
+    let mut smoke_scaled = false;
+    let mut smoke_restored = false;
     while let Some(mut frame) = window.next_frame().await? {
         let now = Instant::now();
         // Integrate elapsed time, bounding a stalled/minimized window's first
@@ -74,7 +97,24 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
         let dt = (now - previous).as_secs_f64().min(0.1);
         previous = now;
         let size = frame.size();
-        if renderer.resize(size)? {
+        if size.0 == 0 || size.1 == 0 {
+            frame.discard();
+            continue;
+        }
+        let render_size = fit_render_size(&limits, size)?;
+        let scaled = render_size != size;
+        if scaled && !was_scaled {
+            report_scaled_size(size, render_size);
+        }
+        if !scaled && was_scaled {
+            eprintln!("Rendering at the window's full resolution again");
+        }
+        was_scaled = scaled;
+        if smoke {
+            smoke_scaled |= scaled;
+            smoke_restored |= smoke_scaled && !scaled;
+        }
+        if renderer.resize(render_size)? {
             presenter.rebind(graphics.device(), &renderer);
             if frames > 0 {
                 smoke_resized = true;
@@ -151,18 +191,28 @@ async fn run(mut window: Window<'_>, initial_scene: Scene, smoke: bool) -> wgame
         }
         frames += 1;
         if smoke && frames == 3 {
+            let _ = raw.request_inner_size(wgame::app::Size::new(640, 480));
+        }
+        if smoke && frames == 8 {
             let _ = raw.request_inner_size(wgame::app::Size::new(400, 300));
         }
         if smoke && frames == 12 {
             anyhow::ensure!(
-                smoke_resized,
-                "smoke test did not observe its requested window resize"
+                smoke_resized && smoke_scaled && smoke_restored,
+                "smoke test did not observe resize across the binding limit and back"
             );
             eprintln!(
-                "Viewer smoke passed: {frames} frames (one discarded), resize, camera updates, GPU presentation"
+                "Viewer smoke passed: {frames} frames (one discarded), resize across buffer limit and back, camera updates, GPU presentation"
             );
             break;
         }
     }
     Ok(())
+}
+
+fn report_scaled_size(window: (u32, u32), render: (u32, u32)) {
+    eprintln!(
+        "Window {}x{} exceeds this device's full-resolution render capacity; rendering at {}x{} and scaling to the window",
+        window.0, window.1, render.0, render.1
+    );
 }

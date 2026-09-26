@@ -204,3 +204,63 @@ fn resize_rebinding_and_reset_show_current_accumulation() {
             .all(|pixel| pixel == [0, 0, 0, 255])
     );
 }
+
+#[test]
+#[ignore = "requires a GPU adapter"]
+fn scaled_targets_sample_nearest_pixels_and_rebind_after_renderer_resize() {
+    let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
+    let mut renderer = Renderer::new(&gpu.device, &gpu.queue, (2, 2), Scene::eu(), 1).unwrap();
+    let format = wgpu::TextureFormat::Rgba8Unorm;
+    let mut presenter = Presenter::new(&gpu.device, format, &renderer);
+    let colors = [
+        [0.04, 0.25, 1.0],
+        [1.0, 0.1, 0.04],
+        [0.25, 1.0, 0.04],
+        [0.8, 0.002, 0.25],
+    ];
+    let upload = |colors: &[[f32; 3]], renderer: &Renderer| {
+        let sums: Vec<_> = colors.iter().map(|&[r, g, b]| [r, g, b, 1.0]).collect();
+        gpu.queue.write_buffer(
+            renderer.accumulation_buffer(),
+            0,
+            bytemuck::cast_slice(&sums),
+        );
+    };
+    let check = |presenter: &Presenter,
+                 source_size: (u32, u32),
+                 target_size: (u32, u32),
+                 colors: &[[f32; 3]]| {
+        let actual = pixels(&gpu, presenter, target_size, format);
+        for y in 0..target_size.1 {
+            for x in 0..target_size.0 {
+                // Target pixel centers mapped to source cells. Integer math
+                // keeps this independent of the shader's UV interpolation.
+                let sx = (2 * x + 1) * source_size.0 / (2 * target_size.0);
+                let sy = (2 * y + 1) * source_size.1 / (2 * target_size.1);
+                assert_pixel(
+                    actual[(y * target_size.0 + x) as usize],
+                    expected(colors[(sy * source_size.0 + sx) as usize]),
+                );
+            }
+        }
+    };
+    upload(&colors, &renderer);
+    // Every corner, edge and interior pixel must come from its expected cell.
+    check(&presenter, (2, 2), (6, 4), &colors);
+    check(&presenter, (2, 2), (1, 1), &colors);
+
+    assert!(renderer.resize((3, 2)).unwrap());
+    presenter.rebind(&gpu.device, &renderer);
+    let resized_colors = [
+        colors[0],
+        [0.4, 0.2, 0.8],
+        colors[1],
+        colors[2],
+        [0.2, 0.4, 0.6],
+        colors[3],
+    ];
+    upload(&resized_colors, &renderer);
+    check(&presenter, (3, 2), (2, 1), &resized_colors);
+    // Uneven horizontal scaling without centers exactly between source rows.
+    check(&presenter, (3, 2), (5, 4), &resized_colors);
+}

@@ -26,7 +26,16 @@ impl Gpu {
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
                 label: Some("hypertrace compute device"),
-                required_limits: wgpu::Limits::default(),
+                required_limits: wgpu::Limits {
+                    // Requesting a limit does not allocate that amount. Keep
+                    // high-resolution images from hitting the portable 128 MiB
+                    // binding default on adapters supporting larger buffers.
+                    max_storage_buffer_binding_size: adapter
+                        .limits()
+                        .max_storage_buffer_binding_size,
+                    max_buffer_size: adapter.limits().max_buffer_size,
+                    ..Default::default()
+                },
                 ..Default::default()
             })
             .await

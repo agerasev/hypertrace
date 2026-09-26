@@ -76,3 +76,31 @@ It checks distances against independent f64 formulas, including close points and
 very small/large coordinate scales, and horosphere intersections for vertical,
 nearly vertical, grazing, and repeated rays. A missing OpenCL device fails this
 explicitly requested test.
+
+## Performance measurements
+
+The `benchmark` example uses these same shared scenes, cameras, and deterministic
+seeds, with 4 bounces for `eu` and 3 for `hy`. Build in release mode and run the
+backends sequentially so their workloads do not compete for CPU/GPU resources:
+
+```sh
+POCL_KERNEL_CACHE=0 cargo run --release -p hypertrace --example benchmark -- \
+  --scene hy --width 640 --height 480 --samples 16 --warmup 2 --trials 5 \
+  --seed 3735928559 --output /tmp/opencl-hy-benchmark.json
+```
+
+`--list` lists devices, and positional platform/device numbers select one.
+`--warmup` counts samples, not complete trials. Every measured trial starts with
+zero accumulation and identical pixel seeds; those writes finish before timing.
+Rendering waits for each sample to finish, matching a WGPU batch size of 1 with
+synchronization per batch. Reported throughput is pixel-samples per second.
+
+The JSON report separates device creation, renderer setup, warmup, each trial's
+render time, and readback time. `kernel_setup_ms` is the part of renderer setup
+that generates OpenCL source, writes its existing `render.ocl` diagnostic, builds
+the program, and creates the kernel. Driver cache state is not controlled, and
+drivers may defer compilation until the first warmup sample. Readback includes
+host allocation, device transfer, normalization, and finite/alpha checks;
+checksum calculation and JSON file writing are outside the timings. No image
+files are written. Compare matching settings and device identities: CPU PoCL
+versus a native WGPU GPU also measures different hardware, not just backends.

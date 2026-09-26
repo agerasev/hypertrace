@@ -12,6 +12,8 @@ pub mod scene;
 pub use scene::{Background, Camera, Material, Object, Scene};
 mod renderer;
 pub use renderer::{Renderer, pixel_seed, shader_source};
+mod resolution;
+pub use resolution::fit_render_size;
 pub mod presentation;
 pub use presentation::Presenter;
 

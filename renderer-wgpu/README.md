@@ -9,7 +9,8 @@ migration scope.
 
 Use current stable Rust, a compute-capable native WGPU adapter (software Vulkan
 is sufficient for correctness tests), and the sibling `../../wgame` checkout
-with configurable `WindowConfig::required_limits`. WGPU is pinned to the same
+with configurable `WindowConfig::required_limits` and `use_adapter_buffer_limits`.
+WGPU is pinned to the same
 major version as that checkout, 30. No OpenCL or SDL libraries are needed for
 this package. The optional path dependency still needs to resolve even in a
 headless Cargo build.
@@ -25,29 +26,49 @@ cargo run -p hypertrace-wgpu --example headless -- \
 The viewer supports WASD/arrows, Space/C, Q/E, left-drag to look, scroll to zoom,
 R to restore the initial camera, and Escape to close. Movement integrates actual
 elapsed time. Camera/scene changes and resizing reset progressive accumulation.
-`--smoke` runs twelve frames with a resize and camera update, then exits.
+The viewer requests the adapter's supported buffer sizes. If a window exceeds
+those limits, it reduces render resolution proportionally and scales the image
+to the window. Returning to a supported size restores full resolution. The
+console reports when this fallback is entered or left. Zero-sized frames are
+skipped. `--smoke` uses a small binding limit and runs twelve frames, resizing
+across that limit and back with camera updates, then exits.
 
 Headless output is `PREFIX.rgba32f` (linear, normalized little-endian RGBA,
 top row first), `PREFIX.ppm` (gamma 1/2.2), and `PREFIX.json` (settings).
 `--bounces` overrides the scene default. Adapter details are printed; timings on
 software Vulkan are not hardware performance measurements.
+Headless rendering also requests supported buffer sizes, but preserves the exact
+requested image dimensions: an unsupported size returns a diagnostic error.
 
 ## Renderer contract
 
 `Renderer::new` accepts an existing device and queue. Request
 `wgpu::Limits::default()` or equivalent compute/storage limits; `wgame`'s default
 WebGL2 limits disable compute. No optional WGPU features are required.
+The portable storage-binding default is 128 MiB, enough for 8,388,608 pixels at
+16 bytes per accumulated pixel; a 3840×2400 window needs 140.625 MiB. In `wgame`,
+use `.required_limits(wgpu::Limits::default()).use_adapter_buffer_limits(true)`
+to request the selected adapter's buffer capacities. This does not allocate those
+capacities in advance. Device limits cannot be raised after device creation.
+
+Dividing a CPU upload into chunks does not bypass a storage-binding limit. The
+shader binds the accumulation buffer as one resource. Rendering exact images
+beyond the adapter's limit would require tiled storage/dispatch/presentation or
+a texture-based accumulation design. For a window, `fit_render_size` provides a
+bounded render resolution and `Presenter` scales it to the attachment.
 
 - `encode` adds compute work to a caller-owned command encoder.
 - `Presenter::draw` adds a fullscreen pass after compute. Normal frames perform
   no CPU pixel readback or upload. Both linear and sRGB target formats apply the
-  display transform once.
+  display transform once. If attachment and render sizes differ, presentation
+  scales the image with nearest-neighbor sampling.
 - `update_scene` uploads values and recompiles only when shader structure changes;
   scene buffers are reused while their capacity is sufficient. A shader validation
   failure leaves the old renderer usable. `shader_source()` exposes the flattened
   program, and `pipeline_revision()` reports successful program replacements.
 - `resize` replaces pixel buffers. Rebind an existing `Presenter` afterwards.
-  Zero-sized frames should be skipped by the window host.
+  It requires an exact supported size; a window host can call `fit_render_size`
+  first. Zero-sized frames should be skipped by the window host.
 - `reset` queues accumulation/seed writes separately from frame submission, so a
   discarded window frame cannot accidentally discard a needed reset.
 - Submit encoded work before changing parameters/resetting: WGPU queue writes
@@ -176,6 +197,47 @@ three bounces) against the PoCL reference. Maximum channel errors were 0.211
 and 0.442 respectively; small global averages do not imply pixelwise equality.
 These are correctness comparisons at the initial camera poses, not performance
 benchmarks or exhaustive camera-path validation.
+
+## Performance measurements
+
+Use the release-mode `benchmark` examples for comparable timings. Run each
+backend sequentially with identical scene, dimensions, samples, seed, and bounce
+limit. The shared scene defaults are four bounces for `eu` and three for `hy`.
+
+```sh
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-wgpu --example benchmark -- \
+  --scene hy --width 1280 --height 720 --samples 16 --warmup 2 --trials 5 \
+  --batch 1 --seed 3735928559 --output /tmp/wgpu-hy-benchmark.json
+POCL_KERNEL_CACHE=0 cargo run --release -p hypertrace --example benchmark -- \
+  --scene hy --width 1280 --height 720 --samples 16 --warmup 2 --trials 5 \
+  --seed 3735928559 --output /tmp/opencl-hy-benchmark.json
+python3 tools/compare_benchmarks.py /tmp/wgpu-hy-benchmark.json \
+  /tmp/opencl-hy-benchmark.json --output /tmp/benchmark-comparison.md \
+  --json /tmp/benchmark-comparison.json
+```
+
+Each trial resets accumulation and seeds and finishes those uploads before the
+timer starts. Render time includes CPU submission and a completion wait after
+each batch; it excludes setup, warmup, reset, and readback. This is synchronized
+render latency, not GPU timestamp profiling or interactive viewer FPS. `--warmup`
+counts samples. Readback includes staging allocation, transfer, host copying,
+normalization, and validation; the viewer presents directly on the GPU and does
+not pay this readback cost.
+
+WGPU `--batch 1` matches the OpenCL renderer's wait after every sample. Repeat
+with `--batch 16` to measure sixteen samples in one dispatch separately. Report
+the batch size alongside timings: larger batches can improve throughput while
+delaying input response. The JSON records the adapter, driver, all trial times,
+setup and warmup times, and RGB sums. Sums are diagnostics, not an image-parity
+test. Startup timings depend on driver caching and deferred compilation; with
+`POCL_KERNEL_CACHE=0`, OpenCL's persistent kernel cache is explicitly disabled.
+
+Check the reported device before comparing backends. PoCL on the CPU versus
+WGPU on a GPU measures hardware as well as the renderer. Software Vulkan on the
+same CPU is a useful additional comparison, but has different compiler and
+threading behavior. Use the OpenCL runner's `--list` and positional device
+selection, and WGPU's backend/adapter selection or Vulkan ICD configuration,
+to choose the intended devices.
 
 ## Remaining migration work
 

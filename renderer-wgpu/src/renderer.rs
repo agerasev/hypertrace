@@ -293,27 +293,7 @@ pub fn pixel_seed(seed: u32, index: u32) -> u32 {
 }
 
 fn validate_size(device: &wgpu::Device, size: (u32, u32)) -> Result<()> {
-    let limits = device.limits();
-    let bytes = (u64::from(size.0) * u64::from(size.1))
-        .checked_mul(16)
-        .ok_or_else(|| anyhow::anyhow!("image dimensions overflow buffer size"))?;
-    anyhow::ensure!(
-        size.0 > 0 && size.1 > 0,
-        "image dimensions must be positive"
-    );
-    anyhow::ensure!(
-        bytes
-            <= limits
-                .max_storage_buffer_binding_size
-                .min(limits.max_buffer_size),
-        "image exceeds device storage buffer limit"
-    );
-    anyhow::ensure!(
-        size.0.div_ceil(8) <= limits.max_compute_workgroups_per_dimension
-            && size.1.div_ceil(8) <= limits.max_compute_workgroups_per_dimension,
-        "image exceeds dispatch limits"
-    );
-    Ok(())
+    crate::resolution::validate_render_size(&device.limits(), size)
 }
 fn validate_scene(device: &wgpu::Device, scene: &Scene) -> Result<()> {
     scene.validate()?;

@@ -8,7 +8,9 @@ use std::borrow::Cow;
 
 use crate::Renderer;
 
-/// Draws one renderer at its native resolution into a single-sample attachment.
+/// Draws one renderer into a single-sample attachment of any positive size.
+/// The image fills the attachment using nearest-neighbor scaling, preserving
+/// its top-left orientation. Equal dimensions display each source pixel once.
 ///
 /// The legacy display transform is a gamma of 1/2.2. An sRGB attachment receives
 /// the inverse sRGB transfer first, so its automatic encoding applies that
@@ -17,7 +19,6 @@ pub struct Presenter {
     layout: wgpu::BindGroupLayout,
     bindings: wgpu::BindGroup,
     pipeline: wgpu::RenderPipeline,
-    size: (u32, u32),
 }
 
 impl Presenter {
@@ -91,7 +92,6 @@ impl Presenter {
             layout,
             bindings,
             pipeline,
-            size: renderer.size(),
         }
     }
 
@@ -119,18 +119,12 @@ impl Presenter {
     /// Refresh references after renderer resize; no pixels move through the CPU.
     pub fn rebind(&mut self, device: &wgpu::Device, renderer: &Renderer) {
         self.bindings = Self::bindings(device, &self.layout, renderer);
-        self.size = renderer.size();
     }
 
-    /// Encode a fullscreen pass into a view of a matching-size mip-zero texture.
-    /// The attachment must use the format supplied to [`Self::new`].
+    /// Encode a fullscreen pass into a view of a positive-size mip-zero texture.
+    /// The attachment must use the format supplied to [`Self::new`]. Its size
+    /// may differ from the renderer; nearest-neighbor scaling fills the target.
     pub fn draw(&self, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
-        let extent = view.texture().size();
-        assert_eq!(
-            (extent.width, extent.height),
-            self.size,
-            "presentation target and renderer must have matching dimensions"
-        );
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("hypertrace presentation"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {

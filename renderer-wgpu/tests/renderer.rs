@@ -3,6 +3,50 @@ use hypertrace_wgpu::{Background, Gpu, Renderer, Scene};
 
 #[test]
 #[ignore = "requires a native WGPU compute adapter"]
+fn resize_fits_storage_binding_limit_and_recovers_full_resolution() {
+    let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
+    let (device, queue) =
+        futures::executor::block_on(gpu.adapter.request_device(&wgpu::DeviceDescriptor {
+            label: Some("small image binding limit regression"),
+            required_limits: wgpu::Limits {
+                max_storage_buffer_binding_size: 1024,
+                ..Default::default()
+            },
+            ..Default::default()
+        }))
+        .unwrap();
+    let mut scene = Scene::eu();
+    scene.objects.clear();
+    scene.background = Background::Constant([0.25, 0.5, 0.75]);
+    let mut renderer = Renderer::new(&device, &queue, (8, 8), scene, 37).unwrap();
+    renderer.render();
+    let before = renderer.snapshot().unwrap();
+    assert!(
+        renderer
+            .resize((40, 30))
+            .unwrap_err()
+            .to_string()
+            .contains("19200 bytes")
+    );
+    assert_eq!(renderer.size(), (8, 8));
+    assert_eq!(renderer.snapshot().unwrap(), before);
+    for requested in [(40, 30), (200, 100), (8, 8), (2, 3)] {
+        let fitted = hypertrace_wgpu::fit_render_size(&device.limits(), requested).unwrap();
+        renderer.resize(fitted).unwrap();
+        assert!(u64::from(fitted.0) * u64::from(fitted.1) * 16 <= 1024);
+        if requested.0 <= 8 && requested.1 <= 8 {
+            assert_eq!(fitted, requested);
+        }
+        renderer.render();
+        assert_eq!(
+            renderer.snapshot().unwrap(),
+            vec![[0.25, 0.5, 0.75, 1.0]; (fitted.0 * fitted.1) as usize]
+        );
+    }
+}
+
+#[test]
+#[ignore = "requires a native WGPU compute adapter"]
 fn accumulation_reset_resize_and_scene_upload() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
     let mut scene = Scene::eu();

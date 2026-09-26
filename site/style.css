@@ -43,7 +43,7 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
 .toc ol { margin: 8px 0 0; padding-left: 22px; columns: 2; column-gap: 28px; }
 .toc li { margin: 5px 0; break-inside: avoid; }
 .equation { overflow-x: auto; margin: 22px 0; padding: 19px 22px; border-left: 2px solid var(--accent); background: var(--panel); border-radius: 0 8px 8px 0; font: 18px/1.8 "Cambria Math", "STIX Two Math", Georgia, serif; }
-.equation pre { margin: 0; font: inherit; white-space: pre; }
+.equation pre { margin: 0; font: 16px/1.8 ui-monospace, "DejaVu Sans Mono", monospace; white-space: pre; }
 code { font-size: .9em; color: #d7edea; }
 figure { margin: 28px 0; }
 figure svg { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }

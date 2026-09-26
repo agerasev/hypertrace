@@ -1,4 +1,4 @@
-//! Reproducible native WGPU rendering without OpenCL, SDL or a window.
+//! Reproducible native WGPU rendering without a window.
 use anyhow::{Context, bail, ensure};
 use hypertrace_wgpu::{Gpu, Renderer, Result};
 use std::{

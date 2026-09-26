@@ -31,7 +31,7 @@ fn hy_identity() -> HyMap {
     return HyMap(vec4<f32>(1,0,0,0), vec4<f32>(0,0,1,0));
 }
 fn hy_inverse(m: HyMap) -> HyMap {
-    // All stored transforms have determinant one, as in the OpenCL backend.
+    // All stored transforms have determinant one, by the transform representation’s contract.
     return HyMap(vec4<f32>(m.cd.zw,-m.ab.zw),vec4<f32>(-m.cd.xy,m.ab.xy));
 }
 fn hy_chain(a: HyMap, b: HyMap) -> HyMap {

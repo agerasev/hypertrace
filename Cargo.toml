@@ -1,15 +1,9 @@
 [workspace]
 resolver = "2"
+default-members = ["renderer-wgpu"]
 
 members = [
-    "kernel",
-    "base",
-    "types",
-    "type-macros",
     "objects",
-    "processing",
-    "viewer",
-    "main",
     "renderer-wgpu",
     "scene",
     "scenes",

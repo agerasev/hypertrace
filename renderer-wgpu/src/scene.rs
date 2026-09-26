@@ -1,7 +1,6 @@
 //! Scene configuration and explicit, version-local storage ABI.
 //!
-//! These records deliberately do not reuse OpenCL's padded vectors, unions or
-//! pointer-bearing serialization. `Scene::from_definition` accepts the generic
+//! Record fields and alignments match the WGSL storage layouts. `Scene::from_definition` accepts the generic
 //! scene compiler's output; fixed `eu`/`hy` records remain comparison fixtures.
 
 use bytemuck::{Pod, Zeroable};
@@ -195,7 +194,7 @@ pub struct Scene {
 impl Scene {
     /// Compile a generic Rust scene lowered through `objects::Scene::wgsl_scene`.
     /// The compiled program owns its parameter data independently of the Rust
-    /// builder and the OpenCL entity ABI.
+    /// builder and its Rust memory layout.
     pub fn from_definition(definition: &scene_ir::SceneDefinition) -> Result<Self> {
         let compiled = scene_ir::compile(definition)?;
         let scene = Self {

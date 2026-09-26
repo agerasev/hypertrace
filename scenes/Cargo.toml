@@ -6,7 +6,5 @@ edition = "2018"
 
 [dependencies]
 objects = { package = "hypertrace-objects", path = "../objects" }
-types = { package = "hypertrace-types", path = "../types" }
-type_macros = { package = "hypertrace-type-macros", path = "../type-macros" }
 ccgeom = "0.1"
 vecmat = "0.7"

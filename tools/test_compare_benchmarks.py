@@ -34,7 +34,7 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(row["trials"], 4)
 
     def test_different_workloads_are_not_compared_and_devices_are_labeled(self):
-        cpu = run(backend="opencl", device="Example CPU", device_type="CPU", backend_api="OpenCL")
+        cpu = run(device="Example CPU", device_type="Cpu")
         summary = compare.summarize([
             ("gpu.json", run()), ("cpu.json", cpu), ("different-seed.json", run(seed=124)),
         ])

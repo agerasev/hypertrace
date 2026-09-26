@@ -24,5 +24,3 @@ required-features = ["viewer"]
 [dev-dependencies]
 objects = { package = "hypertrace-objects", path = "../objects" }
 scenes = { package = "hypertrace-scenes", path = "../scenes" }
-types = { package = "hypertrace-types", path = "../types" }
-type_macros = { package = "hypertrace-type-macros", path = "../type-macros" }

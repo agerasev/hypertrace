@@ -1,21 +1,13 @@
 language: rust
-
 os: linux
-dist: bionic
-
+dist: jammy
 rust: stable
 
-addons:
-  apt:
-    packages:
-      - clang
-      - cmake
-      - make
-
-before_install:
-  - sudo apt-get update
-install:
-  - sudo apt-get install -y libgtest-dev libsdl2-dev ocl-icd-opencl-dev pocl-opencl-icd libpocl-dev
+before_script:
+  # Cargo resolves the optional viewer path dependency for headless builds too.
+  - git clone --depth 1 https://github.com/agerasev/wgame.git ../wgame
 
 script:
-  - cargo test
+  - cargo fmt --all -- --check
+  - cargo test --workspace --all-targets
+  - python3 -m unittest discover -s tools -p 'test_*.py'

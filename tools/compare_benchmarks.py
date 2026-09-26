@@ -30,9 +30,7 @@ def validate(run):
     if (not isinstance(run, dict) or type(run.get("schema_version")) is not int
             or run["schema_version"] != 1):
         raise ValueError("expected a benchmark object with schema_version 1")
-    if run.get("backend") not in ("wgpu", "opencl"):
-        raise ValueError("backend must be wgpu or opencl")
-    for field in ("scene", "device", "device_type", "driver", "backend_api"):
+    for field in ("backend", "scene", "device", "device_type", "driver", "backend_api"):
         if not isinstance(run.get(field), str) or not run[field]:
             raise ValueError(f"{field} must be a nonempty string")
     for field in ("width", "height", "samples", "bounces", "batch_size", "trials",

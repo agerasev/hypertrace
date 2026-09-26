@@ -206,13 +206,7 @@ fn nested_mixture_emission_and_modifier_order_are_preserved() {
     }
 }
 
-#[derive(
-    Clone,
-    type_macros::EntityId,
-    type_macros::Entity,
-    type_macros::SizedEntity,
-    type_macros::EntitySource,
-)]
+#[derive(Clone)]
 pub struct CustomGlow {
     pub color: vecmat::Vector<f32, 3>,
 }

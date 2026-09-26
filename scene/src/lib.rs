@@ -1,5 +1,5 @@
 //! CPU-only scene descriptions and compositional WGSL generation.
-//! This ABI is independent of the legacy OpenCL entity serialization.
+//! Explicit storage records and parameter words define the GPU ABI.
 #![forbid(unsafe_code)]
 
 use ccgeom::Homogenous3;

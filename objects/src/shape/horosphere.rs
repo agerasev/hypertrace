@@ -1,16 +1,8 @@
 use super::*;
-use base::ccgeom::Hyperbolic3;
-use type_macros::*;
-use types::{source::SourceTree, Config};
+use ccgeom::Hyperbolic3;
 
-#[derive(Clone, Default, Debug, EntityId, Entity, SizedEntity)]
+#[derive(Clone, Default, Debug)]
 pub struct Horosphere;
-
-impl EntitySource for Horosphere {
-    fn source(_: &Config) -> SourceTree {
-        SourceTree::new("shape/hy/horosphere.hh")
-    }
-}
 
 impl Shape<Hyperbolic3> for Horosphere {
     fn wgsl_shape_schema() -> crate::wgsl::Result<crate::wgsl::ShapeSchema> {

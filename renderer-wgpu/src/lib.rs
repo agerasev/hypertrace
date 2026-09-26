@@ -1,4 +1,4 @@
-//! Native WGPU path tracing, independent of the legacy OpenCL/SDL stack.
+//! Native WGPU path tracing with GPU presentation and explicit snapshots.
 //!
 //! Generic Rust builders lower through a CPU-only scene compiler to generated
 //! WGSL and explicit storage records. Camera transforms remain f64 on the CPU

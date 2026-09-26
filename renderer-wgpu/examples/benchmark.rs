@@ -29,8 +29,8 @@ fn render_samples(gpu: &Gpu, renderer: &mut Renderer, samples: u32, batch: u32) 
             renderer.set_samples_per_dispatch(count)?;
         }
         renderer.render();
-        // Match the legacy Render API's finish after every dispatch. Batch=1
-        // measures single-sample dispatches; batching is a separate experiment.
+        // Measure completed work after every batch. Batch=1 measures individual
+        // sample submissions; larger batches amortize submission and state I/O.
         finish(gpu)?;
         remaining -= count;
     }

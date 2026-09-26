@@ -1,63 +1,50 @@
 # Hypertrace
 
-Physically-based non-Euclidean ray tracer with OpenCL and a native WGPU backend.
+Physically based non-Euclidean path tracer using WGPU compute shaders.
+Rust scene builders compile to WGSL, with headless rendering and an interactive
+viewer powered by [`wgame`](https://github.com/agerasev/wgame).
 
-*This project is done mostly for educational purpose.*
-
-## Supported geometries
-
-+ [x] Euclidean geometry.
-+ [x] Lobachevsky (or hyperbolic) geometry.
-+ [ ] Spherical geometry (planning).
+This project is primarily educational. Euclidean and hyperbolic geometries are
+supported; spherical geometry is planned.
 
 ## Requirements
 
-The WGPU backend compiles the shared generic `eu` and `hy` scene builders to
-WGSL and renders headlessly or through
-[`wgame`](../wgame). It does not depend on OpenCL or SDL. See the
-[WGPU guide](renderer-wgpu/README.md) for requirements, commands, tests, and the
-remaining migration work.
+- Current stable Rust and Cargo.
+- A native WGPU adapter with compute support. Software Vulkan can run the tests.
+- A sibling `../wgame` checkout with `WindowConfig::required_limits` and
+  `use_adapter_buffer_limits`. Cargo resolves this optional path dependency even
+  for headless builds.
 
-```bash
-cargo run -p hypertrace-wgpu --features viewer --example viewer -- --scene hy
+## Run
+
+From the repository root:
+
+```sh
+cargo run --release -p hypertrace-wgpu --features viewer --example viewer -- --scene hy
+cargo run --release -p hypertrace-wgpu --example headless -- \
+  --scene eu --width 640 --height 480 --samples 64 --output /tmp/eu
 ```
 
-### Legacy OpenCL backend
+Use `--scene eu` or `--scene hy`. Headless output includes linear RGBA floats, a
+PPM preview, and JSON settings. The [renderer guide](renderer-wgpu/README.md)
+covers the rendering API, scene extensions, validation, and benchmarking.
 
-+ Rustc and Cargo
-+ OpenCL 1.2 support
-+ SDL2 (used by interactive viewer)
+### Controls
 
-## How to use
+- Left-drag to look; scroll to zoom.
+- WASD or arrow keys to move; Space/C to move up/down; Q/E to roll.
+- R to restore the initial camera; Escape to exit.
 
-To build and run example:
+Camera movement, scene changes, and resizing restart progressive accumulation.
+Oversized windows render at a supported resolution and scale to the window.
 
-```bash
-cd main
-cargo run --example hy
+## Development
+
+```sh
+cargo test --workspace
+cargo clippy --workspace --all-targets --features viewer -- -D warnings
+WGPU_BACKEND=vulkan cargo test -p hypertrace-wgpu -- --ignored --test-threads=1
 ```
 
-You may use a name of another example instead of `hy` as well.
-
-To select specific OpenCL platform and device:
-
-```bash
-cargo run --example <example_name> -- <platform_no> <device_no>
-```
-
-To list all available platforms and devices:
-
-```bash
-cargo run --example <example_name> -- --list
-```
-
-## Control
-
-In some examples you may fly around the scene using your keyboard and mouse.
-
-+ Use your mouse to look around.
-+ `W`, `A`, `S`, `D` - move forward, left, backward and right respectively.
-+ `Space`, `C` - move up and down.
-+ `Q`, `E` - tilt counter- and clockwise.
-+ `Tab` - release/grab mouse pointer.
-+ `Esc` - exit application.
+GPU tests are opt-in and require a working compute adapter. See [ABOUT.md](ABOUT.md)
+for the workspace structure and [TODO.md](TODO.md) for planned rendering features.

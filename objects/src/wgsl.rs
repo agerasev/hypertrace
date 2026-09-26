@@ -1,12 +1,11 @@
 //! CPU-only lowering of existing scene builders for the WGSL renderer.
 //!
-//! The semantic traits expose fallible hooks with unsupported defaults. Existing
-//! OpenCL-only implementations continue to compile; they need a WGSL hook only
-//! when a caller requests WGSL lowering. Custom materials and shapes can return
-//! a custom shader leaf without changing renderer dispatch code.
+//! The semantic traits expose fallible hooks with unsupported defaults. Custom
+//! implementations report an error until their WGSL hooks are supplied. Materials
+//! and shapes can return custom shader leaves without changing renderer dispatch.
 //!
 //! ```
-//! use base::ccgeom::Euclidean3;
+//! use ccgeom::Euclidean3;
 //! use hypertrace_objects::{
 //!     background::ConstBg, material::Lambertian, object::Covered,
 //!     shape::Sphere, view::PointView, Scene, SceneImpl,
@@ -30,23 +29,21 @@
 //! variant or vector length does not change the set of shader implementations.
 //!
 //! Supported maps are Euclidean shifts, rotations, and homogeneous rigid maps,
-//! plus complex Möbius maps in hyperbolic space. Other legacy maps return an
+//! plus complex Möbius maps in hyperbolic space. Other maps return an
 //! explicit unsupported error. Nested shape maps remain inside their covering
 //! material; object maps retain the object's local material frame.
 
 pub use ::scene::*;
 
-use base::{
-    ccgeom::{Euclidean3, Homogenous3, Hyperbolic3},
-    vecmat::{
-        transform::{Moebius, Rotation3, Shift},
-        Complex, Transform as _,
-    },
-};
+use ccgeom::{Euclidean3, Homogenous3, Hyperbolic3};
 use std::any::{Any, TypeId};
+use vecmat::{
+    transform::{Moebius, Rotation3, Shift},
+    Complex, Transform as _,
+};
 
 /// Identify the geometry supported by the current WGSL compiler.
-pub fn geometry<G: types::Geometry>() -> Result<Geometry> {
+pub fn geometry<G: ccgeom::Geometry>() -> Result<Geometry> {
     if TypeId::of::<G>() == TypeId::of::<Euclidean3>() {
         Ok(Geometry::Euclidean)
     } else if TypeId::of::<G>() == TypeId::of::<Hyperbolic3>() {
@@ -56,12 +53,11 @@ pub fn geometry<G: types::Geometry>() -> Result<Geometry> {
     }
 }
 
-/// Lower supported rigid maps without imposing new bounds on OpenCL builders.
-/// Unsupported legacy maps return an error only when WGSL lowering is requested.
+/// Lower supported rigid maps; other map types return an unsupported error.
 pub fn transform<G, M>(map: &M) -> Result<Transform>
 where
-    G: types::Geometry,
-    M: types::Map<G::Pos, G::Dir>,
+    G: ccgeom::Geometry,
+    M: ccgeom::Map<G::Pos, G::Dir> + 'static,
 {
     let map = map as &dyn Any;
     match geometry::<G>()? {
@@ -94,7 +90,7 @@ where
 /// Lower an existing scene builder to a device-independent WGSL definition.
 pub fn lower<G, S>(scene: &S) -> Result<SceneDefinition>
 where
-    G: types::Geometry,
+    G: ccgeom::Geometry,
     S: crate::Scene<G>,
 {
     scene.wgsl_scene()
@@ -111,8 +107,7 @@ mod tests {
         view::PointView,
         Mapped, Material, Object, Scene, SceneImpl, Shape, View as _,
     };
-    use base::ccgeom::Geometry3;
-    use type_macros::{Entity, EntityId, EntitySource, SizedEntity};
+    use ccgeom::Geometry3;
 
     crate::mixture! {
         InnerMixture {
@@ -162,7 +157,7 @@ mod tests {
     }
 
     crate::object_choice! {
-        ObjectChoices(ObjectChoicesCache) {
+        ObjectChoices {
             Diffuse(Covered<Euclidean3, Sphere, Lambertian>),
             Emitting(Covered<Euclidean3, Cube, Emissive<Absorbing>>),
         }
@@ -237,57 +232,41 @@ mod tests {
         assert!(matches!(mapped_object, ObjectNode::Mapped { .. }));
     }
 
-    // These implementations deliberately have no WGSL hooks. Macro expansion
-    // must still compile, and OpenCL source generation must remain callable.
-    #[derive(Clone, EntityId, Entity, SizedEntity, EntitySource)]
-    pub struct LegacyMaterial;
-    impl Material for LegacyMaterial {
-        fn material_name() -> (String, String) {
-            Absorbing::material_name()
-        }
-        fn material_source(config: &types::Config) -> types::source::SourceTree {
-            Absorbing::material_source(config)
-        }
-    }
-    #[derive(Clone, EntityId, Entity, SizedEntity, EntitySource)]
-    pub struct LegacyShape;
-    impl Shape<Euclidean3> for LegacyShape {
-        fn shape_name() -> (String, String) {
-            <Plane as Shape<Euclidean3>>::shape_name()
-        }
-        fn shape_source(config: &types::Config) -> types::source::SourceTree {
-            <Plane as Shape<Euclidean3>>::shape_source(config)
-        }
-    }
-    crate::mixture! { LegacyMixture { old: LegacyMaterial, diffuse: Lambertian } }
-    crate::shape_choice! { LegacyShapes { Old(LegacyShape), Sphere(Sphere) } }
+    // Unsupported leaves still compose, but lowering reports the missing hook.
+    #[derive(Clone)]
+    pub struct UnsupportedMaterial;
+    impl Material for UnsupportedMaterial {}
+    #[derive(Clone)]
+    pub struct UnsupportedShape;
+    impl Shape<Euclidean3> for UnsupportedShape {}
+    crate::mixture! { UnsupportedMixture { old: UnsupportedMaterial, diffuse: Lambertian } }
+    crate::shape_choice! { UnsupportedShapes { Old(UnsupportedShape), Sphere(Sphere) } }
     crate::object_choice! {
-        LegacyObjects(LegacyObjectsCache) {
-            Old(Covered<Euclidean3, LegacyShapes, LegacyMixture>),
+        UnsupportedObjects {
+            Old(Covered<Euclidean3, UnsupportedShapes, UnsupportedMixture>),
         }
     }
 
     #[test]
-    fn legacy_only_custom_types_still_work_inside_generated_macros() {
-        let material = LegacyMixture::new((LegacyMaterial, 0.5).into(), (Lambertian, 0.5).into());
-        let object = LegacyObjects::Old(Covered::new(LegacyShapes::Old(LegacyShape), material));
-        let config = types::Config {
-            endian: types::config::Endian::Little,
-            address_width: types::config::AddressWidth::X32,
-            double_support: false,
-        };
-        let _source = <LegacyObjects as Object<Euclidean3>>::object_source(&config);
+    fn unsupported_custom_types_report_errors_inside_macros() {
+        let material =
+            UnsupportedMixture::new((UnsupportedMaterial, 0.5).into(), (Lambertian, 0.5).into());
+        let object = UnsupportedObjects::Old(Covered::new(
+            UnsupportedShapes::Old(UnsupportedShape),
+            material,
+        ));
         assert!(object
             .wgsl_object()
             .unwrap_err()
             .to_string()
-            .contains("LegacyShape"));
-        assert!(LegacyMixture::wgsl_material_schema()
+            .contains("UnsupportedShape"));
+        assert!(UnsupportedMixture::wgsl_material_schema()
             .unwrap_err()
             .to_string()
-            .contains("LegacyMaterial"));
+            .contains("UnsupportedMaterial"));
         assert!(
-            <LegacyObjects as Object<Euclidean3>>::wgsl_register(&mut Registry::default()).is_err()
+            <UnsupportedObjects as Object<Euclidean3>>::wgsl_register(&mut Registry::default())
+                .is_err()
         );
     }
 }

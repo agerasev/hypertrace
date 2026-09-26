@@ -1,4 +1,4 @@
-//! Compile the same generic Rust builders used by the OpenCL examples.
+//! Compile the shared generic Rust scene builders.
 
 use hypertrace_wgpu::{Result, Scene};
 use objects::Scene as _;

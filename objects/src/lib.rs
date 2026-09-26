@@ -15,3 +15,6 @@ pub use object::Object;
 pub use scene::{Scene, SceneImpl};
 pub use shape::Shape;
 pub use view::View;
+
+/// Geometry contract used by scene builders and choice macros.
+pub use ccgeom::Geometry;

@@ -1,16 +1,8 @@
 use super::*;
-use base::ccgeom::{Euclidean3, Hyperbolic3};
-use type_macros::*;
-use types::{source::SourceTree, Config};
+use ccgeom::{Euclidean3, Hyperbolic3};
 
-#[derive(Clone, Default, Debug, EntityId, Entity, SizedEntity)]
+#[derive(Clone, Default, Debug)]
 pub struct Plane;
-
-impl EntitySource for Plane {
-    fn source(_: &Config) -> SourceTree {
-        SourceTree::new("shape/primitive.hh")
-    }
-}
 
 impl Shape<Euclidean3> for Plane {
     fn wgsl_shape_schema() -> crate::wgsl::Result<crate::wgsl::ShapeSchema> {
@@ -19,13 +11,6 @@ impl Shape<Euclidean3> for Plane {
 
     fn wgsl_shape(&self) -> crate::wgsl::Result<crate::wgsl::ShapeValue> {
         Ok(crate::wgsl::ShapeValue::plane())
-    }
-
-    fn shape_name() -> (String, String) {
-        ("PlaneEu".into(), "plane_eu".into())
-    }
-    fn shape_source(_: &Config) -> SourceTree {
-        SourceTree::new("shape/eu/plane.hh")
     }
 }
 
@@ -36,12 +21,5 @@ impl Shape<Hyperbolic3> for Plane {
 
     fn wgsl_shape(&self) -> crate::wgsl::Result<crate::wgsl::ShapeValue> {
         Ok(crate::wgsl::ShapeValue::plane())
-    }
-
-    fn shape_name() -> (String, String) {
-        ("PlaneHy".into(), "plane_hy".into())
-    }
-    fn shape_source(_: &Config) -> SourceTree {
-        SourceTree::new("shape/hy/plane.hh")
     }
 }

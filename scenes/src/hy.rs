@@ -8,7 +8,7 @@ use objects::{
     view::PointView,
     Mapped, SceneImpl,
 };
-use std::f64::{consts::PI, NAN};
+use std::f64::consts::PI;
 use vecmat::{transform::Moebius, Complex, Matrix, Vector};
 
 fn unpack_color(rgb: u32) -> Vector<f32, 3> {
@@ -52,7 +52,7 @@ fn make_material(
 type MyMaterial = Emissive<Mixture>;
 
 object_choice! {
-    Choice(ChoiceCache) {
+    Choice {
         PlaneStar(TiledPlane<MyMaterial, tiling::Pentastar, 2>),
         PlanePenta(TiledPlane<MyMaterial, tiling::Pentagonal, 2>),
         HoroHexa(TiledHorosphere<MyMaterial, tiling::Hexagonal, 3>),
@@ -122,7 +122,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
                     make_material(unpack_color(0xfe7401), 0.1, 0.0, None),
                     make_material(unpack_color(0x35adae), 0.1, 0.0, None),
                 ],
-                NAN,
+                f64::NAN,
                 0.01,
                 border_material.clone(),
             )),
@@ -134,7 +134,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
                     make_material(unpack_color(0xfe0000), 0.1, 0.0, None),
                     make_material(unpack_color(0xfed601), 0.1, 0.0, None),
                 ],
-                NAN,
+                f64::NAN,
                 0.02,
                 border_material,
             )),

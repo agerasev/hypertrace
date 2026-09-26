@@ -1,5 +1,5 @@
 // Initial, bounded scene lowering for the built-in eu and hy examples.
-// Shapes/materials are explicit records, independent of the OpenCL Entity ABI.
+// Shapes/materials are explicit records, with explicit GPU layouts.
 // The math module and hit interface can be reused by generated scene dispatch.
 struct Params {
     camera0: vec4<f32>, camera1: vec4<f32>,

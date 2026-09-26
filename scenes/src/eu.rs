@@ -50,7 +50,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
     let objects = vec![
         Mapped::new(
             Covered::new(
-                Choice::from(Sphere::default()),
+                Choice::from(Sphere),
                 Mixture::new(
                     (Colored::new(Lambertian, [1.0, 0.2, 0.2].into()), 0.0).into(),
                     (Specular, 0.1).into(),
@@ -65,7 +65,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         ),
         Mapped::new(
             Covered::new(
-                Choice::from(Cube::default()),
+                Choice::from(Cube),
                 Mixture::new(
                     (Colored::new(Lambertian, [0.2, 0.8, 0.8].into()), 1.0).into(),
                     (Specular, 0.0).into(),
@@ -80,7 +80,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         ),
         Mapped::new(
             Covered::new(
-                Choice::from(Plane::default()),
+                Choice::from(Plane),
                 Mixture::new(
                     (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.9).into(),
                     (Specular, 0.1).into(),

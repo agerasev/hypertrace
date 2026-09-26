@@ -1,35 +1,19 @@
 use crate::{Background, Object, View};
+use ccgeom::Geometry;
 use std::{convert::TryFrom, marker::PhantomData};
-use type_macros::*;
-use types::{
-    include_template,
-    prelude::*,
-    source::{SourceBuilder, SourceTree},
-    Config,
-};
 
-pub trait Scene<G: Geometry>: EntityId + Entity + EntitySource {
-    /// Lower a scene without requiring OpenCL or a WGPU device.
+pub trait Scene<G: Geometry>: Sized {
+    /// Lower a scene without requiring a GPU device.
     fn wgsl_scene(&self) -> crate::wgsl::Result<crate::wgsl::SceneDefinition> {
         Err(crate::wgsl::unsupported::<Self>())
     }
-
-    fn scene_name() -> (String, String) {
-        Self::name()
-    }
-    fn scene_source(cfg: &Config) -> SourceTree {
-        Self::source(cfg)
-    }
 }
 
-#[derive(Clone, Debug, EntityId, Entity, SizedEntity, EntitySource)]
+#[derive(Clone, Debug)]
 pub struct SceneImpl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize> {
     geometry: PhantomData<G>,
-    #[getter]
     pub view: V,
-    #[getter]
     pub background: B,
-    #[getter]
     pub object: T,
 }
 
@@ -48,8 +32,6 @@ impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize>
 
 impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize> Scene<G>
     for SceneImpl<G, V, T, B, H>
-where
-    Self: Entity,
 {
     fn wgsl_scene(&self) -> crate::wgsl::Result<crate::wgsl::SceneDefinition> {
         let mut registry = crate::wgsl::Registry::default();
@@ -62,25 +44,5 @@ where
             material_schemas: registry.material_schemas,
             shape_schemas: registry.shape_schemas,
         })
-    }
-
-    fn scene_source(cfg: &Config) -> SourceTree {
-        SourceBuilder::new(format!("generated/{}.hh", Self::scene_name().1))
-            .tree(Self::source(cfg))
-            .tree(G::geometry_source(cfg))
-            .tree(V::view_source(cfg))
-            .tree(T::object_source(cfg))
-            .tree(B::background_source(cfg))
-            .content(&include_template!(
-                "render/scene.inl",
-                ("Self", "self") => Self::scene_name(),
-                ("Geo", "geo") => G::geometry_name(),
-                ("View", "view") => V::view_name(),
-                ("Object", "object") => T::object_name(),
-                ("ObjectCache", "object_cache") => T::Cache::name(),
-                ("Background", "background") => B::background_name(),
-                "light_hops" => format!("{}", H),
-            ))
-            .build()
     }
 }

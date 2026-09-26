@@ -1,7 +1,7 @@
 //! Shared example scenes constructed through Hypertrace's generic Rust API.
 //!
 //! These factories only build scene data. They require neither a graphics
-//! device nor an OpenCL or SDL runtime, and can be consumed by either backend.
+//! device nor a windowing runtime and lower to the portable scene representation.
 //! The const parameter selects the maximum number of light bounces.
 //!
 //! ```

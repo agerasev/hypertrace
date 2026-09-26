@@ -1,9 +1,8 @@
 # Native WGPU backend
 
-This migration stage renders the existing generic Rust `eu` and `hy` scene
-builders with generated WGSL compute shaders. It includes a headless renderer
-and a `wgame` viewer with direct GPU presentation. `hearth` is outside the
-migration scope.
+The renderer compiles the generic Rust `eu` and `hy` scene builders to WGSL
+compute shaders. It includes headless tools and a `wgame` viewer with direct GPU
+presentation.
 
 ## Run
 
@@ -11,15 +10,14 @@ Use current stable Rust, a compute-capable native WGPU adapter (software Vulkan
 is sufficient for correctness tests), and the sibling `../../wgame` checkout
 with configurable `WindowConfig::required_limits` and `use_adapter_buffer_limits`.
 WGPU is pinned to the same
-major version as that checkout, 30. No OpenCL or SDL libraries are needed for
-this package. The optional path dependency still needs to resolve even in a
-headless Cargo build.
+major version as that checkout, 30. The optional path dependency still needs to
+resolve even in a headless Cargo build.
 
 From the Hypertrace repository root:
 
 ```sh
-cargo run -p hypertrace-wgpu --features viewer --example viewer -- --scene hy
-cargo run -p hypertrace-wgpu --example headless -- \
+cargo run --release -p hypertrace-wgpu --features viewer --example viewer -- --scene hy
+cargo run --release -p hypertrace-wgpu --example headless -- \
   --scene hy --width 320 --height 240 --samples 64 --seed 3735928559 --output /tmp/hy-wgpu
 ```
 
@@ -100,16 +98,16 @@ let renderer = hypertrace_wgpu::Renderer::new(&device, &queue, (640, 480), scene
 ```
 
 `hypertrace-scene` is a CPU-only intermediate representation and WGSL compiler.
-It contains no WGPU or OpenCL dependency. The `objects` traits provide fallible
-lowering hooks with unsupported defaults, so existing OpenCL-only custom types
-still compile. The renderer also accepts this intermediate representation directly.
+It has no graphics runtime dependency. The `objects` traits provide fallible
+lowering hooks; types without an implementation report an unsupported error.
+The renderer also accepts this intermediate representation directly.
 
 Supported compositions include `SceneImpl`, point and mapped views, constant and
 Euclidean gradient backgrounds, covered and mapped objects, object choices and
 vectors, shape choices and vectors, mapped shapes, nested mixtures, `Colored`,
 and `Emissive`. Primitive shapes and tilings retain the preceding backend stage's
 coverage. Maps support Euclidean shifts, rotations and homogeneous rigid maps,
-and hyperbolic complex Möbius maps; other legacy maps report an unsupported error.
+and hyperbolic complex Möbius maps; other maps report an unsupported error.
 
 Shader schemas describe composition independently of values. Choice variants and
 empty vector element types are registered before generation, so switching a choice
@@ -165,98 +163,73 @@ must be explicitly requested; missing adapters fail rather than silently skip.
 cargo test -p hypertrace-wgpu
 WGPU_BACKEND=vulkan cargo test -p hypertrace-wgpu -- --ignored
 cargo clippy --no-deps -p hypertrace-wgpu --all-targets --features viewer -- -D warnings
-WGPU_BACKEND=vulkan cargo run -p hypertrace-wgpu --features viewer --example viewer -- --scene hy --smoke
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-wgpu --features viewer --example viewer -- --scene hy --smoke
 ```
 
 Coverage includes Möbius matrix ordering, inverse/distance/derivative checks,
 small and scaled distances, vertical and nearly vertical rays, hit/miss cases,
-reset, resize, scene uploads, deterministic batching, OpenCL tile-selection
-fixtures, and presentation transfer and orientation. The OpenCL baseline also
-has independent analytic regressions:
+reset, resize, scene uploads, deterministic batching, captured tile-selection
+fixtures, and presentation transfer and orientation. Generic scene tests cover
+nested materials, custom leaves, empty vectors, choices, repeated-hit identities,
+and recovery after shader compilation or resource-limit errors.
+
+### Compare rendered frames
+
+Render two frames with matching scene, dimensions, sample count, seed, and bounce
+count using the `headless` example. Compare their linear outputs before display
+conversion:
 
 ```sh
-POCL_KERNEL_CACHE=0 cargo test -p hypertrace-kernel --test hyperbolic_opencl -- --ignored
+python3 tools/compare_frames.py /tmp/hy-a /tmp/hy-b \
+  --diff /tmp/hy-difference.ppm --diff-scale 4 --report /tmp/hy-comparison.json
 ```
 
-The generic path additionally checks nested material evaluation, custom leaves,
-choice and vector updates (including empty vectors), repeated-hit identities,
-and recovery after shader compilation or resource-limit errors. Run the CPU
-compiler and builder checks with `cargo test -p hypertrace-scene -p hypertrace-objects`.
-The legacy crates retain existing lint warnings, hence `--no-deps` above.
-
-For image comparisons, follow the [reference runner guide](../main/examples/REFERENCE.md)
-and use matching scene, resolution, sample count, seed, and bounce count. Compare
-linear floats before display conversion. GPU compiler rounding can change a
-silhouette or tile decision, which then changes later random paths; exact image
-identity is not a general acceptance criterion.
-
-The generated path was checked on software Vulkan and Intel Arc MTL (Mesa
-23.2.1). At 256×192, 16 samples and seed 3735928559, the native generated images
-had mean absolute RGB errors of 0.000181 (`eu`, four bounces) and 0.000451 (`hy`,
-three bounces) against the PoCL reference. Maximum channel errors were 0.211
-and 0.442 respectively; small global averages do not imply pixelwise equality.
-These are correctness comparisons at the initial camera poses, not performance
-benchmarks or exhaustive camera-path validation.
+Output is normalized little-endian f32 RGBA, top row first, with alpha one after
+rendering. Matching JSON settings files are required. The comparison tool checks
+metadata, file lengths, and finite values and reports RGB mean absolute error,
+RMSE, and maximum error. `--max-error 0` checks deterministic reruns on the same
+adapter. Other optional limits are `--max-mae` and `--max-rmse`; choose tolerances
+for the workload. Driver rounding can change silhouettes or tile decisions and
+later random paths, so cross-device comparisons need not be pixelwise identical.
 
 ## Performance measurements
 
-Use the release-mode `benchmark` examples for comparable timings. Run each
-backend sequentially with identical scene, dimensions, samples, seed, and bounce
-limit. The shared scene defaults are four bounces for `eu` and three for `hy`.
+Use the release-mode `benchmark` example for completed-render timings. Run
+configurations sequentially with identical scene, dimensions, samples, seed, and
+bounce limit. Defaults are four bounces for `eu` and three for `hy`.
 
 ```sh
 WGPU_BACKEND=vulkan cargo run --release -p hypertrace-wgpu --example benchmark -- \
-  --scene hy --width 1280 --height 720 --samples 16 --warmup 2 --trials 5 \
-  --batch 1 --seed 3735928559 --output /tmp/wgpu-hy-benchmark.json
-POCL_KERNEL_CACHE=0 cargo run --release -p hypertrace --example benchmark -- \
-  --scene hy --width 1280 --height 720 --samples 16 --warmup 2 --trials 5 \
-  --seed 3735928559 --output /tmp/opencl-hy-benchmark.json
-python3 tools/compare_benchmarks.py /tmp/wgpu-hy-benchmark.json \
-  /tmp/opencl-hy-benchmark.json --output /tmp/benchmark-comparison.md \
-  --json /tmp/benchmark-comparison.json
+  --scene hy --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
+  --batch 1 --seed 3735928559 --output /tmp/wgpu-batch1.json
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-wgpu --example benchmark -- \
+  --scene hy --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
+  --batch 16 --seed 3735928559 --output /tmp/wgpu-batch16.json
+python3 tools/compare_benchmarks.py /tmp/wgpu-batch1.json /tmp/wgpu-batch16.json \
+  --output /tmp/benchmark-comparison.md --json /tmp/benchmark-comparison.json
 ```
 
 Each trial resets accumulation and seeds and finishes those uploads before the
-timer starts. Render time includes CPU submission and a completion wait after
-each batch; it excludes setup, warmup, reset, and readback. This is synchronized
-render latency, not GPU timestamp profiling or interactive viewer FPS. `--warmup`
-counts samples. Readback includes staging allocation, transfer, host copying,
-normalization, and validation; the viewer presents directly on the GPU and does
-not pay this readback cost.
+timer starts. Render time includes submission and a completion wait after each
+batch; setup, warmup, reset, and readback are excluded. This is synchronized
+render latency, not GPU timestamp profiling or viewer FPS. `--warmup` counts
+samples. Larger batches can improve throughput while delaying input response.
 
-WGPU `--batch 1` matches the OpenCL renderer's wait after every sample. Repeat
-with `--batch 16` to measure sixteen samples in one dispatch separately. Report
-the batch size alongside timings: larger batches can improve throughput while
-delaying input response. The JSON records the adapter, driver, all trial times,
-setup and warmup times, and RGB sums. Sums are diagnostics, not an image-parity
-test. Startup timings depend on driver caching and deferred compilation; with
-`POCL_KERNEL_CACHE=0`, OpenCL's persistent kernel cache is explicitly disabled.
+Readback includes staging allocation, transfer, host copying, normalization, and
+validation. The viewer presents directly on the GPU and avoids this cost.
+JSON reports record the adapter, driver, all trial times, setup/warmup times,
+and RGB sums. Sums are diagnostics, not image-parity tests. Startup timings
+depend on driver caching and deferred compilation. Always check device identity:
+software Vulkan results measure CPU performance, and timings across different
+GPUs do not isolate renderer changes.
 
-Check the reported device before comparing backends. PoCL on the CPU versus
-WGPU on a GPU measures hardware as well as the renderer. Software Vulkan on the
-same CPU is a useful additional comparison, but has different compiler and
-threading behavior. Use the OpenCL runner's `--list` and positional device
-selection, and WGPU's backend/adapter selection or Vulkan ICD configuration,
-to choose the intended devices.
+## Current limitations
 
-## Remaining migration work
-
-The current typed storage records and shader dispatch cover the built-in scenes:
-mapped Euclidean plane/sphere/cube, hyperbolic plane/horosphere, local materials,
-and square/hexagonal/pentagonal/pentastar tilings. Record sizes and matrix order
-are explicit and do not reuse OpenCL's C layout.
-
-Remaining gates before making WGPU the default:
-
-1. Extend lowering to additional geometry, view, background and map implementations
-   as needed; unsupported implementations currently produce explicit errors.
-2. Expand analytic/property tests and image comparisons across camera paths,
-   grazing rays, near-boundary positions, and additional scene compositions.
-3. Measure dispatch sizes, sample batching, and memory use on discrete/integrated
-   GPUs before choosing performance defaults.
-4. Finish manual input, minimize/restore, focus, and platform lifecycle checks.
-5. Enable a separate high-level WebGPU path for browsers; `wgame`'s current web
-   feature uses WebGL2 and cannot run this renderer.
-
-Keep OpenCL available until those gates are met. A change of hyperbolic model or
-relative-coordinate representation is a separate numerical experiment.
+1. Additional geometry, view, background, and map types need lowering hooks;
+   unsupported types produce explicit errors.
+2. GPU f32 arithmetic still loses precision near the ideal boundary. Additional
+   camera-path tests and relative-coordinate rendering remain useful work.
+3. Workgroup sizes and sample batching remain workload/device choices; the viewer
+   uses a single sample per frame for responsive camera movement.
+4. Browser execution needs a high-level WebGPU path. Wgame's current web feature
+   uses WebGL2 and cannot run this compute renderer.

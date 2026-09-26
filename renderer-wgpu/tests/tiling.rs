@@ -4,7 +4,7 @@ use hypertrace_wgpu::{Gpu, Scene, read_buffer, shader_source};
 use wgpu::util::DeviceExt;
 
 // Canonical hemisphere points and material IDs measured with the original
-// OpenCL TiledPlane::interact, using Scene::hy's pentastar/pentagonal materials.
+// reference renderer, using Scene::hy's pentastar/pentagonal materials.
 // The first eight exercise the native regression; remaining points cover borders
 // and the distinction between the star pattern and ordinary pentagons.
 const FIXTURES: [([f32; 2], [u32; 2]); 12] = [
@@ -24,7 +24,7 @@ const FIXTURES: [([f32; 2], [u32; 2]); 12] = [
 
 #[test]
 #[ignore = "requires a working WGPU compute adapter"]
-fn production_tiling_matches_opencl_oracle() {
+fn production_tiling_matches_reference_fixtures() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
     let count = FIXTURES.len() as u32;
     let source = format!(

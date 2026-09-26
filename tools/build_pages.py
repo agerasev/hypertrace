@@ -56,6 +56,8 @@ def main():
             str(previews / f"{scene}.png"))
         run(convert, str(renders / f"{scene}.ppm"), "-resize", "1280x960", "-strip",
             "-quality", "90", str(previews / f"{scene}.webp"))
+        run(convert, str(renders / f"{scene}.ppm"), "-resize", "640x480", "-strip",
+            "-quality", "85", str(previews / f"{scene}-small.webp"))
         settings[scene]["png_sha256"] = hashlib.sha256((previews / f"{scene}.png").read_bytes()).hexdigest()
         settings[scene]["source_commit"] = commit
         (previews / f"{scene}.json").write_text(json.dumps(settings[scene], indent=2) + "\n")
@@ -72,7 +74,8 @@ Static publication built from source commit [{commit}](https://github.com/ageras
 - [Euclidean viewer](https://agerasev.github.io{args.public_url}viewer/?scene=eu)
 - [Theory](https://agerasev.github.io{args.public_url}theory.html)
 
-The `previews/` directory contains full-resolution PNGs, smaller WebP images,
+The `previews/` directory contains full-resolution PNGs, 1280 × 960 WebP images,
+640 × 480 low-resolution previews,
 and exact render settings. The `viewer/` directory is a release WebAssembly build.
 Images retain the default scenes' cameras and bounce limits, at 2560 × 1920 and
 4096 samples per pixel. Linear samples are averaged before display gamma 1/2.2.

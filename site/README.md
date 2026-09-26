@@ -34,7 +34,10 @@ python3 tools/build_pages.py build/previews --output build/pages
 
 The builder verifies that the settings match the gallery labels, generates the
 release viewer with the correct URL prefix, encodes the previews, and records
-their SHA-256 hashes. It does not push branches or change GitHub settings.
+their SHA-256 hashes. Full-resolution PNGs are accompanied by 1280 × 960 and
+640 × 480 WebP previews derived from the same high-sample renders. The gallery
+uses responsive image selection and includes direct links to the small previews.
+The builder does not push branches or change GitHub settings.
 
 Copy the contents of `build/pages/` into the root of the `gh-pages` branch,
 including `.nojekyll`, and commit and push that branch. Keep the source commit

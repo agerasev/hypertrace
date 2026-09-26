@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10151e">
+  <title>Hypertrace · Explore curved space</title>
+  <link rel="icon" href="data:,">
+  
+<script type="module">
+import init, * as bindings from '/hypertrace/viewer/hypertrace-wgpu-babb166ec30b2e4b.js';
+const wasm = await init({ module_or_path: '/hypertrace/viewer/hypertrace-wgpu-babb166ec30b2e4b_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script>
+  <style>
+    :root { color-scheme: dark; font: 14px system-ui, sans-serif; color: #e6edf5; background: #10151e; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; }
+    body { display: flex; flex-direction: column; }
+    header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 16px 24px; border-bottom: 1px solid #293343; }
+    h1 { font-size: 19px; letter-spacing: -.03em; margin: 0; }
+    .title { margin-right: auto; }
+    .title p { color: #9caec3; margin: 3px 0 0; font-size: 12px; }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    label { display: flex; align-items: center; gap: 6px; color: #acbdd0; }
+    button, select { font: inherit; padding: 7px 10px; border: 1px solid #3a485c; border-radius: 6px; background: #1c2737; color: #e6edf5; }
+    button { cursor: pointer; }
+    #pause { width: 6em; }
+    button:hover, select:hover { background: #29394e; }
+    :focus-visible { outline: 2px solid #86c7ff; outline-offset: 3px; }
+    main { position: relative; flex: 1; min-height: 0; contain: size; }
+    /* Winit sets an initial inline size; let its ResizeObserver follow the page. */
+    canvas { display: block; width: 100% !important; height: 100% !important; outline: none; touch-action: none; }
+    canvas:focus-visible { outline: 2px solid #86c7ff; outline-offset: -2px; }
+    #status { position: absolute; left: 18px; top: 14px; max-width: min(600px, calc(100% - 36px)); margin: 0; padding: 8px 12px; background: #10151ede; border-radius: 6px; pointer-events: none; }
+    #status[data-error="true"] { color: #ffb4ab; border: 1px solid #d56f68; }
+    footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 20px; padding: 10px 24px; font-size: 12px; color: #acbdd0; border-top: 1px solid #293343; }
+    footer > span:first-child { flex: 1 1 600px; }
+    #stats { color: #d2e5f7; font-variant-numeric: tabular-nums; flex: 0 0 38ch; text-align: right; white-space: nowrap; }
+    noscript { padding: 20px; }
+    @media (max-width: 640px) { header { padding: 12px; gap: 10px; } footer { padding: 10px 12px; } .controls { gap: 6px; } }
+  </style>
+<link rel="modulepreload" href="/hypertrace/viewer/hypertrace-wgpu-babb166ec30b2e4b.js" crossorigin="anonymous" integrity="sha384-SpgHhzrWV0YQWvcokEX6O1pymDTsCGRkMelxujIvIBpJWlVOqP1ybGAxcYGE5/Bg"><link rel="modulepreload" href="/hypertrace/viewer/snippets/hypertrace-wgpu-e33a823a8435a5f9/web/controls.js" crossorigin="anonymous" integrity="sha384-9B1v/8J+PiK6C896lnrXS2Xug2AfMFLPktfh9PbwQtqSV72i74ATQsmV4E/Erq6p"><link rel="preload" href="/hypertrace/viewer/hypertrace-wgpu-babb166ec30b2e4b_bg.wasm" crossorigin="anonymous" integrity="sha384-hWLqitNu3eS+vxK9E29OnqKWHalbHemX5+rNZPCAJBU3dwVXuysh8X1v1qUTbsSk" as="fetch" type="application/wasm"></head>
+<body>
+  <header>
+    <div class="title"><h1>Hypertrace</h1><p>Light in Euclidean &amp; hyperbolic space</p></div>
+    <div class="controls" aria-label="Scene controls">
+      <label>Space <select id="scene"><option value="hy">Hyperbolic</option><option value="eu">Euclidean</option></select></label>
+      <label>Quality <select id="resolution"><option value="640">Fast</option><option value="960" selected>Balanced</option><option value="1440">Sharp</option><option value="0">Full resolution</option></select></label>
+      <button id="reset" type="button">Reset view</button>
+      <button id="pause" type="button" aria-pressed="false">Pause</button>
+    </div>
+  </header>
+  <main>
+    <canvas id="canvas" tabindex="0" aria-label="Interactive path traced scene. Drag to look, WASD to move."></canvas>
+    <p id="status" role="status" aria-live="polite">Loading renderer…</p>
+  </main>
+  <footer>
+    <span>Drag: look · WASD / arrows: move · Space / C: up / down · Q / E: roll · Scroll: zoom · R: reset · Esc: pause</span>
+    <span id="stats">Progressive path tracing</span>
+  </footer>
+  <noscript>Enable JavaScript to run the renderer.</noscript>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "backend": "wgpu",
+  "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+  "scene": "hy",
+  "width": 2560,
+  "height": 1920,
+  "samples": 4096,
+  "seed": 3735928559,
+  "bounces": 3,
+  "linear_format": "little-endian rgba32f, row-major, top row first",
+  "display_gamma": 2.2,
+  "png_sha256": "0033056d6dd37e202c1200afb66f250f1f90375df7afcead09619febe60302a0",
+  "source_commit": "292dfc2103052d476412eea5a618a1b16f7e5939"
+}

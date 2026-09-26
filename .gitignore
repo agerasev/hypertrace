@@ -1,9 +1,0 @@
-/target
-/Cargo.lock
-/build
-/dist
-
-__pycache__
-
-/.vscode
-*.code-workspace

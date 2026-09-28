@@ -1,14 +1,24 @@
 //! Compile the shared generic Rust scene builders.
 
 use hypertrace_wgpu::{Result, Scene};
-use objects::Scene as _;
+
+pub fn catalog() -> String {
+    scenes::EXAMPLES
+        .iter()
+        .map(|example| {
+            format!(
+                "  {:20} {}\n    {}",
+                example.id, example.title, example.description
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
 
 pub fn scene(name: &str) -> Result<Scene> {
-    let definition = match name {
-        "eu" => scenes::eu::scene::<4>().wgsl_scene()?,
-        "hy" => scenes::hy::scene::<3>().wgsl_scene()?,
-        "sp" => scenes::sp::scene::<6>().wgsl_scene()?,
-        _ => anyhow::bail!("scene must be eu, hy, or sp"),
-    };
+    let example = scenes::find(name).ok_or_else(|| {
+        anyhow::anyhow!("unknown example {name:?}; choose one of:\n{}", catalog())
+    })?;
+    let definition = example.definition()?;
     Scene::from_definition(&definition)
 }

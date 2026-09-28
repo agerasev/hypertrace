@@ -59,9 +59,13 @@ fn main() -> Result<()> {
     let mut output = String::from("benchmark-wgpu.json");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
+        if arg == "--list-scenes" {
+            println!("{}", support::catalog());
+            return Ok(());
+        }
         if arg == "--help" || arg == "-h" {
             println!(
-                "benchmark [--scene eu|hy|sp] [--width 640] [--height 480] [--samples 16] [--trials 5] [--warmup 2] [--batch 1] [--seed 3735928559] [--bounces N] [--output benchmark-wgpu.json]\nUse --release. Timings wait for completed work after each batch, exclude reset/upload, and report readback separately. --warmup counts samples. WGPU_BACKEND and Vulkan ICD selection control the device."
+                "benchmark [--scene NAME] [--width 640] [--height 480] [--samples 16] [--trials 5] [--warmup 2] [--batch 1] [--seed 3735928559] [--bounces N] [--output benchmark-wgpu.json]\nUse --list-scenes to see examples. Use --release. Timings wait for completed work after each batch, exclude reset/upload, and report readback separately. --warmup counts samples. WGPU_BACKEND and Vulkan ICD selection control the device."
             );
             return Ok(());
         }

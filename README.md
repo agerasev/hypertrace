@@ -30,14 +30,23 @@ From the repository root:
 
 ```sh
 cargo run --release -p hypertrace-wgpu --features viewer --example viewer -- --scene sp
+cargo run --release -p hypertrace-wgpu --example headless -- --list-scenes
 cargo run --release -p hypertrace-wgpu --example headless -- \
   --scene eu --width 640 --height 480 --samples 64 --output /tmp/eu
 ```
 
-Use `--scene eu`, `--scene hy`, or `--scene sp`. The spherical example uses emissive
-objects and a configurable black miss background. Headless output includes linear RGBA floats, a
-PPM preview, and JSON settings. The [renderer guide](renderer-wgpu/README.md)
-covers the rendering API, scene extensions, validation, and benchmarking.
+The shared example catalog includes the original `eu`, `hy`, and `sp` scenes,
+equal-layout curvature comparisons (`compare-eu`, `compare-hy`, `compare-sp`),
+gentler-curvature variants, and spherical fog and long-route examples. Use
+`--list-scenes` in any native tool to see all choices. Start with `compare-sp`
+to see distant spheres grow again or `sp-loop` to see light arriving by the long
+route around spherical space. The [example guide](scenes/README.md) explains
+what to observe and how the builders work.
+
+Spherical scenes use emissive objects and a configurable black miss background.
+Headless output includes linear RGBA floats, a PPM preview, and JSON settings.
+The [renderer guide](renderer-wgpu/README.md) covers the rendering API, scene
+extensions, validation, and benchmarking.
 
 ### Controls
 
@@ -59,8 +68,9 @@ cargo install trunk --locked  # if not already installed; use Trunk 0.21 or newe
 NO_COLOR=true trunk serve --release
 ```
 
-Open <http://127.0.0.1:8080>. Use the Space menu to switch between the three
-geometries, or start with `?scene=hy`, `?scene=eu`, or `?scene=sp`. Click the canvas to use
+Open <http://127.0.0.1:8080>. Use the grouped Example menu to select a scene,
+or start with any catalog ID such as `?scene=compare-sp` or
+`?scene=sp-loop-fog`. Each example includes a short description. Click the canvas to use
 the camera controls above. Escape toggles pause in the browser. Quality caps the
 longest render dimension (Fast: 640, Balanced: 960, Sharp: 1440 pixels); Full
 resolution follows the canvas size, subject to device limits. The default is
@@ -95,11 +105,12 @@ distance includes complete circuits even when the ray returns to the same point.
 The [geometry contract](GEOMETRY_CONTRACT.md) specifies units, transforms, tangent
 frames, and precision limits; [ABOUT.md](ABOUT.md) describes the implementation.
 
-The spherical fog variant is available as a Rust builder:
+The spherical studio's fog variant is available as `--scene sp-fog` and as a
+Rust builder:
 
 ```rust,ignore
 use objects::Scene as _;
-let mut source = scenes::sp::fog_scene::<8>();
+let mut source = scenes::sp::fog_scene::<12>();
 source.medium = objects::wgsl::Medium::Homogeneous {
     extinction: 0.08, // inverse world units
     albedo: [0.85, 0.9, 0.95],
@@ -108,10 +119,12 @@ let definition = source.wgsl_scene()?;
 let scene = hypertrace_wgpu::Scene::from_definition(&definition)?;
 ```
 
-The CLI's `sp` selection uses the vacuum version. Fog samples a free-flight
-distance before resolving a surface miss, including distances beyond a spherical
-circuit. See the [renderer guide](renderer-wgpu/README.md) for custom materials
-and embedded shader leaves.
+The CLI's `sp` selection uses the vacuum version. The floorless `sp-loop-fog`
+example allows rays missing every object to scatter after multiple spherical
+circuits. Fog samples a physical free-flight distance before resolving a surface
+miss. See the [example guide](scenes/README.md) for shared curvature and
+recurrence builders, and the [renderer guide](renderer-wgpu/README.md) for
+custom materials and embedded shader leaves.
 
 ```sh
 cargo test --workspace

@@ -16,9 +16,13 @@ fn main() -> Result<()> {
     let mut output = String::from("wgpu");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
+        if arg == "--list-scenes" {
+            println!("{}", support::catalog());
+            return Ok(());
+        }
         if arg == "--help" || arg == "-h" {
             println!(
-                "headless [--scene eu|hy|sp] [--width 320] [--height 240] [--samples 64] [--seed 3735928559] [--bounces 1..64] [--output PREFIX]\nWrites PREFIX.{{rgba32f,ppm,json}}; WGPU_BACKEND selects a native backend."
+                "headless [--scene NAME] [--width 320] [--height 240] [--samples 64] [--seed 3735928559] [--bounces 1..64] [--output PREFIX]\nWrites PREFIX.{{rgba32f,ppm,json}}; Use --list-scenes to see examples. WGPU_BACKEND selects a native backend."
             );
             return Ok(());
         }
@@ -42,6 +46,9 @@ fn main() -> Result<()> {
         scene.bounces = b;
     }
     let bounces = scene.bounces;
+    let curvature = scene.camera.transform().geometry().sign();
+    let radius = scene.radius;
+    let [red, green, blue, extinction] = scene.medium.gpu_row();
     let gpu = futures::executor::block_on(Gpu::headless())?;
     let adapter = gpu.adapter.get_info();
     println!(
@@ -88,7 +95,7 @@ fn main() -> Result<()> {
     std::fs::write(
         format!("{output}.json"),
         format!(
-            "{{\n  \"backend\": \"wgpu\",\n  \"adapter\": {:?},\n  \"scene\": {:?},\n  \"width\": {width},\n  \"height\": {height},\n  \"samples\": {samples},\n  \"seed\": {seed},\n  \"bounces\": {bounces},\n  \"linear_format\": \"little-endian rgba32f, row-major, top row first\",\n  \"display_gamma\": 2.2\n}}\n",
+            "{{\n  \"backend\": \"wgpu\",\n  \"adapter\": {:?},\n  \"scene\": {:?},\n  \"width\": {width},\n  \"height\": {height},\n  \"samples\": {samples},\n  \"seed\": {seed},\n  \"bounces\": {bounces},\n  \"curvature_sign\": {curvature},\n  \"curvature_radius\": {radius},\n  \"medium\": {{\"extinction\": {extinction}, \"albedo\": [{red}, {green}, {blue}]}},\n  \"linear_format\": \"little-endian rgba32f, row-major, top row first\",\n  \"display_gamma\": 2.2\n}}\n",
             adapter.name, name
         ),
     )?;

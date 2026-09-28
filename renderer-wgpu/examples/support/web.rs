@@ -4,6 +4,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen(module = "/web/controls.js")]
 extern "C" {
     pub fn supported() -> bool;
+    pub fn add_example(id: &str, title: &str, description: &str, group: &str);
     pub fn scene_name() -> String;
     pub fn resolution() -> u32;
     pub fn take_reset() -> bool;

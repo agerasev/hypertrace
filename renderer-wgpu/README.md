@@ -1,7 +1,7 @@
 # WGPU renderer
 
-The renderer compiles the generic Rust `eu`, `hy`, and `sp` scene builders to WGSL
-compute shaders. It includes headless tools and a `wgame` viewer with direct GPU
+The renderer compiles generic Rust scene builders in all three curvatures to
+WGSL compute shaders. It includes headless tools and a `wgame` viewer with direct GPU
 presentation on native platforms and the web. See the repository
 [web viewer instructions](../README.md#web-viewer) for Trunk setup and controls.
 
@@ -19,9 +19,18 @@ From the Hypertrace repository root:
 
 ```sh
 cargo run --release -p hypertrace-wgpu --features viewer --example viewer -- --scene sp
+cargo run --release -p hypertrace-wgpu --example headless -- --list-scenes
 cargo run --release -p hypertrace-wgpu --example headless -- \
   --scene hy --width 320 --height 240 --samples 64 --seed 3735928559 --output /tmp/hy-wgpu
 ```
+
+`viewer`, `headless`, and `benchmark` share the `scenes::EXAMPLES` catalog and
+support `--list-scenes`. Besides `eu`, `hy`, and `sp`, it includes the
+`compare-*` physical-layout comparisons, `sp-fog`, `sp-loop`, and `sp-loop-fog`.
+The browser presents the same grouped catalog and accepts `?scene=NAME` URLs.
+See the [example guide](../scenes/README.md) for all IDs, default event budgets,
+and the geometric effects to look for. Start with 64 samples for comparison
+markers and 256 or more for fog.
 
 The viewer supports WASD/arrows, Space/C, Q/E, left-drag to look, scroll to zoom,
 R to restore the initial camera, and Escape to close. Movement integrates actual
@@ -35,6 +44,8 @@ across that limit and back with camera updates, then exits.
 
 Headless output is `PREFIX.rgba32f` (linear, normalized little-endian RGBA,
 top row first), `PREFIX.ppm` (gamma 1/2.2), and `PREFIX.json` (settings).
+JSON records the curvature sign and radius plus medium extinction and albedo,
+so captures distinguish the physical configuration as well as the example ID.
 `--bounces` overrides the scene default. Adapter details are printed; timings on
 software Vulkan are not hardware performance measurements.
 Headless rendering also requests supported buffer sizes, but preserves the exact
@@ -134,7 +145,7 @@ accuracy range. See [the geometry contract](../GEOMETRY_CONTRACT.md).
 
 ## Generic scene builders
 
-`hypertrace-scenes` contains the shared `eu`, `hy`, and `sp` factories used by native and
+`hypertrace-scenes` contains the shared factories and catalog used by native and
 browser viewers. The WGPU examples lower those builders as follows:
 
 ```rust,ignore
@@ -143,6 +154,14 @@ let definition = scenes::hy::scene::<3>().wgsl_scene()?;
 let scene = hypertrace_wgpu::Scene::from_definition(&definition)?;
 let renderer = hypertrace_wgpu::Renderer::new(&device, &queue, (640, 480), scene, 1)?;
 ```
+
+The generic `scenes::comparison::scene::<K,H>(radius)?` builder preserves the
+physical marker layout across curvature signs and radii. For example,
+`scene::<1,1>(3.0)?` uses spherical curvature +1/9 with one surface event.
+`scenes::recurrence::scene::<12>(true)` builds the floorless spherical long-route
+scene with fog. Its `false` variant selects vacuum. These geometric examples
+use emissive absorbing spheres for clear silhouettes; the original studios
+retain diffuse, reflective, and refractive materials.
 
 `hypertrace-scene` is a CPU-only intermediate representation and WGSL compiler.
 It has no graphics runtime dependency. The `objects` traits provide fallible
@@ -189,7 +208,7 @@ is isotropic. Both surface and volume interactions consume the bounce budget.
 
 ```rust,ignore
 use objects::Scene as _;
-let mut source = scenes::sp::fog_scene::<8>();
+let mut source = scenes::sp::fog_scene::<12>();
 source.medium = objects::wgsl::Medium::Homogeneous {
     extinction: 0.08,
     albedo: [0.85, 0.9, 0.95],
@@ -198,9 +217,13 @@ let definition = source.wgsl_scene()?;
 let scene = hypertrace_wgpu::Scene::from_definition(&definition)?;
 ```
 
-`fog_scene` supplies those medium values with the emissive spherical scene;
-its mean free flight is 12.5 world units at radius one. `sp::scene` and the CLI
-`--scene sp` select vacuum. Both use a configurable black miss background.
+`fog_scene` supplies those medium values with the emissive spherical studio;
+its mean free flight is 12.5 world units at radius one. The CLI selects it with
+`--scene sp-fog`; `sp::scene` and `--scene sp` select vacuum. Both use a
+configurable black miss background. The separate `sp-loop-fog` preset has no
+floor and uses extinction 0.1 with albedo 0.9. Rays missing its beacons can
+complete several circuits before scattering. Rendered color images do not
+report individual travelled distances or cycle counts.
 
 The integrator samples `-log(1-u)/extinction` and compares that physical distance
 with the nearest surface. With no surface, the interval stays unbounded even
@@ -319,8 +342,11 @@ later random paths, so cross-device comparisons need not be pixelwise identical.
 
 Use the release-mode `benchmark` example for completed-render timings. Run
 configurations sequentially with identical scene, dimensions, samples, seed, and
-bounce limit. Defaults are four bounces for `eu`, three for `hy`, and six for `sp`.
-The spherical demo uses emissive objects and a configurable black miss background.
+bounce limit. Defaults are four events for `eu`, three for `hy`, six for `sp`,
+one for geometric comparisons and `sp-loop`, and twelve for both fog presets.
+Surface and volume interactions both consume this budget. Use `--list-scenes`
+to find a workload and consult the [example guide](../scenes/README.md) for its
+layout; each spherical preset has a black miss background.
 
 ```sh
 WGPU_BACKEND=vulkan cargo run --release -p hypertrace-wgpu --example benchmark -- \

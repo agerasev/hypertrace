@@ -1,6 +1,6 @@
 //! Native and web viewer. WASD/arrows move, Space/C move vertically, Q/E roll,
 //! left-drag looks around, scroll changes field of view, R resets, Esc closes.
-//! `--scene eu|hy|sp --smoke` processes twelve frames with a small binding limit,
+//! `--scene NAME --smoke` processes twelve frames with a small binding limit,
 //! resizing across that limit and back, camera updates and one discarded frame.
 
 use hypertrace_wgpu::{Presenter, Renderer, Scene, fit_render_size};
@@ -39,15 +39,19 @@ fn options() -> wgame::Result<(String, bool)> {
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--list-scenes" => {
+                println!("{}", support::catalog());
+                return Ok((String::new(), false));
+            }
             "--scene" => {
-                scene = args
-                    .next()
-                    .ok_or_else(|| anyhow::anyhow!("--scene needs eu, hy, or sp"))?
+                scene = args.next().ok_or_else(|| {
+                    anyhow::anyhow!("--scene needs an example name; use --list-scenes")
+                })?
             }
             "--smoke" => smoke = true,
             "--help" | "-h" => {
                 println!(
-                    "viewer [--scene eu|hy|sp] [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; scroll: zoom; R: reset; Esc: close"
+                    "viewer [--scene NAME] [--smoke] [--list-scenes]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; scroll: zoom; R: reset; Esc: close"
                 );
                 return Ok((String::new(), false));
             }
@@ -66,6 +70,14 @@ async fn start() -> wgame::Result<()> {
             web::supported(),
             "WebGPU is unavailable. Use a WebGPU-capable browser on HTTPS or localhost."
         );
+        for example in scenes::EXAMPLES {
+            web::add_example(
+                example.id,
+                example.title,
+                example.description,
+                example.group,
+            );
+        }
         web::set_status("Preparing scene…", false);
         (web::scene_name(), false)
     };
@@ -74,7 +86,10 @@ async fn start() -> wgame::Result<()> {
     }
     let initial_scene = support::scene(&scene)?;
     let config = WindowConfig::default()
-        .title(&format!("Hypertrace · WGPU · {scene}"))
+        .title(&format!(
+            "Hypertrace · {}",
+            scenes::find(&scene).unwrap().title
+        ))
         .size(if smoke { (320, 240) } else { (960, 720) })
         .required_limits(wgpu::Limits {
             // Exercise the hardware-limit fallback with small window sizes.

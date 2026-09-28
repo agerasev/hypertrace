@@ -98,7 +98,8 @@ fn vector_length_and_active_choice_do_not_change_registered_schemas() {
 #[ignore = "requires a native WGPU compute adapter"]
 fn all_shared_builders_render_through_generated_wgsl() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
-    for name in ["eu", "hy", "sp"] {
+    for example in scenes::EXAMPLES {
+        let name = example.id;
         let mut renderer = Renderer::new(
             &gpu.device,
             &gpu.queue,

@@ -15,6 +15,10 @@ pub struct SceneImpl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, co
     pub view: V,
     pub background: B,
     pub object: T,
+    /// Curvature radius in physical units; Euclidean scenes use one.
+    pub radius: f64,
+    /// Medium sampled before resolving a surface miss to the background.
+    pub medium: crate::wgsl::Medium,
 }
 
 impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize>
@@ -25,6 +29,8 @@ impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize>
             view,
             background,
             object,
+            radius: 1.0,
+            medium: crate::wgsl::Medium::Vacuum,
             geometry: PhantomData,
         }
     }
@@ -40,6 +46,8 @@ impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize> Sc
             view: self.view.wgsl_view()?,
             background: self.background.wgsl_background()?,
             bounces: u32::try_from(H)?,
+            radius: self.radius,
+            medium: self.medium,
             object: self.object.wgsl_object()?,
             material_schemas: registry.material_schemas,
             shape_schemas: registry.shape_schemas,

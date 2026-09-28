@@ -25,6 +25,8 @@ fn scene_update_exceeding_allocation_limit_preserves_previous_renderer() {
         },
         background: Background::Constant([0.125, 0.25, 0.5]),
         bounces: 1,
+        radius: 1.0,
+        medium: Default::default(),
         object: ObjectNode::Vector(vec![]),
         material_schemas: vec![MaterialSchema::Absorbing],
         shape_schemas: vec![ShapeSchema::Plane],

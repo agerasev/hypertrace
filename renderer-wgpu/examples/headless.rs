@@ -18,7 +18,7 @@ fn main() -> Result<()> {
     while let Some(arg) = args.next() {
         if arg == "--help" || arg == "-h" {
             println!(
-                "headless [--scene eu|hy] [--width 320] [--height 240] [--samples 64] [--seed 3735928559] [--bounces 1..64] [--output PREFIX]\nWrites PREFIX.{{rgba32f,ppm,json}}; WGPU_BACKEND selects a native backend."
+                "headless [--scene eu|hy|sp] [--width 320] [--height 240] [--samples 64] [--seed 3735928559] [--bounces 1..64] [--output PREFIX]\nWrites PREFIX.{{rgba32f,ppm,json}}; WGPU_BACKEND selects a native backend."
             );
             return Ok(());
         }

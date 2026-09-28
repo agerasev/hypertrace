@@ -1,6 +1,6 @@
 //! Native and web viewer. WASD/arrows move, Space/C move vertically, Q/E roll,
 //! left-drag looks around, scroll changes field of view, R resets, Esc closes.
-//! `--scene eu|hy --smoke` processes twelve frames with a small binding limit,
+//! `--scene eu|hy|sp --smoke` processes twelve frames with a small binding limit,
 //! resizing across that limit and back, camera updates and one discarded frame.
 
 use hypertrace_wgpu::{Presenter, Renderer, Scene, fit_render_size};
@@ -42,12 +42,12 @@ fn options() -> wgame::Result<(String, bool)> {
             "--scene" => {
                 scene = args
                     .next()
-                    .ok_or_else(|| anyhow::anyhow!("--scene needs eu or hy"))?
+                    .ok_or_else(|| anyhow::anyhow!("--scene needs eu, hy, or sp"))?
             }
             "--smoke" => smoke = true,
             "--help" | "-h" => {
                 println!(
-                    "viewer [--scene eu|hy] [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; scroll: zoom; R: reset; Esc: close"
+                    "viewer [--scene eu|hy|sp] [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; scroll: zoom; R: reset; Esc: close"
                 );
                 return Ok((String::new(), false));
             }
@@ -257,7 +257,11 @@ async fn run(
             .any(|value| value != 0.0)
             || zoom != 0.0
         {
-            camera.move_local(translation, rotation);
+            camera.move_local_with_radius(
+                translation,
+                rotation,
+                f64::from(renderer.scene().radius),
+            )?;
             fov = (fov * (-zoom * 0.002).exp()).clamp(0.05, 10.0);
             renderer.update_camera(camera, fov)?;
             #[cfg(target_arch = "wasm32")]

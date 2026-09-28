@@ -19,6 +19,8 @@ fn scene_shader_source(scene: &Scene) -> String {
     match &scene.generated {
         Some(compiled) => [
             include_str!("shaders/math.wgsl"),
+            include_str!("shaders/embedded.wgsl"),
+            include_str!("shaders/transport.wgsl"),
             include_str!("shaders/generated_trace.wgsl"),
             include_str!("shaders/tracing_common.wgsl"),
             &compiled.source,
@@ -73,6 +75,7 @@ impl Renderer {
     ) -> Result<Self> {
         validate_size(device, size)?;
         validate_scene(device, &scene)?;
+        let prepared_objects = scene.prepare_objects(scene.camera)?;
         let source = scene_shader_source(&scene);
         let pipeline = create_pipeline(device, &source).await?;
         let params = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -80,7 +83,7 @@ impl Renderer {
             contents: bytemuck::bytes_of(&Params::new(&scene, size, 1)),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
-        let objects = scene_buffer(device, "objects", &scene.objects, Object::zeroed());
+        let objects = scene_buffer(device, "objects", &prepared_objects, Object::zeroed());
         let materials = material_buffer(device, &scene);
         let words = scene_buffer(device, "scene words", scene.words(), 0u32);
         let (accumulation, seeds) = pixel_buffers(device, size);
@@ -144,6 +147,7 @@ impl Renderer {
     /// A geometry/camera/material change always invalidates accumulated samples.
     pub async fn update_scene_async(&mut self, scene: Scene) -> Result<()> {
         validate_scene(&self.device, &scene)?;
+        let prepared_objects = scene.prepare_objects(scene.camera)?;
         let source = scene_shader_source(&scene);
         let new_pipeline = if source != self.source {
             Some(create_pipeline(&self.device, &source).await?)
@@ -155,10 +159,11 @@ impl Renderer {
         let grow_materials = scene.material_bytes().len().max(64) as u64 > self.materials.size();
         let grow_words = std::mem::size_of_val(scene.words()).max(4) as u64 > self.words.size();
         if grow_objects {
-            self.objects = scene_buffer(&self.device, "objects", &scene.objects, Object::zeroed());
-        } else if !scene.objects.is_empty() {
+            self.objects =
+                scene_buffer(&self.device, "objects", &prepared_objects, Object::zeroed());
+        } else if !prepared_objects.is_empty() {
             self.queue
-                .write_buffer(&self.objects, 0, bytemuck::cast_slice(&scene.objects));
+                .write_buffer(&self.objects, 0, bytemuck::cast_slice(&prepared_objects));
         }
         if grow_materials {
             self.materials = material_buffer(&self.device, &scene);
@@ -188,12 +193,16 @@ impl Renderer {
     }
 
     pub fn update_camera(&mut self, camera: Camera, fov: f32) -> Result<()> {
-        camera.validate()?;
         anyhow::ensure!(
             camera.geometry() == self.scene.camera.geometry(),
             "camera geometry must match the scene"
         );
         anyhow::ensure!(fov.is_finite() && fov > 0.0, "invalid camera");
+        let prepared_objects = self.scene.prepare_objects(camera)?;
+        if self.scene.generated.is_some() && !prepared_objects.is_empty() {
+            self.queue
+                .write_buffer(&self.objects, 0, bytemuck::cast_slice(&prepared_objects));
+        }
         self.scene.camera = camera;
         self.scene.fov = fov;
         self.write_params();

@@ -24,6 +24,8 @@ fn planes(count: usize) -> SceneDefinition {
         },
         background: Background::Constant([0.0; 3]),
         bounces: 4,
+        radius: 1.0,
+        medium: Default::default(),
         object: ObjectNode::Covered {
             shape,
             material: MaterialValue::transparent()

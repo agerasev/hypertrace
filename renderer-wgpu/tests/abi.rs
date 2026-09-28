@@ -2,7 +2,103 @@
 //! matrix ordering, padding and array stride errors observable independently
 //! of whether a rendered image looks plausible.
 use hypertrace_wgpu::{Background, Gpu, Material, Object, Renderer, Scene, read_buffer};
+use objects::Scene as _;
 use wgpu::util::DeviceExt;
+
+#[test]
+#[ignore = "requires a native WGPU compute adapter"]
+fn generated_uniform_carries_physical_radius_and_medium() {
+    let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
+    let mut definition = scenes::sp::scene::<6>().wgsl_scene().unwrap();
+    definition.radius = 2.5;
+    definition.medium = hypertrace_wgpu::wgsl::Medium::Homogeneous {
+        extinction: 0.125,
+        albedo: [0.2, 0.4, 0.7],
+    };
+    let scene = Scene::from_definition(&definition).unwrap();
+    let renderer = Renderer::new(&gpu.device, &gpu.queue, (13, 7), scene, 123).unwrap();
+    let source = format!(
+        "{}\n{}",
+        include_str!("../src/shaders/generated_trace.wgsl")
+            .split("struct Object")
+            .next()
+            .unwrap(),
+        r#"
+@group(0) @binding(0) var<uniform> params: Params;
+@group(0) @binding(1) var<storage,read_write> output: array<vec4<f32>>;
+@compute @workgroup_size(1)
+fn probe() {
+    output[0]=params.camera0; output[1]=params.camera1;
+    output[2]=params.background0; output[3]=params.background1;
+    output[4]=params.background_axis; output[5]=vec4<f32>(params.info);
+    output[6]=vec4<f32>(params.options); output[7]=params.misc;
+    output[8]=params.medium;
+}
+"#
+    );
+    let shader = gpu
+        .device
+        .create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("generated uniform ABI probe"),
+            source: wgpu::ShaderSource::Wgsl(source.into()),
+        });
+    let pipeline = gpu
+        .device
+        .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("generated uniform ABI probe"),
+            layout: None,
+            module: &shader,
+            entry_point: Some("probe"),
+            compilation_options: Default::default(),
+            cache: None,
+        });
+    let output = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+        label: None,
+        size: 144,
+        mapped_at_creation: false,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC,
+    });
+    let entries = [(0, renderer.params_buffer()), (1, &output)].map(|(binding, buffer)| {
+        wgpu::BindGroupEntry {
+            binding,
+            resource: buffer.as_entire_binding(),
+        }
+    });
+    let group = gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: None,
+        layout: &pipeline.get_bind_group_layout(0),
+        entries: &entries,
+    });
+    let mut encoder = gpu.device.create_command_encoder(&Default::default());
+    {
+        let mut pass = encoder.begin_compute_pass(&Default::default());
+        pass.set_pipeline(&pipeline);
+        pass.set_bind_group(0, &group, &[]);
+        pass.dispatch_workgroups(1, 1, 1);
+    }
+    gpu.queue.submit([encoder.finish()]);
+    let bytes = read_buffer(&gpu.device, &gpu.queue, &output, 144).unwrap();
+    let actual: Vec<[f32; 4]> = bytes
+        .as_chunks::<16>()
+        .0
+        .iter()
+        .map(|row| bytemuck::pod_read_unaligned(row))
+        .collect();
+    assert_eq!(
+        actual,
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0; 4],
+            [0.0; 4],
+            [0.0; 4],
+            [0.0; 4],
+            [13.0, 7.0, 2.0, 6.0],
+            [1.0, 6.0, 0.0, 0.0],
+            [1.0, 2.5, 1.0, 0.0],
+            [0.2, 0.4, 0.7, 0.125],
+        ]
+    );
+}
 
 #[test]
 #[ignore = "requires a native WGPU compute adapter"]
@@ -24,7 +120,7 @@ fn production_storage_and_uniform_layouts() {
         [0.0, -1.0, 0.0, 0.0],
         [17.0, 9.0, 1.0, 4.0],
         [3.0, 7.0, 1.0, 0.0],
-        [1.25, 0.0, 2.4, 0.0],
+        [1.25, 1.0, 2.4, 0.0],
     ]);
     let mut renderer = Renderer::new(&gpu.device, &gpu.queue, (17, 9), scene.clone(), 123).unwrap();
     renderer.set_samples_per_dispatch(3).unwrap();

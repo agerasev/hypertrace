@@ -2,8 +2,7 @@
 //! Explicit storage records and parameter words define the GPU ABI.
 #![forbid(unsafe_code)]
 
-use ccgeom::Homogenous3;
-use vecmat::{Complex, Transform as _, transform::Moebius};
+use vecmat::{Complex, transform::Moebius};
 
 pub type Result<T> = anyhow::Result<T>;
 
@@ -11,87 +10,8 @@ pub fn unsupported<T: ?Sized>() -> anyhow::Error {
     anyhow::anyhow!("{} has no WGSL implementation", std::any::type_name::<T>())
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum Geometry {
-    Euclidean,
-    Hyperbolic,
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum Transform {
-    Euclidean(Homogenous3<f64>),
-    Hyperbolic(Moebius<Complex<f64>>),
-}
-
-impl Transform {
-    pub fn geometry(&self) -> Geometry {
-        match self {
-            Self::Euclidean(_) => Geometry::Euclidean,
-            Self::Hyperbolic(_) => Geometry::Hyperbolic,
-        }
-    }
-    pub fn identity(geometry: Geometry) -> Self {
-        match geometry {
-            Geometry::Euclidean => Self::Euclidean(Homogenous3::identity()),
-            Geometry::Hyperbolic => Self::Hyperbolic(Moebius::identity()),
-        }
-    }
-    /// Compose outer(self) with inner, retaining f64 until upload.
-    pub fn chain(&self, inner: &Self) -> Result<Self> {
-        match (*self, *inner) {
-            (Self::Euclidean(a), Self::Euclidean(b)) => Ok(Self::Euclidean(a.chain(b))),
-            (Self::Hyperbolic(a), Self::Hyperbolic(b)) => Ok(Self::Hyperbolic(a.chain(b))),
-            _ => anyhow::bail!("cannot compose transforms from different geometries"),
-        }
-    }
-    pub fn rows(&self) -> Result<[[f32; 4]; 2]> {
-        let rows = match *self {
-            Self::Euclidean(map) => {
-                let p = map.apply([0.0, 0.0, 0.0].into());
-                [
-                    [p[0] as f32, p[1] as f32, p[2] as f32, 0.0],
-                    map.inner().into_quaternion().into_array().map(|x| x as f32),
-                ]
-            }
-            Self::Hyperbolic(map) => {
-                validate_moebius(map)?;
-                let (a, b, c, d) = map.into_tuple();
-                [
-                    [a.re() as f32, a.im() as f32, b.re() as f32, b.im() as f32],
-                    [c.re() as f32, c.im() as f32, d.re() as f32, d.im() as f32],
-                ]
-            }
-        };
-        anyhow::ensure!(
-            rows.iter().flatten().all(|x| x.is_finite()),
-            "transform is outside f32 range"
-        );
-        match self.geometry() {
-            Geometry::Euclidean => anyhow::ensure!(
-                (rows[1].iter().map(|&x| f64::from(x).powi(2)).sum::<f64>() - 1.0).abs() < 1e-4,
-                "Euclidean rotation must be a unit quaternion"
-            ),
-            Geometry::Hyperbolic => {
-                let [ab, cd] = rows.map(|r| r.map(f64::from));
-                let det = Complex::new(ab[0], ab[1]) * Complex::new(cd[2], cd[3])
-                    - Complex::new(ab[2], ab[3]) * Complex::new(cd[0], cd[1]);
-                anyhow::ensure!(
-                    det.re() != 0.0 || det.im() != 0.0,
-                    "Möbius transform becomes singular in f32; camera-relative coordinate frames are needed"
-                );
-            }
-        }
-        Ok(rows)
-    }
-    pub fn words(&self) -> Result<Vec<u32>> {
-        Ok(self
-            .rows()?
-            .into_iter()
-            .flatten()
-            .map(f32::to_bits)
-            .collect())
-    }
-}
+mod transform;
+pub use transform::{Geometry, Transform, validate_embedded_rows};
 
 /// A complete WGSL leaf function plus any uniquely named helpers.
 /// `key` identifies its implementation; parameter words have a fixed length.
@@ -114,6 +34,7 @@ pub enum MaterialSchema {
     Emissive(Box<Self>),
     Mixture(Vec<Self>),
     Custom(ShaderLeaf),
+    EmbeddedCustom(ShaderLeaf),
 }
 impl MaterialSchema {
     pub fn word_len(&self) -> usize {
@@ -124,7 +45,7 @@ impl MaterialSchema {
             Self::Mixture(children) => {
                 children.len() + children.iter().map(Self::word_len).sum::<usize>()
             }
-            Self::Custom(leaf) => leaf.parameter_words as usize,
+            Self::Custom(leaf) | Self::EmbeddedCustom(leaf) => leaf.parameter_words as usize,
         }
     }
 }
@@ -219,15 +140,24 @@ impl MaterialValue {
             words,
         })
     }
+    pub fn embedded_custom(leaf: ShaderLeaf, words: Vec<u32>) -> Result<Self> {
+        let mut value = Self::custom(leaf.clone(), words)?;
+        value.schema = MaterialSchema::EmbeddedCustom(leaf);
+        Ok(value)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum ShapeSchema {
     Plane,
     Sphere,
+    GeodesicSphere,
     Cube,
     Horosphere,
+    /// Legacy three-coordinate shader contract, adapted through its chart.
     Custom(ShaderLeaf),
+    /// Embedded GeoRay/GeoHit shader contract; supports every curvature.
+    EmbeddedCustom(ShaderLeaf),
     Mapped {
         geometry: Geometry,
         inner: Box<Self>,
@@ -253,6 +183,14 @@ impl ShapeValue {
             schema: ShapeSchema::Sphere,
             words: vec![0],
         }
+    }
+    pub fn geodesic_sphere(radius: f64) -> Result<Self> {
+        let radius = finite_f32(radius)?;
+        anyhow::ensure!(radius > 0.0, "sphere radius must be positive");
+        Ok(Self {
+            schema: ShapeSchema::GeodesicSphere,
+            words: vec![radius.to_bits()],
+        })
     }
     pub fn cube() -> Self {
         Self {
@@ -315,6 +253,11 @@ impl ShapeValue {
             schema: ShapeSchema::Custom(leaf),
             words,
         })
+    }
+    pub fn embedded_custom(leaf: ShaderLeaf, words: Vec<u32>) -> Result<Self> {
+        let mut value = Self::custom(leaf.clone(), words)?;
+        value.schema = ShapeSchema::EmbeddedCustom(leaf);
+        Ok(value)
     }
 }
 
@@ -393,9 +336,50 @@ pub struct SceneDefinition {
     pub view: View,
     pub background: Background,
     pub bounces: u32,
+    /// Curvature radius in physical world units; Euclidean space requires one.
+    pub radius: f64,
+    pub medium: Medium,
     pub object: ObjectNode,
     pub material_schemas: Vec<MaterialSchema>,
     pub shape_schemas: Vec<ShapeSchema>,
+}
+
+/// Homogeneous analog transport: scalar extinction per world unit and RGB
+/// scattering albedo. Zero extinction is vacuum; albedo zero is pure absorption.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum Medium {
+    #[default]
+    Vacuum,
+    Homogeneous {
+        extinction: f32,
+        albedo: [f32; 3],
+    },
+}
+impl Medium {
+    pub fn validate(self) -> Result<()> {
+        if let Self::Homogeneous { extinction, albedo } = self {
+            anyhow::ensure!(
+                extinction.is_finite() && extinction >= 0.0,
+                "medium extinction must be finite and nonnegative"
+            );
+            anyhow::ensure!(
+                albedo
+                    .iter()
+                    .all(|v| v.is_finite() && (0.0..=1.0).contains(v)),
+                "medium scattering albedo must be between zero and one"
+            );
+        }
+        Ok(())
+    }
+    pub fn gpu_row(self) -> [f32; 4] {
+        match self {
+            Self::Vacuum => [0.0; 4],
+            Self::Homogeneous {
+                extinction,
+                albedo: [r, g, b],
+            } => [r, g, b, extinction],
+        }
+    }
 }
 pub fn finite_f32(value: f64) -> Result<f32> {
     let value = value as f32;

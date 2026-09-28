@@ -28,14 +28,17 @@
 //! needs WGSL support before the scene can be lowered, while changing a current
 //! variant or vector length does not change the set of shader implementations.
 //!
-//! Supported maps are Euclidean shifts, rotations, and homogeneous rigid maps,
-//! plus complex Möbius maps in hyperbolic space. Other maps return an
+//! Supported maps are embedded quaternion-pair isometries in all three spaces,
+//! Euclidean shifts, rotations, and homogeneous rigid maps, plus legacy complex
+//! Möbius maps in hyperbolic space. Other maps return an
 //! explicit unsupported error. Nested shape maps remain inside their covering
 //! material; object maps retain the object's local material frame.
 
 pub use ::scene::*;
 
-use ccgeom::{Euclidean3, Homogenous3, Hyperbolic3};
+use ccgeom::{
+    EmbeddedIsometry, Euclidean3, Flat3, Homogenous3, Hyperbolic3, Hyperboloid3, Spherical3,
+};
 use std::any::{Any, TypeId};
 use vecmat::{
     transform::{Moebius, Rotation3, Shift},
@@ -44,12 +47,28 @@ use vecmat::{
 
 /// Identify the geometry supported by the current WGSL compiler.
 pub fn geometry<G: ccgeom::Geometry>() -> Result<Geometry> {
-    if TypeId::of::<G>() == TypeId::of::<Euclidean3>() {
+    if TypeId::of::<G>() == TypeId::of::<Euclidean3>() || TypeId::of::<G>() == TypeId::of::<Flat3>()
+    {
         Ok(Geometry::Euclidean)
-    } else if TypeId::of::<G>() == TypeId::of::<Hyperbolic3>() {
+    } else if TypeId::of::<G>() == TypeId::of::<Hyperbolic3>()
+        || TypeId::of::<G>() == TypeId::of::<Hyperboloid3>()
+    {
         Ok(Geometry::Hyperbolic)
+    } else if TypeId::of::<G>() == TypeId::of::<Spherical3>() {
+        Ok(Geometry::Spherical)
     } else {
         Err(unsupported::<G>())
+    }
+}
+
+/// Identity in the coordinate representation chosen by the scene builder.
+pub fn identity<G: ccgeom::Geometry>() -> Result<Transform> {
+    if TypeId::of::<G>() == TypeId::of::<Flat3>() {
+        Ok(Transform::Flat(EmbeddedIsometry::identity()))
+    } else if TypeId::of::<G>() == TypeId::of::<Hyperboloid3>() {
+        Ok(Transform::Hyperboloid(EmbeddedIsometry::identity()))
+    } else {
+        Ok(Transform::identity(geometry::<G>()?))
     }
 }
 
@@ -62,6 +81,9 @@ where
     let map = map as &dyn Any;
     match geometry::<G>()? {
         Geometry::Euclidean => {
+            if let Some(map) = map.downcast_ref::<EmbeddedIsometry<f64, 0>>() {
+                return Ok(Transform::Flat(*map));
+            }
             if let Some(map) = map.downcast_ref::<Homogenous3<f64>>() {
                 return Ok(Transform::Euclidean(*map));
             }
@@ -79,8 +101,16 @@ where
             }
         }
         Geometry::Hyperbolic => {
+            if let Some(map) = map.downcast_ref::<EmbeddedIsometry<f64, -1>>() {
+                return Ok(Transform::Hyperboloid(*map));
+            }
             if let Some(map) = map.downcast_ref::<Moebius<Complex<f64>>>() {
                 return Ok(Transform::Hyperbolic(*map));
+            }
+        }
+        Geometry::Spherical => {
+            if let Some(map) = map.downcast_ref::<EmbeddedIsometry<f64, 1>>() {
+                return Ok(Transform::Spherical(*map));
             }
         }
     }
@@ -103,11 +133,87 @@ mod tests {
         background::ConstBg,
         material::{Absorbing, Colored, Emissive, Lambertian, Refractive, Specular, Transparent},
         object::Covered,
-        shape::{Cube, Plane, Sphere},
+        shape::{Cube, GeodesicSphere, Plane, Sphere},
         view::PointView,
         Mapped, Material, Object, Scene, SceneImpl, Shape, View as _,
     };
     use ccgeom::Geometry3;
+
+    fn embedded_lowering<const K: i8>() {
+        type G<const K: i8> = ccgeom::Embedded3<f64, K>;
+        let map = ccgeom::Space3::<f64, K>::unit()
+            .translation([0.0, 0.0, -1.0].into(), 0.6)
+            .unwrap();
+        let mut scene = SceneImpl::<G<K>, _, _, _, 5>::new(
+            Mapped::new(PointView::new(0.8), map),
+            vec![Mapped::new(
+                Covered::new(
+                    GeodesicSphere::new(0.25),
+                    Emissive::new(Lambertian, [2.0; 3].into()),
+                ),
+                map,
+            )],
+            ConstBg::new([0.0; 3].into()),
+        );
+        scene.radius = if K == 0 { 1.0 } else { 2.0 };
+        scene.medium = Medium::Homogeneous {
+            extinction: 0.05,
+            albedo: [0.8; 3],
+        };
+        let lowered = scene.wgsl_scene().unwrap();
+        assert_eq!(lowered.view.map.geometry().sign(), K);
+        assert_eq!(
+            lowered.view.map.components().unwrap(),
+            transform::<G<K>, _>(&map).unwrap().components().unwrap()
+        );
+        assert_eq!(lowered.shape_schemas, [ShapeSchema::GeodesicSphere]);
+        assert_eq!(lowered.radius, scene.radius);
+        assert!(matches!(
+            lowered.medium,
+            Medium::Homogeneous {
+                extinction: 0.05,
+                albedo: [0.8, 0.8, 0.8]
+            }
+        ));
+        assert_eq!(
+            <Plane as Shape<G<K>>>::wgsl_shape_schema().unwrap(),
+            ShapeSchema::Plane
+        );
+        assert_eq!(
+            <Sphere as Shape<G<K>>>::wgsl_shape_schema().unwrap(),
+            ShapeSchema::Sphere
+        );
+    }
+
+    #[test]
+    fn all_embedded_geometries_lower_through_shared_shapes_and_materials() {
+        embedded_lowering::<-1>();
+        embedded_lowering::<0>();
+        embedded_lowering::<1>();
+        assert!(matches!(identity::<Flat3>().unwrap(), Transform::Flat(_)));
+        assert!(matches!(
+            identity::<Hyperboloid3>().unwrap(),
+            Transform::Hyperboloid(_)
+        ));
+        assert!(matches!(
+            identity::<Spherical3>().unwrap(),
+            Transform::Spherical(_)
+        ));
+    }
+
+    #[test]
+    fn geodesic_sphere_rejects_invalid_physical_radius() {
+        for radius in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+            assert!(
+                <GeodesicSphere as Shape<Spherical3>>::wgsl_shape(&GeodesicSphere::new(radius))
+                    .is_err()
+            );
+        }
+        let shape =
+            <GeodesicSphere as Shape<Spherical3>>::wgsl_shape(&GeodesicSphere::new(0.3)).unwrap();
+        assert_eq!(shape.schema, ShapeSchema::GeodesicSphere);
+        assert_eq!(f32::from_bits(shape.words[0]), 0.3);
+    }
 
     crate::mixture! {
         InnerMixture {
@@ -206,14 +312,15 @@ mod tests {
         let rotated = Mapped::new(shifted, Euclidean3::rotate_z(std::f64::consts::FRAC_PI_2));
         let view = rotated.wgsl_view().unwrap();
         assert_eq!(view.fov, 0.7);
-        let map = match view.map {
-            Transform::Euclidean(map) => map,
+        let map = match view.map.embedded().unwrap() {
+            Transform::Flat(map) => map,
             _ => panic!("wrong geometry"),
         };
-        let position = map.apply([0.0; 3].into());
-        assert!(position[0].abs() < 1e-14);
-        assert!((position[1] - 1.0).abs() < 1e-14);
-        assert_eq!(position[2], 0.0);
+        let position = map.apply_vector([1.0, 0.0, 0.0, 0.0].into());
+        assert_eq!(position[0], 1.0);
+        assert!(position[1].abs() < 1e-14);
+        assert!((position[2] - 1.0).abs() < 1e-14);
+        assert_eq!(position[3], 0.0);
     }
 
     #[test]

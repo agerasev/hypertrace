@@ -9,7 +9,7 @@ let isPaused = false;
 let lastStats = "";
 
 const requestedScene = new URLSearchParams(location.search).get("scene");
-if (requestedScene === "eu" || requestedScene === "hy") scene.value = requestedScene;
+if (["eu", "hy", "sp"].includes(requestedScene)) scene.value = requestedScene;
 scene.addEventListener("change", () => {
     const url = new URL(location.href);
     url.searchParams.set("scene", scene.value);

@@ -23,10 +23,34 @@ fn shared_builders_compile_with_original_cameras_and_bounce_limits() {
     for (name, camera, bounces) in [
         ("eu", Camera::Euclidean(scenes::eu::camera()), 4),
         ("hy", Camera::Hyperbolic(scenes::hy::camera()), 3),
+        (
+            "sp",
+            Camera::Embedded(hypertrace_wgpu::wgsl::Transform::Spherical(
+                scenes::sp::camera(),
+            )),
+            6,
+        ),
     ] {
         let scene = support::scene(name).unwrap();
         scene.validate().unwrap();
-        assert_eq!(scene.camera.gpu_rows(), camera.gpu_rows());
+        for (actual, expected) in scene
+            .camera
+            .transform()
+            .components()
+            .unwrap()
+            .into_iter()
+            .flatten()
+            .zip(
+                camera
+                    .transform()
+                    .components()
+                    .unwrap()
+                    .into_iter()
+                    .flatten(),
+            )
+        {
+            assert!((actual - expected).abs() < 1e-12);
+        }
         assert_eq!(scene.fov, 1.0);
         assert_eq!(scene.bounces, bounces);
     }
@@ -72,9 +96,9 @@ fn vector_length_and_active_choice_do_not_change_registered_schemas() {
 
 #[test]
 #[ignore = "requires a native WGPU compute adapter"]
-fn both_shared_builders_render_through_generated_wgsl() {
+fn all_shared_builders_render_through_generated_wgsl() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
-    for name in ["eu", "hy"] {
+    for name in ["eu", "hy", "sp"] {
         let mut renderer = Renderer::new(
             &gpu.device,
             &gpu.queue,

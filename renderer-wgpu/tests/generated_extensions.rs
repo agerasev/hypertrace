@@ -10,6 +10,8 @@ fn definition(shape: ShapeValue, material: MaterialValue) -> SceneDefinition {
         },
         background: Background::Constant([0.0; 3]),
         bounces: 1,
+        radius: 1.0,
+        medium: Default::default(),
         object: ObjectNode::Covered { shape, material },
         material_schemas: vec![],
         shape_schemas: vec![],

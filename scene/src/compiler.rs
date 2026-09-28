@@ -34,6 +34,10 @@ pub struct MaterialRecord {
 #[derive(Clone, Debug)]
 pub struct CompiledScene {
     pub geometry: Geometry,
+    /// Validated physical radius used by primitive compilation.
+    pub radius: f32,
+    /// Canonical f64 isometries; GPU rows are prepared relative to the camera.
+    pub transforms: Vec<Transform>,
     pub objects: Vec<GpuObject>,
     pub materials: Vec<MaterialRecord>,
     pub words: Vec<u32>,
@@ -44,6 +48,7 @@ pub struct CompiledScene {
 
 struct Compiler {
     geometry: Geometry,
+    radius: f32,
     shapes: BTreeMap<ShapeSchema, u32>,
     materials: BTreeMap<MaterialSchema, u32>,
     result: CompiledScene,
@@ -53,6 +58,7 @@ struct Compiler {
 /// changing a choice variant or adding vector elements a buffer-only update.
 pub fn compile(scene: &SceneDefinition) -> Result<CompiledScene> {
     let geometry = scene.view.map.geometry();
+    let radius = validate_scene_parameters(scene, geometry)?;
     let mut shapes = BTreeSet::new();
     let mut materials = BTreeSet::new();
     for schema in &scene.shape_schemas {
@@ -64,6 +70,7 @@ pub fn compile(scene: &SceneDefinition) -> Result<CompiledScene> {
     collect_object(&scene.object, &mut shapes, &mut materials);
     let mut compiler = Compiler {
         geometry,
+        radius,
         shapes: shapes
             .into_iter()
             .enumerate()
@@ -76,6 +83,8 @@ pub fn compile(scene: &SceneDefinition) -> Result<CompiledScene> {
             .collect::<Result<_>>()?,
         result: CompiledScene {
             geometry,
+            radius,
+            transforms: vec![],
             objects: vec![],
             materials: vec![],
             words: vec![],
@@ -83,15 +92,67 @@ pub fn compile(scene: &SceneDefinition) -> Result<CompiledScene> {
         },
     };
     for schema in compiler.shapes.keys() {
-        validate_geometry(schema, geometry)?;
+        validate_geometry(schema, geometry, radius)?;
+    }
+    for schema in compiler.materials.keys() {
+        ensure!(
+            geometry != Geometry::Spherical || !matches!(schema, MaterialSchema::Custom(_)),
+            "legacy material leaves have no spherical chart; use embedded_custom with GeoMaterialContext"
+        );
     }
     compiler.result.source = compiler.source()?;
     compiler.object(&scene.object, Transform::identity(geometry))?;
+    let inverse_camera = scene.view.map.inverse()?;
+    for map in &compiler.result.transforms {
+        inverse_camera
+            .chain(map)?
+            .rows()
+            .context("camera-relative object transform cannot be represented safely")?;
+    }
     // wgpu storage bindings cannot be empty. Leaf identities still start at 0.
     if compiler.result.words.is_empty() {
         compiler.result.words.push(0);
     }
     Ok(compiler.result)
+}
+
+fn validate_scene_parameters(scene: &SceneDefinition, geometry: Geometry) -> Result<f32> {
+    let radius = finite_f32(scene.radius)?;
+    ensure!(
+        radius.is_normal()
+            && radius > 0.0
+            && (geometry != Geometry::Euclidean || scene.radius == 1.0),
+        "curvature radius must be positive and normal in f32; Euclidean radius must be one"
+    );
+    if geometry == Geometry::Spherical {
+        ensure!(
+            (radius * std::f32::consts::TAU).is_finite(),
+            "spherical circumference is outside finite f32 range"
+        );
+    }
+    ensure!(
+        finite_f32(scene.view.fov)? > 0.0,
+        "camera field of view must be positive"
+    );
+    scene.medium.validate()?;
+    if let crate::Medium::Homogeneous { extinction, .. } = scene.medium
+        && extinction > 0.0
+    {
+        // The shader's open 23-bit samples reach at most 24 ln(2) optical
+        // depth. Reject arithmetic overflow rather than treating it as a
+        // vacuum miss. The geometric phase can wrap; this distance cannot.
+        let maximum_flight = 24.0 * std::f64::consts::LN_2 / f64::from(extinction);
+        ensure!(
+            (maximum_flight as f32).is_finite(),
+            "medium free-flight distance is outside f32 range"
+        );
+        ensure!(
+            ((maximum_flight / f64::from(radius)) as f32).is_finite(),
+            "medium free-flight phase is outside f32 range"
+        );
+    }
+    scene.view.map.components()?;
+    Ok(radius)
 }
 
 fn collect_shape(schema: &ShapeSchema, set: &mut BTreeSet<ShapeSchema>) {
@@ -153,11 +214,16 @@ fn collect_object(
         }
     }
 }
-fn validate_geometry(schema: &ShapeSchema, geometry: Geometry) -> Result<()> {
+fn validate_geometry(schema: &ShapeSchema, geometry: Geometry, radius: f32) -> Result<()> {
     match schema {
-        ShapeSchema::Sphere | ShapeSchema::Cube => ensure!(
+        ShapeSchema::Sphere => validate_sphere_radius(1.0, geometry, radius)?,
+        ShapeSchema::Cube => ensure!(
             geometry == Geometry::Euclidean,
-            "sphere and cube WGSL shapes require Euclidean geometry"
+            "cube WGSL shape requires Euclidean geometry"
+        ),
+        ShapeSchema::Custom(_) => ensure!(
+            geometry != Geometry::Spherical,
+            "legacy shape leaves have no spherical chart; use embedded_custom with GeoRay and GeoTaggedHit"
         ),
         ShapeSchema::Horosphere => ensure!(
             geometry == Geometry::Hyperbolic,
@@ -171,12 +237,12 @@ fn validate_geometry(schema: &ShapeSchema, geometry: Geometry) -> Result<()> {
                 *map_geometry == geometry,
                 "shape map geometry does not match the scene"
             );
-            validate_geometry(inner, geometry)?;
+            validate_geometry(inner, geometry, radius)?;
         }
-        ShapeSchema::Vector(inner) => validate_geometry(inner, geometry)?,
+        ShapeSchema::Vector(inner) => validate_geometry(inner, geometry, radius)?,
         ShapeSchema::Choice(children) => {
             for child in children {
-                validate_geometry(child, geometry)?;
+                validate_geometry(child, geometry, radius)?;
             }
         }
         _ => {}
@@ -237,56 +303,73 @@ fn validate_map_words(words: &[u32], geometry: Geometry) -> Result<()> {
         values.len() == 8 && values.iter().all(|x| x.is_finite()),
         "mapped shape needs eight finite transform words"
     );
+    crate::validate_embedded_rows(
+        std::array::from_fn(|r| std::array::from_fn(|c| values[4 * r + c] as f32)),
+        geometry,
+    )?;
+    Ok(())
+}
+fn validate_sphere_radius(radius: f32, geometry: Geometry, space_radius: f32) -> Result<()> {
+    ensure!(
+        radius.is_normal() && radius > 0.0,
+        "geodesic sphere needs a finite positive normal radius"
+    );
     match geometry {
-        Geometry::Euclidean => ensure!(
-            (values[4..].iter().map(|x| x * x).sum::<f64>() - 1.0).abs() < 1e-4,
-            "mapped shape rotation must be a unit quaternion"
+        Geometry::Spherical => ensure!(
+            radius < std::f32::consts::PI * space_radius,
+            "spherical sphere radius must be strictly below pi times the curvature radius"
         ),
         Geometry::Hyperbolic => {
-            let real = values[0] * values[6] - values[1] * values[7] - values[2] * values[4]
-                + values[3] * values[5];
-            let imag = values[0] * values[7] + values[1] * values[6]
-                - values[2] * values[5]
-                - values[3] * values[4];
+            let c = (radius / space_radius).cosh();
             ensure!(
-                real != 0.0 || imag != 0.0,
-                "mapped shape becomes singular in f32"
-            );
-            let magnitude = |a: usize| values[a].hypot(values[a + 1]);
-            let roundoff = 8.0
-                * f64::from(f32::EPSILON)
-                * (magnitude(0) * magnitude(6) + magnitude(2) * magnitude(4));
-            ensure!(
-                (real - 1.0).abs() <= roundoff && imag.abs() <= roundoff,
-                "mapped shape must have determinant one to preserve the upper half-space"
+                (c * c).is_finite(),
+                "hyperbolic sphere radius exceeds the f32 exponential range"
             );
         }
+        Geometry::Euclidean => ensure!(
+            (radius * radius).is_finite(),
+            "Euclidean sphere squared radius is outside f32 range"
+        ),
     }
     Ok(())
 }
-fn validate_shape(schema: &ShapeSchema, words: &[u32]) -> Result<()> {
+fn validate_shape(
+    schema: &ShapeSchema,
+    words: &[u32],
+    scene_geometry: Geometry,
+    space_radius: f32,
+) -> Result<()> {
     match schema {
-        ShapeSchema::Plane | ShapeSchema::Sphere | ShapeSchema::Cube | ShapeSchema::Horosphere => {
+        ShapeSchema::Plane | ShapeSchema::Cube | ShapeSchema::Horosphere => {
             ensure!(
                 words.len() == 1,
                 "parameterless shape must reserve one identity word"
             )
         }
-        ShapeSchema::Custom(leaf) => ensure!(
+        ShapeSchema::Sphere | ShapeSchema::GeodesicSphere => {
+            ensure!(words.len() == 1, "sphere payload must have one word");
+            let radius = if matches!(schema, ShapeSchema::Sphere) {
+                1.0
+            } else {
+                f32::from_bits(words[0])
+            };
+            validate_sphere_radius(radius, scene_geometry, space_radius)?;
+        }
+        ShapeSchema::Custom(leaf) | ShapeSchema::EmbeddedCustom(leaf) => ensure!(
             words.len() == (leaf.parameter_words as usize).max(1),
             "custom shape payload length mismatch"
         ),
         ShapeSchema::Mapped { geometry, inner } => {
             ensure!(words.len() >= 8, "mapped shape payload is truncated");
             validate_map_words(&words[..8], *geometry)?;
-            validate_shape(inner, &words[8..])?;
+            validate_shape(inner, &words[8..], scene_geometry, space_radius)?;
         }
         ShapeSchema::Choice(children) => {
             let index = *words.first().context("shape choice payload is empty")? as usize;
             let child = children
                 .get(index)
                 .context("shape choice index is outside its variants")?;
-            validate_shape(child, &words[1..])?;
+            validate_shape(child, &words[1..], scene_geometry, space_radius)?;
         }
         ShapeSchema::Vector(inner) => {
             let count = *words.first().context("shape vector payload is empty")? as usize;
@@ -311,7 +394,7 @@ fn validate_shape(schema: &ShapeSchema, words: &[u32]) -> Result<()> {
                 if index == 0 {
                     ensure!(start == 1 + count, "shape vector payload has a gap");
                 }
-                validate_shape(inner, &words[start..end])?;
+                validate_shape(inner, &words[start..end], scene_geometry, space_radius)?;
             }
         }
     }
@@ -368,6 +451,10 @@ impl Compiler {
                 border_width,
             } => {
                 ensure!(
+                    self.geometry != Geometry::Spherical || *tiling == Tiling::Uniform,
+                    "spherical space supports only uniform tiling"
+                );
+                ensure!(
                     !materials.is_empty(),
                     "tiled material collection must not be empty"
                 );
@@ -420,13 +507,15 @@ impl Compiler {
         border: u32,
         props: [f32; 2],
     ) -> Result<()> {
-        validate_shape(&shape.schema, &shape.words)?;
+        validate_shape(&shape.schema, &shape.words, self.geometry, self.radius)?;
         ensure!(
             self.result.objects.len() < u32::MAX as usize,
             "too many objects"
         );
         let base = self.words(&shape.words)?;
-        let [map0, map1] = map.rows()?;
+        map.components()?;
+        self.result.transforms.push(map);
+        let [map0, map1] = Transform::identity(self.geometry).rows()?;
         self.result.objects.push(GpuObject {
             map0,
             map1,
@@ -442,18 +531,23 @@ impl Compiler {
         Ok(())
     }
     fn source(&self) -> Result<String> {
-        let mut source = String::from(
-            "// Generated from structural schemas; runtime values live in scene_words.\n",
+        let mut source = format!(
+            "// Embedded shader contract v2; parameters live in scene_words.\nconst GEO_K:f32 = {}.0;\n",
+            self.geometry.sign()
         );
-        let mut leaves = BTreeMap::<&str, (&ShaderLeaf, bool)>::new();
+        let mut leaves = BTreeMap::<&str, (&ShaderLeaf, u8)>::new();
         for schema in self.shapes.keys() {
-            if let ShapeSchema::Custom(leaf) = schema {
-                register_leaf(&mut leaves, leaf, true)?;
+            match schema {
+                ShapeSchema::Custom(leaf) => register_leaf(&mut leaves, leaf, 0)?,
+                ShapeSchema::EmbeddedCustom(leaf) => register_leaf(&mut leaves, leaf, 2)?,
+                _ => {}
             }
         }
         for schema in self.materials.keys() {
-            if let MaterialSchema::Custom(leaf) = schema {
-                register_leaf(&mut leaves, leaf, false)?;
+            match schema {
+                MaterialSchema::Custom(leaf) => register_leaf(&mut leaves, leaf, 1)?,
+                MaterialSchema::EmbeddedCustom(leaf) => register_leaf(&mut leaves, leaf, 3)?,
+                _ => {}
             }
         }
         let mut entry_points = BTreeSet::new();
@@ -468,44 +562,54 @@ impl Compiler {
         for (schema, id) in &self.shapes {
             writeln!(
                 source,
-                "fn ht_shape_{id}(base:u32,ray:Ray,previous_identity:u32)->TaggedHit {{"
+                "fn ht_shape_{id}(base:u32,ray:GeoRay,previous_identity:u32)->GeoTaggedHit {{"
             )?;
             match schema {
                 ShapeSchema::Plane
                 | ShapeSchema::Sphere
+                | ShapeSchema::GeodesicSphere
                 | ShapeSchema::Cube
                 | ShapeSchema::Horosphere => {
-                    let function = match (schema, self.geometry) {
-                        (ShapeSchema::Plane, Geometry::Euclidean) => "eu_plane",
-                        (ShapeSchema::Plane, Geometry::Hyperbolic) => "hy_plane",
-                        (ShapeSchema::Sphere, _) => "eu_sphere",
-                        (ShapeSchema::Cube, _) => "eu_cube",
-                        (ShapeSchema::Horosphere, _) => "hy_horosphere",
+                    let function = match schema {
+                        ShapeSchema::Plane => "geo_plane",
+                        ShapeSchema::Sphere | ShapeSchema::GeodesicSphere => "geo_sphere",
+                        ShapeSchema::Cube => "geo_cube",
+                        ShapeSchema::Horosphere => "geo_horosphere",
                         _ => unreachable!(),
+                    };
+                    let sphere_radius = match schema {
+                        ShapeSchema::Sphere => ",1.0",
+                        ShapeSchema::GeodesicSphere => ",load_f32(base)",
+                        _ => "",
                     };
                     writeln!(
                         source,
-                        "return TaggedHit({function}(ray,base==previous_identity),base);"
+                        "return GeoTaggedHit({function}(ray,select(0.0,8.0*EPS*params.misc.y,base==previous_identity),geo_infinity(),params.misc.y{sphere_radius}),base);"
                     )?;
                 }
                 ShapeSchema::Custom(leaf) => writeln!(
                     source,
-                    "let result = {}(base,ray,previous_identity); return TaggedHit(result.hit,base);",
+                    "let result = {}(base,geo_legacy_ray(ray),previous_identity); return GeoTaggedHit(geo_from_legacy_hit(result.hit),base);",
+                    leaf.entry_point
+                )?,
+                ShapeSchema::EmbeddedCustom(leaf) => writeln!(
+                    source,
+                    "let result = {}(base,ray,previous_identity); return GeoTaggedHit(result.hit,base);",
                     leaf.entry_point
                 )?,
                 ShapeSchema::Mapped { geometry, inner } => {
                     let child = self.shapes[inner.as_ref()];
-                    let hy = *geometry == Geometry::Hyperbolic;
+                    let _ = geometry;
                     writeln!(
                         source,
-                        "let map0=load_vec4(base); let map1=load_vec4(base+4u);\nlet result=ht_shape_{child}(base+8u,shape_ray_to_local(map0,map1,{hy},ray),previous_identity);\nreturn TaggedHit(shape_hit_to_parent(map0,map1,{hy},result.hit),result.identity);"
+                        "let map=GeoMap(load_vec4(base),load_vec4(base+4u));\nlet result=ht_shape_{child}(base+8u,geo_map_ray(geo_inverse(map),ray),previous_identity);\nreturn GeoTaggedHit(geo_map_hit(map,result.hit),result.identity);"
                     )?;
                 }
                 ShapeSchema::Vector(inner) => {
                     let child = self.shapes[inner.as_ref()];
                     writeln!(
                         source,
-                        "var result=TaggedHit(miss(),0xffffffffu);\nfor(var index=0u;index<load_u32(base);index+=1u) {{\nlet candidate=ht_shape_{child}(base+load_u32(base+1u+index),ray,previous_identity);\nif candidate.hit.valid!=0u {{ if result.hit.valid==0u || candidate.hit.distance<result.hit.distance {{result=candidate;}} }}\n}}\nreturn result;"
+                        "var result=GeoTaggedHit(geo_miss(),0xffffffffu);\nfor(var index=0u;index<load_u32(base);index+=1u) {{\nlet candidate=ht_shape_{child}(base+load_u32(base+1u+index),ray,previous_identity);\nif candidate.hit.valid!=0u {{ if result.hit.valid==0u || candidate.hit.distance<result.hit.distance {{result=candidate;}} }}\n}}\nreturn result;"
                     )?;
                 }
                 ShapeSchema::Choice(children) => {
@@ -519,7 +623,7 @@ impl Compiler {
                     }
                     writeln!(
                         source,
-                        "default: {{return TaggedHit(miss(),0xffffffffu);}}\n}}"
+                        "default: {{return GeoTaggedHit(geo_miss(),0xffffffffu);}}\n}}"
                     )?;
                 }
             }
@@ -528,7 +632,7 @@ impl Compiler {
         for (schema, id) in &self.materials {
             writeln!(
                 source,
-                "fn ht_material_{id}(base:u32,ctx:MaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {{"
+                "fn ht_material_{id}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {{"
             )?;
             match schema {
                 MaterialSchema::Absorbing => source.push_str("(*sample).alive=0u;\n"),
@@ -547,19 +651,20 @@ impl Compiler {
                     }
                     source.push_str("(*sample).alive=0u;\n");
                 },
-                MaterialSchema::Custom(leaf) => writeln!(source,"{}(base,ctx,sample,rng);",leaf.entry_point)?,
+                MaterialSchema::Custom(leaf) => writeln!(source,"let legacy_ctx=MaterialContext(geo_to_chart_pos(ctx.position),geo_to_chart_dir(ctx.position,geo_from_local(ctx.position,ctx.normal)));\n(*sample).direction=geo_to_chart_dir(ctx.position,geo_from_local(ctx.position,(*sample).direction));\n{}(base,legacy_ctx,sample,rng);\n(*sample).direction=geo_to_local(ctx.position,geo_from_chart_dir(ctx.position,(*sample).direction));",leaf.entry_point)?,
+                MaterialSchema::EmbeddedCustom(leaf) => writeln!(source,"{}(base,ctx,sample,rng);",leaf.entry_point)?,
             }
             source.push_str("}\n");
         }
-        source.push_str("fn ht_shape_dispatch(kind:u32,base:u32,ray:Ray,previous_identity:u32)->TaggedHit {\nswitch kind {\n");
+        source.push_str("fn ht_shape_dispatch(kind:u32,base:u32,ray:GeoRay,previous_identity:u32)->GeoTaggedHit {\nswitch kind {\n");
         for id in self.shapes.values() {
             writeln!(
                 source,
                 "case {id}u: {{return ht_shape_{id}(base,ray,previous_identity);}}"
             )?;
         }
-        source.push_str("default: {return TaggedHit(miss(),0xffffffffu);}\n}}\n");
-        source.push_str("fn ht_material_dispatch(kind:u32,base:u32,ctx:MaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {\nswitch kind {\n");
+        source.push_str("default: {return GeoTaggedHit(geo_miss(),0xffffffffu);}\n}}\n");
+        source.push_str("fn ht_material_dispatch(kind:u32,base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {\nswitch kind {\n");
         for id in self.materials.values() {
             writeln!(
                 source,
@@ -571,9 +676,9 @@ impl Compiler {
     }
 }
 fn register_leaf<'a>(
-    leaves: &mut BTreeMap<&'a str, (&'a ShaderLeaf, bool)>,
+    leaves: &mut BTreeMap<&'a str, (&'a ShaderLeaf, u8)>,
     leaf: &'a ShaderLeaf,
-    shape: bool,
+    shape: u8,
 ) -> Result<()> {
     ensure!(!leaf.key.is_empty(), "custom shader key must not be empty");
     let mut chars = leaf.entry_point.chars();
@@ -609,6 +714,8 @@ mod tests {
             },
             background: Background::Constant([0.0; 3]),
             bounces: 4,
+            radius: 1.0,
+            medium: Default::default(),
             object: ObjectNode::Covered { shape, material },
             material_schemas: vec![],
             shape_schemas: vec![],
@@ -665,7 +772,7 @@ mod tests {
         };
         assert!(compile(&scene(ShapeValue::plane(), invalid)).is_err());
         let mut mapped = ShapeValue::plane().mapped(Transform::identity(Geometry::Euclidean))?;
-        mapped.words[4] = 0;
+        mapped.words[0] = 0;
         assert!(compile(&scene(mapped, MaterialValue::transparent())).is_err());
         let mut hyperbolic = scene(ShapeValue::plane(), MaterialValue::transparent());
         hyperbolic.view.map = Transform::identity(Geometry::Hyperbolic);
@@ -675,8 +782,8 @@ mod tests {
                     geometry: Geometry::Hyperbolic,
                     inner: Box::new(ShapeSchema::Plane),
                 },
-                // diag(i,i) is nonsingular but does not preserve z > 0 under
-                // the renderer's normalized SL(2,C) quaternion action.
+                // Equal real/unreal quaternion norms make this embedded
+                // hyperbolic map singular, despite finite components.
                 words: [0.0f32, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
                     .map(f32::to_bits)
                     .into(),
@@ -703,6 +810,188 @@ mod tests {
             .material_schemas
             .push(MaterialSchema::Custom(conflicting));
         assert!(compile(&value).is_err());
+        Ok(())
+    }
+    fn curved_scene(geometry: Geometry, radius: f64, shape: ShapeValue) -> SceneDefinition {
+        let mut value = scene(shape, MaterialValue::transparent());
+        value.view.map = Transform::identity(geometry);
+        value.radius = radius;
+        value
+    }
+
+    #[test]
+    fn spherical_sphere_radii_are_validated_through_nested_payloads() -> Result<()> {
+        let radius = 2.0;
+        let valid = ShapeValue::geodesic_sphere(1.8 * radius)?;
+        let nested = ShapeValue::vector(valid.schema.clone(), vec![valid])?
+            .mapped(Transform::identity(Geometry::Spherical))?;
+        compile(&curved_scene(Geometry::Spherical, radius, nested))?;
+        for shape_radius in [std::f64::consts::PI * radius, 4.0 * radius] {
+            let shape = ShapeValue::geodesic_sphere(shape_radius)?;
+            let nested = ShapeValue::choice(vec![shape.schema.clone()], 0, shape)?;
+            let error = compile(&curved_scene(Geometry::Spherical, radius, nested)).unwrap_err();
+            assert!(error.to_string().contains("strictly below pi"));
+        }
+        assert!(
+            compile(&curved_scene(
+                Geometry::Spherical,
+                0.25,
+                ShapeValue::sphere()
+            ))
+            .is_err()
+        );
+        // Parameterless sphere semantics also apply to inactive registered leaves.
+        let mut inactive = curved_scene(Geometry::Spherical, 0.25, ShapeValue::plane());
+        inactive.shape_schemas.push(ShapeSchema::Sphere);
+        assert!(compile(&inactive).is_err());
+        let mut malformed = ShapeValue::geodesic_sphere(1.0)?;
+        malformed.words[0] = f32::NAN.to_bits();
+        assert!(compile(&curved_scene(Geometry::Spherical, radius, malformed)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn invalid_physical_parameters_fail_before_shader_generation() {
+        for geometry in [
+            Geometry::Euclidean,
+            Geometry::Hyperbolic,
+            Geometry::Spherical,
+        ] {
+            for radius in [0.0, -1.0, f64::NAN, f64::INFINITY, f64::MIN_POSITIVE] {
+                assert!(compile(&curved_scene(geometry, radius, ShapeValue::plane())).is_err());
+            }
+            for fov in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+                let mut value = curved_scene(geometry, 1.0, ShapeValue::plane());
+                value.view.fov = fov;
+                assert!(compile(&value).is_err());
+            }
+            for (extinction, albedo) in [
+                (-1.0, [1.0; 3]),
+                (f32::NAN, [1.0; 3]),
+                (0.1, [-0.1, 0.0, 0.0]),
+                (0.1, [1.1, 0.0, 0.0]),
+                (f32::from_bits(1), [1.0; 3]),
+            ] {
+                let mut value = curved_scene(geometry, 1.0, ShapeValue::plane());
+                value.medium = crate::Medium::Homogeneous { extinction, albedo };
+                assert!(compile(&value).is_err());
+            }
+        }
+        assert!(compile(&curved_scene(Geometry::Euclidean, 2.0, ShapeValue::plane())).is_err());
+        assert!(
+            compile(&curved_scene(
+                Geometry::Spherical,
+                f64::from(f32::MAX),
+                ShapeValue::plane()
+            ))
+            .is_err()
+        );
+    }
+
+    fn test_leaf(key: &str) -> ShaderLeaf {
+        ShaderLeaf {
+            key: key.into(),
+            entry_point: key.into(),
+            source: format!("fn {key}() {{}}"),
+            parameter_words: 0,
+        }
+    }
+    #[test]
+    fn embedded_custom_contract_supports_all_signs_and_legacy_rejects_spherical() -> Result<()> {
+        for geometry in [
+            Geometry::Euclidean,
+            Geometry::Hyperbolic,
+            Geometry::Spherical,
+        ] {
+            let shape = ShapeValue::embedded_custom(test_leaf("test_shape"), vec![])?;
+            let material = MaterialValue::embedded_custom(test_leaf("test_material"), vec![])?;
+            let mut value = curved_scene(geometry, 1.0, shape);
+            value.object = ObjectNode::Covered {
+                shape: ShapeValue::embedded_custom(test_leaf("test_shape"), vec![])?,
+                material,
+            };
+            let compiled = compile(&value)?;
+            assert!(compiled.source.contains("Embedded shader contract v2"));
+        }
+        let old_shape = ShapeValue::custom(test_leaf("legacy_shape"), vec![])?;
+        let error = compile(&curved_scene(Geometry::Spherical, 1.0, old_shape)).unwrap_err();
+        assert!(error.to_string().contains("legacy shape leaves"));
+        let mut old_material = curved_scene(Geometry::Spherical, 1.0, ShapeValue::plane());
+        old_material
+            .material_schemas
+            .push(MaterialSchema::Colored(Box::new(MaterialSchema::Custom(
+                test_leaf("legacy_material"),
+            ))));
+        let error = compile(&old_material).unwrap_err();
+        assert!(error.to_string().contains("legacy material leaves"));
+        Ok(())
+    }
+
+    #[test]
+    fn object_geometry_and_relative_precision_are_validated_on_cpu() -> Result<()> {
+        use ccgeom::{Geometry3, Hyperbolic3};
+        let mut value = curved_scene(Geometry::Hyperbolic, 1.0, ShapeValue::plane());
+        value.view.map = Transform::Hyperbolic(Hyperbolic3::shift_z(12.0));
+        value.object = ObjectNode::Mapped {
+            map: Transform::Hyperbolic(Hyperbolic3::shift_z(12.2)),
+            inner: Box::new(value.object),
+        };
+        let compiled = compile(&value)?;
+        assert_eq!(compiled.radius, 1.0);
+        assert_eq!(compiled.transforms.len(), 1);
+        value.view.map = Transform::identity(Geometry::Hyperbolic);
+        assert!(compile(&value).is_err());
+        let mut mismatch = curved_scene(Geometry::Spherical, 1.0, ShapeValue::plane());
+        mismatch.object = ObjectNode::Mapped {
+            map: Transform::identity(Geometry::Euclidean),
+            inner: Box::new(mismatch.object),
+        };
+        assert!(compile(&mismatch).is_err());
+        let mismatched_shape =
+            ShapeValue::plane().mapped(Transform::identity(Geometry::Hyperbolic))?;
+        assert!(compile(&curved_scene(Geometry::Spherical, 1.0, mismatched_shape)).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn spherical_tilings_require_explicitly_uniform_semantics() -> Result<()> {
+        for tiling in [
+            Tiling::Uniform,
+            Tiling::Square,
+            Tiling::Hexagonal,
+            Tiling::Pentagonal,
+            Tiling::Pentastar,
+        ] {
+            let mut value = curved_scene(Geometry::Spherical, 1.0, ShapeValue::plane());
+            value.object = ObjectNode::Tiled {
+                shape: ShapeValue::plane(),
+                materials: vec![MaterialValue::transparent()],
+                border_material: MaterialValue::absorbing(),
+                tiling,
+                cell_size: 1.0,
+                border_width: 0.01,
+            };
+            assert_eq!(compile(&value).is_ok(), tiling == Tiling::Uniform);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn physical_parameters_update_payloads_without_changing_shader_structure() -> Result<()> {
+        let mut a = curved_scene(Geometry::Spherical, 1.0, ShapeValue::geodesic_sphere(0.3)?);
+        let mut b = curved_scene(Geometry::Spherical, 2.0, ShapeValue::geodesic_sphere(0.7)?);
+        a.medium = crate::Medium::Homogeneous {
+            extinction: 0.1,
+            albedo: [0.7; 3],
+        };
+        b.medium = crate::Medium::Homogeneous {
+            extinction: 0.3,
+            albedo: [0.2; 3],
+        };
+        let (a, b) = (compile(&a)?, compile(&b)?);
+        assert_eq!(a.source, b.source);
+        assert_ne!(a.radius, b.radius);
+        assert_ne!(a.words, b.words);
         Ok(())
     }
 }

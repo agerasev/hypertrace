@@ -1,6 +1,6 @@
 # Shared geometry implementation contract
 
-This contract fixes the conventions used by the constant-curvature migration.
+This contract fixes the conventions implemented by the constant-curvature migration.
 The kernel uses normalized curvature signs `K = -1, 0, +1` and scalar-first
 embedded coordinates `(w, x, y, z)`. Camera forward is local negative z.
 
@@ -21,8 +21,9 @@ and accumulated path length retain every complete circuit.
 
 Surface queries use `[minimum, maximum)` physical-distance intervals. New rays
 can accept a zero-distance surface event. Repeated-leaf suppression raises the
-minimum only for the previously hit leaf, and only by a documented small
-physical distance. It never excludes all later intersections with that leaf.
+minimum only for the previously hit leaf, by `8*EPS*R` physical distance
+(`EPS=1e-6`, with `R=1` for Euclidean space). It never excludes all later
+intersections with that leaf.
 A coplanar ray has no isolated plane crossing; a tangent sphere contact is a
 valid isolated root when it falls in the interval.
 
@@ -58,12 +59,19 @@ EmbeddedIsometry<T,K>, Embedded3<T,K>}` with unit-radius builder aliases
 `Flat3`, `Hyperboloid3`, and `Spherical3`. Existing `Euclidean3` and
 `Hyperbolic3` keep their coordinate meaning. Legacy maps convert at lowering.
 
-GPU isometries contain the same two quaternion rows, in f32. Keep the original
-fixed-record renderer as a comparison fixture during migration. Generated
-rendering gets explicit embedded ray/hit types. Existing custom shader leaves
-retain their old three-coordinate types through chart adapters; embedded custom
-leaves use an explicit schema variant. No source-text rewriting guesses which
-coordinate convention a custom shader expects.
+GPU isometries contain the same two quaternion rows, in f32. Generated embedded
+rendering is the default. The original `Scene::eu()` / `Scene::hy()` fixed-record
+renderer is retained as an explicit comparison fixture, with removal deferred
+until acceptance across GPU drivers and browser execution.
+
+`MaterialValue::custom` / `ShapeValue::custom` select v1 three-coordinate
+contracts through chart adapters. `embedded_custom` selects v2 `GeoRay`,
+`GeoHit`, `GeoTaggedHit`, and `GeoMaterialContext` contracts. V1 leaves are
+rejected for spherical scenes. V2 hit distances are physical; v1 hyperbolic
+distances are normalized and the adapter scales them by `R`. No source-text
+rewriting guesses a custom shader's coordinate convention. `GeoHit.valid` is
+0 for a miss, 1 for a hit, and 2 for numerical failure; wrappers propagate
+failure instead of treating it as an environmental miss.
 
 Camera-relative preparation composes object transforms with the inverse camera
 in CPU f64. Canonical scene data remains unchanged. Directional backgrounds
@@ -77,8 +85,55 @@ space. A medium event after multiple circuits retains its full physical
 distance. A vacuum miss evaluates the scene background; the spherical example
 uses black initially and obtains light from emissive objects.
 
-The minimal volume deliverable is a homogeneous scalar extinction coefficient
-with RGB scattering albedo and isotropic scattering, plus deterministic tests
-that force samples beyond several circuits. Free-flight survival and scattering
-weights follow the analog estimator; attenuation must not be applied twice.
-General heterogeneous media and anisotropic scattering remain follow-up work.
+`Medium::Homogeneous { extinction, albedo }` implements a scalar extinction
+coefficient per physical world unit, RGB scattering albedo, and isotropic
+scattering. Zero extinction is vacuum; zero albedo is pure absorption. Both
+surface and volume events consume the finite bounce budget. Deterministic tests
+force samples beyond several circuits. Free-flight survival and scattering
+weights follow the analog estimator; attenuation is not applied twice.
+`sp::fog_scene::<H>()` exposes the spherical example with extinction `0.08` and
+albedo `[0.85,0.9,0.95]`; ordinary `sp::scene::<H>()` is vacuum. General
+heterogeneous media and anisotropic scattering remain follow-up work.
+
+**Finite precision and numerical termination**
+
+`GeoPath` stores accumulated travel as a high multiple of 1024 physical world
+units and a separate remainder in `[0,1024)`. This retains small later segments
+without relying on compensated summation that relaxed shader arithmetic can
+reassociate away. Individual block increments are exact below `2^34` total
+world units; `geo_path_distance` returns a rounded f32 sum for reporting. The
+two parts do not replace per-event distances or optical-depth calculations.
+Every segment remains f32, and spherical phase reduction cannot recover low
+bits already lost in a very large segment. The accounting limit does not
+certify coordinate precision over that range.
+
+Camera-relative preparation occurs in CPU f64 before checked f32 upload.
+Hyperbolic cancellation can still corrupt distant points, tangents or later
+segments. The tested CPU-to-f32 hyperbolic envelope includes distances through
+`3R` with `3e-5` invariant tolerance; this is test coverage, not a hard path
+cutoff or a global guarantee. Runtime guards reject nonfinite values, the wrong
+hyperboloid sheet, and manifold/unit/orthogonality residuals above `1e-2`.
+Advancement rejects invalid physical distances/radii, normalized-phase overflow,
+and hyperbolic normalized steps above 40 as an emergency exponential bound.
+The bound 40 is not a precision guarantee.
+
+Curved sphere radii also require a representable f32 section equation. The
+compiler rejects `cos(r/R)` collapsing to either spherical endpoint,
+`cosh(r/R)` collapsing to one, nonnormal or nonfinite sine terms, and hyperbolic
+cosine-square overflow. The section discriminant treats
+`|D| <= 8*f32::EPSILON*(a*a+b*b+c*c)` as an unresolved double root: this is a
+backward-error band for a few ULPs of coefficient/arithmetic error, rather than
+a distance tolerance. Negative discriminants outside the band remain misses.
+Radii must satisfy `S(r/R)^2 > 8*f32::EPSILON*(1+C(r/R)^2)` so that a sphere
+viewed from its center is distinct from this degenerate section. For example,
+angular radius `0.002` passes while `0.001` and `1e-5` do not; radii too close
+to `pi*R` are also rejected. This applies to unit-sphere conveniences and nested
+shapes as well as explicit radii. These input checks do not certify grazing
+contacts or distant frames at the same accuracy as well-conditioned hits.
+
+A numerical failure terminates the path, retaining accumulated emission and
+adding no background. This is an explicit source of truncation bias, alongside
+the finite bounce limit. Distances are not clamped to a shorter path. Recentring
+later path segments and extending the supported numerical range remain future
+work. A medium event after many spherical circuits remains valid when its
+coordinate evaluation and physical distance pass these checks.

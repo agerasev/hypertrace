@@ -167,3 +167,41 @@ fn embedded_custom_leaves_use_spherical_positions_and_tangent_frames() {
         }
     }
 }
+
+#[test]
+#[ignore = "requires a native WGPU compute adapter"]
+fn numerical_failure_preserves_prior_emission_without_evaluating_background() {
+    let shape = ShapeValue::embedded_custom(
+        ShaderLeaf {
+            key: "test.failure-after-hit.v2".into(),
+            entry_point: "test_failure_after_hit".into(),
+            parameter_words: 0,
+            source: r#"fn test_failure_after_hit(base:u32,ray:GeoRay,previous:u32)->GeoTaggedHit {
+            if previous==base { return GeoTaggedHit(geo_failure(),base); }
+            return GeoTaggedHit(geo_sphere(ray,0.0,geo_infinity(),params.misc.y,0.7),base);
+        }"#
+            .into(),
+        },
+        vec![],
+    )
+    .unwrap();
+    // Nest a vector and shape map so failure must propagate through both levels.
+    let shape = shape
+        .mapped(Transform::identity(Geometry::Spherical))
+        .unwrap();
+    let shape = ShapeValue::vector(shape.schema.clone(), vec![shape]).unwrap();
+    let scene = definition(
+        Geometry::Spherical,
+        ObjectNode::Covered {
+            shape,
+            material: MaterialValue::transparent()
+                .emissive([0.125, 0.25, 0.5])
+                .unwrap(),
+        },
+    );
+    let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
+    assert_eq!(
+        render(&gpu, &scene, (3, 2), 4),
+        vec![[0.125, 0.25, 0.5, 1.0]; 6]
+    );
+}

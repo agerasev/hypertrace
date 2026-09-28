@@ -137,6 +137,7 @@ async fn run(
     let mut smoke_resized = false;
     let mut smoke_scaled = false;
     let mut smoke_restored = false;
+    let mut motion_blocked = false;
     #[cfg(target_arch = "wasm32")]
     let mut samples = 0u64;
     #[cfg(target_arch = "wasm32")]
@@ -152,6 +153,7 @@ async fn run(
             presenter.rebind(graphics.device(), &renderer);
             camera = initial_scene.camera;
             fov = initial_scene.fov;
+            motion_blocked = false;
             samples = 0;
             web::set_status("Ready · click the scene to explore", false);
             continue;
@@ -224,9 +226,11 @@ async fn run(
             camera = initial_scene.camera;
             fov = initial_scene.fov;
             renderer.update_scene_async(initial_scene.clone()).await?;
+            motion_blocked = false;
             #[cfg(target_arch = "wasm32")]
             {
                 samples = 0;
+                web::set_status("Ready · click the scene to explore", false);
             }
         }
         let key = |letter| input.key_down(Key::Character(letter));
@@ -257,16 +261,35 @@ async fn run(
             .any(|value| value != 0.0)
             || zoom != 0.0
         {
-            camera.move_local_with_radius(
-                translation,
-                rotation,
-                f64::from(renderer.scene().radius),
-            )?;
-            fov = (fov * (-zoom * 0.002).exp()).clamp(0.05, 10.0);
-            renderer.update_camera(camera, fov)?;
-            #[cfg(target_arch = "wasm32")]
-            {
-                samples = 0;
+            let mut next_camera = camera;
+            let next_fov = (fov * (-zoom * 0.002).exp()).clamp(0.05, 10.0);
+            let updated = next_camera
+                .move_local_with_radius(translation, rotation, f64::from(renderer.scene().radius))
+                .and_then(|()| renderer.update_camera(next_camera, next_fov));
+            match updated {
+                Ok(()) => {
+                    camera = next_camera;
+                    fov = next_fov;
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        samples = 0;
+                        if motion_blocked {
+                            web::set_status("Ready · click the scene to explore", false);
+                        }
+                    }
+                    motion_blocked = false;
+                }
+                Err(_error) => {
+                    // Retain both controller and renderer state so the user can
+                    // move back from a numerical limit instead of exiting.
+                    if !motion_blocked {
+                        #[cfg(not(target_arch = "wasm32"))]
+                        eprintln!("Camera movement stopped: {_error:#}; move back or reset");
+                        #[cfg(target_arch = "wasm32")]
+                        web::set_status("Movement limit reached · move back or reset", true);
+                    }
+                    motion_blocked = true;
+                }
             }
         }
         #[cfg(not(target_arch = "wasm32"))]

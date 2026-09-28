@@ -130,14 +130,58 @@ where
 mod tests {
     use super::*;
     use crate::{
-        background::ConstBg,
+        background::{ConstBg, GradBg},
         material::{Absorbing, Colored, Emissive, Lambertian, Refractive, Specular, Transparent},
         object::Covered,
-        shape::{Cube, GeodesicSphere, Plane, Sphere},
+        shape::{Cube, GeodesicSphere, Horosphere, Plane, Sphere},
         view::PointView,
         Mapped, Material, Object, Scene, SceneImpl, Shape, View as _,
     };
     use ccgeom::Geometry3;
+
+    #[test]
+    fn specialized_shapes_and_gradient_share_geometry_families() {
+        let legacy_cube = <Cube as Shape<Euclidean3>>::wgsl_shape(&Cube).unwrap();
+        let embedded_cube = <Cube as Shape<Flat3>>::wgsl_shape(&Cube).unwrap();
+        assert_eq!(legacy_cube.schema, embedded_cube.schema);
+        assert_eq!(legacy_cube.words, embedded_cube.words);
+        let legacy_horosphere =
+            <Horosphere as Shape<Hyperbolic3>>::wgsl_shape(&Horosphere).unwrap();
+        let embedded_horosphere =
+            <Horosphere as Shape<Hyperboloid3>>::wgsl_shape(&Horosphere).unwrap();
+        assert_eq!(legacy_horosphere.schema, embedded_horosphere.schema);
+        assert_eq!(legacy_horosphere.words, embedded_horosphere.words);
+        let gradient = GradBg::new(
+            [0.0, 1.0, 0.0].into(),
+            [[1.0; 3].into(), [0.0; 3].into()],
+            2.4,
+        );
+        let legacy = <GradBg as crate::Background<Euclidean3>>::wgsl_background(&gradient).unwrap();
+        let embedded = <GradBg as crate::Background<Flat3>>::wgsl_background(&gradient).unwrap();
+        match (legacy, embedded) {
+            (
+                Background::Gradient {
+                    colors: a,
+                    axis: b,
+                    power: c,
+                },
+                Background::Gradient {
+                    colors: x,
+                    axis: y,
+                    power: z,
+                },
+            ) => {
+                assert_eq!((a, b, c), (x, y, z));
+            }
+            _ => panic!("gradient lowering changed its kind"),
+        }
+        assert!(<Cube as Shape<Hyperboloid3>>::wgsl_shape(&Cube).is_err());
+        assert!(<Cube as Shape<Spherical3>>::wgsl_shape_schema().is_err());
+        assert!(<Horosphere as Shape<Flat3>>::wgsl_shape(&Horosphere).is_err());
+        assert!(<Horosphere as Shape<Spherical3>>::wgsl_shape_schema().is_err());
+        assert!(<GradBg as crate::Background<Hyperboloid3>>::wgsl_background(&gradient).is_err());
+        assert!(<GradBg as crate::Background<Spherical3>>::wgsl_background(&gradient).is_err());
+    }
 
     fn embedded_lowering<const K: i8>() {
         type G<const K: i8> = ccgeom::Embedded3<f64, K>;

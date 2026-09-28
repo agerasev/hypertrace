@@ -367,7 +367,7 @@ impl Scene {
                 && (self.camera.geometry() != 0 || self.radius == 1.0),
             "invalid curvature radius"
         );
-        self.medium.validate()?;
+        self.medium.validate_for_radius(self.radius)?;
         anyhow::ensure!(
             self.fov.is_finite() && self.fov > 0.0,
             "fov must be finite and positive"
@@ -752,6 +752,10 @@ mod tests {
             },
             scene_ir::Medium::Homogeneous {
                 extinction: f32::INFINITY,
+                albedo: [0.5; 3],
+            },
+            scene_ir::Medium::Homogeneous {
+                extinction: f32::from_bits(1),
                 albedo: [0.5; 3],
             },
             scene_ir::Medium::Homogeneous {

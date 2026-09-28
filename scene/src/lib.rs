@@ -371,6 +371,30 @@ impl Medium {
         }
         Ok(())
     }
+    /// Validate the maximum sampled physical flight and normalized phase for
+    /// the shader's open 23-bit random samples (maximum optical depth 24 ln 2).
+    /// This guards overflow; it does not certify long-path spatial precision.
+    pub fn validate_for_radius(self, radius: f32) -> Result<()> {
+        self.validate()?;
+        anyhow::ensure!(
+            radius.is_finite() && radius > 0.0,
+            "invalid medium curvature radius"
+        );
+        if let Self::Homogeneous { extinction, .. } = self
+            && extinction > 0.0
+        {
+            let maximum_flight = 24.0 * std::f64::consts::LN_2 / f64::from(extinction);
+            anyhow::ensure!(
+                (maximum_flight as f32).is_finite(),
+                "medium free-flight distance is outside f32 range"
+            );
+            anyhow::ensure!(
+                ((maximum_flight / f64::from(radius)) as f32).is_finite(),
+                "medium free-flight phase is outside f32 range"
+            );
+        }
+        Ok(())
+    }
     pub fn gpu_row(self) -> [f32; 4] {
         match self {
             Self::Vacuum => [0.0; 4],

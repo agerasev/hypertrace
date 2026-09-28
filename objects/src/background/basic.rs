@@ -1,5 +1,5 @@
 use crate::Background;
-use ccgeom::{Euclidean3, Geometry};
+use ccgeom::Geometry;
 use vecmat::Vector;
 
 /// Constant color background.
@@ -39,8 +39,11 @@ impl GradBg {
     }
 }
 
-impl Background<Euclidean3> for GradBg {
+impl<G: Geometry> Background<G> for GradBg {
     fn wgsl_background(&self) -> crate::wgsl::Result<crate::wgsl::Background> {
+        if crate::wgsl::geometry::<G>()? != crate::wgsl::Geometry::Euclidean {
+            return Err(crate::wgsl::unsupported::<(Self, G)>());
+        }
         let mut axis = [0.0; 3];
         for (dst, src) in axis.iter_mut().zip(self.direction.into_array()) {
             *dst = crate::wgsl::finite_f32(src)?;

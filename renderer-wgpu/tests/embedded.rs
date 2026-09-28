@@ -470,3 +470,98 @@ fn transport_retains_winding_and_competes_in_physical_distance() {
     );
     row(rows[8], [1024.0, 0.25, 1024.0, 0.0], 0.0);
 }
+
+#[test]
+#[ignore = "requires a working WGPU compute adapter"]
+fn numerical_guards_distinguish_failure_from_miss_and_keep_spherical_circuits() {
+    for k in [-1, 0, 1] {
+        let result = dispatch(
+            k,
+            &[
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [f32::INFINITY, f32::NAN, 0.0, 0.0],
+                [12.0 * std::f32::consts::TAU + 0.4, 1000.0, -0.2, 0.0],
+            ],
+            r#"
+            let ray = GeoRay(input[0],input[1]);
+            output[0] = vec4<f32>(
+                select(0.0,1.0,geo_ray_supported(ray)),
+                select(0.0,1.0,geo_ray_supported(GeoRay(ray.position,2*ray.tangent))),
+                select(0.0,1.0,geo_ray_supported(GeoRay(vec4<f32>(input[2].x,0,0,0),ray.tangent))),
+                select(0.0,1.0,geo_ray_supported(GeoRay(vec4<f32>(input[2].y,0,0,0),ray.tangent))));
+            output[1] = vec4<f32>(
+                select(0.0,1.0,geo_advance_supported(ray,0.4,1)),
+                select(0.0,1.0,geo_advance_supported(ray,input[2].x,1)),
+                select(0.0,1.0,geo_advance_supported(ray,input[2].y,1)),
+                select(0.0,1.0,geo_advance_supported(ray,input[3].z,1)));
+            output[2] = vec4<f32>(
+                select(0.0,1.0,geo_advance_supported(ray,input[3].y,1)),
+                select(0.0,1.0,geo_advance_supported(ray,input[3].x,1)),
+                f32(geo_failure().valid),f32(geo_miss().valid));
+            output[3] = geo_advance(ray,input[3].x,1).position;
+            "#,
+            4,
+        );
+        assert_eq!(result[0], [1.0, 0.0, 0.0, 0.0]);
+        assert_eq!(result[1], [1.0, 0.0, 0.0, 0.0]);
+        assert_eq!(
+            result[2],
+            if k < 0 {
+                [0.0, 0.0, 2.0, 0.0]
+            } else {
+                [1.0, 1.0, 2.0, 0.0]
+            }
+        );
+        if k == 1 {
+            row(result[3], [0.4_f64.cos(), 0.4_f64.sin(), 0.0, 0.0], 1e-5);
+        }
+    }
+}
+
+#[test]
+#[ignore = "requires a working WGPU compute adapter"]
+fn curved_section_tangency_band_preserves_resolved_near_hits_and_misses() {
+    for k in [-1, 1] {
+        let (a, b, c): (f32, f32, f32) = if k < 0 {
+            (1.5625, -0.9375, 1.25)
+        } else {
+            (0.64, 0.48, 0.8)
+        };
+        let lower = f32::from_bits(c.to_bits() - 1);
+        let upper = f32::from_bits(c.to_bits() + 1);
+        let miss = c * (1.0 + 0.001 * k as f32);
+        let crossing = c * (1.0 - 0.001 * k as f32);
+        let result = dispatch(
+            k,
+            &[[a, b, c, lower], [upper, miss, crossing, 0.0]],
+            r#"
+            output[0]=vec4<f32>(
+                geo_section_root(input[0].x,input[0].y,input[0].z,0,5,1),
+                geo_section_root(input[0].x,input[0].y,input[0].w,0,5,1),
+                geo_section_root(input[0].x,input[0].y,input[1].x,0,5,1),
+                geo_section_root(input[0].x,input[0].y,input[1].y,0,5,1));
+            output[1]=vec4<f32>(geo_section_root(input[0].x,input[0].y,input[1].z,0,5,1),0,0,0);
+        "#,
+            2,
+        );
+        let (a, b, crossing) = (f64::from(a), f64::from(b), f64::from(crossing));
+        // Independent f64 roots for the quantized coefficients. Perturbations
+        // of +/-one ULP are intentionally within the defined backward-error
+        // band; the separated near crossing/miss must retain their topology.
+        let tangent = if k < 0 {
+            0.5 * ((a - b) / (a + b)).ln()
+        } else {
+            b.atan2(a)
+        };
+        row(result[0], [tangent, tangent, tangent, -1.0], 2e-6);
+        let first = if k < 0 {
+            let d = crossing * crossing - (a + b) * (a - b);
+            ((a - b) / (crossing + d.sqrt())).ln()
+        } else {
+            b.atan2(a) - (crossing / a.hypot(b)).acos()
+        };
+        row(result[1], [first, 0.0, 0.0, 0.0], 2e-6);
+        assert!((f64::from(result[1][0]) - tangent).abs() > 0.01);
+    }
+}

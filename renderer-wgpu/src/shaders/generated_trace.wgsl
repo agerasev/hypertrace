@@ -47,8 +47,9 @@ fn geo_from_legacy_hit(hit: Hit) -> GeoHit {
 }
 fn geo_map_hit(map: GeoMap, hit: GeoHit) -> GeoHit {
     if hit.valid == 0u { return hit; }
-    return GeoHit(hit.valid,hit.distance,geo_map_apply(map,hit.position),
-        geo_map_apply(map,hit.tangent),geo_map_apply(map,hit.normal));
+    let state = geo_map_ray(map,GeoRay(hit.position,hit.tangent));
+    if hit.valid == 2u || !geo_ray_supported(state) { return geo_failure(); }
+    return GeoHit(hit.valid,hit.distance,state.position,state.tangent,geo_map_apply(map,hit.normal));
 }
 fn geo_scene_hit(ray: GeoRay, previous: u32, previous_identity: u32) -> GeoSceneHit {
     var result = GeoSceneHit(geo_miss(),0xffffffffu,0xffffffffu);
@@ -56,7 +57,9 @@ fn geo_scene_hit(ray: GeoRay, previous: u32, previous_identity: u32) -> GeoScene
         let object = objects[i];
         let identity = select(0xffffffffu,previous_identity,i==previous);
         let local = geo_map_ray(geo_inverse(GeoMap(object.map0,object.map1)),ray);
+        if !geo_ray_supported(local) { return GeoSceneHit(geo_failure(),i,identity); }
         let candidate = ht_shape_dispatch(object.info.x,object.extra.y,local,identity);
+        if candidate.hit.valid == 2u { return GeoSceneHit(candidate.hit,i,candidate.identity); }
         if candidate.hit.valid != 0u {
             if result.hit.valid == 0u || candidate.hit.distance < result.hit.distance {
                 result = GeoSceneHit(candidate.hit,i,candidate.identity);
@@ -92,10 +95,15 @@ fn sample_path(pixel: vec2<u32>, state: ptr<function,u32>) -> vec3<f32> {
     var previous = 0xffffffffu;
     var previous_identity = 0xffffffffu;
     for (var bounce=0u; bounce<params.options.y; bounce+=1u) {
+        // Numerical failure is an explicit termination, never a physical miss.
+        // Retain prior emission without adding any background contribution.
+        if !geo_ray_supported(path.ray) { break; }
         let selected = geo_scene_hit(path.ray,previous,previous_identity);
+        if selected.hit.valid == 2u { break; }
         if params.medium.w > 0 {
             let distance = geo_free_flight(params.medium.w,geo_uniform_open(state));
             if geo_medium_precedes(distance,selected.hit) {
+                if !geo_advance_supported(path.ray,distance,params.misc.y) { break; }
                 path = geo_travel(path,distance,params.misc.y);
                 // Analog free-flight already accounts for survival. Weight only
                 // by scattering albedo, never a second exponential attenuation.
@@ -115,6 +123,7 @@ fn sample_path(pixel: vec2<u32>, state: ptr<function,u32>) -> vec3<f32> {
             sample.emission += sample.attenuation*geo_background(path.ray);
             break;
         }
+        if !geo_advance_supported(path.ray,selected.hit.distance,params.misc.y) { break; }
         path = geo_travel(path,selected.hit.distance,params.misc.y);
         let object = objects[selected.object_index];
         let hit = selected.hit;

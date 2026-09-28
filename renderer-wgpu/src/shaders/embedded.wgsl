@@ -3,6 +3,8 @@
 // Positions/tangents are normalized ambient coordinates; distances and query
 // intervals are physical. Surface queries include minimum and exclude maximum.
 struct GeoRay { position: vec4<f32>, tangent: vec4<f32> }
+// Custom leaves return valid=0 (miss) or 1 (surface). Value 2 is reserved
+// internally for numerical failure and must propagate without becoming a miss.
 struct GeoHit {
     valid: u32,
     distance: f32,
@@ -17,6 +19,39 @@ fn geo_metric(p: vec4<f32>, q: vec4<f32>) -> f32 {
 }
 fn geo_miss() -> GeoHit {
     return GeoHit(0u,0,vec4<f32>(0),vec4<f32>(0),vec4<f32>(0));
+}
+fn geo_failure() -> GeoHit {
+    return GeoHit(2u,0,vec4<f32>(0),vec4<f32>(0),vec4<f32>(0));
+}
+// Emergency corruption guards, not a precision certification. The tested local
+// hyperbolic range is <=3 radii, while valid rays outside it may continue. A
+// failed guard terminates transport without clamping distance or adding a miss
+// background. Later per-path recentering can extend the useful numerical range.
+fn geo_ray_supported(ray: GeoRay) -> bool {
+    let largest = bitcast<f32>(0x7f7fffffu);
+    if !all(abs(ray.position) <= vec4<f32>(largest)) ||
+        !all(abs(ray.tangent) <= vec4<f32>(largest)) { return false; }
+    let tolerance = 0.01;
+    if GEO_K == 0 {
+        return abs(ray.position.x-1) <= tolerance &&
+            abs(ray.tangent.x) <= tolerance &&
+            abs(dot(ray.tangent.yzw,ray.tangent.yzw)-1) <= tolerance;
+    }
+    if GEO_K < 0 && ray.position.x <= 0 { return false; }
+    return abs(geo_metric(ray.position,ray.position)-1) <= tolerance &&
+        abs(GEO_K*geo_metric(ray.tangent,ray.tangent)-1) <= tolerance &&
+        abs(geo_metric(ray.position,ray.tangent)) <= tolerance;
+}
+fn geo_advance_supported(ray: GeoRay, distance: f32, radius: f32) -> bool {
+    let largest = bitcast<f32>(0x7f7fffffu);
+    if !(distance >= 0 && distance <= largest && radius > 0 && radius <= largest) ||
+        !geo_ray_supported(ray) { return false; }
+    let phase = distance/select(1.0,radius,GEO_K != 0);
+    if !(phase <= largest) { return false; }
+    // Avoid exponential overflow before evaluating a hyperbolic free flight.
+    // This is an emergency arithmetic bound, never a substitute surface hit.
+    if GEO_K < 0 && phase > 40 { return false; }
+    return geo_ray_supported(geo_advance(ray,distance,radius));
 }
 fn geo_identity() -> GeoMap {
     return GeoMap(vec4<f32>(1,0,0,0),vec4<f32>(0));
@@ -131,6 +166,18 @@ fn geo_refine_periodic(root: f32, a: f32, b: f32, c: f32) -> f32 {
     }
     return root;
 }
+// A section discriminant subtracts squared f32 coefficients. Within a few
+// coefficient ULPs its sign cannot reliably distinguish crossing, tangency,
+// and a miss (native trig can move a tangent coefficient by an ULP too).
+// The first-order perturbation of x*x is 2*x*dx. Taking |dx|<=4*eps*|x|
+// gives 8*eps*(a*a+b*b+c*c) as the corresponding backward-error scale.
+// Only this scale-relative uncertainty band is represented by a double root;
+// clear negative discriminants remain misses. No distance tolerance is added.
+fn geo_classify_section_discriminant(value: f32, a: f32, b: f32, c: f32) -> f32 {
+    let coefficient_error = 8.0*1.1920928955078125e-7*(a*a+b*b+c*c);
+    if abs(value) <= coefficient_error { return 0; }
+    return value;
+}
 // First root of a*C_K(t)+b*S_K(t)=c, with physical interval endpoints.
 fn geo_section_root(a: f32, b: f32, c: f32,
     minimum: f32, maximum: f32, radius: f32) -> f32 {
@@ -141,11 +188,14 @@ fn geo_section_root(a: f32, b: f32, c: f32,
     }
     if GEO_K > 0 {
         let amplitude = length(vec2<f32>(a,b));
-        if amplitude == 0 || abs(c) > amplitude { return -1; }
+        if amplitude == 0 { return -1; }
+        let discriminant = geo_classify_section_discriminant(
+            (amplitude-c)*(amplitude+c),a,b,c);
+        if discriminant < 0 { return -1; }
         let phase = atan2(b,a);
         // atan2 avoids the relatively loose native acos approximation on some
         // adapters, while retaining the correct branch for radii above pi/2.
-        let delta = atan2(sqrt(max(0.0,(amplitude-c)*(amplitude+c))),c);
+        let delta = atan2(sqrt(discriminant),c);
         let first = geo_periodic_root(geo_refine_periodic(phase-delta,a,b,c),
             minimum,maximum,radius);
         let second = geo_periodic_root(geo_refine_periodic(phase+delta,a,b,c),
@@ -162,8 +212,13 @@ fn geo_section_root(a: f32, b: f32, c: f32,
         if u <= 0 { return -1; }
         return geo_first(log(u)*radius,-1,minimum,maximum);
     }
-    let discriminant = c*c-leading*constant;
+    let discriminant = geo_classify_section_discriminant(c*c-leading*constant,a,b,c);
     if discriminant < 0 { return -1; }
+    if discriminant == 0 {
+        let repeated = c/leading;
+        if repeated <= 0 { return -1; }
+        return geo_first(log(repeated)*radius,-1,minimum,maximum);
+    }
     let q = c+select(-sqrt(discriminant),sqrt(discriminant),c >= 0);
     var first = -1.0;
     var second = -1.0;

@@ -134,23 +134,7 @@ fn validate_scene_parameters(scene: &SceneDefinition, geometry: Geometry) -> Res
         finite_f32(scene.view.fov)? > 0.0,
         "camera field of view must be positive"
     );
-    scene.medium.validate()?;
-    if let crate::Medium::Homogeneous { extinction, .. } = scene.medium
-        && extinction > 0.0
-    {
-        // The shader's open 23-bit samples reach at most 24 ln(2) optical
-        // depth. Reject arithmetic overflow rather than treating it as a
-        // vacuum miss. The geometric phase can wrap; this distance cannot.
-        let maximum_flight = 24.0 * std::f64::consts::LN_2 / f64::from(extinction);
-        ensure!(
-            (maximum_flight as f32).is_finite(),
-            "medium free-flight distance is outside f32 range"
-        );
-        ensure!(
-            ((maximum_flight / f64::from(radius)) as f32).is_finite(),
-            "medium free-flight phase is outside f32 range"
-        );
-    }
+    scene.medium.validate_for_radius(radius)?;
     scene.view.map.components()?;
     Ok(radius)
 }
@@ -314,16 +298,38 @@ fn validate_sphere_radius(radius: f32, geometry: Geometry, space_radius: f32) ->
         radius.is_normal() && radius > 0.0,
         "geodesic sphere needs a finite positive normal radius"
     );
+    let angle = radius / space_radius;
+    // Match geo_classify_section_discriminant's coefficient uncertainty at
+    // the sphere center; do not admit a radius already inside that zero band.
+    let resolved =
+        |sine: f32, cosine: f32| sine * sine > 8.0 * f32::EPSILON * (1.0 + cosine * cosine);
     match geometry {
-        Geometry::Spherical => ensure!(
-            radius < std::f32::consts::PI * space_radius,
-            "spherical sphere radius must be strictly below pi times the curvature radius"
-        ),
-        Geometry::Hyperbolic => {
-            let c = (radius / space_radius).cosh();
+        Geometry::Spherical => {
             ensure!(
-                (c * c).is_finite(),
-                "hyperbolic sphere radius exceeds the f32 exponential range"
+                radius < std::f32::consts::PI * space_radius,
+                "spherical sphere radius must be strictly below pi times the curvature radius"
+            );
+            let (sine, cosine) = angle.sin_cos();
+            ensure!(
+                angle.is_finite()
+                    && cosine.abs() < 1.0
+                    && sine.is_normal()
+                    && sine > 0.0
+                    && resolved(sine, cosine),
+                "spherical sphere radius is outside the f32 section resolver range: cos(radius/space_radius) must be distinct from both 1 and -1 and resolve the coefficient uncertainty band"
+            );
+        }
+        Geometry::Hyperbolic => {
+            let cosine = angle.cosh();
+            let sine = angle.sinh();
+            ensure!(
+                angle.is_finite()
+                    && (cosine * cosine).is_finite()
+                    && cosine > 1.0
+                    && sine.is_normal()
+                    && sine > 0.0
+                    && resolved(sine, cosine),
+                "hyperbolic sphere radius is outside the f32 section resolver range: cosh(radius/space_radius) must be greater than one with a finite square and resolve the coefficient uncertainty band"
             );
         }
         Geometry::Euclidean => ensure!(
@@ -333,6 +339,7 @@ fn validate_sphere_radius(radius: f32, geometry: Geometry, space_radius: f32) ->
     }
     Ok(())
 }
+
 fn validate_shape(
     schema: &ShapeSchema,
     words: &[u32],
@@ -602,14 +609,14 @@ impl Compiler {
                     let _ = geometry;
                     writeln!(
                         source,
-                        "let map=GeoMap(load_vec4(base),load_vec4(base+4u));\nlet result=ht_shape_{child}(base+8u,geo_map_ray(geo_inverse(map),ray),previous_identity);\nreturn GeoTaggedHit(geo_map_hit(map,result.hit),result.identity);"
+                        "let map=GeoMap(load_vec4(base),load_vec4(base+4u));\nlet local=geo_map_ray(geo_inverse(map),ray);\nif !geo_ray_supported(local) {{return GeoTaggedHit(geo_failure(),base);}}\nlet result=ht_shape_{child}(base+8u,local,previous_identity);\nreturn GeoTaggedHit(geo_map_hit(map,result.hit),result.identity);"
                     )?;
                 }
                 ShapeSchema::Vector(inner) => {
                     let child = self.shapes[inner.as_ref()];
                     writeln!(
                         source,
-                        "var result=GeoTaggedHit(geo_miss(),0xffffffffu);\nfor(var index=0u;index<load_u32(base);index+=1u) {{\nlet candidate=ht_shape_{child}(base+load_u32(base+1u+index),ray,previous_identity);\nif candidate.hit.valid!=0u {{ if result.hit.valid==0u || candidate.hit.distance<result.hit.distance {{result=candidate;}} }}\n}}\nreturn result;"
+                        "var result=GeoTaggedHit(geo_miss(),0xffffffffu);\nfor(var index=0u;index<load_u32(base);index+=1u) {{\nlet candidate=ht_shape_{child}(base+load_u32(base+1u+index),ray,previous_identity);\nif candidate.hit.valid==2u {{return candidate;}}\nif candidate.hit.valid!=0u {{ if result.hit.valid==0u || candidate.hit.distance<result.hit.distance {{result=candidate;}} }}\n}}\nreturn result;"
                     )?;
                 }
                 ShapeSchema::Choice(children) => {
@@ -992,6 +999,37 @@ mod tests {
         assert_eq!(a.source, b.source);
         assert_ne!(a.radius, b.radius);
         assert_ne!(a.words, b.words);
+        Ok(())
+    }
+    #[test]
+    fn curved_spheres_reject_unresolvable_f32_sections() -> Result<()> {
+        for (geometry, radius) in [
+            (Geometry::Spherical, 1e-5),
+            (
+                Geometry::Spherical,
+                f64::from(std::f32::consts::PI - f32::EPSILON),
+            ),
+            (Geometry::Hyperbolic, 1e-5),
+            (Geometry::Spherical, 0.001),
+            (Geometry::Hyperbolic, 0.001),
+            (Geometry::Hyperbolic, 100.0),
+        ] {
+            let shape = ShapeValue::geodesic_sphere(radius)?;
+            let error = compile(&curved_scene(geometry, 1.0, shape)).unwrap_err();
+            assert!(
+                error.to_string().contains("f32 section resolver range"),
+                "{error}"
+            );
+        }
+        for geometry in [Geometry::Spherical, Geometry::Hyperbolic] {
+            let error = compile(&curved_scene(geometry, 1e6, ShapeValue::sphere())).unwrap_err();
+            assert!(error.to_string().contains("f32 section resolver range"));
+            compile(&curved_scene(
+                geometry,
+                1.0,
+                ShapeValue::geodesic_sphere(0.002)?,
+            ))?;
+        }
         Ok(())
     }
 }

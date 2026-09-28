@@ -4,6 +4,8 @@ dist: jammy
 rust: stable
 
 before_script:
+  - git clone --depth 1 https://github.com/agerasev/vecmat-rs.git ../vecmat-rs
+  - git clone --depth 1 https://github.com/agerasev/ccgeom.git ../ccgeom
   # Cargo resolves the optional viewer path dependency for headless builds too.
   - git clone --depth 1 https://github.com/agerasev/wgame.git ../wgame
 

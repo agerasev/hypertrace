@@ -8,3 +8,7 @@ members = [
     "scene",
     "scenes",
 ]
+
+[patch.crates-io]
+ccgeom = { path = "../ccgeom" }
+vecmat = { path = "../vecmat-rs" }

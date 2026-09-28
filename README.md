@@ -14,6 +14,8 @@ supported; spherical geometry is planned.
 ## Requirements
 
 - Current stable Rust and Cargo.
+- Sibling `../vecmat-rs` and `../ccgeom` checkouts. Workspace patches use these
+  sources for the shared geometry migration; `ccgeom` also uses local `vecmat`.
 - A native WGPU adapter with compute support. Software Vulkan can run the tests.
 - A sibling `../wgame` checkout with `WindowConfig::required_limits` and
   `use_adapter_buffer_limits`. Cargo resolves this optional path dependency even

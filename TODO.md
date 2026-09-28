@@ -1,5 +1,9 @@
 # TODO
 
+The [constant-curvature migration roadmap](CURVATURE_MIGRATION.md) describes the
+shared geometry kernel, spherical support, hyperbolic model migration, and
+distance/medium contracts planned across Hypertrace, ccgeom, and vecmat.
+
 ## Geometries
 
 - [x] Euclidean geometry

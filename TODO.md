@@ -2,13 +2,15 @@
 
 The [constant-curvature migration roadmap](CURVATURE_MIGRATION.md) describes the
 shared geometry kernel, spherical support, hyperbolic model migration, and
-distance/medium contracts planned across Hypertrace, ccgeom, and vecmat.
+distance/medium contracts across Hypertrace, ccgeom, and vecmat. Core shared
+geometry, spherical rendering, and homogeneous transport are implemented;
+cross-device/browser acceptance and the numerical/performance follow-ups remain.
 
 ## Geometries
 
 - [x] Euclidean geometry
 - [x] Lobachevsky (hyperbolic) geometry
-- [ ] Spherical geometry
+- [x] Spherical geometry
 
 ## Shapes
 
@@ -25,14 +27,14 @@ distance/medium contracts planned across Hypertrace, ccgeom, and vecmat.
 
 + [x] Plane
 + [x] Horosphere
-+ [ ] Sphere
++ [x] Sphere with physical radius
 + [ ] Equidistant
 + [ ] Triangle
 
 ### Spherical
 
-+ [ ] Plane
-+ [ ] Sphere
++ [x] Geodesic plane (great 2-sphere)
++ [x] Sphere with physical radius
 + [ ] Triangle
 
 ## Materials
@@ -41,12 +43,19 @@ distance/medium contracts planned across Hypertrace, ccgeom, and vecmat.
 - [x] Lambertian material
 - [x] Transparent material
 - [x] Refraction
-- [ ] Diffusion on fog
+- [x] Homogeneous fog with isotropic scattering and RGB albedo
+- [ ] Heterogeneous media and anisotropic scattering
 - [ ] Arbitrary BRDF
 
 ## Algorithms
 
 + [ ] Importance sampling
++ [x] Shared constant-curvature ray and isometry kernel
++ [x] Unwrapped hit distances and multi-circuit medium events
++ [x] Camera-relative object preparation in CPU f64
++ [ ] Recenter later path segments for wider hyperbolic numerical range
++ [ ] Validate the shared renderer on additional GPU drivers and in a browser
++ [ ] Remove the legacy fixed-record comparison renderer after cross-device acceptance
 
 ## Effects
 

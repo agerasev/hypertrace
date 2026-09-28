@@ -1,7 +1,12 @@
 # Constant-curvature migration roadmap
 
-Status: proposed implementation plan, 2026-09-28. No migration code has been
-implemented by this document.
+Status: implemented locally, 2026-09-28. Shared libraries, generated tracing,
+spherical scenes, and homogeneous transport are integrated. See
+[MIGRATION_VALIDATION.md](MIGRATION_VALIDATION.md) for commits, measurements,
+precision limits, and the remaining browser runtime acceptance check.
+
+The numbered phases below retain the original design and acceptance criteria;
+they are a roadmap record, not a claim that unavailable platform checks ran.
 
 The objective is a shared Euclidean, hyperbolic, and spherical tracing kernel,
 with explicit travelled distance, geometry-independent materials, and a path
@@ -451,8 +456,7 @@ Also run formatting and feature checks from each library root, plus native
 viewer smoke runs for `eu`, `hy`, and `sp` and browser interaction checks.
 GPU checks require a working adapter; a skipped or unavailable GPU suite is not
 evidence of shader correctness. Use `tools/compare_frames.py` and
-`tools/compare_benchmarks.py` for reproducible comparisons. These commands are
-planned implementation validation, not checks performed while writing this plan.
+`tools/compare_benchmarks.py` for reproducible comparisons. The validation report records which checks ran and their outcomes.
 
 **Main risks and the decisions that contain them**
 
@@ -544,4 +548,4 @@ For this task, plan around two or three substantive concurrent work streams
 after the foundation. Do not assume speedup proportional to the agent count:
 the geometry-to-IR-to-renderer integration remains a sequential bottleneck.
 Independent tests and review are valuable even when they do not shorten the
-critical path. No delegation or implementation is started by this document.
+critical path. This delegation was used during implementation; final integration and commits remain coordinated.

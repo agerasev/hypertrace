@@ -1,15 +1,15 @@
 use crate::{Mapped, Object};
-use ccgeom::{Geometry, Map};
+use ccgeom::Geometry;
 
-impl<G: Geometry, T: Object<G>, M: Map<G::Pos, G::Dir> + 'static> Object<G> for Mapped<G, T, M> {
-    fn wgsl_register(registry: &mut crate::wgsl::Registry) -> crate::wgsl::Result<()> {
-        T::wgsl_register(registry)
+impl<G: Geometry, T: Object<G>, M: crate::shader::RenderMap<G>> Object<G> for Mapped<G, T, M> {
+    fn shader_modules() -> crate::shader::Result<Vec<crate::shader::ShaderModule>> {
+        T::shader_modules()
     }
 
-    fn wgsl_object(&self) -> crate::wgsl::Result<crate::wgsl::ObjectNode> {
-        Ok(crate::wgsl::ObjectNode::Mapped {
-            map: crate::wgsl::transform::<G, M>(&self.map)?,
-            inner: Box::new(self.inner.wgsl_object()?),
+    fn object_node(&self) -> crate::shader::Result<crate::shader::ObjectNode> {
+        Ok(crate::shader::ObjectNode::Mapped {
+            map: crate::shader::transform::<G, M>(&self.map)?,
+            inner: Box::new(self.inner.object_node()?),
         })
     }
 }

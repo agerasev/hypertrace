@@ -15,8 +15,8 @@ impl ConstBg {
 }
 
 impl<G: Geometry> Background<G> for ConstBg {
-    fn wgsl_background(&self) -> crate::wgsl::Result<crate::wgsl::Background> {
-        Ok(crate::wgsl::Background::Constant(self.color.into_array()))
+    fn background(&self) -> crate::shader::Result<crate::shader::Background> {
+        Ok(crate::shader::Background::Constant(self.color.into_array()))
     }
 }
 
@@ -39,16 +39,16 @@ impl GradBg {
     }
 }
 
-impl<G: Geometry> Background<G> for GradBg {
-    fn wgsl_background(&self) -> crate::wgsl::Result<crate::wgsl::Background> {
-        if crate::wgsl::geometry::<G>()? != crate::wgsl::Geometry::Euclidean {
-            return Err(crate::wgsl::unsupported::<(Self, G)>());
+impl<G: crate::shader::RenderGeometry> Background<G> for GradBg {
+    fn background(&self) -> crate::shader::Result<crate::shader::Background> {
+        if crate::shader::geometry::<G>()? != crate::shader::Geometry::Euclidean {
+            return Err(crate::shader::unsupported::<(Self, G)>());
         }
         let mut axis = [0.0; 3];
         for (dst, src) in axis.iter_mut().zip(self.direction.into_array()) {
-            *dst = crate::wgsl::finite_f32(src)?;
+            *dst = crate::shader::finite_f32(src)?;
         }
-        Ok(crate::wgsl::Background::Gradient {
+        Ok(crate::shader::Background::Gradient {
             colors: self.colors.map(Vector::into_array),
             axis,
             power: self.power,

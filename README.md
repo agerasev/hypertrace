@@ -29,9 +29,9 @@ construction and compatibility adapters.
 From the repository root:
 
 ```sh
-cargo run --release -p hypertrace-wgpu --features viewer --example viewer -- --scene sp
-cargo run --release -p hypertrace-wgpu --example headless -- --list-scenes
-cargo run --release -p hypertrace-wgpu --example headless -- \
+cargo run --release -p hypertrace-renderer --features viewer --example viewer -- --scene sp
+cargo run --release -p hypertrace-renderer --example headless -- --list-scenes
+cargo run --release -p hypertrace-renderer --example headless -- \
   --scene eu --width 640 --height 480 --samples 64 --output /tmp/eu
 ```
 
@@ -45,7 +45,7 @@ what to observe and how the builders work.
 
 Spherical scenes use emissive objects and a configurable black miss background.
 Headless output includes linear RGBA floats, a PPM preview, and JSON settings.
-The [renderer guide](renderer-wgpu/README.md) covers the rendering API, scene
+The [renderer guide](renderer/README.md) covers the rendering API, scene
 extensions, validation, and benchmarking.
 
 ### Controls
@@ -109,26 +109,26 @@ Rust builder:
 ```rust,ignore
 use objects::Scene as _;
 let mut source = examples::sp::fog_scene::<12>();
-source.medium = objects::wgsl::Medium::Homogeneous {
+source.medium = objects::shader::Medium::Homogeneous {
     extinction: 0.08, // inverse world units
     albedo: [0.85, 0.9, 0.95],
 };
-let definition = source.wgsl_scene()?;
-let scene = hypertrace_wgpu::Scene::from_definition(&definition)?;
+let definition = source.definition()?;
+let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
 ```
 
 The CLI's `sp` selection uses the vacuum version. The floorless `sp-loop-fog`
 example allows rays missing every object to scatter after multiple spherical
 circuits. Fog samples a physical free-flight distance before resolving a surface
 miss. See the [example guide](examples/README.md) for shared curvature and
-recurrence builders, and the [renderer guide](renderer-wgpu/README.md) for
-custom materials and embedded shader leaves.
+recurrence builders, and the [renderer guide](renderer/README.md) for
+custom shapes, materials and their shader modules.
 
 ```sh
 cargo test --workspace
 cargo clippy --workspace --all-targets --features viewer -- -D warnings
-cargo clippy -p hypertrace-wgpu --target wasm32-unknown-unknown --features web --example viewer -- -D warnings
-WGPU_BACKEND=vulkan cargo test -p hypertrace-wgpu -- --ignored --test-threads=1
+cargo clippy -p hypertrace-renderer --target wasm32-unknown-unknown --features web --example viewer -- -D warnings
+WGPU_BACKEND=vulkan cargo test -p hypertrace-renderer -- --ignored --test-threads=1
 ```
 
 GPU tests are opt-in and require a working compute adapter. See [ABOUT.md](ABOUT.md)

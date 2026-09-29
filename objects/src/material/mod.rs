@@ -6,17 +6,10 @@ mod refractive;
 mod specular;
 mod transparent;
 
+use crate::shader::{MaterialValue, Result, ShaderKind, ShaderModule};
 pub trait Material: Sized {
-    /// Describe this material for WGSL compilation without depending on values.
-    /// The default reports an unsupported material until a hook is supplied.
-    fn wgsl_material_schema() -> crate::wgsl::Result<crate::wgsl::MaterialSchema> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
-
-    /// Lower values while preserving modifier order and nested mixture draws.
-    fn wgsl_material(&self) -> crate::wgsl::Result<crate::wgsl::MaterialValue> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
+    fn shader() -> Result<ShaderModule>;
+    fn encode(&self) -> Result<MaterialValue>;
 }
 
 pub use absorbing::*;
@@ -26,3 +19,16 @@ pub use modifier::*;
 pub use refractive::*;
 pub use specular::*;
 pub use transparent::*;
+
+pub trait MaterialValueExt {
+    fn colored(self, rgb: [f32; 3]) -> Result<MaterialValue>;
+    fn emissive(self, rgb: [f32; 3]) -> Result<MaterialValue>;
+}
+impl MaterialValueExt for MaterialValue {
+    fn colored(self, rgb: [f32; 3]) -> Result<MaterialValue> {
+        colored(self, rgb)
+    }
+    fn emissive(self, rgb: [f32; 3]) -> Result<MaterialValue> {
+        emissive(self, rgb)
+    }
+}

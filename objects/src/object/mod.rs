@@ -8,15 +8,9 @@ pub mod tiling;
 mod vector;
 
 pub trait Object<G: Geometry>: Sized {
-    /// Register every shape/material type, including inactive choice variants.
-    fn wgsl_register(_registry: &mut crate::wgsl::Registry) -> crate::wgsl::Result<()> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
-
-    /// Lower object values without coupling builders to a GPU device.
-    fn wgsl_object(&self) -> crate::wgsl::Result<crate::wgsl::ObjectNode> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
+    /// Describe all possible implementations, including inactive variants.
+    fn shader_modules() -> crate::shader::Result<Vec<crate::shader::ShaderModule>>;
+    fn object_node(&self) -> crate::shader::Result<crate::shader::ObjectNode>;
 }
 
 pub use covered::Covered;

@@ -1,14 +1,19 @@
-use crate::Material;
-
+use super::*;
 #[derive(Clone, Copy, Debug)]
 pub struct Specular;
-
 impl Material for Specular {
-    fn wgsl_material_schema() -> crate::wgsl::Result<crate::wgsl::MaterialSchema> {
-        Ok(crate::wgsl::MaterialSchema::Specular)
+    fn shader() -> Result<ShaderModule> {
+        Ok(ShaderModule::new(
+            "hypertrace.material.specular",
+            ShaderKind::Material,
+            include_str!("shaders/specular.wgsl"),
+            Some(0),
+        ))
     }
-
-    fn wgsl_material(&self) -> crate::wgsl::Result<crate::wgsl::MaterialValue> {
-        Ok(crate::wgsl::MaterialValue::specular())
+    fn encode(&self) -> Result<MaterialValue> {
+        MaterialValue::new(Self::shader()?, vec![])
     }
+}
+pub fn specular() -> MaterialValue {
+    Specular.encode().expect("valid built-in material")
 }

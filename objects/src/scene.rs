@@ -4,9 +4,7 @@ use std::{convert::TryFrom, marker::PhantomData};
 
 pub trait Scene<G: Geometry>: Sized {
     /// Lower a scene without requiring a GPU device.
-    fn wgsl_scene(&self) -> crate::wgsl::Result<crate::wgsl::SceneDefinition> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
+    fn definition(&self) -> crate::shader::Result<crate::shader::SceneDefinition>;
 }
 
 #[derive(Clone, Debug)]
@@ -18,7 +16,7 @@ pub struct SceneImpl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, co
     /// Curvature radius in physical units; Euclidean scenes use one.
     pub radius: f64,
     /// Medium sampled before resolving a surface miss to the background.
-    pub medium: crate::wgsl::Medium,
+    pub medium: crate::shader::Medium,
 }
 
 impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize>
@@ -30,7 +28,7 @@ impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize>
             background,
             object,
             radius: 1.0,
-            medium: crate::wgsl::Medium::Vacuum,
+            medium: crate::shader::Medium::Vacuum,
             geometry: PhantomData,
         }
     }
@@ -39,18 +37,16 @@ impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize>
 impl<G: Geometry, V: View<G>, T: Object<G>, B: Background<G>, const H: usize> Scene<G>
     for SceneImpl<G, V, T, B, H>
 {
-    fn wgsl_scene(&self) -> crate::wgsl::Result<crate::wgsl::SceneDefinition> {
-        let mut registry = crate::wgsl::Registry::default();
-        T::wgsl_register(&mut registry)?;
-        Ok(crate::wgsl::SceneDefinition {
-            view: self.view.wgsl_view()?,
-            background: self.background.wgsl_background()?,
+    fn definition(&self) -> crate::shader::Result<crate::shader::SceneDefinition> {
+        let modules = T::shader_modules()?;
+        Ok(crate::shader::SceneDefinition {
+            view: self.view.view()?,
+            background: self.background.background()?,
             bounces: u32::try_from(H)?,
             radius: self.radius,
             medium: self.medium,
-            object: self.object.wgsl_object()?,
-            material_schemas: registry.material_schemas,
-            shape_schemas: registry.shape_schemas,
+            object: self.object.object_node()?,
+            modules,
         })
     }
 }

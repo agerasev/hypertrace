@@ -123,11 +123,11 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
 /// use hypertrace_examples::sp;
 /// use objects::Scene;
 /// let scene = sp::fog_scene::<8>();
-/// let definition = scene.wgsl_scene().unwrap();
+/// let definition = scene.definition().unwrap();
 /// ```
 pub fn fog_scene<const H: usize>() -> ExampleScene<H> {
     let mut scene = scene();
-    scene.medium = objects::wgsl::Medium::Homogeneous {
+    scene.medium = objects::shader::Medium::Homogeneous {
         extinction: 0.08,
         albedo: [0.85, 0.9, 0.95],
     };
@@ -137,25 +137,22 @@ pub fn fog_scene<const H: usize>() -> ExampleScene<H> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use objects::{wgsl, Scene as _};
+    use objects::{shader, Scene as _};
 
     #[test]
     fn spherical_demo_lowers_with_black_background_and_emissive_objects() {
         let scene = scene::<6>();
-        let definition = scene.wgsl_scene().unwrap();
-        assert_eq!(definition.view.map.geometry(), wgsl::Geometry::Spherical);
+        let definition = scene.definition().unwrap();
+        assert_eq!(definition.view.map.geometry(), shader::Geometry::Spherical);
         assert!(matches!(
             definition.background,
-            wgsl::Background::Constant([0.0, 0.0, 0.0])
+            shader::Background::Constant([0.0, 0.0, 0.0])
         ));
-        assert!(matches!(definition.medium, wgsl::Medium::Vacuum));
+        assert!(matches!(definition.medium, shader::Medium::Vacuum));
         assert_eq!(definition.radius, 1.0);
         assert_eq!(definition.bounces, 6);
         assert_eq!(scene.object.len(), 6);
-        assert!(definition
-            .material_schemas
-            .iter()
-            .any(|schema| matches!(schema, wgsl::MaterialSchema::Emissive(_))));
-        assert!(definition.shape_schemas.iter().any(|schema| matches!(schema, wgsl::ShapeSchema::Choice(shapes) if shapes.contains(&wgsl::ShapeSchema::GeodesicSphere))));
+        let compiled = shader::compile(&definition).unwrap();
+        assert_eq!(compiled.objects.len(), 6);
     }
 }

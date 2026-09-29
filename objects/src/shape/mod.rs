@@ -8,19 +8,31 @@ mod horosphere;
 mod plane;
 mod sphere;
 
-pub trait Shape<G: Geometry>: Sized {
-    /// Describe the WGSL implementation independently of the current value.
-    fn wgsl_shape_schema() -> crate::wgsl::Result<crate::wgsl::ShapeSchema> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
+use crate::shader::{
+    Geometry as RenderGeometry, Result, ShaderKind, ShaderModule, ShapeValue, Transform,
+};
 
-    /// Lower this shape's parameters to the portable scene representation.
-    fn wgsl_shape(&self) -> crate::wgsl::Result<crate::wgsl::ShapeValue> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
+pub trait Shape<G: Geometry>: Sized {
+    /// Describe this implementation and its dependencies independently of values.
+    fn shader() -> Result<ShaderModule>;
+    /// Encode this instance's parameters, independently of a GPU device.
+    fn encode(&self) -> Result<ShapeValue>;
 }
 
 pub use cube::*;
 pub use horosphere::*;
 pub use plane::*;
 pub use sphere::*;
+
+pub use choice::{choice, choice_schema};
+pub use mapped::{mapped, mapped_schema};
+pub use vector::{vector, vector_schema};
+
+pub trait ShapeValueExt {
+    fn mapped(self, map: Transform) -> Result<ShapeValue>;
+}
+impl ShapeValueExt for ShapeValue {
+    fn mapped(self, map: Transform) -> Result<ShapeValue> {
+        mapped(self, map)
+    }
+}

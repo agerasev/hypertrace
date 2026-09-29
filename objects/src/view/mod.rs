@@ -4,9 +4,7 @@ mod point;
 
 pub trait View<G: Geometry>: Sized {
     /// Lower the camera in f64; GPU conversion occurs when uploading the scene.
-    fn wgsl_view(&self) -> crate::wgsl::Result<crate::wgsl::View> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
+    fn view(&self) -> crate::shader::Result<crate::shader::View>;
 }
 
 pub use point::*;

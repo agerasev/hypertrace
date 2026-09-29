@@ -1,14 +1,19 @@
-use crate::Material;
-
+use super::*;
 #[derive(Clone, Copy, Debug)]
 pub struct Transparent;
-
 impl Material for Transparent {
-    fn wgsl_material_schema() -> crate::wgsl::Result<crate::wgsl::MaterialSchema> {
-        Ok(crate::wgsl::MaterialSchema::Transparent)
+    fn shader() -> Result<ShaderModule> {
+        Ok(ShaderModule::new(
+            "hypertrace.material.transparent",
+            ShaderKind::Material,
+            include_str!("shaders/transparent.wgsl"),
+            Some(0),
+        ))
     }
-
-    fn wgsl_material(&self) -> crate::wgsl::Result<crate::wgsl::MaterialValue> {
-        Ok(crate::wgsl::MaterialValue::transparent())
+    fn encode(&self) -> Result<MaterialValue> {
+        MaterialValue::new(Self::shader()?, vec![])
     }
+}
+pub fn transparent() -> MaterialValue {
+    Transparent.encode().expect("valid built-in material")
 }

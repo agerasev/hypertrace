@@ -39,8 +39,8 @@ adapter is available, so a passing CPU run is not GPU validation. Run GPU suites
 sequentially, recording the adapter and driver in each run:
 
 ```sh
-WGPU_BACKEND=vulkan cargo test -p hypertrace-wgpu -- --ignored --test-threads=1
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-wgpu --features viewer --example viewer -- --scene sp --smoke
+WGPU_BACKEND=vulkan cargo test -p hypertrace-renderer -- --ignored --test-threads=1
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-renderer --features viewer --example viewer -- --scene sp --smoke
 ```
 
 The viewer smoke path exercises camera motion, accumulation resets, resizing
@@ -51,7 +51,7 @@ The [example guide](examples/README.md) describes comparison and recurrence case
 For the web viewer, install `wasm32-unknown-unknown` and Trunk 0.21 or newer:
 
 ```sh
-cargo clippy -p hypertrace-wgpu --target wasm32-unknown-unknown --features web --example viewer -- -D warnings
+cargo clippy -p hypertrace-renderer --target wasm32-unknown-unknown --features web --example viewer -- -D warnings
 NO_COLOR=true trunk build --release
 ```
 
@@ -70,7 +70,7 @@ change later samples without indicating a geometry regression.
 
 Use `tools/compare_frames.py` for matching linear captures and
 `tools/compare_benchmarks.py` for comparable timing reports. The
-[renderer guide](renderer-wgpu/README.md#compare-rendered-frames) documents their
+[renderer guide](renderer/README.md#compare-rendered-frames) documents their
 inputs. Run timing workloads sequentially on the same adapter. Software Vulkan
 measures CPU-renderer performance; do not report it as hardware GPU throughput.
 Temporary captures are disposable; durable evidence should include source

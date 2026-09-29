@@ -49,27 +49,29 @@ Materials use three-component directions and normals in a local orthonormal
 tangent frame. Spherical frames use quaternion multiplication
 `V = P * Quaternion(0,local_direction)`, which is defined at antipodes as well.
 Hyperbolic frames use the canonical origin-to-point boost; Euclidean frames use
-the spatial components. Legacy hyperbolic custom leaves and tilings use explicit
-half-space conversions, including direction derivatives.
+the spatial components. Construction adapters and hyperbolic tilings use explicit
+half-space conversions, including direction derivatives where needed.
 
 **CPU and shader boundaries**
 
-The additive CPU API is `ccgeom::embedded::{Space3<T,K>, EmbeddedRay<T>,
+The CPU API is `ccgeom::embedded::{Space3<T,K>, EmbeddedRay<T>,
 EmbeddedIsometry<T,K>, Embedded3<T,K>}` with unit-radius builder aliases
 `Flat3`, `Hyperboloid3`, and `Spherical3`. Existing `Euclidean3` and
-`Hyperbolic3` keep their coordinate meaning. Legacy maps convert at lowering.
+`Hyperbolic3` keep their coordinate meaning. Construction geometries and maps
+convert explicitly through `objects::shader::RenderGeometry` and `RenderMap`.
 
 GPU isometries contain the same two quaternion rows, in f32. Every scene uses
 the shared embedded tracing kernel.
 
-`MaterialValue::custom` / `ShapeValue::custom` select v1 three-coordinate
-contracts through chart adapters. `embedded_custom` selects v2 `GeoRay`,
-`GeoHit`, `GeoTaggedHit`, and `GeoMaterialContext` contracts. V1 leaves are
-rejected for spherical scenes. V2 hit distances are physical; v1 hyperbolic
-distances are normalized and the adapter scales them by `R`. No source-text
-rewriting guesses a custom shader's coordinate convention. `GeoHit.valid` is
-0 for a miss, 1 for a hit, and 2 for numerical failure; wrappers propagate
-failure instead of treating it as an environmental miss.
+Every built-in and downstream shader module uses the embedded `GeoRay`,
+`GeoHit`, `GeoTaggedHit`, and `GeoMaterialContext` contracts. Hit distances are
+physical. Component-owned WGSL declares module dependencies explicitly, and
+component-owned CPU callbacks validate geometry requirements and encoded words.
+No source rewriting guesses a shader's coordinate convention. `GeoHit.valid` is
+0 for a miss, 1 for a hit, and 2 for numerical failure; wrappers propagate failure
+instead of treating it as an environmental miss. The
+[renderer guide](renderer/README.md#component-owned-shader-modules) specifies
+entry-point signatures, namespaces and parameter encoding.
 
 Camera-relative preparation composes object transforms with the inverse camera
 in CPU f64. Canonical scene data remains unchanged. Directional backgrounds

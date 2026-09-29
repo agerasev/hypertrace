@@ -17,10 +17,10 @@ impl<G: Geometry> PointView<G> {
     }
 }
 
-impl<G: Geometry> View<G> for PointView<G> {
-    fn wgsl_view(&self) -> crate::wgsl::Result<crate::wgsl::View> {
-        Ok(crate::wgsl::View {
-            map: crate::wgsl::identity::<G>()?,
+impl<G: crate::shader::RenderGeometry> View<G> for PointView<G> {
+    fn view(&self) -> crate::shader::Result<crate::shader::View> {
+        Ok(crate::shader::View {
+            map: crate::shader::identity::<G>()?,
             fov: self.fov,
         })
     }

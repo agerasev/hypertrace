@@ -20,16 +20,14 @@ impl<G: Geometry, S: Shape<G>, M: Material> Covered<G, S, M> {
 }
 
 impl<G: Geometry, S: Shape<G>, M: Material> Object<G> for Covered<G, S, M> {
-    fn wgsl_register(registry: &mut crate::wgsl::Registry) -> crate::wgsl::Result<()> {
-        registry.shape(S::wgsl_shape_schema()?);
-        registry.material(M::wgsl_material_schema()?);
-        Ok(())
+    fn shader_modules() -> crate::shader::Result<Vec<crate::shader::ShaderModule>> {
+        Ok(vec![S::shader()?, M::shader()?])
     }
 
-    fn wgsl_object(&self) -> crate::wgsl::Result<crate::wgsl::ObjectNode> {
-        Ok(crate::wgsl::ObjectNode::Covered {
-            shape: self.shape.wgsl_shape()?,
-            material: self.material.wgsl_material()?,
+    fn object_node(&self) -> crate::shader::Result<crate::shader::ObjectNode> {
+        Ok(crate::shader::ObjectNode::Covered {
+            shape: self.shape.encode()?,
+            material: self.material.encode()?,
         })
     }
 }

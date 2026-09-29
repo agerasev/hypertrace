@@ -16,9 +16,9 @@ use objects::{
     background::ConstBg,
     material::{Absorbing, Emissive},
     object::Covered,
+    shader::Result,
     shape::GeodesicSphere,
     view::PointView,
-    wgsl::Result,
     Mapped, SceneImpl,
 };
 
@@ -82,30 +82,30 @@ pub fn scene<const K: i8, const H: usize>(radius: f64) -> Result<ExampleScene<K,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use objects::{wgsl, Scene as _};
+    use objects::{shader, Scene as _};
     use vecmat::Vector;
 
-    fn endpoint(map: wgsl::Transform) -> Vector<f64, 4> {
+    fn endpoint(map: shader::Transform) -> Vector<f64, 4> {
         let origin = [1.0, 0.0, 0.0, 0.0].into();
         match map {
-            wgsl::Transform::Flat(map) => map.apply_vector(origin),
-            wgsl::Transform::Hyperboloid(map) => map.apply_vector(origin),
-            wgsl::Transform::Spherical(map) => map.apply_vector(origin),
+            shader::Transform::Flat(map) => map.apply_vector(origin),
+            shader::Transform::Hyperboloid(map) => map.apply_vector(origin),
+            shader::Transform::Spherical(map) => map.apply_vector(origin),
             _ => panic!("comparison must lower directly to embedded maps"),
         }
     }
 
     fn check_physical_layout<const K: i8>(radius: f64) -> Vec<u32> {
         let example = scene::<K, 2>(radius).unwrap();
-        let definition = example.wgsl_scene().unwrap();
-        let compiled = wgsl::compile(&definition).unwrap();
+        let definition = example.definition().unwrap();
+        let compiled = shader::compile(&definition).unwrap();
         assert_eq!(compiled.geometry.sign(), K);
         assert_eq!(compiled.transforms.len(), 9);
-        assert!(matches!(definition.medium, wgsl::Medium::Vacuum));
+        assert!(matches!(definition.medium, shader::Medium::Vacuum));
         assert_eq!(definition.radius, radius);
         assert!(matches!(
             definition.background,
-            wgsl::Background::Constant([0.0, 0.0, 0.0])
+            shader::Background::Constant([0.0, 0.0, 0.0])
         ));
 
         let space = Space3::<f64, K>::new(radius).unwrap();

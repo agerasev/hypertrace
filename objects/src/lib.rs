@@ -4,9 +4,9 @@ mod mapped;
 pub mod material;
 pub mod object;
 pub mod scene;
+pub mod shader;
 pub mod shape;
 pub mod view;
-pub mod wgsl;
 
 pub use background::Background;
 pub use mapped::Mapped;
@@ -18,3 +18,6 @@ pub use view::View;
 
 /// Geometry contract used by scene builders and choice macros.
 pub use ccgeom::Geometry;
+
+#[cfg(test)]
+mod tests;

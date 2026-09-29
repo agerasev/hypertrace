@@ -13,14 +13,15 @@ macro_rules! object_choice {
                 $vtype: $crate::Object<G>,
             )*
         {
-            fn wgsl_register(registry: &mut $crate::wgsl::Registry) -> $crate::wgsl::Result<()> {
-                $( <$vtype as $crate::Object<G>>::wgsl_register(registry)?; )*
-                Ok(())
+            fn shader_modules()->$crate::shader::Result<Vec<$crate::shader::ShaderModule>> {
+                let mut modules=Vec::new();
+                $(modules.extend(<$vtype as $crate::Object<G>>::shader_modules()?);)*
+                Ok(modules)
             }
 
-            fn wgsl_object(&self) -> $crate::wgsl::Result<$crate::wgsl::ObjectNode> {
+            fn object_node(&self) -> $crate::shader::Result<$crate::shader::ObjectNode> {
                 match self {
-                    $( Self::$variant(value) => <$vtype as $crate::Object<G>>::wgsl_object(value), )*
+                    $( Self::$variant(value) => <$vtype as $crate::Object<G>>::object_node(value), )*
                 }
             }
         }

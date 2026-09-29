@@ -18,11 +18,30 @@ impl Refractive {
 }
 
 impl Material for Refractive {
-    fn wgsl_material_schema() -> crate::wgsl::Result<crate::wgsl::MaterialSchema> {
-        Ok(crate::wgsl::MaterialSchema::Refractive)
+    fn shader() -> crate::shader::Result<crate::shader::ShaderModule> {
+        use crate::shader::{ShaderKind, ShaderModule};
+        let mut module = ShaderModule::new(
+            "hypertrace.material.refractive",
+            ShaderKind::Material,
+            include_str!("shaders/refractive.wgsl"),
+            Some(1),
+        );
+        module.validate_words = |_, _, words| {
+            let index = f32::from_bits(words[0]);
+            anyhow::ensure!(
+                index.is_finite() && index > 0.0,
+                "refractive index must be finite and positive"
+            );
+            Ok(())
+        };
+        Ok(module)
     }
-
-    fn wgsl_material(&self) -> crate::wgsl::Result<crate::wgsl::MaterialValue> {
-        crate::wgsl::MaterialValue::refractive(self.index)
+    fn encode(&self) -> crate::shader::Result<crate::shader::MaterialValue> {
+        let index = crate::shader::finite_f32(self.index)?;
+        anyhow::ensure!(index > 0.0, "refractive index must be positive");
+        crate::shader::MaterialValue::new(Self::shader()?, vec![index.to_bits()])
     }
+}
+pub fn refractive(index: f64) -> crate::shader::Result<crate::shader::MaterialValue> {
+    Refractive::new(index).encode()
 }

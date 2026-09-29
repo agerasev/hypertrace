@@ -1,11 +1,11 @@
 [build]
-target = "renderer-wgpu/web/index.html"
+target = "renderer/web/index.html"
 dist = "dist"
 example = "viewer"
 features = ["web"]
 
 [watch]
-watch = ["renderer-wgpu", "scene", "objects", "examples"]
+watch = ["renderer", "scene", "objects", "examples"]
 
 [serve]
 addresses = ["127.0.0.1"]

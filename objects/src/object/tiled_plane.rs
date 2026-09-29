@@ -6,26 +6,10 @@ use ccgeom::Geometry;
 use ccgeom::Hyperbolic3;
 use std::marker::PhantomData;
 
-pub trait PlaneTiling<G: Geometry>: Tiling {
-    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
-}
-impl PlaneTiling<Hyperbolic3> for tiling::Uniform {
-    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
-        Ok(crate::wgsl::Tiling::Uniform)
-    }
-}
-impl PlaneTiling<Hyperbolic3> for tiling::Pentagonal {
-    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
-        Ok(crate::wgsl::Tiling::Pentagonal)
-    }
-}
-impl PlaneTiling<Hyperbolic3> for tiling::Pentastar {
-    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
-        Ok(crate::wgsl::Tiling::Pentastar)
-    }
-}
+pub trait PlaneTiling<G: Geometry>: Tiling {}
+impl PlaneTiling<Hyperbolic3> for tiling::Uniform {}
+impl PlaneTiling<Hyperbolic3> for tiling::Pentagonal {}
+impl PlaneTiling<Hyperbolic3> for tiling::Pentastar {}
 
 #[derive(Clone, Copy, Debug)]
 pub struct TiledPlane<M: Material, K: Tiling, const N: usize> {
@@ -51,25 +35,25 @@ impl<M: Material, K: Tiling, const N: usize> TiledPlane<M, K, N> {
 impl<M: Material, K: PlaneTiling<Hyperbolic3>, const N: usize> Object<Hyperbolic3>
     for TiledPlane<M, K, N>
 {
-    fn wgsl_register(registry: &mut crate::wgsl::Registry) -> crate::wgsl::Result<()> {
-        registry.shape(crate::wgsl::ShapeSchema::Plane);
-        registry.material(M::wgsl_material_schema()?);
-        Ok(())
+    fn shader_modules() -> crate::shader::Result<Vec<crate::shader::ShaderModule>> {
+        Ok(vec![
+            crate::shape::plane_schema(),
+            tiling::tiled_schema(K::shader(), vec![M::shader()?; N], M::shader()?)?,
+        ])
     }
-
-    fn wgsl_object(&self) -> crate::wgsl::Result<crate::wgsl::ObjectNode> {
-        Ok(crate::wgsl::ObjectNode::Tiled {
-            shape: crate::wgsl::ShapeValue::plane(),
-            materials: self
-                .materials
-                .iter()
-                .map(M::wgsl_material)
-                .collect::<crate::wgsl::Result<Vec<_>>>()?,
-            border_material: self.border_material.wgsl_material()?,
-            tiling: K::wgsl_tiling()?,
-            // Plane tilings do not use cell_size; legacy builders may store NaN.
-            cell_size: 1.0,
-            border_width: self.border_width,
+    fn object_node(&self) -> crate::shader::Result<crate::shader::ObjectNode> {
+        Ok(crate::shader::ObjectNode::Covered {
+            shape: crate::shape::plane(),
+            material: tiling::tiled(
+                K::shader(),
+                self.materials
+                    .iter()
+                    .map(M::encode)
+                    .collect::<crate::shader::Result<Vec<_>>>()?,
+                self.border_material.encode()?,
+                1.0,
+                self.border_width,
+            )?,
         })
     }
 }

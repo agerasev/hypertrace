@@ -8,10 +8,10 @@ example with `--scene NAME`; `viewer`, `headless`, and `benchmark` also accept
 From the repository root:
 
 ```sh
-cargo run --release -p hypertrace-wgpu --example headless -- --list-scenes
-cargo run --release -p hypertrace-wgpu --features viewer --example viewer -- \
+cargo run --release -p hypertrace-renderer --example headless -- --list-scenes
+cargo run --release -p hypertrace-renderer --features viewer --example viewer -- \
   --scene compare-sp
-cargo run --release -p hypertrace-wgpu --example headless -- \
+cargo run --release -p hypertrace-renderer --example headless -- \
   --scene sp-loop-fog --width 640 --height 480 --samples 256 --output /tmp/sp-loop-fog
 ```
 
@@ -82,17 +82,17 @@ use objects::Scene as _;
 
 // The same physical comparison at spherical curvature +1/9.
 let source = examples::comparison::scene::<1, 1>(3.0)?;
-let definition = source.wgsl_scene()?;
-let scene = hypertrace_wgpu::Scene::from_definition(&definition)?;
+let definition = source.definition()?;
+let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
 
 // Unit-radius spherical recurrence with twelve surface/volume events and fog.
 let source = examples::recurrence::scene::<12>(true);
-let definition = source.wgsl_scene()?;
+let definition = source.definition()?;
 ```
 
 `comparison::scene::<K,H>(radius)` supports all three signs; Euclidean radius
 must be one. The factory rejects spherical radii that would wrap the layout
 past the camera's antipode. `recurrence::scene::<H>(false)` selects vacuum.
 Existing factories remain available as `eu::scene`, `hy::scene`, `sp::scene`,
-and `sp::fog_scene`. See the [renderer guide](../renderer-wgpu/README.md) for
+and `sp::fog_scene`. See the [renderer guide](../renderer/README.md) for
 custom shaders and [root README](../README.md) for browser setup.

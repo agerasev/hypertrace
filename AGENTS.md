@@ -8,7 +8,7 @@ history in commits, not new migration diaries.
 ## Boundaries and extensibility
 
 - `objects/` owns composable Rust scene components and their shader behavior;
-  `scene/` owns CPU scene compilation; `renderer-wgpu/` owns GPU execution and
+  `scene/` owns CPU scene compilation; `renderer/` owns GPU execution and
   presentation. `examples/` is the shared demonstration catalogue, distinct from
   `scene/` and the renderer's Cargo example binaries.
 - WGPU and WGSL are the sole rendering implementation. Do not add speculative
@@ -17,6 +17,16 @@ history in commits, not new migration diaries.
 - Built-in shapes and materials must use the same extension path as downstream
   components. Avoid central lists of concrete component types in the renderer
   or compiler. A new shape/material should not require editing those crates.
+- `ShaderModule` source uses `{{self}}` for entry points/private helper prefixes
+  and `{{dep0}}` for declared dependencies. Keep module keys and source independent
+  of parameter values; specialize structural keys with child modules. Component
+  validators own both geometry requirements and payload checks, including child
+  payload validation in wrappers. A shape needs at least one word for a distinct
+  leaf identity even when it has no parameters.
+- Use [the downstream extension test](renderer/tests/extensions.rs) as the
+  acceptance model: custom shape and material types compose and render in every
+  curvature without core edits. Primitive shader reuse requires explicit module
+  dependencies, not renderer-provided functions named after built-in shapes.
 - Separate shader structure from parameter values. Empty vectors and inactive
   choice variants still contribute their shader dependencies; changing values,
   vector lengths or active variants must not accidentally rebuild pipelines.

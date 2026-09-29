@@ -18,9 +18,9 @@ use objects::{
     background::ConstBg,
     material::{Absorbing, Emissive},
     object::Covered,
+    shader::Medium,
     shape::GeodesicSphere,
     view::PointView,
-    wgsl::Medium,
     Mapped, SceneImpl,
 };
 
@@ -83,7 +83,7 @@ pub fn scene<const H: usize>(fog: bool) -> ExampleScene<H> {
 mod tests {
     use super::*;
     use ccgeom::EmbeddedRay;
-    use objects::{wgsl, Scene as _};
+    use objects::{shader, Scene as _};
 
     #[test]
     fn behind_camera_beacon_has_a_forward_long_route() {
@@ -120,24 +120,16 @@ mod tests {
         let vacuum = scene::<12>(false);
         let fog = scene::<12>(true);
         for scene in [&vacuum, &fog] {
-            let definition = scene.wgsl_scene().unwrap();
-            assert_eq!(definition.view.map.geometry(), wgsl::Geometry::Spherical);
+            let definition = scene.definition().unwrap();
+            assert_eq!(definition.view.map.geometry(), shader::Geometry::Spherical);
             assert_eq!(definition.radius, 1.0);
             assert_eq!(definition.bounces, 12);
             assert_eq!(scene.object.len(), 4);
-            assert_eq!(
-                definition.shape_schemas,
-                [wgsl::ShapeSchema::GeodesicSphere]
-            );
-            assert_eq!(
-                definition.material_schemas,
-                [wgsl::MaterialSchema::Emissive(Box::new(
-                    wgsl::MaterialSchema::Absorbing
-                ))]
-            );
+            let compiled = shader::compile(&definition).unwrap();
+            assert_eq!(compiled.objects.len(), 4);
             assert!(matches!(
                 definition.background,
-                wgsl::Background::Constant([0.0, 0.0, 0.0])
+                shader::Background::Constant([0.0, 0.0, 0.0])
             ));
         }
         assert!(matches!(vacuum.medium, Medium::Vacuum));

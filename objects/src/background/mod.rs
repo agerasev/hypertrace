@@ -2,9 +2,7 @@ use ccgeom::Geometry;
 mod basic;
 
 pub trait Background<G: Geometry>: Sized {
-    fn wgsl_background(&self) -> crate::wgsl::Result<crate::wgsl::Background> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
+    fn background(&self) -> crate::shader::Result<crate::shader::Background>;
 }
 
 pub use basic::*;

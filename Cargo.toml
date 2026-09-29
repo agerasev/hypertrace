@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
-default-members = ["renderer-wgpu"]
+default-members = ["renderer"]
 
 members = [
     "objects",
-    "renderer-wgpu",
+    "renderer",
     "scene",
     "examples",
 ]

@@ -5,26 +5,10 @@ use crate::{
 use ccgeom::Hyperbolic3;
 use std::marker::PhantomData;
 
-pub trait HorosphereTiling: Tiling {
-    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
-        Err(crate::wgsl::unsupported::<Self>())
-    }
-}
-impl HorosphereTiling for tiling::Uniform {
-    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
-        Ok(crate::wgsl::Tiling::Uniform)
-    }
-}
-impl HorosphereTiling for tiling::Square {
-    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
-        Ok(crate::wgsl::Tiling::Square)
-    }
-}
-impl HorosphereTiling for tiling::Hexagonal {
-    fn wgsl_tiling() -> crate::wgsl::Result<crate::wgsl::Tiling> {
-        Ok(crate::wgsl::Tiling::Hexagonal)
-    }
-}
+pub trait HorosphereTiling: Tiling {}
+impl HorosphereTiling for tiling::Uniform {}
+impl HorosphereTiling for tiling::Square {}
+impl HorosphereTiling for tiling::Hexagonal {}
 
 #[derive(Clone, Copy, Debug)]
 pub struct TiledHorosphere<M: Material, K: HorosphereTiling, const N: usize> {
@@ -50,29 +34,29 @@ impl<M: Material, K: HorosphereTiling, const N: usize> TiledHorosphere<M, K, N> 
 impl<M: Material, K: HorosphereTiling, const N: usize> Object<Hyperbolic3>
     for TiledHorosphere<M, K, N>
 {
-    fn wgsl_register(registry: &mut crate::wgsl::Registry) -> crate::wgsl::Result<()> {
-        registry.shape(crate::wgsl::ShapeSchema::Horosphere);
-        registry.material(M::wgsl_material_schema()?);
-        Ok(())
+    fn shader_modules() -> crate::shader::Result<Vec<crate::shader::ShaderModule>> {
+        Ok(vec![
+            crate::shape::horosphere_schema(),
+            tiling::tiled_schema(K::shader(), vec![M::shader()?; N], M::shader()?)?,
+        ])
     }
-
-    fn wgsl_object(&self) -> crate::wgsl::Result<crate::wgsl::ObjectNode> {
-        let tiling = K::wgsl_tiling()?;
-        Ok(crate::wgsl::ObjectNode::Tiled {
-            shape: crate::wgsl::ShapeValue::horosphere(),
-            materials: self
-                .materials
-                .iter()
-                .map(M::wgsl_material)
-                .collect::<crate::wgsl::Result<Vec<_>>>()?,
-            border_material: self.border_material.wgsl_material()?,
-            tiling,
-            cell_size: if tiling == crate::wgsl::Tiling::Uniform {
-                1.0
-            } else {
-                self.cell_size
-            },
-            border_width: self.border_width,
+    fn object_node(&self) -> crate::shader::Result<crate::shader::ObjectNode> {
+        Ok(crate::shader::ObjectNode::Covered {
+            shape: crate::shape::horosphere(),
+            material: tiling::tiled(
+                K::shader(),
+                self.materials
+                    .iter()
+                    .map(M::encode)
+                    .collect::<crate::shader::Result<Vec<_>>>()?,
+                self.border_material.encode()?,
+                if K::uses_cell_size() {
+                    self.cell_size
+                } else {
+                    1.0
+                },
+                self.border_width,
+            )?,
         })
     }
 }

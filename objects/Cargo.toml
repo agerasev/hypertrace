@@ -8,3 +8,4 @@ edition = "2018"
 ccgeom = "0.1"
 vecmat = "0.7"
 scene = { package = "hypertrace-scene", path = "../scene" }
+anyhow = "1"

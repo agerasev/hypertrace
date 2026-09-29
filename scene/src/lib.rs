@@ -13,273 +13,135 @@ pub fn unsupported<T: ?Sized>() -> anyhow::Error {
 mod transform;
 pub use transform::{Geometry, Transform, validate_embedded_rows};
 
-/// A complete WGSL leaf function plus any uniquely named helpers.
-/// `key` identifies its implementation; parameter words have a fixed length.
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct ShaderLeaf {
-    pub key: String,
-    pub source: String,
-    pub entry_point: String,
-    pub parameter_words: u32,
+/// Geometry-dependent validation context, in physical world units.
+#[derive(Clone, Copy, Debug)]
+pub struct GeometryContext {
+    pub geometry: Geometry,
+    pub radius: f32,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum MaterialSchema {
-    Absorbing,
-    Lambertian,
-    Specular,
-    Transparent,
-    Refractive,
-    Colored(Box<Self>),
-    Emissive(Box<Self>),
-    Mixture(Vec<Self>),
-    Custom(ShaderLeaf),
-    EmbeddedCustom(ShaderLeaf),
+/// The calling convention of a linked module. Libraries provide shared helpers.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ShaderKind {
+    Shape,
+    Material,
+    Library,
 }
-impl MaterialSchema {
-    pub fn word_len(&self) -> usize {
-        match self {
-            Self::Absorbing | Self::Lambertian | Self::Specular | Self::Transparent => 0,
-            Self::Refractive => 1,
-            Self::Colored(inner) | Self::Emissive(inner) => 3 + inner.word_len(),
-            Self::Mixture(children) => {
-                children.len() + children.iter().map(Self::word_len).sum::<usize>()
-            }
-            Self::Custom(leaf) | Self::EmbeddedCustom(leaf) => leaf.parameter_words as usize,
+
+/// A component-owned WGSL implementation, independent of instance values.
+///
+/// `{{self}}` expands to this module's unique function prefix and `{{dep0}}`
+/// to its first dependency's prefix, etc. Helpers use `{{self}}_helper` names.
+/// Keys identify implementations, including their structural specialization;
+/// the linker rejects conflicting definitions and recursive dependencies.
+/// Callbacks belong to the component, so compilation needs no built-in catalogue.
+#[derive(Clone, Debug)]
+pub struct ShaderModule {
+    pub key: String,
+    pub source: String,
+    pub kind: ShaderKind,
+    /// Fixed parameter size, or None for a component-defined variable layout.
+    pub parameter_words: Option<u32>,
+    pub dependencies: Vec<Self>,
+    pub validate_context: fn(GeometryContext) -> Result<()>,
+    pub validate_words: fn(&Self, GeometryContext, &[u32]) -> Result<()>,
+}
+
+impl ShaderModule {
+    pub fn new(
+        key: impl Into<String>,
+        kind: ShaderKind,
+        source: impl Into<String>,
+        parameter_words: Option<u32>,
+    ) -> Self {
+        Self {
+            key: key.into(),
+            source: source.into(),
+            kind,
+            parameter_words,
+            dependencies: Vec::new(),
+            validate_context: |_| Ok(()),
+            validate_words: |_, _, _| Ok(()),
         }
+    }
+    /// An unambiguous structural key for a combinator's ordered dependencies.
+    pub fn specialized_key(template: &str, dependencies: &[Self]) -> String {
+        let mut key = format!("{}:{template}[", template.len());
+        for child in dependencies {
+            key.push_str(&format!("{}:{};", child.key.len(), child.key));
+        }
+        key.push(']');
+        key
+    }
+    pub fn validate_geometry(&self, context: GeometryContext) -> Result<()> {
+        (self.validate_context)(context)
+    }
+    pub fn validate(&self, context: GeometryContext, words: &[u32]) -> Result<()> {
+        anyhow::ensure!(
+            self.kind != ShaderKind::Shape || !words.is_empty(),
+            "shapes must reserve an identity word"
+        );
+        self.validate_geometry(context)?;
+        self.validate_length(words)?;
+        (self.validate_words)(self, context, words)
+    }
+    pub fn validate_length(&self, words: &[u32]) -> Result<()> {
+        if let Some(length) = self.parameter_words {
+            anyhow::ensure!(
+                words.len() == length as usize,
+                "module {} parameter length mismatch: expected {}, got {}",
+                self.key,
+                length,
+                words.len()
+            );
+        }
+        Ok(())
+    }
+    /// Compare shader structure, never parameter values or callback addresses.
+    pub fn same_implementation(&self, other: &Self) -> bool {
+        self.key == other.key
+            && self.kind == other.kind
+            && self.source == other.source
+            && self.parameter_words == other.parameter_words
+            && self.dependencies.len() == other.dependencies.len()
+            && self
+                .dependencies
+                .iter()
+                .zip(&other.dependencies)
+                .all(|(a, b)| a.same_implementation(b))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ShapeValue {
+    pub schema: ShaderModule,
+    pub words: Vec<u32>,
+}
+impl ShapeValue {
+    pub fn new(schema: ShaderModule, words: Vec<u32>) -> Result<Self> {
+        anyhow::ensure!(schema.kind == ShaderKind::Shape, "expected a shape module");
+        anyhow::ensure!(!words.is_empty(), "shapes must reserve an identity word");
+        schema.validate_length(&words)?;
+        Ok(Self { schema, words })
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct MaterialValue {
-    pub schema: MaterialSchema,
+    pub schema: ShaderModule,
     pub words: Vec<u32>,
 }
 impl MaterialValue {
-    pub fn absorbing() -> Self {
-        Self {
-            schema: MaterialSchema::Absorbing,
-            words: vec![],
-        }
-    }
-    pub fn lambertian() -> Self {
-        Self {
-            schema: MaterialSchema::Lambertian,
-            words: vec![],
-        }
-    }
-    pub fn specular() -> Self {
-        Self {
-            schema: MaterialSchema::Specular,
-            words: vec![],
-        }
-    }
-    pub fn transparent() -> Self {
-        Self {
-            schema: MaterialSchema::Transparent,
-            words: vec![],
-        }
-    }
-    pub fn refractive(index: f64) -> Result<Self> {
-        let index = finite_f32(index)?;
-        anyhow::ensure!(index > 0.0, "refractive index must be positive");
-        Ok(Self {
-            schema: MaterialSchema::Refractive,
-            words: vec![index.to_bits()],
-        })
-    }
-    pub fn colored(self, color: [f32; 3]) -> Result<Self> {
-        self.modifier(color, false)
-    }
-    pub fn emissive(self, emission: [f32; 3]) -> Result<Self> {
-        self.modifier(emission, true)
-    }
-    fn modifier(self, rgb: [f32; 3], emission: bool) -> Result<Self> {
+    pub fn new(schema: ShaderModule, words: Vec<u32>) -> Result<Self> {
         anyhow::ensure!(
-            rgb.iter().all(|&x| x.is_finite() && x >= 0.0),
-            "colors must be finite and nonnegative"
+            schema.kind == ShaderKind::Material,
+            "expected a material module"
         );
-        let mut words: Vec<_> = rgb.into_iter().map(f32::to_bits).collect();
-        words.extend(self.words);
-        let schema = if emission {
-            MaterialSchema::Emissive(Box::new(self.schema))
-        } else {
-            MaterialSchema::Colored(Box::new(self.schema))
-        };
+        schema.validate_length(&words)?;
         Ok(Self { schema, words })
     }
-    /// Weights precede concatenated child payloads. Each mixture draws its own
-    /// random number, including nested mixtures and one-component mixtures.
-    pub fn mixture(components: Vec<(f64, Self)>) -> Result<Self> {
-        let mut words = Vec::new();
-        let mut total = 0.0;
-        for (portion, _) in &components {
-            let weight = finite_f32(*portion)?;
-            anyhow::ensure!(weight >= 0.0, "mixture portions must be nonnegative");
-            total += *portion;
-            words.push(weight.to_bits());
-        }
-        anyhow::ensure!(total <= 1.00001, "mixture portions exceed one");
-        let mut schemas = Vec::new();
-        for (_, value) in components {
-            schemas.push(value.schema);
-            words.extend(value.words);
-        }
-        Ok(Self {
-            schema: MaterialSchema::Mixture(schemas),
-            words,
-        })
-    }
-    pub fn custom(leaf: ShaderLeaf, words: Vec<u32>) -> Result<Self> {
-        anyhow::ensure!(
-            words.len() == leaf.parameter_words as usize,
-            "custom material payload length mismatch"
-        );
-        Ok(Self {
-            schema: MaterialSchema::Custom(leaf),
-            words,
-        })
-    }
-    pub fn embedded_custom(leaf: ShaderLeaf, words: Vec<u32>) -> Result<Self> {
-        let mut value = Self::custom(leaf.clone(), words)?;
-        value.schema = MaterialSchema::EmbeddedCustom(leaf);
-        Ok(value)
-    }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub enum ShapeSchema {
-    Plane,
-    Sphere,
-    GeodesicSphere,
-    Cube,
-    Horosphere,
-    /// Legacy three-coordinate shader contract, adapted through its chart.
-    Custom(ShaderLeaf),
-    /// Embedded GeoRay/GeoHit shader contract; supports every curvature.
-    EmbeddedCustom(ShaderLeaf),
-    Mapped {
-        geometry: Geometry,
-        inner: Box<Self>,
-    },
-    Vector(Box<Self>),
-    Choice(Vec<Self>),
-}
-#[derive(Clone, Debug)]
-pub struct ShapeValue {
-    pub schema: ShapeSchema,
-    pub words: Vec<u32>,
-}
-impl ShapeValue {
-    // Even a parameterless shape owns a word, used as its self-hit identity.
-    pub fn plane() -> Self {
-        Self {
-            schema: ShapeSchema::Plane,
-            words: vec![0],
-        }
-    }
-    pub fn sphere() -> Self {
-        Self {
-            schema: ShapeSchema::Sphere,
-            words: vec![0],
-        }
-    }
-    pub fn geodesic_sphere(radius: f64) -> Result<Self> {
-        let radius = finite_f32(radius)?;
-        anyhow::ensure!(radius > 0.0, "sphere radius must be positive");
-        Ok(Self {
-            schema: ShapeSchema::GeodesicSphere,
-            words: vec![radius.to_bits()],
-        })
-    }
-    pub fn cube() -> Self {
-        Self {
-            schema: ShapeSchema::Cube,
-            words: vec![0],
-        }
-    }
-    pub fn horosphere() -> Self {
-        Self {
-            schema: ShapeSchema::Horosphere,
-            words: vec![0],
-        }
-    }
-    pub fn mapped(self, map: Transform) -> Result<Self> {
-        let mut words = map.words()?;
-        words.extend(self.words);
-        Ok(Self {
-            schema: ShapeSchema::Mapped {
-                geometry: map.geometry(),
-                inner: Box::new(self.schema),
-            },
-            words,
-        })
-    }
-    pub fn vector(element: ShapeSchema, values: Vec<Self>) -> Result<Self> {
-        anyhow::ensure!(values.len() < u32::MAX as usize, "too many shapes");
-        let mut words = vec![values.len() as u32];
-        words.resize(1 + values.len(), 0);
-        for (index, value) in values.into_iter().enumerate() {
-            anyhow::ensure!(value.schema == element, "shape vector schema mismatch");
-            words[index + 1] = u32::try_from(words.len())?;
-            words.extend(value.words);
-        }
-        Ok(Self {
-            schema: ShapeSchema::Vector(Box::new(element)),
-            words,
-        })
-    }
-    pub fn choice(variants: Vec<ShapeSchema>, index: usize, value: Self) -> Result<Self> {
-        anyhow::ensure!(
-            variants.get(index) == Some(&value.schema),
-            "shape choice schema mismatch"
-        );
-        let mut words = vec![u32::try_from(index)?];
-        words.extend(value.words);
-        Ok(Self {
-            schema: ShapeSchema::Choice(variants),
-            words,
-        })
-    }
-    pub fn custom(leaf: ShaderLeaf, mut words: Vec<u32>) -> Result<Self> {
-        anyhow::ensure!(
-            words.len() == leaf.parameter_words as usize,
-            "custom shape payload length mismatch"
-        );
-        if words.is_empty() {
-            words.push(0);
-        }
-        Ok(Self {
-            schema: ShapeSchema::Custom(leaf),
-            words,
-        })
-    }
-    pub fn embedded_custom(leaf: ShaderLeaf, words: Vec<u32>) -> Result<Self> {
-        let mut value = Self::custom(leaf.clone(), words)?;
-        value.schema = ShapeSchema::EmbeddedCustom(leaf);
-        Ok(value)
-    }
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum Tiling {
-    Uniform,
-    Square,
-    Hexagonal,
-    Pentagonal,
-    Pentastar,
-}
-impl Tiling {
-    pub fn tag(self) -> u32 {
-        match self {
-            Self::Uniform => 0,
-            Self::Square => 1,
-            Self::Hexagonal => 2,
-            Self::Pentagonal => 3,
-            Self::Pentastar => 4,
-        }
-    }
-}
 #[derive(Clone, Debug)]
 pub enum ObjectNode {
     Covered {
@@ -291,14 +153,6 @@ pub enum ObjectNode {
         inner: Box<Self>,
     },
     Vector(Vec<Self>),
-    Tiled {
-        shape: ShapeValue,
-        materials: Vec<MaterialValue>,
-        border_material: MaterialValue,
-        tiling: Tiling,
-        cell_size: f64,
-        border_width: f64,
-    },
 }
 #[derive(Clone, Debug)]
 pub struct View {
@@ -314,23 +168,6 @@ pub enum Background {
         power: f32,
     },
 }
-#[derive(Clone, Debug, Default)]
-pub struct Registry {
-    pub material_schemas: Vec<MaterialSchema>,
-    pub shape_schemas: Vec<ShapeSchema>,
-}
-impl Registry {
-    pub fn material(&mut self, schema: MaterialSchema) {
-        if !self.material_schemas.contains(&schema) {
-            self.material_schemas.push(schema);
-        }
-    }
-    pub fn shape(&mut self, schema: ShapeSchema) {
-        if !self.shape_schemas.contains(&schema) {
-            self.shape_schemas.push(schema);
-        }
-    }
-}
 #[derive(Clone, Debug)]
 pub struct SceneDefinition {
     pub view: View,
@@ -340,8 +177,8 @@ pub struct SceneDefinition {
     pub radius: f64,
     pub medium: Medium,
     pub object: ObjectNode,
-    pub material_schemas: Vec<MaterialSchema>,
-    pub shape_schemas: Vec<ShapeSchema>,
+    /// Type dependencies, including empty vectors and inactive choice variants.
+    pub modules: Vec<ShaderModule>,
 }
 
 /// Homogeneous analog transport: scalar extinction per world unit and RGB

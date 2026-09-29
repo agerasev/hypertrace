@@ -3,16 +3,18 @@
 Hypertrace separates Rust scene construction from GPU rendering:
 
 - `objects`: composable cameras, shapes, materials, backgrounds, and object trees.
-  Traits and choice/mixture macros lower these values to the scene representation.
+  Shapes, materials and tilings own their WGSL implementations, parameter layouts,
+  dependencies and validation. Traits and macros compose their scene descriptions.
 - `examples`: Euclidean (`eu`), hyperbolic (`hy`), and spherical (`sp`) example
   factories, including `sp::fog_scene` with homogeneous isotropic scattering.
-- `scene`: a device-independent scene representation and WGSL compiler. Shader
-  schemas describe structure separately from parameter values so ordinary scene
-  edits can reuse compiled pipelines.
-- `renderer-wgpu`: compute pipelines, progressive accumulation, explicit CPU
+- `scene`: CPU scene descriptions, a WGSL module linker and GPU data packing.
+  Modules describe structure separately from parameter values so ordinary scene
+  edits can reuse compiled pipelines. The linker has no built-in shape or material
+  catalogue.
+- `renderer`: compute pipelines, progressive accumulation, explicit CPU
   snapshots on native platforms, and direct GPU presentation through the optional
   Wgame viewer. The same viewer runs in the browser using WebAssembly and WebGPU;
-  Trunk bundles it with the HTML controls in `renderer-wgpu/web`.
+  Trunk bundles it with the HTML controls in `renderer/web`.
 
 The three spaces use scalar-first embedded points `(w,x,y,z)`. Hyperbolic
 points lie on the positive hyperboloid, spherical points on the unit 3-sphere,
@@ -25,8 +27,9 @@ Sibling libraries own the CPU mathematics: `vecmat-rs` supplies the quaternion
 pair algebra; `ccgeom` supplies checked isometries, points/tangents, physical
 radius contexts, advancement, and ball/half-space conversions. Legacy
 `Euclidean3` and `Hyperbolic3` keep their original coordinate meaning. Their
-scene transforms convert explicitly during lowering. Existing hyperbolic
-tilings and v1 custom leaves receive half-space coordinates through adapters.
+scene transforms convert explicitly through `RenderGeometry` and `RenderMap`
+traits. Hyperbolic tilings use half-space coordinates through explicit adapters;
+shader entry points receive embedded geometry in every curvature.
 
 Canonical scene and camera transforms remain in CPU f64. Before GPU upload,
 object maps are composed with the inverse camera in f64, then checked and
@@ -53,10 +56,15 @@ path tracing, and numerical limitations. Its source is
 [site/theory.html](site/theory.html), expanding on the
 [original article](https://agerasev.github.io/2020/03/12/hypertrace.html).
 
-Custom shapes and materials implement the corresponding `objects` trait and
-provide WGSL lowering hooks. A custom shader leaf carries its source, entry
-point, and parameter layout; no central renderer dispatch enum needs editing.
-See the [renderer guide](renderer-wgpu/README.md#custom-shader-leaves) for signatures.
+Custom shapes and materials implement the corresponding `objects` trait, returning
+the same `ShaderModule` descriptions and encoded values as built-ins. Modules own
+their WGSL source, parameter layouts, validators and explicit dependencies. The
+linker assigns namespaces and dispatch functions; no global registry or central
+list of implementations needs editing. Type dependencies include inactive choices
+and empty vector elements, preserving program structure during ordinary updates.
+See the [renderer guide](renderer/README.md#component-owned-shader-modules)
+for signatures and the [downstream extension test](renderer/tests/extensions.rs)
+for a complete composed shape/material implementation.
 
 All scene builders and tools use the shared embedded renderer. WGPU and WGSL
 are the rendering implementation; CPU construction and compilation remain

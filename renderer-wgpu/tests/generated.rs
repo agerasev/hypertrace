@@ -21,12 +21,12 @@ mod support;
 #[test]
 fn shared_builders_compile_with_original_cameras_and_bounce_limits() {
     for (name, camera, bounces) in [
-        ("eu", Camera::Euclidean(scenes::eu::camera()), 4),
-        ("hy", Camera::Hyperbolic(scenes::hy::camera()), 3),
+        ("eu", Camera::Euclidean(examples::eu::camera()), 4),
+        ("hy", Camera::Hyperbolic(examples::hy::camera()), 3),
         (
             "sp",
             Camera::Embedded(hypertrace_wgpu::wgsl::Transform::Spherical(
-                scenes::sp::camera(),
+                examples::sp::camera(),
             )),
             6,
         ),
@@ -58,10 +58,10 @@ fn shared_builders_compile_with_original_cameras_and_bounce_limits() {
 
 #[test]
 fn vector_length_and_active_choice_do_not_change_registered_schemas() {
-    let mut builder = scenes::eu::scene::<4>();
+    let mut builder = examples::eu::scene::<4>();
     let original = builder.wgsl_scene().unwrap();
     let original_source = hypertrace_wgpu::wgsl::compile(&original).unwrap().source;
-    builder.object[0].inner.shape = scenes::eu::Choice::Cube(Cube);
+    builder.object[0].inner.shape = examples::eu::Choice::Cube(Cube);
     builder.object.truncate(1);
     let changed = builder.wgsl_scene().unwrap();
     builder.object.clear();
@@ -76,7 +76,7 @@ fn vector_length_and_active_choice_do_not_change_registered_schemas() {
         Scene::from_definition(&definition).unwrap();
     }
 
-    let mut builder = scenes::hy::scene::<3>();
+    let mut builder = examples::hy::scene::<3>();
     let original = builder.wgsl_scene().unwrap();
     let original_source = hypertrace_wgpu::wgsl::compile(&original).unwrap().source;
     builder.object.reverse();
@@ -98,7 +98,7 @@ fn vector_length_and_active_choice_do_not_change_registered_schemas() {
 #[ignore = "requires a native WGPU compute adapter"]
 fn all_shared_builders_render_through_generated_wgsl() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
-    for example in scenes::EXAMPLES {
+    for example in examples::EXAMPLES {
         let name = example.id;
         let mut renderer = Renderer::new(
             &gpu.device,
@@ -124,8 +124,8 @@ fn all_shared_builders_render_through_generated_wgsl() {
 #[ignore = "requires a native WGPU compute adapter"]
 fn data_updates_choice_switches_and_empty_vectors_reuse_the_pipeline() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
-    let mut builder = scenes::eu::scene::<4>();
-    let compile = |builder: &scenes::eu::ExampleScene<4>| {
+    let mut builder = examples::eu::scene::<4>();
+    let compile = |builder: &examples::eu::ExampleScene<4>| {
         Scene::from_definition(&builder.wgsl_scene().unwrap()).unwrap()
     };
     let mut renderer =
@@ -134,7 +134,7 @@ fn data_updates_choice_switches_and_empty_vectors_reuse_the_pipeline() {
     renderer.render();
     let original = renderer.snapshot().unwrap();
 
-    builder.object[0].inner.shape = scenes::eu::Choice::Cube(Cube);
+    builder.object[0].inner.shape = examples::eu::Choice::Cube(Cube);
     builder.object[1].inner.material.diffuse.material.color = [0.9, 0.1, 0.4].into();
     builder.object[1].map = Shift::from_vector([0.5, -1.0, 0.0].into());
     builder.view.inner.fov = 0.8;

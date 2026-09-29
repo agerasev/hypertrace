@@ -1,6 +1,6 @@
 # Example scenes
 
-Native tools and the browser share the `scenes::EXAMPLES` registry. Run any
+Native tools and the browser share the `examples::EXAMPLES` registry. Run any
 example with `--scene NAME`; `viewer`, `headless`, and `benchmark` also accept
 `--list-scenes`. The browser's grouped Example menu uses the same list, and
 `?scene=NAME` selects an example directly.
@@ -81,12 +81,12 @@ definition, then create the renderer scene:
 use objects::Scene as _;
 
 // The same physical comparison at spherical curvature +1/9.
-let source = scenes::comparison::scene::<1, 1>(3.0)?;
+let source = examples::comparison::scene::<1, 1>(3.0)?;
 let definition = source.wgsl_scene()?;
 let scene = hypertrace_wgpu::Scene::from_definition(&definition)?;
 
 // Unit-radius spherical recurrence with twelve surface/volume events and fog.
-let source = scenes::recurrence::scene::<12>(true);
+let source = examples::recurrence::scene::<12>(true);
 let definition = source.wgsl_scene()?;
 ```
 

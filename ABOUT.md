@@ -4,7 +4,7 @@ Hypertrace separates Rust scene construction from GPU rendering:
 
 - `objects`: composable cameras, shapes, materials, backgrounds, and object trees.
   Traits and choice/mixture macros lower these values to the scene representation.
-- `scenes`: Euclidean (`eu`), hyperbolic (`hy`), and spherical (`sp`) example
+- `examples`: Euclidean (`eu`), hyperbolic (`hy`), and spherical (`sp`) example
   factories, including `sp::fog_scene` with homogeneous isotropic scattering.
 - `scene`: a device-independent scene representation and WGSL compiler. Shader
   schemas describe structure separately from parameter values so ordinary scene
@@ -58,7 +58,6 @@ provide WGSL lowering hooks. A custom shader leaf carries its source, entry
 point, and parameter layout; no central renderer dispatch enum needs editing.
 See the [renderer guide](renderer-wgpu/README.md#custom-shader-leaves) for signatures.
 
-The generated embedded renderer is the default for all scene builders and tools.
-The old fixed-record `Scene::eu()` / `Scene::hy()` renderer remains an explicit
-comparison fixture. Its removal is deferred until acceptance across GPU drivers
-and browser execution; retaining it does not change the default tracing model.
+All scene builders and tools use the shared embedded renderer. WGPU and WGSL
+are the rendering implementation; CPU construction and compilation remain
+separate from GPU resource management and execution.

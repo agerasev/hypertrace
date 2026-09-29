@@ -6,7 +6,7 @@ members = [
     "objects",
     "renderer-wgpu",
     "scene",
-    "scenes",
+    "examples",
 ]
 
 [patch.crates-io]

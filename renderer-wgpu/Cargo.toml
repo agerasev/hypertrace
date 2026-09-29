@@ -35,4 +35,4 @@ required-features = ["viewer"]
 
 [dev-dependencies]
 objects = { package = "hypertrace-objects", path = "../objects" }
-scenes = { package = "hypertrace-scenes", path = "../scenes" }
+examples = { package = "hypertrace-examples", path = "../examples" }

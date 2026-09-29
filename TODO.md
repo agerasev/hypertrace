@@ -1,10 +1,8 @@
 # TODO
 
-The [constant-curvature migration roadmap](CURVATURE_MIGRATION.md) describes the
-shared geometry kernel, spherical support, hyperbolic model migration, and
-distance/medium contracts across Hypertrace, ccgeom, and vecmat. Core shared
-geometry, spherical rendering, and homogeneous transport are implemented;
-cross-device/browser acceptance and the numerical/performance follow-ups remain.
+Current geometry conventions and precision limits are specified in
+[GEOMETRY_CONTRACT.md](GEOMETRY_CONTRACT.md). See [DEVELOPMENT.md](DEVELOPMENT.md)
+for the validation workflow and outstanding platform checks.
 
 ## Geometries
 
@@ -55,7 +53,8 @@ cross-device/browser acceptance and the numerical/performance follow-ups remain.
 + [x] Camera-relative object preparation in CPU f64
 + [ ] Recenter later path segments for wider hyperbolic numerical range
 + [ ] Validate the shared renderer on additional GPU drivers and in a browser
-+ [ ] Remove the legacy fixed-record comparison renderer after cross-device acceptance
++ [ ] Benchmark camera-relative uploads for large scenes
++ [ ] Acceleration structures
 
 ## Effects
 

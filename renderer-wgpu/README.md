@@ -24,11 +24,11 @@ cargo run --release -p hypertrace-wgpu --example headless -- \
   --scene hy --width 320 --height 240 --samples 64 --seed 3735928559 --output /tmp/hy-wgpu
 ```
 
-`viewer`, `headless`, and `benchmark` share the `scenes::EXAMPLES` catalog and
+`viewer`, `headless`, and `benchmark` share the `examples::EXAMPLES` catalog and
 support `--list-scenes`. Besides `eu`, `hy`, and `sp`, it includes the
 `compare-*` physical-layout comparisons, `sp-fog`, `sp-loop`, and `sp-loop-fog`.
 The browser presents the same grouped catalog and accepts `?scene=NAME` URLs.
-See the [example guide](../scenes/README.md) for all IDs, default event budgets,
+See the [example guide](../examples/README.md) for all IDs, default event budgets,
 and the geometric effects to look for. Start with 64 samples for comparison
 markers and 256 or more for fog.
 
@@ -145,20 +145,20 @@ accuracy range. See [the geometry contract](../GEOMETRY_CONTRACT.md).
 
 ## Generic scene builders
 
-`hypertrace-scenes` contains the shared factories and catalog used by native and
+`hypertrace-examples` contains the shared factories and catalog used by native and
 browser viewers. The WGPU examples lower those builders as follows:
 
 ```rust,ignore
 use objects::Scene as _;
-let definition = scenes::hy::scene::<3>().wgsl_scene()?;
+let definition = examples::hy::scene::<3>().wgsl_scene()?;
 let scene = hypertrace_wgpu::Scene::from_definition(&definition)?;
 let renderer = hypertrace_wgpu::Renderer::new(&device, &queue, (640, 480), scene, 1)?;
 ```
 
-The generic `scenes::comparison::scene::<K,H>(radius)?` builder preserves the
+The generic `examples::comparison::scene::<K,H>(radius)?` builder preserves the
 physical marker layout across curvature signs and radii. For example,
 `scene::<1,1>(3.0)?` uses spherical curvature +1/9 with one surface event.
-`scenes::recurrence::scene::<12>(true)` builds the floorless spherical long-route
+`examples::recurrence::scene::<12>(true)` builds the floorless spherical long-route
 scene with fog. Its `false` variant selects vacuum. These geometric examples
 use emissive absorbing spheres for clear silhouettes; the original studios
 retain diffuse, reflective, and refractive materials.
@@ -171,8 +171,7 @@ The renderer also accepts this intermediate representation directly.
 Supported compositions include `SceneImpl`, point and mapped views, constant and
 Euclidean gradient backgrounds, covered and mapped objects, object choices and
 vectors, shape choices and vectors, mapped shapes, nested mixtures, `Colored`,
-and `Emissive`. Primitive shapes and tilings retain the preceding backend stage's
-coverage. Maps support Euclidean shifts, rotations and homogeneous rigid maps,
+and `Emissive`. Primitive shapes and tilings share the same geometry contracts. Maps support Euclidean shifts, rotations and homogeneous rigid maps,
 and hyperbolic complex Möbius maps through explicit adapters. Embedded
 `Flat3`, `Hyperboloid3`, and `Spherical3` builders use their checked
 `EmbeddedIsometry<f64,K>` maps directly. Other maps report an unsupported error.
@@ -194,10 +193,7 @@ lower it again so primitive validation uses the new physical scale.
 Materials execute in the original nesting order: a mixture draws and subtracts
 weights in order, `Colored` changes throughput before calling its child, and
 `Emissive` adds light before calling its child. Nested mixtures keep their own
-random draws. The previous fixed-record renderer remains available through
-`Scene::eu()` / `Scene::hy()` as an explicit comparison fixture. It is not used
-by the default scene tools and does not support spherical geometry or media.
-Removal is deferred until acceptance across GPU drivers and browser execution.
+random draws.
 
 ### Homogeneous media
 
@@ -208,7 +204,7 @@ is isotropic. Both surface and volume interactions consume the bounce budget.
 
 ```rust,ignore
 use objects::Scene as _;
-let mut source = scenes::sp::fog_scene::<12>();
+let mut source = examples::sp::fog_scene::<12>();
 source.medium = objects::wgsl::Medium::Homogeneous {
     extinction: 0.08,
     albedo: [0.85, 0.9, 0.95],
@@ -284,7 +280,7 @@ three-component positions and chart normals/directions. Euclidean coordinates
 remain Cartesian; hyperbolic values are half-space coordinates with normalized
 Euclidean directions. The adapter converts positions and direction derivatives
 and scales legacy hyperbolic hit distances by `R`. V1 leaves are rejected for
-spherical scenes with an explicit migration diagnostic; use v2 there. The
+spherical scenes with an explicit compatibility diagnostic; use v2 there. The
 compiler does not rewrite source text to guess a leaf's coordinate convention.
 
 Use unique WGSL helper names as well as a unique leaf key. Invalid WGSL is reported
@@ -311,13 +307,14 @@ nested materials, custom leaves, empty vectors, choices, repeated-hit identities
 and recovery after shader compilation or resource-limit errors. Embedded checks
 compare map actions with independent matrices, verify chart derivatives and
 frames, test physical radii and interval boundaries, and force spherical medium
-events beyond several circuits. The captured pre-migration reference is in
-[MIGRATION_BASELINE.md](../MIGRATION_BASELINE.md).
+events beyond several circuits. Keep these invariant and behavior checks when
+changing internal representation; old implementation snapshots are not required.
 
 Native numerical tests have run on software Vulkan. Viewer smoke tests passed
 for `eu`, `hy` and `sp` on Intel Arc Vulkan, including camera motion, resizing
 across binding limits, restoration and presentation. The WASM viewer build check
-passed; a headed browser run of the migrated renderer remains unverified.
+passed; a headed browser run of the shared renderer remains unverified.
+See [DEVELOPMENT.md](../DEVELOPMENT.md) for the workspace validation workflow.
 
 ### Compare rendered frames
 
@@ -345,7 +342,7 @@ configurations sequentially with identical scene, dimensions, samples, seed, and
 bounce limit. Defaults are four events for `eu`, three for `hy`, six for `sp`,
 one for geometric comparisons and `sp-loop`, and twelve for both fog presets.
 Surface and volume interactions both consume this budget. Use `--list-scenes`
-to find a workload and consult the [example guide](../scenes/README.md) for its
+to find a workload and consult the [example guide](../examples/README.md) for its
 layout; each spherical preset has a black miss background.
 
 ```sh

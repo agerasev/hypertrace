@@ -17,8 +17,8 @@ construction and compatibility adapters.
 
 - Current stable Rust and Cargo.
 - Sibling `../vecmat-rs` and `../ccgeom` checkouts. Workspace patches use these
-  sources for the shared geometry migration; `ccgeom` also uses local `vecmat`.
-  Compatible revisions are recorded in [the validation report](MIGRATION_VALIDATION.md).
+  sources for the shared geometry kernel; `ccgeom` also uses local `vecmat`.
+  Compatible revisions and setup are recorded in [DEVELOPMENT.md](DEVELOPMENT.md).
 - A native WGPU adapter with compute support. Software Vulkan can run the tests.
 - A sibling `../wgame` checkout with `WindowConfig::required_limits` and
   `use_adapter_buffer_limits`. Cargo resolves this optional path dependency even
@@ -40,7 +40,7 @@ equal-layout curvature comparisons (`compare-eu`, `compare-hy`, `compare-sp`),
 gentler-curvature variants, and spherical fog and long-route examples. Use
 `--list-scenes` in any native tool to see all choices. Start with `compare-sp`
 to see distant spheres grow again or `sp-loop` to see light arriving by the long
-route around spherical space. The [example guide](scenes/README.md) explains
+route around spherical space. The [example guide](examples/README.md) explains
 what to observe and how the builders work.
 
 Spherical scenes use emissive objects and a configurable black miss background.
@@ -87,12 +87,10 @@ shaders. Unsupported browsers show a message in the page. No Wgame changes are
 needed: Hypertrace enables WGPU's WebGPU feature alongside Wgame's web runtime.
 Trunk downloads a matching `wasm-bindgen` tool on the first build if needed.
 
-The earlier renderer was validated in headed Chromium on the local Intel GPU
-with `--enable-unsafe-webgpu`. The shared-kernel migration still needs a headed
-browser validation run. All 35 GPU tests pass on both llvmpipe and Intel Arc Vulkan. Native viewer
-smoke tests pass for all three geometries, and the WASM viewer and release web
-bundle build successfully. Whether a browser exposes WebGPU without flags
-depends on its platform and GPU support.
+Whether a browser exposes WebGPU without flags depends on its platform and GPU
+support. Native validation has covered software Vulkan and Intel Arc Vulkan; a
+headed browser run of the shared renderer remains an outstanding platform check.
+See [DEVELOPMENT.md](DEVELOPMENT.md) for validation commands and limitations.
 
 To reproduce the high-quality previews and publish the gallery, video link,
 theory page, and viewer together, see [site/README.md](site/README.md).
@@ -110,7 +108,7 @@ Rust builder:
 
 ```rust,ignore
 use objects::Scene as _;
-let mut source = scenes::sp::fog_scene::<12>();
+let mut source = examples::sp::fog_scene::<12>();
 source.medium = objects::wgsl::Medium::Homogeneous {
     extinction: 0.08, // inverse world units
     albedo: [0.85, 0.9, 0.95],
@@ -122,7 +120,7 @@ let scene = hypertrace_wgpu::Scene::from_definition(&definition)?;
 The CLI's `sp` selection uses the vacuum version. The floorless `sp-loop-fog`
 example allows rays missing every object to scatter after multiple spherical
 circuits. Fog samples a physical free-flight distance before resolving a surface
-miss. See the [example guide](scenes/README.md) for shared curvature and
+miss. See the [example guide](examples/README.md) for shared curvature and
 recurrence builders, and the [renderer guide](renderer-wgpu/README.md) for
 custom materials and embedded shader leaves.
 

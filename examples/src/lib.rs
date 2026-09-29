@@ -5,7 +5,7 @@
 //! The const parameter selects the maximum number of light bounces.
 //!
 //! ```
-//! use hypertrace_scenes::{eu, hy, sp};
+//! use hypertrace_examples::{eu, hy, sp};
 //!
 //! let euclidean: eu::ExampleScene<4> = eu::scene();
 //! let hyperbolic: hy::ExampleScene<3> = hy::scene();

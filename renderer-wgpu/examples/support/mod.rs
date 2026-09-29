@@ -3,7 +3,7 @@
 use hypertrace_wgpu::{Result, Scene};
 
 pub fn catalog() -> String {
-    scenes::EXAMPLES
+    examples::EXAMPLES
         .iter()
         .map(|example| {
             format!(
@@ -16,7 +16,7 @@ pub fn catalog() -> String {
 }
 
 pub fn scene(name: &str) -> Result<Scene> {
-    let example = scenes::find(name).ok_or_else(|| {
+    let example = examples::find(name).ok_or_else(|| {
         anyhow::anyhow!("unknown example {name:?}; choose one of:\n{}", catalog())
     })?;
     let definition = example.definition()?;

@@ -630,7 +630,7 @@ mod tests {
 
     #[test]
     fn generated_params_keep_radius_medium_and_relative_camera_contract() {
-        let mut definition = scenes::sp::scene::<6>().wgsl_scene().unwrap();
+        let mut definition = examples::sp::scene::<6>().wgsl_scene().unwrap();
         definition.radius = 2.5;
         definition.medium = scene_ir::Medium::Homogeneous {
             extinction: 0.125,
@@ -651,11 +651,11 @@ mod tests {
     fn relative_preparation_preserves_far_translated_scenes() {
         let cases = [
             (
-                scenes::eu::scene::<4>().wgsl_scene().unwrap(),
+                examples::eu::scene::<4>().wgsl_scene().unwrap(),
                 scene_ir::Transform::Euclidean(Euclidean3::shift_x(1e9)),
             ),
             (
-                scenes::hy::scene::<3>().wgsl_scene().unwrap(),
+                examples::hy::scene::<3>().wgsl_scene().unwrap(),
                 scene_ir::Transform::Hyperboloid(
                     ccgeom::Space3::<f64, -1>::unit()
                         .translation([1.0, 0.0, 0.0].into(), 12.0)
@@ -735,7 +735,7 @@ mod tests {
     #[test]
     fn generated_validation_keeps_radius_constraints_and_medium_finite() {
         let scene =
-            Scene::from_definition(&scenes::sp::scene::<6>().wgsl_scene().unwrap()).unwrap();
+            Scene::from_definition(&examples::sp::scene::<6>().wgsl_scene().unwrap()).unwrap();
         let mut changed = scene.clone();
         changed.radius = 0.01;
         assert!(

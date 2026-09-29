@@ -9,7 +9,7 @@ use wgpu::util::DeviceExt;
 #[ignore = "requires a native WGPU compute adapter"]
 fn generated_uniform_carries_physical_radius_and_medium() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
-    let mut definition = scenes::sp::scene::<6>().wgsl_scene().unwrap();
+    let mut definition = examples::sp::scene::<6>().wgsl_scene().unwrap();
     definition.radius = 2.5;
     definition.medium = hypertrace_wgpu::wgsl::Medium::Homogeneous {
         extinction: 0.125,

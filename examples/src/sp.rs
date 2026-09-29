@@ -120,7 +120,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
 /// interrupt a sampled free flight whenever they occur first.
 ///
 /// ```
-/// use hypertrace_scenes::sp;
+/// use hypertrace_examples::sp;
 /// use objects::Scene;
 /// let scene = sp::fog_scene::<8>();
 /// let definition = scene.wgsl_scene().unwrap();

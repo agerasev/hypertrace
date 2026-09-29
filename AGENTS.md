@@ -1,0 +1,85 @@
+# Working on Hypertrace
+
+Read [DEVELOPMENT.md](DEVELOPMENT.md) for setup and checks, and
+[GEOMETRY_CONTRACT.md](GEOMETRY_CONTRACT.md) before changing geometry or transport.
+Keep this file focused on enduring engineering lessons; record implementation
+history in commits, not new migration diaries.
+
+## Boundaries and extensibility
+
+- `objects/` owns composable Rust scene components and their shader behavior;
+  `scene/` owns CPU scene compilation; `renderer-wgpu/` owns GPU execution and
+  presentation. `examples/` is the shared demonstration catalogue, distinct from
+  `scene/` and the renderer's Cargo example binaries.
+- WGPU and WGSL are the sole rendering implementation. Do not add speculative
+  backend abstractions. Keep CPU construction and validation usable without an
+  adapter.
+- Built-in shapes and materials must use the same extension path as downstream
+  components. Avoid central lists of concrete component types in the renderer
+  or compiler. A new shape/material should not require editing those crates.
+- Separate shader structure from parameter values. Empty vectors and inactive
+  choice variants still contribute their shader dependencies; changing values,
+  vector lengths or active variants must not accidentally rebuild pipelines.
+- Preserve composition order and material coordinate frames. Shape mapping and
+  object mapping have different material-frame semantics. Nested mixtures retain
+  their own random draws; emission and color wrappers run in their nesting order.
+
+## Geometry and transport invariants
+
+- Positions and tangents are scalar-first `(w,x,y,z)`. Curvature signs are
+  `-1,0,+1`; curved scenes use physical radius `R`, and Euclidean scenes use one.
+  Camera forward is local negative z. Isometry composition is
+  `outer.chain(inner)(p) = outer(inner(p))`.
+- Hit distance is forward physical travel, not endpoint distance. Surface
+  intervals are `[minimum,maximum)`. Spherical phase reduction must never discard
+  complete circuits from event distance, fog sampling or accumulated travel.
+- A surface miss leaves the medium interval unbounded. Homogeneous free-flight
+  sampling already accounts for survival; do not apply exponential attenuation
+  a second time. Surface and volume events both consume the interaction budget.
+- Canonical maps stay in CPU f64. Compose camera-relative object maps before
+  checked f32 upload; do not mutate canonical data during camera movement.
+- Invalid numerical states are distinct from misses. Propagate failure through
+  wrappers and stop with prior emission, without adding environmental light.
+- The documented f32 limits matter. Hyperbolic step bounds are emergency guards,
+  not accuracy promises. Distance accumulation range is not a coordinate range.
+  Relaxed shader arithmetic can remove compensated-summation terms: preserve the
+  explicit 1024-unit block/remainder travel representation.
+- Tangent section classification needs a coefficient-scaled backward-error band.
+  GPU drivers have differed by one ULP at a spherical tangent. Keep resolved near
+  misses as misses rather than loosening all geometric test tolerances.
+- Keep explicit chart conversion semantics. Legacy Euclidean/half-space maps and
+  embedded maps are not interchangeable merely because their scalar counts match.
+
+## Validation and GPU behavior
+
+- Ordinary tests skip GPU checks. Run affected CPU tests first, then the opt-in
+  GPU suite sequentially when changing shader generation, geometry or transport.
+  Record which adapter ran; sandboxed runs may select software Vulkan while a
+  desktop run selects hardware.
+- Preserve independent analytic and invariant tests when removing old code.
+  Port useful reset, resizing, tiling, accumulation and presentation tests rather
+  than deleting them because their fixtures used a retired renderer path.
+- Check both native viewer and WASM builds when touching shared viewer code.
+  A successful web bundle does not prove browser WebGPU execution.
+- WGPU queue writes execute before the next submission. Submit encoded work
+  before changing parameters or resetting accumulation. Rebind presentation after
+  replacing pixel buffers on resize.
+- Native readback waits for producer work before submitting its copy. Intel MTL
+  with Mesa 23.2.1 otherwise returned partially updated first snapshots. Interactive
+  presentation should remain on the GPU without that CPU wait.
+- Buffer upload chunking cannot bypass a storage-binding limit. Viewer hosts fit
+  render resolution to supported bindings and scale presentation; headless tools
+  preserve requested dimensions and report an unsupported size.
+- Use the shared example catalogue for CLI and browser choices. Keep demonstrations
+  focused on observable geometry, lighting and transport behavior.
+
+## Repository workflow
+
+- Companion checkouts are `../vecmat-rs`, `../ccgeom`, and `../wgame`. Cargo resolves
+  the optional Wgame path even for headless builds. Keep compatible revision pins
+  in `.travis.yml` and `DEVELOPMENT.md` synchronized when changing dependencies.
+- Check worktree status before editing and avoid overwriting concurrent work.
+  Keep mechanical renames separate from semantic changes and commit meaningful
+  milestones when requested. Do not push or publish solely to complete local work.
+- Keep generated renders, build output and temporary validation logs outside
+  source control. The repository currently ignores `Cargo.lock`.

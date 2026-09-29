@@ -5,7 +5,7 @@ example = "viewer"
 features = ["web"]
 
 [watch]
-watch = ["renderer-wgpu", "scene", "objects", "scenes"]
+watch = ["renderer-wgpu", "scene", "objects", "examples"]
 
 [serve]
 addresses = ["127.0.0.1"]

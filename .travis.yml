@@ -3,7 +3,7 @@ os: linux
 dist: jammy
 rust: stable
 
-# Publish these companion commits before running remote CI for this migration.
+# Companion revisions must be available on their remotes before CI can fetch them.
 env:
   global:
     - VECMAT_REV=2e43fd9dce251658a217a8556ba2695f83b36fdd

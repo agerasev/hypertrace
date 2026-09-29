@@ -1,6 +1,6 @@
 # Shared geometry implementation contract
 
-This contract fixes the conventions implemented by the constant-curvature migration.
+This contract fixes the shared CPU and WGSL geometry conventions.
 The kernel uses normalized curvature signs `K = -1, 0, +1` and scalar-first
 embedded coordinates `(w, x, y, z)`. Camera forward is local negative z.
 
@@ -59,10 +59,8 @@ EmbeddedIsometry<T,K>, Embedded3<T,K>}` with unit-radius builder aliases
 `Flat3`, `Hyperboloid3`, and `Spherical3`. Existing `Euclidean3` and
 `Hyperbolic3` keep their coordinate meaning. Legacy maps convert at lowering.
 
-GPU isometries contain the same two quaternion rows, in f32. Generated embedded
-rendering is the default. The original `Scene::eu()` / `Scene::hy()` fixed-record
-renderer is retained as an explicit comparison fixture, with removal deferred
-until acceptance across GPU drivers and browser execution.
+GPU isometries contain the same two quaternion rows, in f32. Every scene uses
+the shared embedded tracing kernel.
 
 `MaterialValue::custom` / `ShapeValue::custom` select v1 three-coordinate
 contracts through chart adapters. `embedded_custom` selects v2 `GeoRay`,

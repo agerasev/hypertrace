@@ -102,8 +102,8 @@ fn spherical_camera_circuit_uses_physical_radius_without_recompilation() {
 fn camera_updates_reprepare_objects_without_pipeline_changes() {
     let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
     for definition in [
-        scenes::hy::scene::<3>().wgsl_scene().unwrap(),
-        scenes::sp::scene::<6>().wgsl_scene().unwrap(),
+        examples::hy::scene::<3>().wgsl_scene().unwrap(),
+        examples::sp::scene::<6>().wgsl_scene().unwrap(),
     ] {
         let scene = Scene::from_definition(&definition).unwrap();
         let canonical = bytemuck::cast_slice::<_, u8>(&scene.objects).to_vec();

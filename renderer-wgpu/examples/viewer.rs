@@ -70,7 +70,7 @@ async fn start() -> wgame::Result<()> {
             web::supported(),
             "WebGPU is unavailable. Use a WebGPU-capable browser on HTTPS or localhost."
         );
-        for example in scenes::EXAMPLES {
+        for example in examples::EXAMPLES {
             web::add_example(
                 example.id,
                 example.title,
@@ -88,7 +88,7 @@ async fn start() -> wgame::Result<()> {
     let config = WindowConfig::default()
         .title(&format!(
             "Hypertrace · {}",
-            scenes::find(&scene).unwrap().title
+            examples::find(&scene).unwrap().title
         ))
         .size(if smoke { (320, 240) } else { (960, 720) })
         .required_limits(wgpu::Limits {

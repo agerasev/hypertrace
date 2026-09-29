@@ -1,16 +1,17 @@
+use ccgeom::Flat3;
 use hypertrace_examples as examples;
 use hypertrace_renderer::{
     Scene,
-    shader::{Background, ObjectNode},
+    shader::{Background, Geometry, Result, SceneDefinition},
 };
 
-pub fn example(name: &str) -> Scene {
-    Scene::from_definition(&examples::find(name).unwrap().definition().unwrap()).unwrap()
+pub fn scene<G: Geometry>(factory: fn() -> Result<SceneDefinition<G>>) -> Scene<G> {
+    Scene::from_definition(&factory().unwrap()).unwrap()
 }
 
-pub fn background(color: [f32; 3]) -> Scene {
-    let mut definition = examples::find("eu").unwrap().definition().unwrap();
-    definition.object = ObjectNode::Vector(vec![]);
-    definition.background = Background::Constant(color);
+pub fn background(color: [f32; 3]) -> Scene<Flat3> {
+    let mut definition = examples::factories::eu().unwrap();
+    definition.objects.clear();
+    definition.background = Background::constant(color);
     Scene::from_definition(&definition).unwrap()
 }

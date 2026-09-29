@@ -17,12 +17,11 @@ impl Refractive {
     }
 }
 
-impl Material for Refractive {
-    fn shader() -> crate::shader::Result<crate::shader::ShaderModule> {
-        use crate::shader::{ShaderKind, ShaderModule};
-        let mut module = ShaderModule::new(
+impl<G: crate::shader::Geometry> Material<G> for Refractive {
+    fn shader() -> crate::shader::Result<crate::shader::MaterialModule<G>> {
+        use crate::shader::MaterialModule;
+        let mut module = MaterialModule::new(
             "hypertrace.material.refractive",
-            ShaderKind::Material,
             include_str!("shaders/refractive.wgsl"),
             Some(1),
         );
@@ -36,12 +35,14 @@ impl Material for Refractive {
         };
         Ok(module)
     }
-    fn encode(&self) -> crate::shader::Result<crate::shader::MaterialValue> {
+    fn encode(&self) -> crate::shader::Result<crate::shader::MaterialValue<G>> {
         let index = crate::shader::finite_f32(self.index)?;
         anyhow::ensure!(index > 0.0, "refractive index must be positive");
-        crate::shader::MaterialValue::new(Self::shader()?, vec![index.to_bits()])
+        crate::shader::MaterialValue::new(<Self as Material<G>>::shader()?, vec![index.to_bits()])
     }
 }
-pub fn refractive(index: f64) -> crate::shader::Result<crate::shader::MaterialValue> {
-    Refractive::new(index).encode()
+pub fn refractive<G: crate::shader::Geometry>(
+    index: f64,
+) -> crate::shader::Result<crate::shader::MaterialValue<G>> {
+    <Refractive as Material<G>>::encode(&Refractive::new(index))
 }

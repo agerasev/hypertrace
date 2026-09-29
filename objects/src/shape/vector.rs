@@ -1,10 +1,9 @@
 use super::*;
 use std::convert::TryFrom;
 
-pub fn vector_schema(inner: ShaderModule) -> ShaderModule {
-    let mut module = ShaderModule::new(
+pub fn vector_schema<G: Geometry>(inner: ShapeModule<G>) -> ShapeModule<G> {
+    let mut module = ShapeModule::new(
         "hypertrace.shape.vector",
-        ShaderKind::Shape,
         r#"
 fn {{self}}(base:u32,ray:GeoRay,previous_identity:u32)->GeoTaggedHit {
     var result=GeoTaggedHit(geo_miss(),0xffffffffu);
@@ -20,23 +19,9 @@ fn {{self}}(base:u32,ray:GeoRay,previous_identity:u32)->GeoTaggedHit {
 "#,
         None,
     );
-    module.dependencies = vec![inner];
-    module.key = ShaderModule::specialized_key(&module.key, &module.dependencies);
-    if module
-        .dependencies
-        .iter()
-        .any(|child| child.kind != ShaderKind::Shape)
-    {
-        module.validate_context = |_| Err(anyhow::anyhow!("expected a shape dependency"));
-    }
+    module.dependencies = vec![inner.into_source()];
+    module.key = ShapeModule::<G>::specialized_key(&module.key, &module.dependencies);
     module.validate_words = |module, ctx, words| {
-        anyhow::ensure!(
-            module
-                .dependencies
-                .iter()
-                .all(|child| child.kind == ShaderKind::Shape),
-            "expected a shape dependency"
-        );
         let count = *words
             .first()
             .ok_or_else(|| anyhow::anyhow!("shape vector payload is empty"))?
@@ -69,8 +54,10 @@ fn {{self}}(base:u32,ray:GeoRay,previous_identity:u32)->GeoTaggedHit {
     module
 }
 
-pub fn vector(element: ShaderModule, values: Vec<ShapeValue>) -> Result<ShapeValue> {
-    anyhow::ensure!(element.kind == ShaderKind::Shape, "expected a shape module");
+pub fn vector<G: Geometry>(
+    element: ShapeModule<G>,
+    values: Vec<ShapeValue<G>>,
+) -> Result<ShapeValue<G>> {
     anyhow::ensure!(values.len() < u32::MAX as usize, "too many shapes");
     let mut words = vec![values.len() as u32];
     words.resize(1 + values.len(), 0);
@@ -86,10 +73,10 @@ pub fn vector(element: ShaderModule, values: Vec<ShapeValue>) -> Result<ShapeVal
 }
 
 impl<G: Geometry, T: Shape<G>> Shape<G> for Vec<T> {
-    fn shader() -> Result<ShaderModule> {
+    fn shader() -> Result<ShapeModule<G>> {
         Ok(vector_schema(T::shader()?))
     }
-    fn encode(&self) -> Result<ShapeValue> {
+    fn encode(&self) -> Result<ShapeValue<G>> {
         vector(
             T::shader()?,
             self.iter().map(T::encode).collect::<Result<_>>()?,

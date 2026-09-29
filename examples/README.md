@@ -4,7 +4,8 @@ Each scene is a standalone binary in `src/bin/`, using the rendering libraries.
 The optional gallery tools and browser share `hypertrace_examples::EXAMPLES`.
 Run a scene by its binary name; `viewer`, `headless`, and `benchmark` accept
 `--scene NAME` and `--list-scenes`. The browser's grouped Example menu uses the same list, and
-`?scene=NAME` selects an example directly.
+`?scene=NAME` selects an example directly. Changing the browser selection reloads
+the selected application; each running renderer keeps its geometry type.
 
 From the repository root:
 
@@ -121,17 +122,21 @@ use objects::Scene as _;
 
 #[wgame::app]
 async fn main() -> wgame::Result<()> {
-    hypertrace_examples::viewer::run(hypertrace_examples::Example::new(
-        "my-scene", "My scene", || hypertrace_examples::sp::scene::<6>().definition(),
-    )).await
+    hypertrace_examples::viewer::run(
+        hypertrace_examples::Example::new("my-scene", "My scene"),
+        || hypertrace_examples::sp::scene::<6>().definition(),
+    ).await
 }
 ```
 
 Replace the factory with any typed scene builder or `SceneDefinition` producer.
-`viewer::run_gallery` accepts a caller-provided descriptor slice when selection
-is useful. The renderer only receives compiled scene data and knows no example
-names. The `viewer` feature is enabled by default; `--no-default-features` builds
-headless tools and factories without Wgame. All binaries retain `--help`, and
+The optional catalogue holds metadata only. `with_example!` dispatches gallery,
+headless, and benchmark startup to a concrete factory and generic host.
+`SceneDefinition<G>`, `Camera<G>`, and `Renderer<G>` retain the same geometry type
+throughout their lifetime. Heterogeneous object sets are tuples; repeated objects
+of one type use vectors. The renderer knows no example names. The `viewer` feature
+is enabled by default; `--no-default-features` builds headless tools and factories
+without Wgame. All binaries retain `--help`, and
 interactive binaries accept `--smoke` for the twelve-frame presentation check.
 
 The dependency direction is `examples` → `renderer` / `objects` → `scene`.

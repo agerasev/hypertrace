@@ -1,6 +1,8 @@
 //! Completed-render timings, with resets, startup and readback measured separately.
 use anyhow::{Context, bail, ensure};
-use hypertrace_renderer::{Gpu, Renderer, Result};
+use hypertrace_examples::{Example, with_example};
+use hypertrace_renderer::{Gpu, Renderer, Result, Scene};
+use objects::shader::{Geometry, SceneDefinition};
 use std::time::{Duration, Instant};
 
 mod support;
@@ -13,7 +15,7 @@ fn finish(gpu: &Gpu) -> Result<()> {
     Ok(())
 }
 
-fn reset(gpu: &Gpu, renderer: &mut Renderer, seed: u32, batch: u32) -> Result<()> {
+fn reset<G: Geometry>(gpu: &Gpu, renderer: &mut Renderer<G>, seed: u32, batch: u32) -> Result<()> {
     renderer.reset(seed);
     renderer.set_samples_per_dispatch(batch)?;
     // write_buffer transfers start on submission; poll alone cannot flush them.
@@ -21,7 +23,12 @@ fn reset(gpu: &Gpu, renderer: &mut Renderer, seed: u32, batch: u32) -> Result<()
     finish(gpu)
 }
 
-fn render_samples(gpu: &Gpu, renderer: &mut Renderer, samples: u32, batch: u32) -> Result<()> {
+fn render_samples<G: Geometry>(
+    gpu: &Gpu,
+    renderer: &mut Renderer<G>,
+    samples: u32,
+    batch: u32,
+) -> Result<()> {
     let mut remaining = samples;
     while remaining > 0 {
         let count = remaining.min(batch);
@@ -91,13 +98,58 @@ fn main() -> Result<()> {
         "samples, trials and warmup must be positive"
     );
     ensure!((1..=1024).contains(&batch), "batch must be 1..=1024");
+    let options = Options {
+        width,
+        height,
+        samples,
+        trials,
+        warmup,
+        batch,
+        seed,
+        bounces,
+        output,
+    };
+    with_example!(scene_name.as_str(), |example, factory| run(
+        example, factory, options
+    ))
+}
+
+struct Options {
+    width: u32,
+    height: u32,
+    samples: u32,
+    trials: u32,
+    warmup: u32,
+    batch: u32,
+    seed: u32,
+    bounces: Option<u32>,
+    output: String,
+}
+
+fn run<G: Geometry>(
+    example: Example,
+    factory: fn() -> Result<SceneDefinition<G>>,
+    options: Options,
+) -> Result<()> {
+    let Options {
+        width,
+        height,
+        samples,
+        trials,
+        warmup,
+        batch,
+        seed,
+        bounces,
+        output,
+    } = options;
+    let scene_name = example.id;
     let device_start = Instant::now();
     let gpu = futures::executor::block_on(Gpu::headless())?;
     let device_setup_ms = device_start.elapsed().as_secs_f64() * 1000.0;
     let adapter = gpu.adapter.get_info();
     eprintln!("WGPU benchmark adapter: {adapter:?}");
     let setup_start = Instant::now();
-    let mut scene = support::scene(&scene_name)?;
+    let mut scene = Scene::from_definition(&factory()?)?;
     if let Some(value) = bounces {
         scene.bounces = value;
     }
@@ -171,7 +223,7 @@ fn main() -> Result<()> {
         json_string(&device_type),
         json_string(&driver),
         json_string(&backend_api),
-        json_string(&scene_name)
+        json_string(scene_name)
     );
     std::fs::write(&output, report)?;
     Ok(())

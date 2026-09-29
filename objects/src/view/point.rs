@@ -1,5 +1,5 @@
+use crate::shader::Geometry;
 use crate::View;
-use ccgeom::Geometry;
 use std::marker::PhantomData;
 
 #[derive(Clone, Debug)]
@@ -17,10 +17,10 @@ impl<G: Geometry> PointView<G> {
     }
 }
 
-impl<G: crate::shader::RenderGeometry> View<G> for PointView<G> {
-    fn view(&self) -> crate::shader::Result<crate::shader::View> {
+impl<G: Geometry> View<G> for PointView<G> {
+    fn view(&self) -> crate::shader::Result<crate::shader::View<G>> {
         Ok(crate::shader::View {
-            map: crate::shader::identity::<G>()?,
+            map: crate::shader::Transform::<G>::identity(),
             fov: self.fov,
         })
     }

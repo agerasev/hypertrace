@@ -19,8 +19,7 @@ scene.addEventListener("change", () => {
     describe_example();
     const url = new URL(location.href);
     url.searchParams.set("scene", scene.value);
-    history.replaceState(null, "", url);
-    canvas.focus();
+    location.assign(url);
 });
 quality.addEventListener("change", () => canvas.focus());
 document.querySelector("#reset").addEventListener("click", () => {
@@ -54,7 +53,7 @@ export function add_example(id, title, text, group) {
     option.textContent = title;
     options.appendChild(option);
     examples.set(id, text);
-    // The registry's first entry is the default. Select a requested URL only
+    // The catalogue's first entry is the default. Select a requested URL only
     // when Rust supplies a matching entry; unknown IDs keep the first example.
     if (first || id === requestedScene) scene.value = id;
     describe_example();

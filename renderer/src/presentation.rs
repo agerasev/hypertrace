@@ -6,7 +6,7 @@
 
 use std::borrow::Cow;
 
-use crate::Renderer;
+use crate::{Renderer, shader::Geometry};
 
 /// Draws one renderer into a single-sample attachment of any positive size.
 /// The image fills the attachment using nearest-neighbor scaling, preserving
@@ -22,7 +22,11 @@ pub struct Presenter {
 }
 
 impl Presenter {
-    pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat, renderer: &Renderer) -> Self {
+    pub fn new<G: Geometry>(
+        device: &wgpu::Device,
+        format: wgpu::TextureFormat,
+        renderer: &Renderer<G>,
+    ) -> Self {
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("hypertrace presentation layout"),
             entries: &[
@@ -95,10 +99,10 @@ impl Presenter {
         }
     }
 
-    fn bindings(
+    fn bindings<G: Geometry>(
         device: &wgpu::Device,
         layout: &wgpu::BindGroupLayout,
-        renderer: &Renderer,
+        renderer: &Renderer<G>,
     ) -> wgpu::BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("hypertrace presentation bindings"),
@@ -117,7 +121,7 @@ impl Presenter {
     }
 
     /// Refresh references after renderer resize; no pixels move through the CPU.
-    pub fn rebind(&mut self, device: &wgpu::Device, renderer: &Renderer) {
+    pub fn rebind<G: Geometry>(&mut self, device: &wgpu::Device, renderer: &Renderer<G>) {
         self.bindings = Self::bindings(device, &self.layout, renderer);
     }
 

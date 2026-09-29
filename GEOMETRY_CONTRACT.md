@@ -59,14 +59,14 @@ The horosphere normal is computed directly as an ambient unit tangent.
 The CPU API is `ccgeom::embedded::{Space3<T,K>, EmbeddedRay<T>,
 EmbeddedIsometry<T,K>, Embedded3<T,K>}` with unit-radius builder aliases
 `Flat3`, `Hyperboloid3`, and `Spherical3`. These are curvature aliases for the
-same representation. `objects::shader::RenderGeometry` and `RenderMap` carry
-these canonical geometries and maps into CPU scene descriptions.
+same representation. `scene::Geometry` supports these three canonical geometries;
+component trait implementations express which geometries they support.
 
-`scene::Transform` is an opaque canonical isometry with runtime curvature
-selection; `from_isometry` erases a builder map's compile-time curvature.
-`renderer::Camera` contains one such transform. There are no alternate map or
-camera representations, compatibility adapters, or chart-dependent movement
-paths. Local motion takes physical distances, angles, and radius explicitly;
+`scene::Transform<G>` stores a canonical isometry of geometry `G`.
+`from_isometry` preserves that geometry through `Camera<G>`, `SceneDefinition<G>`,
+`CompiledScene<G>`, and `Renderer<G>`. Curvature sign is a type-level constant;
+radius is a checked physical value. Mixed-geometry construction fails to compile.
+Local motion takes physical distances, angles, and radius explicitly;
 translations in x/y/z order precede rotations in x/y/z order.
 
 GPU isometries contain the same two quaternion rows, in f32. Every scene uses
@@ -75,7 +75,7 @@ the shared embedded tracing kernel.
 Every built-in and downstream shader module uses the embedded `GeoRay`,
 `GeoHit`, `GeoTaggedHit`, and `GeoMaterialContext` contracts. Hit distances are
 physical. Component-owned WGSL declares module dependencies explicitly, and
-component-owned CPU callbacks validate geometry requirements and encoded words.
+component-owned CPU callbacks validate physical radius and encoded words.
 No source rewriting guesses a shader's coordinate convention. `GeoHit.valid` is
 0 for a miss, 1 for a hit, and 2 for numerical failure; wrappers propagate failure
 instead of treating it as an environmental miss. The
@@ -94,7 +94,7 @@ space. A medium event after multiple circuits retains its full physical
 distance. A vacuum miss evaluates the scene background; the spherical example
 uses black initially and obtains light from emissive objects.
 
-`Medium::Homogeneous { extinction, albedo }` implements a scalar extinction
+`Medium { extinction, albedo }` implements a scalar extinction
 coefficient per physical world unit, RGB scattering albedo, and isotropic
 scattering. Zero extinction is vacuum; zero albedo is pure absorption. Both
 surface and volume events consume the finite bounce budget. Deterministic tests

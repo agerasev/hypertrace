@@ -24,7 +24,7 @@ pub mod recurrence;
 pub mod sp;
 
 mod catalog;
-pub use catalog::{EXAMPLES, Example, find};
+pub use catalog::{EXAMPLES, Example, factories, find};
 
 /// Native/WebGPU application host for independent example factories.
 #[cfg(feature = "viewer")]

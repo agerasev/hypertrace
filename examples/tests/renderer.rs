@@ -63,7 +63,8 @@ fn accumulation_reset_resize_and_scene_upload() {
     r.render();
     assert_eq!(r.snapshot().unwrap(), vec![[0.25, 0.5, 0.75, 1.0]; 99]);
     // Grow from an empty scene, then shrink back to an empty scene.
-    r.update_scene(support::example("hy")).unwrap();
+    r.update_scene(support::scene(hypertrace_examples::factories::eu))
+        .unwrap();
     r.render();
     let pixels = r.snapshot().unwrap();
     assert!(pixels.iter().flatten().all(|x| x.is_finite()));
@@ -77,27 +78,29 @@ fn accumulation_reset_resize_and_scene_upload() {
 #[ignore = "requires a native WGPU compute adapter"]
 fn fixed_seed_batching_and_repeated_renders_agree() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
-    for scene in [
-        support::example("eu"),
-        support::example("hy"),
-        support::example("sp"),
-    ] {
-        let mut r = Renderer::new(&gpu.device, &gpu.queue, (24, 18), scene, 3735928559).unwrap();
-        r.set_samples_per_dispatch(4).unwrap();
-        r.render();
-        let batch = r.snapshot().unwrap();
-        assert!(
-            batch.iter().all(|p| p[3] == 1.0),
-            "first frame must contain every pixel"
-        );
-        r.reset(3735928559);
-        r.set_samples_per_dispatch(1).unwrap();
-        for _ in 0..4 {
+    for name in ["eu", "hy", "sp"] {
+        hypertrace_examples::with_example!(name, |_metadata, factory| {
+            let scene = support::scene(factory);
+            let mut r =
+                Renderer::new(&gpu.device, &gpu.queue, (24, 18), scene, 3735928559).unwrap();
+            r.set_samples_per_dispatch(4).unwrap();
             r.render();
-        }
-        assert_eq!(batch, r.snapshot().unwrap());
-        let camera = r.scene().camera;
-        r.update_camera(camera, 1.0).unwrap();
-        assert!(r.snapshot().unwrap().iter().all(|&p| p == [0.0; 4]));
+            let batch = r.snapshot().unwrap();
+            assert!(
+                batch.iter().all(|p| p[3] == 1.0),
+                "first frame must contain every pixel"
+            );
+            r.reset(3735928559);
+            r.set_samples_per_dispatch(1).unwrap();
+            for _ in 0..4 {
+                r.render();
+            }
+            assert_eq!(batch, r.snapshot().unwrap());
+            let camera = r.scene().camera;
+            r.update_camera(camera, 1.0).unwrap();
+            assert!(r.snapshot().unwrap().iter().all(|&p| p == [0.0; 4]));
+            Ok::<(), anyhow::Error>(())
+        })
+        .unwrap();
     }
 }

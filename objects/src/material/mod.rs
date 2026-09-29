@@ -6,10 +6,10 @@ mod refractive;
 mod specular;
 mod transparent;
 
-use crate::shader::{MaterialValue, Result, ShaderKind, ShaderModule};
-pub trait Material: Sized {
-    fn shader() -> Result<ShaderModule>;
-    fn encode(&self) -> Result<MaterialValue>;
+use crate::shader::{Geometry, MaterialModule, MaterialValue, Result};
+pub trait Material<G: Geometry>: Sized {
+    fn shader() -> Result<MaterialModule<G>>;
+    fn encode(&self) -> Result<MaterialValue<G>>;
 }
 
 pub use absorbing::*;
@@ -20,15 +20,15 @@ pub use refractive::*;
 pub use specular::*;
 pub use transparent::*;
 
-pub trait MaterialValueExt {
-    fn colored(self, rgb: [f32; 3]) -> Result<MaterialValue>;
-    fn emissive(self, rgb: [f32; 3]) -> Result<MaterialValue>;
+pub trait MaterialValueExt<G: Geometry> {
+    fn colored(self, rgb: [f32; 3]) -> Result<MaterialValue<G>>;
+    fn emissive(self, rgb: [f32; 3]) -> Result<MaterialValue<G>>;
 }
-impl MaterialValueExt for MaterialValue {
-    fn colored(self, rgb: [f32; 3]) -> Result<MaterialValue> {
+impl<G: Geometry> MaterialValueExt<G> for MaterialValue<G> {
+    fn colored(self, rgb: [f32; 3]) -> Result<MaterialValue<G>> {
         colored(self, rgb)
     }
-    fn emissive(self, rgb: [f32; 3]) -> Result<MaterialValue> {
+    fn emissive(self, rgb: [f32; 3]) -> Result<MaterialValue<G>> {
         emissive(self, rgb)
     }
 }

@@ -1,40 +1,24 @@
 //! Generic Rust builders through generated WGSL, including GPU update semantics.
 use ccgeom::{Flat3, Geometry3};
 use hypertrace_examples as examples;
-use hypertrace_renderer::{Camera, Gpu, Renderer, Scene, shader::Transform};
+use hypertrace_renderer::{
+    Gpu, Renderer, Scene,
+    shader::{Geometry, SceneDefinition, Transform},
+};
 use objects::{
     Mapped, Scene as _, SceneImpl,
     background::ConstBg,
     material::{Absorbing, Colored, Emissive},
     mixture,
     object::Covered,
-    shape::{Cube, Plane},
+    shape::Plane,
     view::PointView,
 };
 
-#[path = "../src/bin/support/mod.rs"]
-mod support;
-
 #[test]
 fn shared_builders_compile_with_declared_cameras_and_bounce_limits() {
-    for (name, camera, bounces) in [
-        (
-            "eu",
-            Camera::from(Transform::from_isometry(examples::eu::camera()).unwrap()),
-            4,
-        ),
-        (
-            "hy",
-            Camera::from(Transform::from_isometry(examples::hy::camera()).unwrap()),
-            3,
-        ),
-        (
-            "sp",
-            Camera::from(Transform::from_isometry(examples::sp::camera()).unwrap()),
-            6,
-        ),
-    ] {
-        let scene = support::scene(name).unwrap();
+    fn check<G: Geometry>(definition: SceneDefinition<G>, camera: Transform<G>, bounces: u32) {
+        let scene = Scene::from_definition(&definition).unwrap();
         scene.validate().unwrap();
         for (actual, expected) in scene
             .camera
@@ -43,43 +27,45 @@ fn shared_builders_compile_with_declared_cameras_and_bounce_limits() {
             .unwrap()
             .into_iter()
             .flatten()
-            .zip(
-                camera
-                    .transform()
-                    .components()
-                    .unwrap()
-                    .into_iter()
-                    .flatten(),
-            )
+            .zip(camera.components().unwrap().into_iter().flatten())
         {
             assert!((actual - expected).abs() < 1e-12);
         }
         assert_eq!(scene.fov, 1.0);
         assert_eq!(scene.bounces, bounces);
     }
+    check(
+        examples::factories::eu().unwrap(),
+        Transform::from_isometry(examples::eu::camera()).unwrap(),
+        4,
+    );
+    check(
+        examples::factories::hy().unwrap(),
+        Transform::from_isometry(examples::hy::camera()).unwrap(),
+        3,
+    );
+    check(
+        examples::factories::sp().unwrap(),
+        Transform::from_isometry(examples::sp::camera()).unwrap(),
+        6,
+    );
 }
 
 #[test]
-fn vector_length_and_active_choice_do_not_change_shader_dependencies() {
+fn static_groups_and_vector_lengths_do_not_change_shader_dependencies() {
     let mut builder = examples::eu::scene::<4>();
     let original = builder.definition().unwrap();
     let original_source = hypertrace_renderer::shader::compile(&original)
         .unwrap()
         .source;
-    builder.object[0].inner.shape = examples::eu::Choice::Cube(Cube);
-    builder.object.truncate(1);
+    builder.object.0.clear();
+    builder.object.1.push(builder.object.1[0].clone());
     let changed = builder.definition().unwrap();
-    builder.object.clear();
+    builder.object.0.clear();
+    builder.object.1.clear();
+    builder.object.2.clear();
     let empty = builder.definition().unwrap();
     for definition in [changed, empty] {
-        assert_eq!(definition.modules.len(), original.modules.len());
-        assert!(
-            definition
-                .modules
-                .iter()
-                .zip(&original.modules)
-                .all(|(actual, expected)| actual.same_implementation(expected))
-        );
         assert_eq!(
             hypertrace_renderer::shader::compile(&definition)
                 .unwrap()
@@ -94,19 +80,15 @@ fn vector_length_and_active_choice_do_not_change_shader_dependencies() {
     let original_source = hypertrace_renderer::shader::compile(&original)
         .unwrap()
         .source;
-    builder.object.reverse();
-    builder.object.truncate(1);
+    builder.object.0.push(builder.object.0[0].clone());
+    builder.object.0.reverse();
+    builder.object.1.clear();
     let changed = builder.definition().unwrap();
-    builder.object.clear();
+    builder.object.0.clear();
+    builder.object.1.clear();
+    builder.object.2.clear();
+    builder.object.3.clear();
     for definition in [changed, builder.definition().unwrap()] {
-        assert_eq!(definition.modules.len(), original.modules.len());
-        assert!(
-            definition
-                .modules
-                .iter()
-                .zip(&original.modules)
-                .all(|(actual, expected)| actual.same_implementation(expected))
-        );
         assert_eq!(
             hypertrace_renderer::shader::compile(&definition)
                 .unwrap()
@@ -122,30 +104,34 @@ fn vector_length_and_active_choice_do_not_change_shader_dependencies() {
 fn all_shared_builders_render() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
     for example in examples::EXAMPLES {
-        let name = example.id;
-        let mut renderer = Renderer::new(
-            &gpu.device,
-            &gpu.queue,
-            (37, 29),
-            support::scene(name).unwrap(),
-            123,
-        )
+        examples::with_example!(example.id, |metadata, factory| {
+            let name = metadata.id;
+            let mut renderer = Renderer::new(
+                &gpu.device,
+                &gpu.queue,
+                (37, 29),
+                Scene::from_definition(&factory().unwrap()).unwrap(),
+                123,
+            )
+            .unwrap();
+            renderer.set_samples_per_dispatch(4).unwrap();
+            renderer.render();
+            let pixels = renderer.snapshot().unwrap();
+            assert!(pixels.iter().flatten().all(|x| x.is_finite()));
+            assert!(pixels.iter().all(|pixel| pixel[3] == 1.0));
+            assert!(
+                pixels.iter().any(|pixel| pixel != &pixels[0]),
+                "{name} should contain visible geometry"
+            );
+            Ok::<(), anyhow::Error>(())
+        })
         .unwrap();
-        renderer.set_samples_per_dispatch(4).unwrap();
-        renderer.render();
-        let pixels = renderer.snapshot().unwrap();
-        assert!(pixels.iter().flatten().all(|x| x.is_finite()));
-        assert!(pixels.iter().all(|pixel| pixel[3] == 1.0));
-        assert!(
-            pixels.iter().any(|pixel| pixel != &pixels[0]),
-            "{name} should contain visible geometry"
-        );
     }
 }
 
 #[test]
 #[ignore = "requires a native WGPU compute adapter"]
-fn data_updates_choice_switches_and_empty_vectors_reuse_the_pipeline() {
+fn data_updates_and_empty_static_groups_reuse_the_pipeline() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
     let mut builder = examples::eu::scene::<4>();
     let compile = |builder: &examples::eu::ExampleScene<4>| {
@@ -157,12 +143,12 @@ fn data_updates_choice_switches_and_empty_vectors_reuse_the_pipeline() {
     renderer.render();
     let original = renderer.snapshot().unwrap();
 
-    builder.object[0].inner.shape = examples::eu::Choice::Cube(Cube);
-    builder.object[1].inner.material.diffuse.material.color = [0.9, 0.1, 0.4].into();
-    builder.object[1].map = Flat3::shift_x(0.5).chain(Flat3::shift_y(-1.0));
+    builder.object.0.clear();
+    builder.object.1[0].inner.material.diffuse.material.color = [0.9, 0.1, 0.4].into();
+    builder.object.1[0].map = Flat3::shift_x(0.5).chain(Flat3::shift_y(-1.0));
     builder.view.inner.fov = 0.8;
-    let duplicate = builder.object[1].clone();
-    builder.object.push(duplicate);
+    let duplicate = builder.object.1[0].clone();
+    builder.object.1.push(duplicate);
     renderer.update_scene(compile(&builder)).unwrap();
     assert_eq!(renderer.pipeline_revision(), revision);
     assert!(renderer.snapshot().unwrap().iter().all(|&p| p == [0.0; 4]));
@@ -171,7 +157,9 @@ fn data_updates_choice_switches_and_empty_vectors_reuse_the_pipeline() {
     assert_ne!(changed, original);
     assert!(changed.iter().all(|p| p[3] == 1.0));
 
-    builder.object.clear();
+    builder.object.0.clear();
+    builder.object.1.clear();
+    builder.object.2.clear();
     builder.background.colors = [[0.25, 0.5, 0.75].into(); 2];
     renderer.update_scene(compile(&builder)).unwrap();
     assert_eq!(renderer.pipeline_revision(), revision);
@@ -203,7 +191,7 @@ mixture! {
     }
 }
 
-fn emission_scene(first: bool) -> Scene {
+fn emission_scene(first: bool) -> Scene<Flat3> {
     let weight = if first { 1.0 } else { 0.0 };
     let inner = InnerMixture::new(
         (Emissive::new(Absorbing, [0.5, 0.25, 0.125].into()), weight).into(),
@@ -220,7 +208,7 @@ fn emission_scene(first: bool) -> Scene {
     plane_scene(Emissive::new(outer, [0.125, 0.25, 0.5].into()))
 }
 
-fn plane_scene<M: objects::Material>(material: M) -> Scene {
+fn plane_scene<M: objects::Material<Flat3>>(material: M) -> Scene<Flat3> {
     let builder = SceneImpl::<Flat3, _, _, _, 1>::new(
         Mapped::new(PointView::<Flat3>::new(1.0), Flat3::shift_z(1.0)),
         Covered::new(Plane, material),
@@ -254,10 +242,9 @@ pub struct CustomGlow {
 }
 
 impl CustomGlow {
-    fn shader() -> objects::shader::ShaderModule {
-        objects::shader::ShaderModule::new(
+    fn shader<G: Geometry>() -> objects::shader::MaterialModule<G> {
+        objects::shader::MaterialModule::new(
             "test.constant-glow",
-            objects::shader::ShaderKind::Material,
             r#"
 fn {{self}}(base: u32, context: GeoMaterialContext,
             sample: ptr<function, MaterialSample>, rng: ptr<function, u32>) {
@@ -270,12 +257,12 @@ fn {{self}}(base: u32, context: GeoMaterialContext,
     }
 }
 
-impl objects::Material for CustomGlow {
-    fn shader() -> objects::shader::Result<objects::shader::ShaderModule> {
+impl<G: Geometry> objects::Material<G> for CustomGlow {
+    fn shader() -> objects::shader::Result<objects::shader::MaterialModule<G>> {
         Ok(Self::shader())
     }
 
-    fn encode(&self) -> objects::shader::Result<objects::shader::MaterialValue> {
+    fn encode(&self) -> objects::shader::Result<objects::shader::MaterialValue<G>> {
         objects::shader::MaterialValue::new(
             Self::shader(),
             self.color.into_array().map(f32::to_bits).into(),

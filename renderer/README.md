@@ -101,10 +101,13 @@ bounded render resolution and `Presenter` scales it to the attachment.
 Generated scenes use a shared embedded kernel. Points and tangents have four
 scalar-first components `(w,x,y,z)`: positive hyperboloid for `hy`, unit 3-sphere
 for `sp`, and `w=1` points / `w=0` tangents for `eu`. Isometries use two quaternion
-rows, with the curvature sign specialized in generated WGSL. `Transform` is a
-single canonical isometry type, constructed from `ccgeom::EmbeddedIsometry`
-through `Transform::from_isometry`. `Camera` wraps that transform and its
+rows, with the curvature sign specialized in generated WGSL. `Transform<G>` is a
+canonical isometry of geometry `G`, constructed from `ccgeom::EmbeddedIsometry`
+through `Transform::from_isometry`. `Camera<G>` wraps that transform and its
 `move_local(translation, rotation, radius)` uses the same mathematics.
+`SceneDefinition<G>`, `CompiledScene<G>`, and `Renderer<G>` retain the same type;
+the compiler rejects attempts to mix geometries. Geometry is selected at compile
+time, while radius and other numerical parameters remain checked scene values.
 Half-space coordinates are used explicitly for hyperbolic tiling classification;
 CPU `ccgeom::Space3` also provides point and tangent conversions for chart-based
 construction.
@@ -174,17 +177,20 @@ module descriptions and instance encoding. The renderer also accepts this
 intermediate representation directly.
 
 Supported compositions include `SceneImpl`, point and mapped views, constant and
-Euclidean gradient backgrounds, covered and mapped objects, object choices and
-vectors, shape choices and vectors, mapped shapes, nested mixtures, `Colored`,
+Euclidean gradient backgrounds, covered and mapped objects, object tuples and
+vectors, shape tuples and vectors, mapped shapes, nested mixtures, `Colored`,
 and `Emissive`. Primitive shapes and tilings share the same geometry contracts.
 `Flat3`, `Hyperboloid3`, and `Spherical3` builders all use checked
-`EmbeddedIsometry<f64,K>` maps. `objects::shader::RenderGeometry` and
-`RenderMap<G>` encode these canonical builder types into the scene description;
-no alternate map formats or runtime type whitelist are involved.
+`EmbeddedIsometry<f64,K>` maps. `scene::Geometry` and
+`objects::shader::RenderMap<G>` preserve these canonical geometry and map types
+when encoding the scene description. Component trait implementations specify
+supported geometries: for example, `Cube` supports only `Flat3`, and `Horosphere`
+supports only `Hyperboloid3`.
 
-Shader modules describe composition independently of values. Choice variants and
-empty vector element types contribute dependencies before generation, so switching
-a choice or resizing a vector preserves the program. Object records and material descriptors
+Shader modules describe composition independently of values. Every tuple child
+and empty vector element type contributes dependencies before generation, so
+changing values or resizing vectors preserves the program. Tuples support
+heterogeneous composition; vectors hold one component type. Object records and material descriptors
 index a separate `u32` parameter arena. Each shape leaf has a distinct identity
 for repeated-hit suppression, including leaves in a shape vector. Shape mapping
 and object mapping retain their different material coordinate frames.
@@ -203,7 +209,7 @@ random draws.
 
 ### Homogeneous media
 
-`Medium::Vacuum` is the default. `Medium::Homogeneous { extinction, albedo }`
+`Medium::vacuum()` is the default. `Medium { extinction, albedo }`
 uses scalar extinction per physical world unit and RGB scattering albedo in
 `[0,1]`. Zero extinction is vacuum; zero albedo is pure absorption. Scattering
 is isotropic. Both surface and volume interactions consume the bounce budget.
@@ -211,7 +217,7 @@ is isotropic. Both surface and volume interactions consume the bounce budget.
 ```rust,ignore
 use objects::Scene as _;
 let mut source = hypertrace_examples::sp::fog_scene::<12>();
-source.medium = objects::shader::Medium::Homogeneous {
+source.medium = objects::shader::Medium {
     extinction: 0.08,
     albedo: [0.85, 0.9, 0.95],
 };
@@ -238,23 +244,27 @@ without adding a second attenuation factor to the analog integrator.
 ### Component-owned shader modules
 
 Built-in and downstream shapes and materials use the same public traits. A
-`Shape<G>` supplies `shader() -> Result<ShaderModule>` and
-`encode(&self) -> Result<ShapeValue>`; `Material` supplies the corresponding
+`Shape<G>` supplies `shader() -> Result<ShapeModule<G>>` and
+`encode(&self) -> Result<ShapeValue<G>>`; `Material<G>` supplies the corresponding
 `shader` and `encode` methods. Modules describe structure;
 values encode the current instance into `u32` words. No global registry or
 renderer dispatch list needs editing.
 
-A `ShaderModule` owns its stable key, `ShaderKind`, WGSL source, parameter word
-count, dependencies, and CPU validation callbacks. A fixed count is `Some(n)`;
-`None` permits a component-defined variable layout. `validate_context` checks
-geometry/radius requirements, and `validate_words` checks values during scene
+A `ShaderModule<G, Role>` owns its stable key, WGSL source, parameter word
+count, dependencies, and CPU validation callbacks. `ShapeModule<G>`,
+`MaterialModule<G>`, and `LibraryModule<G>` select the calling convention through
+their role types. `.dependency()` clones a module into kindless source link data;
+`.into_source()` moves it. Geometry remains typed in both forms. A fixed count is
+`Some(n)`; `None` permits a component-defined variable layout. `validate_context`
+checks physical radius requirements, and `validate_words` checks values during scene
 compilation. A wrapper's validator must validate its child payloads as well.
 
 Use `{{self}}` for the module's entry-point name and `{{self}}_helper` for its
 private helpers. `{{dep0}}`, `{{dep1}}`, and so on name declared dependencies.
 The linker assigns deterministic namespaces, deduplicates matching keys, and
 rejects conflicting implementations, dependency cycles and unresolved imports.
-If shader structure depends on children, use `ShaderModule::specialized_key`
+If shader structure depends on children, use `ShapeModule::<G>::specialized_key`
+(or the corresponding material/library method)
 with those dependencies to distinguish its implementations. Parameter values
 must not enter keys or source. There is no source rewriting for chart conventions:
 all shape and material entry points use embedded geometry.
@@ -262,12 +272,12 @@ all shape and material entry points use embedded geometry.
 For example, a downstream glowing material can implement:
 
 ```rust,ignore
-use objects::{Material, shader::{MaterialValue, Result, ShaderKind, ShaderModule}};
+use objects::{Material, shader::{Geometry, MaterialModule, MaterialValue, Result}};
 
 struct Glow([f32; 3]);
-impl Material for Glow {
-    fn shader() -> Result<ShaderModule> {
-        let mut module = ShaderModule::new("my_app.glow", ShaderKind::Material, r#"
+impl<G: Geometry> Material<G> for Glow {
+    fn shader() -> Result<MaterialModule<G>> {
+        let mut module = MaterialModule::new("my_app.glow", r#"
 fn {{self}}(base:u32,ctx:GeoMaterialContext,
             sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {
     (*sample).emission += (*sample).attenuation*load_vec3(base);
@@ -283,17 +293,17 @@ fn {{self}}(base:u32,ctx:GeoMaterialContext,
         };
         Ok(module)
     }
-    fn encode(&self) -> Result<MaterialValue> {
-        MaterialValue::new(Self::shader()?,
+    fn encode(&self) -> Result<MaterialValue<G>> {
+        MaterialValue::new(<Self as Material<G>>::shader()?,
             self.0.map(f32::to_bits).into())
     }
 }
 ```
 
 Use `Glow` in `Covered`, `Colored`, `Emissive`, and `mixture!` just like a
-built-in material. The compiler collects type dependencies even from inactive
-choices and empty vectors. Low-level construction helpers live with their
-components: `objects::shape::{plane, geodesic_sphere, mapped, vector, choice}`
+built-in material. The compiler collects type dependencies from every tuple child
+and empty vector. Low-level construction helpers live with their
+components: `objects::shape::{plane, geodesic_sphere, mapped, vector, tuple}`
 and `objects::material::{absorbing, colored, emissive, mixture}`, for example.
 `ShapeValueExt` and `MaterialValueExt` provide fluent value combinators.
 
@@ -321,14 +331,14 @@ least one word so its base is distinct; a parameterless shape reserves a zero.
 A new primitive can use shared geometry operations such as `geo_section_root`
 and `geo_advance`. To reuse another component, declare its module dependency
 explicitly. For instance, a custom plane wrapper can set
-`module.dependencies = vec![objects::shape::plane_schema()]` and call
+`module.dependencies = vec![objects::shape::plane_schema::<G>().into_source()]` and call
 `{{dep0}}(base,ray,previous_identity)` before applying its own clipping rule.
 Primitive-specific shader functions are supplied by their components, not baked
 into the renderer. Wrappers must preserve numerical failure and physical distance.
 
 The complete downstream [extension integration test](tests/extensions.rs) defines
 both an aperture shape and an emitting material outside the core crates. It
-composes them with mappings, vectors, choices and a mixture, then checks all three
+composes them with mappings, vectors, tuples and a mixture, then checks all three
 curvatures, custom validation, and pipeline reuse across value/structure-preserving
 updates. Invalid WGSL is reported when a renderer creates or updates its pipeline;
 `shader_source()` exposes the flattened source for diagnostics.
@@ -349,11 +359,13 @@ Coverage includes shared isometry composition, inverse and distance checks,
 small and scaled distances, vertical and nearly vertical rays, hit/miss cases,
 reset, resize, scene uploads, deterministic batching, captured tile-selection
 fixtures, and presentation transfer and orientation. Generic scene tests cover
-nested materials, downstream modules, empty vectors, choices, repeated-hit identities,
+nested materials, downstream modules, empty vectors, tuples, repeated-hit identities,
 and recovery after shader compilation or resource-limit errors. Embedded checks
 compare map actions with independent matrices, verify parabolic placements and
 material frames, test physical radii and interval boundaries, and force spherical medium
-events beyond several circuits. Keep these invariant and behavior checks when
+events beyond several circuits. Compile-fail tests cover mixed geometries,
+incorrect shader roles, and unsupported shape/background combinations.
+Keep these invariant and behavior checks when
 changing internal representation; old implementation snapshots are not required.
 
 Native numerical tests have run on software Vulkan. Viewer smoke tests passed

@@ -2,25 +2,34 @@
 use crate::object::tiling::{self, Tiling};
 use crate::shader::*;
 use crate::{material, material::MaterialValueExt, shape, shape::ShapeValueExt};
-fn scene(shape: ShapeValue, material: MaterialValue) -> SceneDefinition {
+use ccgeom::{Flat3, Hyperboloid3, Spherical3};
+fn scene(shape: ShapeValue<Flat3>, material: MaterialValue<Flat3>) -> SceneDefinition<Flat3> {
+    definition(shape, material, 1.0)
+}
+fn definition<G: Geometry>(
+    shape: ShapeValue<G>,
+    material: MaterialValue<G>,
+    radius: f64,
+) -> SceneDefinition<G> {
     SceneDefinition {
         view: View {
-            map: Transform::identity(Geometry::Euclidean),
+            map: Transform::identity(),
             fov: 1.0,
         },
-        background: Background::Constant([0.0; 3]),
+        background: Background::constant([0.0; 3]),
         bounces: 3,
-        radius: 1.0,
-        medium: Medium::Vacuum,
-        object: ObjectNode::Covered { shape, material },
-        modules: vec![],
+        radius,
+        medium: Medium::vacuum(),
+        objects: vec![EncodedObject {
+            map: Transform::identity(),
+            shape,
+            material,
+        }],
+        modules: Modules::default(),
     }
 }
-fn curved_scene(geometry: Geometry, radius: f64, shape: ShapeValue) -> SceneDefinition {
-    let mut value = scene(shape, material::transparent());
-    value.view.map = Transform::identity(geometry);
-    value.radius = radius;
-    value
+fn curved_scene<G: Geometry>(radius: f64, shape: ShapeValue<G>) -> SceneDefinition<G> {
+    definition(shape, material::transparent(), radius)
 }
 #[test]
 fn values_and_vector_lengths_do_not_change_shader_source() -> Result<()> {
@@ -33,7 +42,7 @@ fn values_and_vector_lengths_do_not_change_shader_source() -> Result<()> {
         material::absorbing().emissive([2.0, 3.0, 4.0])?,
     );
     let mut c = b.clone();
-    c.object = ObjectNode::Vector(vec![b.object.clone(), b.object.clone()]);
+    c.objects = vec![b.objects[0].clone(), b.objects[0].clone()];
     let (a, b, c) = (compile(&a)?, compile(&b)?, compile(&c)?);
     assert_eq!(a.source, b.source);
     assert_eq!(b.source, c.source);
@@ -49,9 +58,7 @@ fn malformed_public_payloads_are_rejected() -> Result<()> {
         shape::vector(shape::plane_schema(), vec![shape::plane()])?,
         material::transparent(),
     );
-    let ObjectNode::Covered { shape, .. } = &mut value.object else {
-        unreachable!()
-    };
+    let shape = &mut value.objects[0].shape;
     shape.words[1] = u32::MAX;
     assert!(compile(&value).is_err());
     let invalid = MaterialValue {
@@ -59,22 +66,20 @@ fn malformed_public_payloads_are_rejected() -> Result<()> {
         words: vec![0, 0],
     };
     assert!(compile(&scene(shape::plane(), invalid)).is_err());
-    let mut mapped = shape::plane().mapped(Transform::identity(Geometry::Euclidean))?;
+    let mut mapped = shape::plane().mapped(Transform::<Flat3>::identity())?;
     mapped.words[0] = 0;
     assert!(compile(&scene(mapped, material::transparent())).is_err());
-    let mut hyperbolic = scene(shape::plane(), material::transparent());
-    hyperbolic.view.map = Transform::identity(Geometry::Hyperbolic);
-    hyperbolic.object = ObjectNode::Covered {
-        shape: ShapeValue {
-            schema: shape::mapped_schema(Geometry::Hyperbolic, shape::plane_schema()),
-            // Equal real/unreal quaternion norms make this embedded
-            // hyperbolic map singular, despite finite components.
+    let hyperbolic = definition(
+        ShapeValue {
+            schema: shape::mapped_schema::<Hyperboloid3>(shape::plane_schema()),
+            // Equal real/unreal quaternion norms make this embedded map singular.
             words: [0.0f32, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0]
                 .map(f32::to_bits)
                 .into(),
         },
-        material: material::transparent(),
-    };
+        material::transparent(),
+        1.0,
+    );
     assert!(compile(&hyperbolic).is_err());
     Ok(())
 }
@@ -84,57 +89,47 @@ fn spherical_sphere_radii_are_validated_through_nested_payloads() -> Result<()> 
     let radius = 2.0;
     let valid = shape::geodesic_sphere(1.8 * radius)?;
     let nested = shape::vector(valid.schema.clone(), vec![valid])?
-        .mapped(Transform::identity(Geometry::Spherical))?;
-    compile(&curved_scene(Geometry::Spherical, radius, nested))?;
+        .mapped(Transform::<Spherical3>::identity())?;
+    compile(&curved_scene::<Spherical3>(radius, nested))?;
     for shape_radius in [std::f64::consts::PI * radius, 4.0 * radius] {
         let shape = shape::geodesic_sphere(shape_radius)?;
-        let nested = shape::choice(vec![shape.schema.clone()], 0, shape)?;
-        let error = compile(&curved_scene(Geometry::Spherical, radius, nested)).unwrap_err();
+        let nested = shape::tuple(vec![shape])?;
+        let error = compile(&curved_scene::<Spherical3>(radius, nested)).unwrap_err();
         assert!(format!("{error:#}").contains("strictly below pi"));
     }
-    assert!(compile(&curved_scene(Geometry::Spherical, 0.25, shape::sphere())).is_err());
+    assert!(compile(&curved_scene::<Spherical3>(0.25, shape::sphere())).is_err());
     // Parameterless sphere semantics also apply to inactive registered leaves.
-    let mut inactive = curved_scene(Geometry::Spherical, 0.25, shape::plane());
-    inactive.modules.push(shape::sphere_schema());
+    let mut inactive = curved_scene::<Spherical3>(0.25, shape::plane());
+    inactive.modules.shapes.push(shape::sphere_schema());
     assert!(compile(&inactive).is_err());
     let mut malformed = shape::geodesic_sphere(1.0)?;
     malformed.words[0] = f32::NAN.to_bits();
-    assert!(compile(&curved_scene(Geometry::Spherical, radius, malformed)).is_err());
+    assert!(compile(&curved_scene::<Spherical3>(radius, malformed)).is_err());
     Ok(())
 }
 
 #[test]
-fn spherical_tilings_require_explicitly_uniform_semantics() -> Result<()> {
-    for (selector, allowed) in [
-        (tiling::Uniform::shader(), true),
-        (tiling::Square::shader(), false),
-        (tiling::Hexagonal::shader(), false),
-        (tiling::Pentagonal::shader(), false),
-        (tiling::Pentastar::shader(), false),
-    ] {
-        let material = tiling::tiled(
-            selector,
-            vec![material::transparent()],
-            material::absorbing(),
-            1.0,
-            0.01,
-        )?;
-        let mut value = scene(shape::plane(), material);
-        value.view.map = Transform::identity(Geometry::Spherical);
-        assert_eq!(compile(&value).is_ok(), allowed);
-    }
+fn spherical_uniform_tiling_keeps_shared_material_semantics() -> Result<()> {
+    let material = tiling::tiled(
+        <tiling::Uniform as Tiling<Spherical3>>::shader(),
+        vec![material::transparent()],
+        material::absorbing(),
+        1.0,
+        0.01,
+    )?;
+    compile(&definition(shape::plane(), material, 1.0))?;
     Ok(())
 }
 
 #[test]
 fn physical_parameters_update_payloads_without_changing_shader_structure() -> Result<()> {
-    let mut a = curved_scene(Geometry::Spherical, 1.0, shape::geodesic_sphere(0.3)?);
-    let mut b = curved_scene(Geometry::Spherical, 2.0, shape::geodesic_sphere(0.7)?);
-    a.medium = Medium::Homogeneous {
+    let mut a = curved_scene::<Spherical3>(1.0, shape::geodesic_sphere(0.3)?);
+    let mut b = curved_scene::<Spherical3>(2.0, shape::geodesic_sphere(0.7)?);
+    a.medium = Medium {
         extinction: 0.1,
         albedo: [0.7; 3],
     };
-    b.medium = Medium::Homogeneous {
+    b.medium = Medium {
         extinction: 0.3,
         albedo: [0.2; 3],
     };
@@ -146,68 +141,28 @@ fn physical_parameters_update_payloads_without_changing_shader_structure() -> Re
 }
 #[test]
 fn curved_spheres_reject_unresolvable_f32_sections() -> Result<()> {
-    for (geometry, radius) in [
-        (Geometry::Spherical, 1e-5),
-        (
-            Geometry::Spherical,
-            f64::from(std::f32::consts::PI - f32::EPSILON),
-        ),
-        (Geometry::Hyperbolic, 1e-5),
-        (Geometry::Spherical, 0.001),
-        (Geometry::Hyperbolic, 0.001),
-        (Geometry::Hyperbolic, 100.0),
-    ] {
-        let shape = shape::geodesic_sphere(radius)?;
-        let error = compile(&curved_scene(geometry, 1.0, shape)).unwrap_err();
-        assert!(
-            format!("{error:#}").contains("f32 section resolver range"),
-            "{}",
-            error
-        );
-    }
-    for geometry in [Geometry::Spherical, Geometry::Hyperbolic] {
-        let error = compile(&curved_scene(geometry, 1e6, shape::sphere())).unwrap_err();
+    fn check<G: Geometry>(radii: &[f64]) -> Result<()> {
+        for &radius in radii {
+            let shape = shape::geodesic_sphere(radius)?;
+            let error = compile(&curved_scene::<G>(1.0, shape)).unwrap_err();
+            assert!(
+                format!("{error:#}").contains("f32 section resolver range"),
+                "{:#}",
+                error
+            );
+        }
+        let error = compile(&curved_scene::<G>(1e6, shape::sphere())).unwrap_err();
         assert!(format!("{error:#}").contains("f32 section resolver range"));
-        compile(&curved_scene(geometry, 1.0, shape::geodesic_sphere(0.002)?))?;
+        compile(&curved_scene::<G>(1.0, shape::geodesic_sphere(0.002)?))?;
+        Ok(())
     }
-    Ok(())
-}
-#[test]
-fn component_combinators_reject_wrong_shader_kinds_on_cpu() -> Result<()> {
-    let invalid = shape::vector_schema(material::absorbing().schema);
-    let mut scene = scene(shape::plane(), material::absorbing());
-    scene.modules.push(invalid);
-    assert!(
-        compile(&scene).is_err(),
-        "inactive invalid descriptors must fail too"
-    );
-    assert!(shape::vector(material::absorbing().schema, vec![]).is_err());
-    assert!(shape::choice(vec![material::absorbing().schema], 0, shape::plane()).is_err());
-    assert!(material::mixture_schema(vec![shape::plane_schema()]).is_err());
-    assert!(material::colored(
-        MaterialValue {
-            schema: shape::plane_schema(),
-            words: vec![0]
-        },
-        [1.0; 3]
-    )
-    .is_err());
-    scene.modules = vec![material::emissive_schema(shape::plane_schema())];
-    assert!(compile(&scene).is_err());
-    scene.modules = vec![shape::mapped_schema(
-        Geometry::Euclidean,
-        material::absorbing().schema,
-    )];
-    assert!(compile(&scene).is_err());
-    Ok(())
+    check::<Spherical3>(&[1e-5, f64::from(std::f32::consts::PI - f32::EPSILON), 0.001])?;
+    check::<Hyperboloid3>(&[1e-5, 0.001, 100.0])
 }
 
 #[test]
 fn tiling_components_validate_parameters_and_children() -> Result<()> {
-    let context = GeometryContext {
-        geometry: Geometry::Hyperbolic,
-        radius: 1.0,
-    };
+    let context = GeometryContext::<Hyperboloid3>::new(1.0);
     for selector in [tiling::Square::shader(), tiling::Hexagonal::shader()] {
         for cell in [0.0, -1.0, f64::NAN, f64::INFINITY] {
             let value = tiling::tiled(
@@ -224,7 +179,7 @@ fn tiling_components_validate_parameters_and_children() -> Result<()> {
     }
     for width in [-1.0, f64::NAN, f64::INFINITY] {
         assert!(tiling::tiled(
-            tiling::Uniform::shader(),
+            <tiling::Uniform as Tiling<Flat3>>::shader(),
             vec![material::transparent()],
             material::absorbing(),
             1.0,
@@ -233,7 +188,7 @@ fn tiling_components_validate_parameters_and_children() -> Result<()> {
         .is_err());
     }
     assert!(tiling::tiled(
-        tiling::Uniform::shader(),
+        <tiling::Uniform as Tiling<Flat3>>::shader(),
         vec![],
         material::absorbing(),
         1.0,
@@ -256,10 +211,9 @@ fn tiling_components_validate_parameters_and_children() -> Result<()> {
     Ok(())
 }
 
-fn variable_material(values: &[f32]) -> Result<MaterialValue> {
-    let mut module = ShaderModule::new(
+fn variable_material<G: Geometry>(values: &[f32]) -> Result<MaterialValue<G>> {
+    let mut module = MaterialModule::new(
         "tests.variable-material",
-        ShaderKind::Material,
         "fn {{self}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) { for(var i=0u;i<load_u32(base);i+=1u) { (*sample).emission+=vec3<f32>(load_f32(base+1u+i)); } (*sample).alive=0u; }",
         None,
     );
@@ -287,13 +241,13 @@ fn variable_material(values: &[f32]) -> Result<MaterialValue> {
 
 #[test]
 fn variable_material_lengths_are_data_through_nested_combinators() -> Result<()> {
-    let build = |values: &[f32], border: &[f32]| -> Result<SceneDefinition> {
+    let build = |values: &[f32], border: &[f32]| -> Result<SceneDefinition<Flat3>> {
         let mixture = material::mixture(vec![
             (0.25, material::transparent()),
             (0.75, variable_material(values)?.colored([0.5; 3])?),
         ])?;
         let tiled = tiling::tiled(
-            tiling::Uniform::shader(),
+            <tiling::Uniform as Tiling<Flat3>>::shader(),
             vec![mixture],
             material::mixture(vec![(1.0, variable_material(border)?)])?,
             1.0,
@@ -312,10 +266,7 @@ fn variable_material_lengths_are_data_through_nested_combinators() -> Result<()>
 
 #[test]
 fn offset_tables_reject_malformed_ranges_and_validate_inactive_children() -> Result<()> {
-    let context = GeometryContext {
-        geometry: Geometry::Euclidean,
-        radius: 1.0,
-    };
+    let context = GeometryContext::<Flat3>::new(1.0);
     // Both containers have a two-word prefix and two children; the first child
     // is variable-sized, and the last child has an empty parameter payload.
     let containers = [
@@ -324,7 +275,7 @@ fn offset_tables_reject_malformed_ranges_and_validate_inactive_children() -> Res
             (1.0, material::absorbing()),
         ])?,
         tiling::tiled(
-            tiling::Uniform::shader(),
+            <tiling::Uniform as Tiling<Flat3>>::shader(),
             vec![variable_material(&[0.25, 0.5])?],
             material::absorbing(),
             1.0,
@@ -362,10 +313,7 @@ fn offset_tables_reject_malformed_ranges_and_validate_inactive_children() -> Res
 
 #[test]
 fn fixed_and_empty_materials_share_offset_layouts_with_variable_children() -> Result<()> {
-    let context = GeometryContext {
-        geometry: Geometry::Euclidean,
-        radius: 1.0,
-    };
+    let context = GeometryContext::<Flat3>::new(1.0);
     let empty = material::mixture(vec![])?;
     assert_eq!(empty.schema.parameter_words, Some(1));
     empty.schema.validate(context, &empty.words)?;
@@ -383,7 +331,7 @@ fn fixed_and_empty_materials_share_offset_layouts_with_variable_children() -> Re
         material::mixture_schema(vec![variable_material(&[])?.schema, overflow.clone()]).is_err()
     );
     assert!(tiling::tiled_schema(
-        tiling::Uniform::shader(),
+        <tiling::Uniform as Tiling<Flat3>>::shader(),
         vec![overflow],
         material::absorbing().schema
     )

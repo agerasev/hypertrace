@@ -76,7 +76,8 @@ NO_COLOR=true trunk serve --release
 
 Open <http://127.0.0.1:8080>. Use the grouped Example menu to select a scene,
 or start with any catalog ID such as `?scene=compare-sp` or
-`?scene=sp-loop-fog`. Each example includes a short description. Click the canvas to use
+`?scene=sp-loop-fog`. Selection reloads the page into the chosen typed application.
+Each example includes a short description. Click the canvas to use
 the camera controls above. Escape toggles pause in the browser. Quality caps the
 longest render dimension (Fast: 640, Balanced: 960, Sharp: 1440 pixels); Full
 resolution follows the canvas size, subject to device limits. The default is
@@ -115,7 +116,7 @@ Rust builder:
 ```rust,ignore
 use objects::Scene as _;
 let mut source = hypertrace_examples::sp::fog_scene::<12>();
-source.medium = objects::shader::Medium::Homogeneous {
+source.medium = objects::shader::Medium {
     extinction: 0.08, // inverse world units
     albedo: [0.85, 0.9, 0.95],
 };

@@ -29,8 +29,10 @@ Sibling libraries own the CPU mathematics: `vecmat-rs` supplies the quaternion
 pair algebra; `ccgeom` supplies checked isometries, points/tangents, physical
 radius contexts, advancement, and ball/half-space conversions. Scene builders
 use `Embedded3<f64, K>` and `EmbeddedIsometry<f64, K>` throughout. The scene
-library's `Transform` stores the same isometry with runtime curvature selection;
-the renderer's camera wraps this transform. All shader entry points receive
+library's `Transform<G>` stores the same isometry and retains its geometry type
+through `Camera<G>`, `SceneDefinition<G>`, `CompiledScene<G>`, and `Renderer<G>`.
+Curvature is selected at compile time; physical radius remains a scene value.
+All shader entry points receive
 embedded geometry. Components can explicitly derive chart coordinates for
 surface patterns, and the CPU geometry library can convert chart points and
 their differentials when constructing embedded data.
@@ -61,11 +63,15 @@ path tracing, and numerical limitations. Its source is
 [original article](https://agerasev.github.io/2020/03/12/hypertrace.html).
 
 Custom shapes and materials implement the corresponding `objects` trait, returning
-the same `ShaderModule` descriptions and encoded values as built-ins. Modules own
+the same geometry- and role-typed shader modules and encoded values as built-ins. Modules own
 their WGSL source, parameter layouts, validators and explicit dependencies. The
 linker assigns namespaces and dispatch functions; no global registry or central
-list of implementations needs editing. Type dependencies include inactive choices
-and empty vector elements, preserving program structure during ordinary updates.
+list of implementations needs editing. Heterogeneous components compose through
+tuples, while homogeneous vectors allow variable counts. Every tuple child and
+empty vector element type contributes its shader dependencies, preserving program
+structure during ordinary updates. Unsupported geometry/component combinations
+are rejected by trait bounds during compilation. Gallery applications select a
+concrete typed entry point at startup instead of storing erased scene values.
 See the [renderer guide](renderer/README.md#component-owned-shader-modules)
 for signatures and the [downstream extension test](renderer/tests/extensions.rs)
 for a complete composed shape/material implementation.

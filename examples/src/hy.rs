@@ -5,7 +5,6 @@ use objects::{
     material::*,
     mixture,
     object::{TiledHorosphere, TiledPlane, tiling},
-    object_choice,
     view::PointView,
 };
 use std::f64::consts::PI;
@@ -51,19 +50,18 @@ fn make_material(
 
 type MyMaterial = Emissive<Mixture>;
 
-object_choice! {
-    Choice {
-        PlaneStar(TiledPlane<MyMaterial, tiling::Pentastar, 2>),
-        PlanePenta(TiledPlane<MyMaterial, tiling::Pentagonal, 2>),
-        HoroHexa(TiledHorosphere<MyMaterial, tiling::Hexagonal, 3>),
-        HoroSquare(TiledHorosphere<MyMaterial, tiling::Square, 4>),
-    }
-}
+type Object<T> = Mapped<Hyperboloid3, T, EmbeddedIsometry<f64, -1>>;
+type Objects = (
+    Vec<Object<TiledHorosphere<MyMaterial, tiling::Hexagonal, 3>>>,
+    Vec<Object<TiledHorosphere<MyMaterial, tiling::Square, 4>>>,
+    Vec<Object<TiledPlane<MyMaterial, tiling::Pentastar, 2>>>,
+    Vec<Object<TiledPlane<MyMaterial, tiling::Pentagonal, 2>>>,
+);
 
 pub type ExampleScene<const H: usize> = SceneImpl<
     Hyperboloid3,
     Mapped<Hyperboloid3, PointView<Hyperboloid3>, EmbeddedIsometry<f64, -1>>,
-    Vec<Mapped<Hyperboloid3, Choice, EmbeddedIsometry<f64, -1>>>,
+    Objects,
     ConstBg,
     H,
 >;
@@ -101,9 +99,9 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         0.0,
         Some(make_color(Vector::fill(1.0))),
     );
-    let objects = vec![
-        Mapped::new(
-            Choice::HoroHexa(TiledHorosphere::new(
+    let objects = (
+        vec![Mapped::new(
+            TiledHorosphere::new(
                 [
                     make_material(unpack_color(0xfe0000), 0.1, 0.1, None),
                     make_material(unpack_color(0xffaa01), 0.1, 0.1, None),
@@ -112,11 +110,11 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
                 0.5,
                 0.02,
                 border_material.clone(),
-            )),
+            ),
             EmbeddedIsometry::identity(),
-        ),
-        Mapped::new(
-            Choice::HoroSquare(TiledHorosphere::new(
+        )],
+        vec![Mapped::new(
+            TiledHorosphere::new(
                 [
                     make_material(unpack_color(0xfe7401), 0.1, 0.1, None),
                     make_material(unpack_color(0xfe0000), 0.1, 0.1, None),
@@ -126,32 +124,32 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
                 0.5,
                 0.02,
                 border_material.clone(),
-            )),
+            ),
             horosphere_translation([2.0f64.sqrt(), 0.0]).chain(Hyperboloid3::rotate_x(PI)),
-        ),
-        Mapped::new(
-            Choice::PlaneStar(TiledPlane::new(
+        )],
+        vec![Mapped::new(
+            TiledPlane::new(
                 [
                     make_material(unpack_color(0xfe7401), 0.1, 0.0, None),
                     make_material(unpack_color(0x35adae), 0.1, 0.0, None),
                 ],
                 0.01,
                 border_material.clone(),
-            )),
+            ),
             EmbeddedIsometry::identity(),
-        ),
-        Mapped::new(
-            Choice::PlanePenta(TiledPlane::new(
+        )],
+        vec![Mapped::new(
+            TiledPlane::new(
                 [
                     make_material(unpack_color(0xfe0000), 0.1, 0.0, None),
                     make_material(unpack_color(0xfed601), 0.1, 0.0, None),
                 ],
                 0.02,
                 border_material,
-            )),
+            ),
             horosphere_translation([0.0, 2.0]),
-        ),
-    ];
+        )],
+    );
 
     SceneImpl::<Hyperboloid3, _, _, _, H>::new(view, objects, background)
 }

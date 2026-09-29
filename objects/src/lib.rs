@@ -1,5 +1,4 @@
 pub mod background;
-mod macros;
 mod mapped;
 pub mod material;
 pub mod object;
@@ -17,8 +16,11 @@ pub use scene::{Scene, SceneImpl};
 pub use shape::Shape;
 pub use view::View;
 
-/// Geometry contract used by scene builders and choice macros.
-pub use ccgeom::Geometry;
+/// Statically selected constant-curvature geometry used by scene builders.
+pub use shader::Geometry;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod construction_tests;

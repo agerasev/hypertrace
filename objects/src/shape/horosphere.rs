@@ -1,41 +1,32 @@
 use super::*;
 
+/// A hyperbolic horosphere.
+/// ```compile_fail
+/// use ccgeom::Flat3;
+/// use hypertrace_objects::{Shape, shape::Horosphere};
+/// let _ = <Horosphere as Shape<Flat3>>::shader();
+/// ```
 #[derive(Clone, Default, Debug)]
 pub struct Horosphere;
 
-pub fn horosphere_schema() -> ShaderModule {
-    let mut module = ShaderModule::new(
+pub fn horosphere_schema() -> ShapeModule<ccgeom::Hyperboloid3> {
+    ShapeModule::new(
         "hypertrace.shape.horosphere",
-        ShaderKind::Shape,
         include_str!("shaders/horosphere.wgsl"),
         Some(1),
-    );
-    module.validate_context = validate_context;
-    module
+    )
 }
 
-fn validate_context(ctx: crate::shader::GeometryContext) -> crate::shader::Result<()> {
-    anyhow::ensure!(
-        ctx.geometry == crate::shader::Geometry::Hyperbolic,
-        "horosphere requires hyperbolic geometry"
-    );
-    Ok(())
-}
-
-impl<G: crate::shader::RenderGeometry> Shape<G> for Horosphere {
-    fn shader() -> Result<ShaderModule> {
-        validate_context(crate::shader::GeometryContext {
-            geometry: crate::shader::geometry::<G>()?,
-            radius: 1.0,
-        })?;
+impl Shape<ccgeom::Hyperboloid3> for Horosphere {
+    fn shader() -> Result<ShapeModule<ccgeom::Hyperboloid3>> {
         Ok(horosphere_schema())
     }
-    fn encode(&self) -> Result<ShapeValue> {
-        ShapeValue::new(<Self as Shape<G>>::shader()?, vec![0])
+    fn encode(&self) -> Result<ShapeValue<ccgeom::Hyperboloid3>> {
+        ShapeValue::new(<Self as Shape<ccgeom::Hyperboloid3>>::shader()?, vec![0])
     }
 }
 
-pub fn horosphere() -> ShapeValue {
+pub fn horosphere() -> ShapeValue<ccgeom::Hyperboloid3> {
     <Horosphere as Shape<ccgeom::Hyperboloid3>>::encode(&Horosphere)
         .expect("valid built-in horosphere")
 }

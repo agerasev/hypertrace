@@ -15,10 +15,7 @@ fn generated_uniform_carries_physical_radius_and_medium() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
     let mut definition = examples::sp::scene::<6>().definition().unwrap();
     definition.radius = 2.5;
-    definition.medium = hypertrace_renderer::shader::Medium::Homogeneous {
-        extinction: 0.125,
-        albedo: [0.2, 0.4, 0.7],
-    };
+    definition.medium = hypertrace_renderer::shader::Medium::homogeneous(0.125, [0.2, 0.4, 0.7]);
     let scene = Scene::from_definition(&definition).unwrap();
     let renderer = Renderer::new(&gpu.device, &gpu.queue, (13, 7), scene, 123).unwrap();
     let source = format!(
@@ -93,7 +90,7 @@ fn probe() {
             [0.0; 4],
             [0.0; 4],
             [0.0; 4],
-            [13.0, 7.0, 2.0, 6.0],
+            [13.0, 7.0, 0.0, 6.0],
             [1.0, 6.0, 0.0, 0.0],
             [1.0, 2.5, 1.0, 0.0],
             [0.2, 0.4, 0.7, 0.125],

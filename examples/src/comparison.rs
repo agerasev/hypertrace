@@ -49,7 +49,10 @@ const ROWS: [(f64, f64, [f32; 3]); 3] = [
 /// `K` is -1, 0, or +1. Euclidean space requires `radius == 1`. Spherical
 /// radii must keep the far markers before the camera's antipode, so the row
 /// distances remain their shortest distances from the camera.
-pub fn scene<const K: i8, const H: usize>(radius: f64) -> Result<ExampleScene<K, H>> {
+pub fn scene<const K: i8, const H: usize>(radius: f64) -> Result<ExampleScene<K, H>>
+where
+    Geometry<K>: objects::shader::Geometry<Map = EmbeddedIsometry<f64, K>>,
+{
     let space = Space3::<f64, K>::new(radius).context("invalid comparison curvature radius")?;
     ensure!(
         K != 1 || ROWS[2].0 + MARKER_RADIUS < std::f64::consts::PI * radius,
@@ -85,22 +88,21 @@ mod tests {
     use objects::{Scene as _, shader};
     use vecmat::Vector;
 
-    fn endpoint(map: shader::Transform) -> Vector<f64, 4> {
+    fn endpoint<G: shader::Geometry>(map: shader::Transform<G>) -> Vector<f64, 4> {
         map.apply_vector([1.0, 0.0, 0.0, 0.0]).into()
     }
 
-    fn check_physical_layout<const K: i8>(radius: f64) -> Vec<u32> {
+    fn check_physical_layout<const K: i8>(radius: f64) -> Vec<u32>
+    where
+        Geometry<K>: shader::Geometry<Map = EmbeddedIsometry<f64, K>>,
+    {
         let example = scene::<K, 2>(radius).unwrap();
         let definition = example.definition().unwrap();
         let compiled = shader::compile(&definition).unwrap();
-        assert_eq!(compiled.geometry.sign(), K);
         assert_eq!(compiled.transforms.len(), 9);
-        assert!(matches!(definition.medium, shader::Medium::Vacuum));
+        assert_eq!(definition.medium, shader::Medium::vacuum());
         assert_eq!(definition.radius, radius);
-        assert!(matches!(
-            definition.background,
-            shader::Background::Constant([0.0, 0.0, 0.0])
-        ));
+        assert_eq!(definition.background.colors(), [[0.0; 3]; 2]);
 
         let space = Space3::<f64, K>::new(radius).unwrap();
         for (i, map) in compiled.transforms.iter().enumerate() {

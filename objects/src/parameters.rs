@@ -2,7 +2,7 @@
 //!
 //! A component's prefix is followed by one relative start offset per child and
 //! a final end offset. Equal adjacent offsets represent zero-word materials.
-use crate::shader::{Result, ShaderModule};
+use crate::shader::{Geometry, Result, SourceModule};
 use std::convert::TryFrom;
 
 fn header_length(prefix: usize, children: usize) -> Result<usize> {
@@ -13,7 +13,10 @@ fn header_length(prefix: usize, children: usize) -> Result<usize> {
 }
 
 /// Known total size when every child is fixed-size; all layouts use offsets.
-pub(crate) fn schema_size(prefix: usize, children: &[ShaderModule]) -> Result<Option<u32>> {
+pub(crate) fn schema_size<G: Geometry>(
+    prefix: usize,
+    children: &[SourceModule<G>],
+) -> Result<Option<u32>> {
     let mut minimum = u32::try_from(header_length(prefix, children.len())?)?;
     let mut fixed = true;
     for child in children {

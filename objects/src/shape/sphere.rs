@@ -4,33 +4,32 @@ use super::*;
 #[derive(Clone, Default, Debug)]
 pub struct Sphere;
 
-fn intersection_module() -> ShaderModule {
-    ShaderModule::new(
+fn intersection_module<G: Geometry>() -> crate::shader::LibraryModule<G> {
+    crate::shader::LibraryModule::new(
         "hypertrace.shape.sphere.intersection",
-        ShaderKind::Library,
         include_str!("shaders/sphere.wgsl"),
         None,
     )
 }
 
-pub fn sphere_schema() -> ShaderModule {
-    let mut module = ShaderModule::new(
+pub fn sphere_schema<G: Geometry>() -> ShapeModule<G> {
+    let mut module = ShapeModule::new(
         "hypertrace.shape.sphere",
-        ShaderKind::Shape,
         include_str!("shaders/unit_sphere.wgsl"),
         Some(1),
     );
-    module.dependencies.push(intersection_module());
-    module.validate_context = |ctx| validate_sphere_radius(1.0, ctx.geometry, ctx.radius);
+    module
+        .dependencies
+        .push(intersection_module::<G>().into_source());
+    module.validate_context = |ctx| validate_sphere_radius::<G>(1.0, ctx.radius);
     module
 }
 
-impl<G: crate::shader::RenderGeometry> Shape<G> for Sphere {
-    fn shader() -> Result<ShaderModule> {
-        crate::shader::geometry::<G>()?;
+impl<G: Geometry> Shape<G> for Sphere {
+    fn shader() -> Result<ShapeModule<G>> {
         Ok(sphere_schema())
     }
-    fn encode(&self) -> Result<ShapeValue> {
+    fn encode(&self) -> Result<ShapeValue<G>> {
         ShapeValue::new(<Self as Shape<G>>::shader()?, vec![0])
     }
 }
@@ -46,37 +45,37 @@ impl GeodesicSphere {
     }
 }
 
-pub fn geodesic_sphere_schema() -> ShaderModule {
-    let mut module = ShaderModule::new(
+pub fn geodesic_sphere_schema<G: Geometry>() -> ShapeModule<G> {
+    let mut module = ShapeModule::new(
         "hypertrace.shape.geodesic_sphere",
-        ShaderKind::Shape,
         include_str!("shaders/geodesic_sphere.wgsl"),
         Some(1),
     );
-    module.dependencies.push(intersection_module());
+    module
+        .dependencies
+        .push(intersection_module::<G>().into_source());
     module.validate_words =
-        |_, ctx, words| validate_sphere_radius(f32::from_bits(words[0]), ctx.geometry, ctx.radius);
+        |_, ctx, words| validate_sphere_radius::<G>(f32::from_bits(words[0]), ctx.radius);
     module
 }
-impl<G: crate::shader::RenderGeometry> Shape<G> for GeodesicSphere {
-    fn shader() -> Result<ShaderModule> {
-        crate::shader::geometry::<G>()?;
+impl<G: Geometry> Shape<G> for GeodesicSphere {
+    fn shader() -> Result<ShapeModule<G>> {
         Ok(geodesic_sphere_schema())
     }
-    fn encode(&self) -> Result<ShapeValue> {
+    fn encode(&self) -> Result<ShapeValue<G>> {
         let radius = crate::shader::finite_f32(self.radius)?;
         anyhow::ensure!(radius > 0.0, "sphere radius must be positive");
         ShapeValue::new(<Self as Shape<G>>::shader()?, vec![radius.to_bits()])
     }
 }
-pub fn sphere() -> ShapeValue {
-    <Sphere as Shape<ccgeom::Flat3>>::encode(&Sphere).expect("valid unit sphere")
+pub fn sphere<G: Geometry>() -> ShapeValue<G> {
+    <Sphere as Shape<G>>::encode(&Sphere).expect("valid unit sphere")
 }
-pub fn geodesic_sphere(radius: f64) -> Result<ShapeValue> {
-    <GeodesicSphere as Shape<ccgeom::Flat3>>::encode(&GeodesicSphere::new(radius))
+pub fn geodesic_sphere<G: Geometry>(radius: f64) -> Result<ShapeValue<G>> {
+    <GeodesicSphere as Shape<G>>::encode(&GeodesicSphere::new(radius))
 }
 
-fn validate_sphere_radius(radius: f32, geometry: RenderGeometry, space_radius: f32) -> Result<()> {
+fn validate_sphere_radius<G: Geometry>(radius: f32, space_radius: f32) -> Result<()> {
     anyhow::ensure!(
         radius.is_normal() && radius > 0.0,
         "geodesic sphere needs a finite positive normal radius"
@@ -86,8 +85,8 @@ fn validate_sphere_radius(radius: f32, geometry: RenderGeometry, space_radius: f
     // the sphere center; do not admit a radius already inside that zero band.
     let resolved =
         |sine: f32, cosine: f32| sine * sine > 8.0 * f32::EPSILON * (1.0 + cosine * cosine);
-    match geometry {
-        RenderGeometry::Spherical => {
+    match G::SIGN {
+        1 => {
             anyhow::ensure!(
                 radius < std::f32::consts::PI * space_radius,
                 "spherical sphere radius must be strictly below pi times the curvature radius"
@@ -102,7 +101,7 @@ fn validate_sphere_radius(radius: f32, geometry: RenderGeometry, space_radius: f
                 "spherical sphere radius is outside the f32 section resolver range: cos(radius/space_radius) must be distinct from both 1 and -1 and resolve the coefficient uncertainty band"
             );
         }
-        RenderGeometry::Hyperbolic => {
+        -1 => {
             let cosine = angle.cosh();
             let sine = angle.sinh();
             anyhow::ensure!(
@@ -115,10 +114,11 @@ fn validate_sphere_radius(radius: f32, geometry: RenderGeometry, space_radius: f
                 "hyperbolic sphere radius is outside the f32 section resolver range: cosh(radius/space_radius) must be greater than one with a finite square and resolve the coefficient uncertainty band"
             );
         }
-        RenderGeometry::Euclidean => anyhow::ensure!(
+        0 => anyhow::ensure!(
             (radius * radius).is_finite(),
             "Euclidean sphere squared radius is outside f32 range"
         ),
+        _ => unreachable!("Geometry only admits the three curvature signs"),
     }
     Ok(())
 }

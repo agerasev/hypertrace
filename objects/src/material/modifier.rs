@@ -2,11 +2,11 @@ use super::*;
 use vecmat::Vector;
 
 #[derive(Clone, Copy, Debug)]
-pub struct Colored<M: Material> {
+pub struct Colored<M> {
     pub color: Vector<f32, 3>,
     pub inner: M,
 }
-impl<M: Material> Colored<M> {
+impl<M> Colored<M> {
     pub fn new(material: M, color: Vector<f32, 3>) -> Self {
         Self {
             inner: material,
@@ -15,11 +15,11 @@ impl<M: Material> Colored<M> {
     }
 }
 #[derive(Clone, Copy, Debug)]
-pub struct Emissive<M: Material> {
+pub struct Emissive<M> {
     pub emission: Vector<f32, 3>,
     pub inner: M,
 }
-impl<M: Material> Emissive<M> {
+impl<M> Emissive<M> {
     pub fn new(material: M, emission: Vector<f32, 3>) -> Self {
         Self {
             inner: material,
@@ -28,8 +28,10 @@ impl<M: Material> Emissive<M> {
     }
 }
 
-fn modifier_schema(inner: ShaderModule, emission: bool) -> ShaderModule {
-    let (key, statement) = if emission {
+fn modifier_schema<G: Geometry, const EMISSION: bool>(
+    inner: MaterialModule<G>,
+) -> MaterialModule<G> {
+    let (key, statement) = if EMISSION {
         (
             "hypertrace.material.emissive",
             "(*sample).emission+=(*sample).attenuation*load_vec3(base);",
@@ -40,41 +42,28 @@ fn modifier_schema(inner: ShaderModule, emission: bool) -> ShaderModule {
             "(*sample).attenuation*=load_vec3(base);",
         )
     };
-    let source=format!("fn {{{{self}}}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {{\n{statement}\n{{{{dep0}}}}(base+3u,ctx,sample,rng);\n}}\n");
-    let mut module = ShaderModule::new(
+    let source = format!(
+        "fn {{{{self}}}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {{\n{statement}\n{{{{dep0}}}}(base+3u,ctx,sample,rng);\n}}\n"
+    );
+    let mut module = MaterialModule::new(
         key,
-        ShaderKind::Material,
         source,
         inner.parameter_words.and_then(|n| n.checked_add(3)),
     );
-    module.dependencies = vec![inner];
-    module.key = ShaderModule::specialized_key(&module.key, &module.dependencies);
-    if module
-        .dependencies
-        .iter()
-        .any(|child| child.kind != ShaderKind::Material)
-    {
-        module.validate_context = |_| Err(anyhow::anyhow!("expected a material dependency"));
-    }
+    module.dependencies = vec![inner.into_source()];
+    module.key = MaterialModule::<G>::specialized_key(&module.key, &module.dependencies);
     module.validate_words = |module, ctx, words| {
-        anyhow::ensure!(
-            module
-                .dependencies
-                .iter()
-                .all(|child| child.kind == ShaderKind::Material),
-            "expected a material dependency"
-        );
         anyhow::ensure!(words.len() >= 3, "material modifier payload is truncated");
         validate_rgb(&words[..3])?;
         module.dependencies[0].validate(ctx, &words[3..])
     };
     module
 }
-pub fn colored_schema(inner: ShaderModule) -> ShaderModule {
-    modifier_schema(inner, false)
+pub fn colored_schema<G: Geometry>(inner: MaterialModule<G>) -> MaterialModule<G> {
+    modifier_schema::<G, false>(inner)
 }
-pub fn emissive_schema(inner: ShaderModule) -> ShaderModule {
-    modifier_schema(inner, true)
+pub fn emissive_schema<G: Geometry>(inner: MaterialModule<G>) -> MaterialModule<G> {
+    modifier_schema::<G, true>(inner)
 }
 fn validate_rgb(words: &[u32]) -> Result<()> {
     anyhow::ensure!(
@@ -86,35 +75,34 @@ fn validate_rgb(words: &[u32]) -> Result<()> {
     );
     Ok(())
 }
-fn modifier(value: MaterialValue, rgb: [f32; 3], emission: bool) -> Result<MaterialValue> {
-    anyhow::ensure!(
-        value.schema.kind == ShaderKind::Material,
-        "expected a material module"
-    );
+fn modifier<G: Geometry, const EMISSION: bool>(
+    value: MaterialValue<G>,
+    rgb: [f32; 3],
+) -> Result<MaterialValue<G>> {
     let mut words = rgb.iter().map(|x| x.to_bits()).collect::<Vec<_>>();
     validate_rgb(&words)?;
     words.extend(value.words);
-    MaterialValue::new(modifier_schema(value.schema, emission), words)
+    MaterialValue::new(modifier_schema::<G, EMISSION>(value.schema), words)
 }
-pub fn colored(value: MaterialValue, rgb: [f32; 3]) -> Result<MaterialValue> {
-    modifier(value, rgb, false)
+pub fn colored<G: Geometry>(value: MaterialValue<G>, rgb: [f32; 3]) -> Result<MaterialValue<G>> {
+    modifier::<G, false>(value, rgb)
 }
-pub fn emissive(value: MaterialValue, rgb: [f32; 3]) -> Result<MaterialValue> {
-    modifier(value, rgb, true)
+pub fn emissive<G: Geometry>(value: MaterialValue<G>, rgb: [f32; 3]) -> Result<MaterialValue<G>> {
+    modifier::<G, true>(value, rgb)
 }
-impl<M: Material> Material for Colored<M> {
-    fn shader() -> Result<ShaderModule> {
+impl<G: Geometry, M: Material<G>> Material<G> for Colored<M> {
+    fn shader() -> Result<MaterialModule<G>> {
         Ok(colored_schema(M::shader()?))
     }
-    fn encode(&self) -> Result<MaterialValue> {
+    fn encode(&self) -> Result<MaterialValue<G>> {
         colored(self.inner.encode()?, self.color.into_array())
     }
 }
-impl<M: Material> Material for Emissive<M> {
-    fn shader() -> Result<ShaderModule> {
+impl<G: Geometry, M: Material<G>> Material<G> for Emissive<M> {
+    fn shader() -> Result<MaterialModule<G>> {
         Ok(emissive_schema(M::shader()?))
     }
-    fn encode(&self) -> Result<MaterialValue> {
+    fn encode(&self) -> Result<MaterialValue<G>> {
         emissive(self.inner.encode()?, self.emission.into_array())
     }
 }

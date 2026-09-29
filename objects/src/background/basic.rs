@@ -1,5 +1,5 @@
+use crate::shader::Geometry;
 use crate::Background;
-use ccgeom::Geometry;
 use vecmat::Vector;
 
 /// Constant color background.
@@ -15,13 +15,19 @@ impl ConstBg {
 }
 
 impl<G: Geometry> Background<G> for ConstBg {
-    fn background(&self) -> crate::shader::Result<crate::shader::Background> {
-        Ok(crate::shader::Background::Constant(self.color.into_array()))
+    fn background(&self) -> crate::shader::Result<crate::shader::Background<G>> {
+        Ok(crate::shader::Background::constant(self.color.into_array()))
     }
 }
 
 /// Gradient background.
 /// Available only for euclidean space because only that space preserves direction.
+/// ```compile_fail
+/// use ccgeom::Hyperboloid3;
+/// use hypertrace_objects::{Background, background::GradBg};
+/// let gradient = GradBg::new([0.0, 1.0, 0.0].into(), [[1.0; 3].into(), [0.0; 3].into()], 1.0);
+/// let _ = <GradBg as Background<Hyperboloid3>>::background(&gradient);
+/// ```
 #[derive(Clone, Debug)]
 pub struct GradBg {
     pub direction: Vector<f64, 3>,
@@ -39,19 +45,16 @@ impl GradBg {
     }
 }
 
-impl<G: crate::shader::RenderGeometry> Background<G> for GradBg {
-    fn background(&self) -> crate::shader::Result<crate::shader::Background> {
-        if crate::shader::geometry::<G>()? != crate::shader::Geometry::Euclidean {
-            return Err(crate::shader::unsupported::<(Self, G)>());
-        }
+impl Background<ccgeom::Flat3> for GradBg {
+    fn background(&self) -> crate::shader::Result<crate::shader::Background<ccgeom::Flat3>> {
         let mut axis = [0.0; 3];
         for (dst, src) in axis.iter_mut().zip(self.direction.into_array()) {
             *dst = crate::shader::finite_f32(src)?;
         }
-        Ok(crate::shader::Background::Gradient {
-            colors: self.colors.map(Vector::into_array),
+        Ok(crate::shader::Background::gradient(
+            self.colors.map(Vector::into_array),
             axis,
-            power: self.power,
-        })
+            self.power,
+        ))
     }
 }

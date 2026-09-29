@@ -92,39 +92,40 @@ fn real_scenes_present_current_compute_results_without_an_intermediate_wait() {
     eprintln!("Presentation adapter: {:?}", gpu.adapter.get_info());
     let size = (37, 29);
     let format = wgpu::TextureFormat::Rgba8Unorm;
-    for (name, scene) in [
-        ("eu", support::example("eu")),
-        ("hy", support::example("hy")),
-        ("sp", support::example("sp")),
-    ] {
-        let mut renderer = Renderer::new(&gpu.device, &gpu.queue, size, scene, 123).unwrap();
-        renderer.set_samples_per_dispatch(4).unwrap();
-        let presenter = Presenter::new(&gpu.device, format, &renderer);
-        let texture = output_texture(&gpu, size, format);
-        let mut encoder = gpu.device.create_command_encoder(&Default::default());
-        renderer.encode(&mut encoder);
-        presenter.draw(&mut encoder, &texture.create_view(&Default::default()));
-        let submission = gpu.queue.submit([encoder.finish()]);
-        let displayed = texture_pixels(&gpu, &texture, submission);
-        let linear = renderer.snapshot().unwrap();
-        assert!(
-            linear.iter().all(|pixel| pixel[3] == 1.0),
-            "{name}: all pixels must be sampled"
-        );
-        assert!(
-            linear.windows(2).any(|pair| pair[0][..3] != pair[1][..3]),
-            "{name}: exercise a nonuniform image, not only a constant background"
-        );
-        for (index, (actual, color)) in displayed.into_iter().zip(linear).enumerate() {
-            let expected = expected([color[0], color[1], color[2]]);
+    for name in ["eu", "hy", "sp"] {
+        hypertrace_examples::with_example!(name, |_metadata, factory| {
+            let scene = support::scene(factory);
+            let mut renderer = Renderer::new(&gpu.device, &gpu.queue, size, scene, 123).unwrap();
+            renderer.set_samples_per_dispatch(4).unwrap();
+            let presenter = Presenter::new(&gpu.device, format, &renderer);
+            let texture = output_texture(&gpu, size, format);
+            let mut encoder = gpu.device.create_command_encoder(&Default::default());
+            renderer.encode(&mut encoder);
+            presenter.draw(&mut encoder, &texture.create_view(&Default::default()));
+            let submission = gpu.queue.submit([encoder.finish()]);
+            let displayed = texture_pixels(&gpu, &texture, submission);
+            let linear = renderer.snapshot().unwrap();
             assert!(
-                actual
-                    .into_iter()
-                    .zip(expected)
-                    .all(|(a, e)| a.abs_diff(e) <= 1),
-                "{name} pixel {index}: displayed {actual:?}, expected {expected:?}"
+                linear.iter().all(|pixel| pixel[3] == 1.0),
+                "{name}: all pixels must be sampled"
             );
-        }
+            assert!(
+                linear.windows(2).any(|pair| pair[0][..3] != pair[1][..3]),
+                "{name}: exercise a nonuniform image, not only a constant background"
+            );
+            for (index, (actual, color)) in displayed.into_iter().zip(linear).enumerate() {
+                let expected = expected([color[0], color[1], color[2]]);
+                assert!(
+                    actual
+                        .into_iter()
+                        .zip(expected)
+                        .all(|(a, e)| a.abs_diff(e) <= 1),
+                    "{name} pixel {index}: displayed {actual:?}, expected {expected:?}"
+                );
+            }
+            Ok::<(), anyhow::Error>(())
+        })
+        .unwrap();
     }
 }
 
@@ -147,8 +148,14 @@ fn assert_pixel(actual: [u8; 4], expected: [u8; 4]) {
 #[ignore = "requires a GPU adapter"]
 fn accumulation_normalization_orientation_and_gamma_match_attachment_formats() {
     let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
-    let renderer =
-        Renderer::new(&gpu.device, &gpu.queue, (2, 2), support::example("eu"), 1).unwrap();
+    let renderer = Renderer::new(
+        &gpu.device,
+        &gpu.queue,
+        (2, 2),
+        support::scene(hypertrace_examples::factories::eu),
+        1,
+    )
+    .unwrap();
     let colors = [
         [0.04, 0.25, 1.0],
         [0.0; 3],
@@ -213,8 +220,14 @@ fn resize_rebinding_and_reset_show_current_accumulation() {
 #[ignore = "requires a GPU adapter"]
 fn scaled_targets_sample_nearest_pixels_and_rebind_after_renderer_resize() {
     let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
-    let mut renderer =
-        Renderer::new(&gpu.device, &gpu.queue, (2, 2), support::example("eu"), 1).unwrap();
+    let mut renderer = Renderer::new(
+        &gpu.device,
+        &gpu.queue,
+        (2, 2),
+        support::scene(hypertrace_examples::factories::eu),
+        1,
+    )
+    .unwrap();
     let format = wgpu::TextureFormat::Rgba8Unorm;
     let mut presenter = Presenter::new(&gpu.device, format, &renderer);
     let colors = [
@@ -223,7 +236,7 @@ fn scaled_targets_sample_nearest_pixels_and_rebind_after_renderer_resize() {
         [0.25, 1.0, 0.04],
         [0.8, 0.002, 0.25],
     ];
-    let upload = |colors: &[[f32; 3]], renderer: &Renderer| {
+    let upload = |colors: &[[f32; 3]], renderer: &Renderer<ccgeom::Flat3>| {
         let sums: Vec<_> = colors.iter().map(|&[r, g, b]| [r, g, b, 1.0]).collect();
         gpu.queue.write_buffer(
             renderer.accumulation_buffer(),

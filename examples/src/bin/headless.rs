@@ -1,6 +1,8 @@
 //! Reproducible native WGPU rendering without a window.
 use anyhow::{Context, bail, ensure};
-use hypertrace_renderer::{Gpu, Renderer, Result};
+use hypertrace_examples::{Example, with_example};
+use hypertrace_renderer::{Gpu, Renderer, Result, Scene};
+use objects::shader::{Geometry, SceneDefinition};
 use std::{
     fs::File,
     io::{BufWriter, Write},
@@ -41,12 +43,48 @@ fn main() -> Result<()> {
         }
     }
     ensure!(samples > 0, "samples must be positive");
-    let mut scene = support::scene(&name)?;
+    let options = Options {
+        width,
+        height,
+        samples,
+        seed,
+        bounces,
+        output,
+    };
+    with_example!(name.as_str(), |example, factory| run(
+        example, factory, options
+    ))
+}
+
+struct Options {
+    width: u32,
+    height: u32,
+    samples: u32,
+    seed: u32,
+    bounces: Option<u32>,
+    output: String,
+}
+
+fn run<G: Geometry>(
+    example: Example,
+    factory: fn() -> Result<SceneDefinition<G>>,
+    options: Options,
+) -> Result<()> {
+    let Options {
+        width,
+        height,
+        samples,
+        seed,
+        bounces,
+        output,
+    } = options;
+    let name = example.id;
+    let mut scene = Scene::from_definition(&factory()?)?;
     if let Some(b) = bounces {
         scene.bounces = b;
     }
     let bounces = scene.bounces;
-    let curvature = scene.camera.geometry().sign();
+    let curvature = G::SIGN;
     let radius = scene.radius;
     let [red, green, blue, extinction] = scene.medium.gpu_row();
     let gpu = futures::executor::block_on(Gpu::headless())?;

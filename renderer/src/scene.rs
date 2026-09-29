@@ -5,19 +5,24 @@ use scene_ir::{Geometry, Transform};
 
 use crate::Result;
 
-/// A camera pose in the scene's canonical isometry representation.
+/// A camera pose whose geometry remains a compile-time property.
+///
+/// A camera from another geometry cannot be assigned to a scene:
+/// ```compile_fail
+/// use ccgeom::{Flat3, Spherical3};
+/// use hypertrace_renderer::{Camera, Scene};
+/// fn replace(scene: &mut Scene<Flat3>, camera: Camera<Spherical3>) {
+///     scene.camera = camera;
+/// }
+/// ```
 #[derive(Clone, Copy, Debug)]
-pub struct Camera {
-    map: Transform,
+pub struct Camera<G: Geometry> {
+    map: Transform<G>,
 }
 
-impl Camera {
-    pub fn geometry(&self) -> Geometry {
-        self.map.geometry()
-    }
-
+impl<G: Geometry> Camera<G> {
     /// Canonical f64 transform, before preparing camera-relative GPU data.
-    pub fn transform(self) -> Transform {
+    pub fn transform(self) -> Transform<G> {
         self.map
     }
 
@@ -38,8 +43,8 @@ impl Camera {
     }
 }
 
-impl From<Transform> for Camera {
-    fn from(map: Transform) -> Self {
+impl<G: Geometry> From<Transform<G>> for Camera<G> {
+    fn from(map: Transform<G>) -> Self {
         Self { map }
     }
 }
@@ -47,21 +52,21 @@ impl From<Transform> for Camera {
 pub use scene_ir::Background;
 
 #[derive(Clone, Debug)]
-pub struct Scene {
-    pub camera: Camera,
+pub struct Scene<G: Geometry> {
+    pub camera: Camera<G>,
     pub fov: f32,
     pub bounces: u32,
     pub radius: f32,
     pub medium: scene_ir::Medium,
-    pub background: Background,
-    pub(crate) compiled: std::sync::Arc<scene_ir::CompiledScene>,
+    pub background: Background<G>,
+    pub(crate) compiled: std::sync::Arc<scene_ir::CompiledScene<G>>,
 }
 
-impl Scene {
+impl<G: Geometry> Scene<G> {
     /// Compile a generic Rust scene lowered through `objects::Scene::definition`.
     /// The compiled program owns its parameter data independently of the Rust
     /// builder and its Rust memory layout.
-    pub fn from_definition(definition: &scene_ir::SceneDefinition) -> Result<Self> {
+    pub fn from_definition(definition: &scene_ir::SceneDefinition<G>) -> Result<Self> {
         let compiled = scene_ir::compile(definition)?;
         let scene = Self {
             camera: definition.view.map.into(),
@@ -91,11 +96,7 @@ impl Scene {
 
     /// Build upload records without mutating canonical scene data. Composition
     /// happens in f64; only the relative transforms are converted to f32.
-    pub(crate) fn prepare_objects(&self, camera: Camera) -> Result<Vec<scene_ir::GpuObject>> {
-        anyhow::ensure!(
-            camera.geometry() == self.compiled.geometry,
-            "camera geometry must match the scene"
-        );
+    pub(crate) fn prepare_objects(&self, camera: Camera<G>) -> Result<Vec<scene_ir::GpuObject>> {
         let mut objects = self.compiled.objects.clone();
         let inverse = camera.transform().inverse()?;
         anyhow::ensure!(
@@ -112,18 +113,12 @@ impl Scene {
 
     pub fn validate(&self) -> Result<()> {
         anyhow::ensure!(
-            self.camera.geometry() == self.compiled.geometry,
-            "camera geometry differs from the compiled scene; compile a new SceneDefinition"
-        );
-        anyhow::ensure!(
             self.radius == self.compiled.radius,
             "curvature radius must be updated through SceneDefinition"
         );
         self.camera.transform().components()?;
         anyhow::ensure!(
-            self.radius.is_finite()
-                && self.radius > 0.0
-                && (self.camera.geometry() != Geometry::Euclidean || self.radius == 1.0),
+            self.radius.is_finite() && self.radius > 0.0 && (G::SIGN != 0 || self.radius == 1.0),
             "invalid curvature radius"
         );
         self.medium.validate_for_radius(self.radius)?;
@@ -135,24 +130,7 @@ impl Scene {
             (1..=64).contains(&self.bounces),
             "bounce limit must be 1..=64"
         );
-        let colors: Vec<f32> = match self.background {
-            Background::Constant(c) => c.into(),
-            Background::Gradient {
-                colors,
-                axis,
-                power,
-            } => {
-                anyhow::ensure!(
-                    axis.into_iter().all(f32::is_finite) && power.is_finite() && power > 0.0,
-                    "invalid gradient"
-                );
-                colors.into_iter().flatten().collect()
-            }
-        };
-        anyhow::ensure!(
-            colors.into_iter().all(|x| x.is_finite() && x >= 0.0),
-            "invalid background color"
-        );
+        self.background.validate()?;
         self.prepare_objects(self.camera)?;
         Ok(())
     }
@@ -173,10 +151,10 @@ pub(crate) struct Params {
 }
 
 impl Params {
-    pub fn new(scene: &Scene, size: (u32, u32), samples: u32) -> Self {
+    pub fn new<G: Geometry>(scene: &Scene<G>, size: (u32, u32), samples: u32) -> Self {
         // The kernel starts rays at the camera-relative origin. Only a
         // Euclidean gradient needs the absolute camera rotation.
-        let camera0 = if scene.camera.geometry() == Geometry::Euclidean {
+        let camera0 = if G::SIGN == 0 {
             scene
                 .camera
                 .transform()
@@ -187,14 +165,9 @@ impl Params {
             [1.0, 0.0, 0.0, 0.0]
         };
         let camera1 = [0.0; 4];
-        let (c0, c1, axis, power, mode) = match scene.background {
-            Background::Constant(c) => (c, c, [0.0; 3], 1.0, 0),
-            Background::Gradient {
-                colors,
-                axis,
-                power,
-            } => (colors[0], colors[1], axis, power, 1),
-        };
+        let [c0, c1] = scene.background.colors();
+        let axis = scene.background.axis();
+        let power = scene.background.power();
         let pad = |a: [f32; 3]| [a[0], a[1], a[2], 0.0];
         Self {
             camera0,
@@ -202,13 +175,8 @@ impl Params {
             background0: pad(c0),
             background1: pad(c1),
             background_axis: pad(axis),
-            info: [
-                size.0,
-                size.1,
-                scene.camera.geometry().tag(),
-                scene.objects().len() as u32,
-            ],
-            options: [samples, scene.bounces, mode, 0],
+            info: [size.0, size.1, 0, scene.objects().len() as u32],
+            options: [samples, scene.bounces, 0, 0],
             misc: [scene.fov, scene.radius, power, 0.0],
             medium: scene.medium.gpu_row(),
         }
@@ -218,14 +186,18 @@ impl Params {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ccgeom::{Embedded3, Spherical3};
     use objects::Scene as _;
 
-    fn fixture<const K: i8>() -> scene_ir::SceneDefinition {
+    fn fixture<const K: i8>() -> scene_ir::SceneDefinition<Embedded3<f64, K>>
+    where
+        Embedded3<f64, K>: Geometry<Map = ccgeom::EmbeddedIsometry<f64, K>>,
+    {
         use objects::{
             Mapped, SceneImpl, background::ConstBg, material::Absorbing, object::Covered,
             shape::GeodesicSphere, view::PointView,
         };
-        type G<const K: i8> = ccgeom::Embedded3<f64, K>;
+        type G<const K: i8> = Embedded3<f64, K>;
         let space = ccgeom::Space3::<f64, K>::unit();
         let objects: Vec<_> = [-0.5, 0.5]
             .into_iter()
@@ -249,74 +221,63 @@ mod tests {
     fn generated_params_keep_radius_medium_and_relative_camera_contract() {
         let mut definition = fixture::<1>();
         definition.radius = 2.5;
-        definition.medium = scene_ir::Medium::Homogeneous {
-            extinction: 0.125,
-            albedo: [0.2, 0.4, 0.7],
-        };
+        definition.medium = scene_ir::Medium::homogeneous(0.125, [0.2, 0.4, 0.7]);
         let scene = Scene::from_definition(&definition).unwrap();
         let params = Params::new(&scene, (13, 7), 3);
         assert_eq!(params.camera0, [1.0, 0.0, 0.0, 0.0]);
         assert_eq!(params.camera1, [0.0; 4]);
         assert_eq!(params.misc, [1.0, 2.5, 1.0, 0.0]);
         assert_eq!(params.medium, [0.2, 0.4, 0.7, 0.125]);
-        assert_eq!(params.info, [13, 7, 2, 2]);
+        assert_eq!(params.info, [13, 7, 0, 2]);
         assert_eq!(std::mem::offset_of!(Params, medium), 128);
         assert_eq!(std::mem::align_of::<Params>(), 16);
     }
 
+    fn translated<const K: i8>(distance: f64)
+    where
+        Embedded3<f64, K>: Geometry<Map = ccgeom::EmbeddedIsometry<f64, K>>,
+    {
+        let mut definition = fixture::<K>();
+        let global = Transform::<Embedded3<f64, K>>::identity()
+            .move_local([distance, 0.0, 0.0], [0.0; 3], 1.0)
+            .unwrap();
+        let baseline = Scene::from_definition(&definition).unwrap();
+        let expected = baseline.prepare_objects(baseline.camera).unwrap();
+        definition.view.map = global.chain(&definition.view.map).unwrap();
+        for object in &mut definition.objects {
+            object.map = global.chain(&object.map).unwrap();
+        }
+        let shifted = Scene::from_definition(&definition).unwrap();
+        let original_records =
+            bytemuck::cast_slice::<scene_ir::GpuObject, u8>(shifted.objects()).to_vec();
+        let actual = shifted.prepare_objects(shifted.camera).unwrap();
+        assert_eq!(actual.len(), expected.len());
+        for (actual, expected) in actual.iter().zip(&expected) {
+            for (a, b) in actual
+                .map0
+                .into_iter()
+                .chain(actual.map1)
+                .zip(expected.map0.into_iter().chain(expected.map1))
+            {
+                assert!((a - b).abs() < 2e-4, "relative component {a} != {b}");
+            }
+            assert_eq!(actual.info, expected.info);
+        }
+        assert_eq!(
+            bytemuck::cast_slice::<scene_ir::GpuObject, u8>(shifted.objects()),
+            original_records
+        );
+    }
+
     #[test]
     fn relative_preparation_preserves_far_translated_scenes() {
-        let cases = [
-            (
-                fixture::<0>(),
-                Transform::identity(Geometry::Euclidean)
-                    .move_local([1e9, 0.0, 0.0], [0.0; 3], 1.0)
-                    .unwrap(),
-            ),
-            (
-                fixture::<-1>(),
-                Transform::from_isometry(
-                    ccgeom::Space3::<f64, -1>::unit()
-                        .translation([1.0, 0.0, 0.0].into(), 12.0)
-                        .unwrap(),
-                )
-                .unwrap(),
-            ),
-        ];
-        for (mut definition, global) in cases {
-            let baseline = Scene::from_definition(&definition).unwrap();
-            let expected = baseline.prepare_objects(baseline.camera).unwrap();
-            definition.view.map = global.chain(&definition.view.map).unwrap();
-            definition.object = scene_ir::ObjectNode::Mapped {
-                map: global,
-                inner: Box::new(definition.object),
-            };
-            let shifted = Scene::from_definition(&definition).unwrap();
-            let original_records =
-                bytemuck::cast_slice::<scene_ir::GpuObject, u8>(shifted.objects()).to_vec();
-            let actual = shifted.prepare_objects(shifted.camera).unwrap();
-            assert_eq!(actual.len(), expected.len());
-            for (actual, expected) in actual.iter().zip(&expected) {
-                for (a, b) in actual
-                    .map0
-                    .into_iter()
-                    .chain(actual.map1)
-                    .zip(expected.map0.into_iter().chain(expected.map1))
-                {
-                    assert!((a - b).abs() < 2e-4, "relative component {a} != {b}");
-                }
-                assert_eq!(actual.info, expected.info);
-            }
-            assert_eq!(
-                bytemuck::cast_slice::<scene_ir::GpuObject, u8>(shifted.objects()),
-                original_records
-            );
-        }
+        translated::<0>(1e9);
+        translated::<-1>(12.0);
     }
 
     #[test]
     fn physical_camera_motion_respects_radius_and_rejects_bad_input() {
-        let mut camera = Camera::from(Transform::identity(Geometry::Spherical));
+        let mut camera = Camera::<Spherical3>::from(Transform::identity());
         camera
             .move_local([std::f64::consts::PI, 0.0, 0.0], [0.0; 3], 2.0)
             .unwrap();
@@ -324,12 +285,13 @@ mod tests {
         assert!(position[0].abs() < 1e-14);
         assert!((position[1] - 1.0).abs() < 1e-14);
         let original = camera.transform().components().unwrap();
-        assert!(
-            camera
-                .move_local([f64::NAN, 0.0, 0.0], [0.0; 3], 2.0)
-                .is_err()
-        );
-        assert_eq!(camera.transform().components().unwrap(), original);
+        for (translation, rotation) in [
+            ([f64::NAN, 0.0, 0.0], [0.0; 3]),
+            ([0.2; 3], [0.0, f64::INFINITY, 0.0]),
+        ] {
+            assert!(camera.move_local(translation, rotation, 2.0).is_err());
+            assert_eq!(camera.transform().components().unwrap(), original);
+        }
     }
 
     #[test]
@@ -344,37 +306,23 @@ mod tests {
                 .to_string()
                 .contains("SceneDefinition")
         );
-        for medium in [
-            scene_ir::Medium::Homogeneous {
-                extinction: -1.0,
-                albedo: [0.5; 3],
-            },
-            scene_ir::Medium::Homogeneous {
-                extinction: f32::INFINITY,
-                albedo: [0.5; 3],
-            },
-            scene_ir::Medium::Homogeneous {
-                extinction: f32::from_bits(1),
-                albedo: [0.5; 3],
-            },
-            scene_ir::Medium::Homogeneous {
-                extinction: 0.1,
-                albedo: [1.1; 3],
-            },
-            scene_ir::Medium::Homogeneous {
-                extinction: 0.1,
-                albedo: [f32::NAN; 3],
-            },
+        for (extinction, albedo) in [
+            (-1.0, [0.5; 3]),
+            (f32::INFINITY, [0.5; 3]),
+            (f32::from_bits(1), [0.5; 3]),
+            (0.1, [1.1; 3]),
+            (0.1, [f32::NAN; 3]),
         ] {
             let mut changed = scene.clone();
-            changed.medium = medium;
+            changed.medium = scene_ir::Medium::homogeneous(extinction, albedo);
             assert!(changed.validate().is_err());
         }
     }
+
     #[test]
     fn relative_upload_rejects_unrepresentable_camera_motion() {
         let mut scene = Scene::from_definition(&fixture::<-1>()).unwrap();
-        scene.camera = Transform::identity(Geometry::Hyperbolic)
+        scene.camera = Transform::identity()
             .move_local([18.0, 0.0, 0.0], [0.0; 3], 1.0)
             .unwrap()
             .into();

@@ -1,15 +1,15 @@
+use crate::shader::Geometry;
 use crate::{Material, Object, Shape};
-use ccgeom::Geometry;
 use std::marker::PhantomData;
 
 #[derive(Clone)]
-pub struct Covered<G: Geometry, S: Shape<G>, M: Material> {
+pub struct Covered<G: Geometry, S: Shape<G>, M: Material<G>> {
     geometry: PhantomData<G>,
     pub material: M,
     pub shape: S,
 }
 
-impl<G: Geometry, S: Shape<G>, M: Material> Covered<G, S, M> {
+impl<G: Geometry, S: Shape<G>, M: Material<G>> Covered<G, S, M> {
     pub fn new(shape: S, material: M) -> Self {
         Self {
             geometry: PhantomData,
@@ -19,15 +19,25 @@ impl<G: Geometry, S: Shape<G>, M: Material> Covered<G, S, M> {
     }
 }
 
-impl<G: Geometry, S: Shape<G>, M: Material> Object<G> for Covered<G, S, M> {
-    fn shader_modules() -> crate::shader::Result<Vec<crate::shader::ShaderModule>> {
-        Ok(vec![S::shader()?, M::shader()?])
+impl<G: Geometry, S: Shape<G>, M: Material<G>> Object<G> for Covered<G, S, M> {
+    fn shader_modules() -> crate::shader::Result<crate::shader::Modules<G>> {
+        Ok(crate::shader::Modules {
+            shapes: vec![S::shader()?],
+            materials: vec![M::shader()?],
+            libraries: vec![],
+        })
     }
 
-    fn object_node(&self) -> crate::shader::Result<crate::shader::ObjectNode> {
-        Ok(crate::shader::ObjectNode::Covered {
+    fn encode_objects(
+        &self,
+        outer: crate::shader::Transform<G>,
+        output: &mut Vec<crate::shader::EncodedObject<G>>,
+    ) -> crate::shader::Result<()> {
+        output.push(crate::shader::EncodedObject {
+            map: outer,
             shape: self.shape.encode()?,
             material: self.material.encode()?,
-        })
+        });
+        Ok(())
     }
 }

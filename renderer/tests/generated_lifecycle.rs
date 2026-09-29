@@ -3,7 +3,7 @@ use ccgeom::{Flat3, Geometry3};
 use hypertrace_renderer::{Gpu, Renderer, Scene, shader::*};
 use objects::Material as _;
 
-fn planes(count: usize) -> SceneDefinition {
+fn planes(count: usize) -> SceneDefinition<Flat3> {
     let shapes: Vec<_> = (0..count)
         .map(|index| {
             objects::Mapped::<Flat3, _, _>::new(
@@ -18,11 +18,12 @@ fn planes(count: usize) -> SceneDefinition {
             map: Transform::from_isometry(Flat3::shift_z(3.0)).unwrap(),
             fov: 0.1,
         },
-        background: Background::Constant([0.0; 3]),
+        background: Background::constant([0.0; 3]),
         bounces: 4,
         radius: 1.0,
         medium: Default::default(),
-        object: ObjectNode::Covered {
+        objects: vec![EncodedObject {
+            map: Transform::identity(),
             shape,
             material: objects::material::Emissive::new(
                 objects::material::Transparent,
@@ -30,22 +31,9 @@ fn planes(count: usize) -> SceneDefinition {
             )
             .encode()
             .unwrap(),
-        },
-        modules: vec![],
+        }],
+        modules: Modules::default(),
     }
-}
-
-#[test]
-fn compiled_geometry_stays_coupled_to_validated_payload() {
-    let mut scene = Scene::from_definition(&planes(1)).unwrap();
-    scene.camera = Transform::identity(Geometry::Hyperbolic).into();
-    assert!(
-        scene
-            .validate()
-            .unwrap_err()
-            .to_string()
-            .contains("geometry")
-    );
 }
 
 #[test]
@@ -95,13 +83,11 @@ fn rejected_custom_shader_keeps_previous_pipeline_and_data() {
     renderer.render();
     let before = renderer.snapshot().unwrap();
     let mut invalid = planes(1);
-    if let ObjectNode::Covered { material, .. } = &mut invalid.object {
-        *material = MaterialValue::new(ShaderModule::new(
-            "tests::invalid", ShaderKind::Material,
+    invalid.objects[0].material = MaterialValue::new(MaterialModule::new(
+            "tests::invalid",
             "fn {{self}}(base:u32, ctx:GeoMaterialContext, sample:ptr<function,MaterialSample>, rng:ptr<function,u32>) { missing_function(); }",
             Some(0),
         ), vec![]).unwrap();
-    }
     let error = renderer
         .update_scene(Scene::from_definition(&invalid).unwrap())
         .unwrap_err();

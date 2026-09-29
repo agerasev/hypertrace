@@ -1,13 +1,13 @@
 //! Downstream extension acceptance: this integration-test crate owns both new
 //! components. Neither the scene compiler nor renderer imports their types.
-use ccgeom::{Embedded3, EmbeddedIsometry, Geometry, Space3};
+use ccgeom::{Embedded3, EmbeddedIsometry, Space3};
 use hypertrace_renderer::{Gpu, Renderer, Scene};
 use objects::{
     Mapped, Material, Scene as _, SceneImpl, Shape,
     background::ConstBg,
     material::{Absorbing, Colored},
     object::Covered,
-    shader::{self, MaterialValue, Result, ShaderKind, ShaderModule, ShapeValue},
+    shader::{self, Geometry, MaterialModule, MaterialValue, Result, ShapeModule, ShapeValue},
     shape::{self, Plane},
     view::PointView,
 };
@@ -20,10 +20,9 @@ pub struct Aperture {
 }
 
 impl Aperture {
-    fn module() -> ShaderModule {
-        let mut module = ShaderModule::new(
+    fn module<G: Geometry>() -> ShapeModule<G> {
+        let mut module = ShapeModule::new(
             "downstream.aperture",
-            ShaderKind::Shape,
             r#"
 fn {{self}}(base:u32,ray:GeoRay,previous:u32)->GeoTaggedHit {
     let result = {{dep0}}(base,ray,previous);
@@ -39,7 +38,9 @@ fn {{self}}(base:u32,ray:GeoRay,previous:u32)->GeoTaggedHit {
         );
         // The primitive is an explicit component dependency, never an assumed
         // renderer-provided function. Its entry point ignores its identity word.
-        module.dependencies.push(shape::plane_schema());
+        module
+            .dependencies
+            .push(shape::plane_schema::<G>().into_source());
         module.validate_words = |_, _, words| {
             let extent = f32::from_bits(words[0]);
             anyhow::ensure!(
@@ -53,23 +54,22 @@ fn {{self}}(base:u32,ray:GeoRay,previous:u32)->GeoTaggedHit {
 }
 
 impl<G: Geometry> Shape<G> for Aperture {
-    fn shader() -> Result<ShaderModule> {
-        Ok(Self::module())
+    fn shader() -> Result<ShapeModule<G>> {
+        Ok(Self::module::<G>())
     }
 
-    fn encode(&self) -> Result<ShapeValue> {
-        ShapeValue::new(Self::module(), vec![self.extent.to_bits()])
+    fn encode(&self) -> Result<ShapeValue<G>> {
+        ShapeValue::new(Self::module::<G>(), vec![self.extent.to_bits()])
     }
 }
 
 #[derive(Clone)]
 pub struct Radiance(pub [f32; 3]);
 
-impl Material for Radiance {
-    fn shader() -> Result<ShaderModule> {
-        let mut module = ShaderModule::new(
+impl<G: Geometry> Material<G> for Radiance {
+    fn shader() -> Result<MaterialModule<G>> {
+        let mut module = MaterialModule::new(
             "downstream.radiance",
-            ShaderKind::Material,
             r#"
 fn {{self}}(base:u32,context:GeoMaterialContext,
             sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {
@@ -92,17 +92,14 @@ fn {{self}}(base:u32,context:GeoMaterialContext,
         Ok(module)
     }
 
-    fn encode(&self) -> Result<MaterialValue> {
-        MaterialValue::new(Self::shader()?, self.0.map(f32::to_bits).into())
+    fn encode(&self) -> Result<MaterialValue<G>> {
+        MaterialValue::new(
+            <Self as Material<G>>::shader()?,
+            self.0.map(f32::to_bits).into(),
+        )
     }
 }
 
-objects::shape_choice! {
-    SurfaceChoice {
-        Aperture(Aperture),
-        Plane(Plane),
-    }
-}
 objects::mixture! {
     LightMixture {
         light: Radiance,
@@ -112,16 +109,19 @@ objects::mixture! {
 
 type Space<const K: i8> = Embedded3<f64, K>;
 type Map<const K: i8> = EmbeddedIsometry<f64, K>;
-type MappedShape<const K: i8> = Mapped<Space<K>, SurfaceChoice, Map<K>>;
+type MappedShape<const K: i8> = Mapped<Space<K>, (Vec<Aperture>, Vec<Plane>), Map<K>>;
 type Object<const K: i8> =
     Mapped<Space<K>, Covered<Space<K>, Vec<MappedShape<K>>, Colored<LightMixture>>, Map<K>>;
 type Builder<const K: i8> =
     SceneImpl<Space<K>, Mapped<Space<K>, PointView<Space<K>>, Map<K>>, Vec<Object<K>>, ConstBg, 1>;
 
-fn builder<const K: i8>() -> Builder<K> {
+fn builder<const K: i8>() -> Builder<K>
+where
+    Space<K>: Geometry<Map = Map<K>>,
+{
     let space = Space3::<f64, K>::unit();
     let patch = Mapped::new(
-        SurfaceChoice::Aperture(Aperture { extent: 0.75 }),
+        (vec![Aperture { extent: 0.75 }], vec![]),
         space.translation([1.0, 0.0, 0.0].into(), 0.1).unwrap(),
     );
     let material = Colored::new(
@@ -144,7 +144,10 @@ fn builder<const K: i8>() -> Builder<K> {
     )
 }
 
-fn verify_cpu<const K: i8>() {
+fn verify_cpu<const K: i8>()
+where
+    Space<K>: Geometry<Map = Map<K>>,
+{
     let mut builder = builder::<K>();
     let original = shader::compile(&builder.definition().unwrap()).unwrap();
     assert!(
@@ -163,10 +166,10 @@ fn verify_cpu<const K: i8>() {
             .matches("// module \"hypertrace.shape.plane\"")
             .count(),
         1,
-        "the direct variant and downstream dependency share one implementation"
+        "the static tuple child and downstream dependency share one implementation"
     );
     builder.object[0].inner.material.inner.light.material.0 = [1.0, 0.5, 0.25];
-    builder.object[0].inner.shape[0].inner = SurfaceChoice::Plane(Plane);
+    builder.object[0].inner.shape[0].inner = (vec![], vec![Plane]);
     let changed = shader::compile(&builder.definition().unwrap()).unwrap();
     assert_ne!(changed.words, original.words);
     assert_eq!(changed.source, original.source);
@@ -186,7 +189,7 @@ fn verify_cpu<const K: i8>() {
     );
 
     let mut invalid = self::builder::<K>();
-    invalid.object[0].inner.shape[0].inner = SurfaceChoice::Aperture(Aperture { extent: f32::NAN });
+    invalid.object[0].inner.shape[0].inner = (vec![Aperture { extent: f32::NAN }], vec![]);
     let error = shader::compile(&invalid.definition().unwrap()).unwrap_err();
     assert!(format!("{error:#}").contains("aperture extent"));
     let mut invalid = self::builder::<K>();
@@ -202,7 +205,10 @@ fn downstream_components_compile_validate_and_compose_in_every_curvature() {
     verify_cpu::<1>();
 }
 
-fn verify_gpu<const K: i8>(gpu: &Gpu) {
+fn verify_gpu<const K: i8>(gpu: &Gpu)
+where
+    Space<K>: Geometry<Map = Map<K>>,
+{
     let mut builder = builder::<K>();
     let scene =
         |source: &Builder<K>| Scene::from_definition(&source.definition().unwrap()).unwrap();
@@ -217,7 +223,7 @@ fn verify_gpu<const K: i8>(gpu: &Gpu) {
     ] {
         match stage {
             1 => builder.object[0].inner.material.inner.light.material.0 = [1.0, 0.5, 0.25],
-            2 => builder.object[0].inner.shape[0].inner = SurfaceChoice::Plane(Plane),
+            2 => builder.object[0].inner.shape[0].inner = (vec![], vec![Plane]),
             3 => builder.object[0].inner.shape.clear(),
             4 => builder.object.clear(),
             _ => {}

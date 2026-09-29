@@ -32,6 +32,17 @@ history in commits, not new migration diaries.
   when replacing a design. Update all callers and fixtures to the current API.
   Keep one canonical quaternion-pair isometry representation for every curvature;
   camera and scene transforms must not expose alternative storage formats.
+- Construction is statically typed. Preserve geometry `G` through components,
+  maps, cameras, scene definitions, compiled scenes, and renderers. Use trait
+  implementations to express supported geometry/component combinations and
+  typed shader roles to separate shapes, materials, and libraries. Do not erase
+  these types with enums, `Any`, type IDs, or trait objects. Test forbidden
+  combinations with compile-fail examples; validate numerical values at runtime.
+- Use tuples for heterogeneous composition and homogeneous vectors for variable
+  counts. Gallery selection dispatches once into a concrete typed application;
+  browser selection reloads that application. Keep catalogues as metadata, without
+  erased scene factories. GPU dispatch IDs and flattened shader dependencies are
+  compiled data, not a host-side runtime type system.
 - WGPU and WGSL are the sole rendering implementation. Do not add speculative
   backend abstractions. Keep CPU construction and validation usable without an
   adapter.
@@ -41,9 +52,9 @@ history in commits, not new migration diaries.
 - `ShaderModule` source uses `{{self}}` for entry points/private helper prefixes
   and `{{dep0}}` for declared dependencies. Keep module keys and source independent
   of parameter values; specialize structural keys with child modules. Component
-  validators own both geometry requirements and payload checks, including child
-  payload validation in wrappers. A shape needs at least one word for a distinct
-  leaf identity even when it has no parameters.
+  trait bounds express geometry support; validators own radius and payload checks,
+  including child payload validation in wrappers. A shape needs at least one word
+  for a distinct leaf identity even when it has no parameters.
 - Deduplicate emitted shader source, not validation. Validate every dependency
   instance even when its shader key was already linked; host validation callbacks
   are not part of shader equality. Enforce shape identity allocation recursively.
@@ -55,9 +66,9 @@ history in commits, not new migration diaries.
   acceptance model: custom shape and material types compose and render in every
   curvature without core edits. Primitive shader reuse requires explicit module
   dependencies, not renderer-provided functions named after built-in shapes.
-- Separate shader structure from parameter values. Empty vectors and inactive
-  choice variants still contribute their shader dependencies; changing values,
-  vector lengths or active variants must not accidentally rebuild pipelines.
+- Separate shader structure from parameter values. Every tuple child and empty
+  vector element type contributes its shader dependencies; changing values or
+  vector lengths must not accidentally rebuild pipelines.
 - Preserve composition order and material coordinate frames. Shape mapping and
   object mapping have different material-frame semantics. Nested mixtures retain
   their own random draws; emission and color wrappers run in their nesting order.
@@ -87,6 +98,10 @@ history in commits, not new migration diaries.
 - Tangent section classification needs a coefficient-scaled backward-error band.
   GPU drivers have differed by one ULP at a spherical tangent. Keep resolved near
   misses as misses rather than loosening all geometric test tolerances.
+- Isolate leaf-identity tests from root rounding. Independently solved surfaces
+  can disagree at nominally coincident contacts across GPU drivers; use exact
+  shared-coordinate fixtures for suppression checks and separate analytic tests
+  for nearest-hit geometry.
 - Keep chart conversions explicit and local to calculations that need them.
   Half-space coordinates used by tilings are coordinates, not an alternate ray
   or transform representation. Parabolic translations along a horosphere differ

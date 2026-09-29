@@ -12,19 +12,48 @@ use wgame::{
 };
 
 use crate::Example;
+use objects::shader::{Geometry, Result, SceneDefinition};
 #[cfg(target_arch = "wasm32")]
 mod web;
 
 const SEED: u32 = 1;
 
-/// Run a standalone scene factory with the common camera controls.
-pub async fn run(example: Example) -> wgame::Result<()> {
-    run_gallery(&[example]).await
+/// Run one statically typed scene factory with common camera controls.
+pub async fn run<G: Geometry>(
+    example: Example,
+    factory: fn() -> Result<SceneDefinition<G>>,
+) -> wgame::Result<()> {
+    finish(
+        async {
+            let (id, smoke) = selection(&[example])?;
+            if id.is_empty() {
+                return Ok(());
+            }
+            anyhow::ensure!(id == example.id, "this binary runs only {}", example.id);
+            start(example, factory, smoke).await
+        }
+        .await,
+    )
 }
 
-/// Run a caller-supplied gallery. A factory need not belong to `EXAMPLES`.
-pub async fn run_gallery(examples: &[Example]) -> wgame::Result<()> {
-    let result = start(examples.to_vec()).await;
+/// Select a concrete application at startup. Browser selection reloads the page.
+pub async fn run_gallery() -> wgame::Result<()> {
+    finish(
+        async {
+            let (id, smoke) = selection(crate::EXAMPLES)?;
+            if id.is_empty() {
+                return Ok(());
+            }
+            crate::with_example!(id.as_str(), |example, factory| start(
+                example, factory, smoke
+            )
+            .await)
+        }
+        .await,
+    )
+}
+
+fn finish(result: wgame::Result<()>) -> wgame::Result<()> {
     #[cfg(target_arch = "wasm32")]
     {
         if let Err(error) = result {
@@ -34,6 +63,31 @@ pub async fn run_gallery(examples: &[Example]) -> wgame::Result<()> {
     }
     #[cfg(not(target_arch = "wasm32"))]
     result
+}
+
+fn selection(examples: &[Example]) -> wgame::Result<(String, bool)> {
+    anyhow::ensure!(!examples.is_empty(), "provide at least one example");
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        options(examples)
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        anyhow::ensure!(
+            web::supported(),
+            "WebGPU is unavailable. Use a WebGPU-capable browser on HTTPS or localhost."
+        );
+        for example in examples {
+            web::add_example(
+                example.id,
+                example.title,
+                example.description,
+                example.group,
+            );
+        }
+        web::set_status("Preparing scene…", false);
+        Ok((web::scene_name(), false))
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -65,33 +119,14 @@ fn options(examples: &[Example]) -> wgame::Result<(String, bool)> {
     Ok((scene, smoke))
 }
 
-async fn start(examples: Vec<Example>) -> wgame::Result<()> {
-    anyhow::ensure!(!examples.is_empty(), "provide at least one example factory");
-    #[cfg(not(target_arch = "wasm32"))]
-    let (scene, smoke) = options(&examples)?;
-    #[cfg(target_arch = "wasm32")]
-    let (scene, smoke) = {
-        anyhow::ensure!(
-            web::supported(),
-            "WebGPU is unavailable. Use a WebGPU-capable browser on HTTPS or localhost."
-        );
-        for example in &examples {
-            web::add_example(
-                example.id,
-                example.title,
-                example.description,
-                example.group,
-            );
-        }
-        web::set_status("Preparing scene…", false);
-        (web::scene_name(), false)
-    };
-    if scene.is_empty() {
-        return Ok(());
-    }
-    let initial_scene = compile(&examples, &scene)?;
+async fn start<G: Geometry>(
+    example: Example,
+    factory: fn() -> Result<SceneDefinition<G>>,
+    smoke: bool,
+) -> wgame::Result<()> {
+    let initial_scene = Scene::from_definition(&factory()?)?;
     let config = WindowConfig::default()
-        .title(&format!("Hypertrace · {}", find(&examples, &scene)?.title))
+        .title(&format!("Hypertrace · {}", example.title))
         .size(if smoke { (320, 240) } else { (960, 720) })
         .required_limits(wgpu::Limits {
             // Exercise the hardware-limit fallback with small window sizes.
@@ -104,20 +139,16 @@ async fn start(examples: Vec<Example>) -> wgame::Result<()> {
         })
         .use_adapter_buffer_limits(!smoke);
     wgame::within_window(config, async move |window| {
-        render_loop(window, initial_scene, scene, smoke, examples).await
+        render_loop(window, initial_scene, smoke).await
     })
     .await
 }
 
-async fn render_loop(
+async fn render_loop<G: Geometry>(
     mut window: Window<'_>,
-    initial_scene: Scene,
-    _scene_name: String,
+    initial_scene: Scene<G>,
     smoke: bool,
-    _examples: Vec<Example>,
 ) -> wgame::Result<()> {
-    #[cfg(target_arch = "wasm32")]
-    let (mut scene_name, mut initial_scene) = (_scene_name, initial_scene);
     let graphics = window.graphics().clone();
     eprintln!("Adapter: {:?}", graphics.adapter().get_info());
     let raw = window.raw();
@@ -161,21 +192,6 @@ async fn render_loop(
     #[cfg(target_arch = "wasm32")]
     web::set_status("Ready · click the scene to explore", false);
     while let Some(mut frame) = window.next_frame().await? {
-        #[cfg(target_arch = "wasm32")]
-        if web::scene_name() != scene_name {
-            frame.discard();
-            web::set_status("Preparing scene…", false);
-            scene_name = web::scene_name();
-            initial_scene = compile(&_examples, &scene_name)?;
-            renderer.update_scene_async(initial_scene.clone()).await?;
-            presenter.rebind(graphics.device(), &renderer);
-            camera = initial_scene.camera;
-            fov = initial_scene.fov;
-            motion_blocked = false;
-            samples = 0;
-            web::set_status("Ready · click the scene to explore", false);
-            continue;
-        }
         let now = Instant::now();
         // Integrate elapsed time, bounding a stalled/minimized window's first
         // movement update so resuming cannot cause a large camera jump.
@@ -382,6 +398,7 @@ fn report_scaled_size(window: (u32, u32), render: (u32, u32)) {
     );
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn catalog(examples: &[Example]) -> String {
     examples
         .iter()
@@ -393,20 +410,4 @@ fn catalog(examples: &[Example]) -> String {
         })
         .collect::<Vec<_>>()
         .join("\n")
-}
-
-fn find<'a>(examples: &'a [Example], id: &str) -> wgame::Result<&'a Example> {
-    examples
-        .iter()
-        .find(|example| example.id == id)
-        .ok_or_else(|| {
-            anyhow::anyhow!(
-                "unknown example {id:?}; choose one of:\n{}",
-                catalog(examples)
-            )
-        })
-}
-
-fn compile(examples: &[Example], id: &str) -> wgame::Result<Scene> {
-    Scene::from_definition(&find(examples, id)?.definition()?)
 }

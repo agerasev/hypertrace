@@ -1,7 +1,10 @@
 //! Camera-relative upload updates remain transactional and preserve scene data.
-use ccgeom::{Geometry3, Hyperboloid3, Spherical3};
+use ccgeom::Spherical3;
 use hypertrace_examples as examples;
-use hypertrace_renderer::{Camera, Gpu, Renderer, Scene, shader::Transform};
+use hypertrace_renderer::{
+    Gpu, Renderer, Scene,
+    shader::{Geometry, SceneDefinition},
+};
 use objects::Scene as _;
 
 #[test]
@@ -100,10 +103,7 @@ fn spherical_camera_circuit_uses_physical_radius_without_recompilation() {
 #[ignore = "requires a native WGPU compute adapter"]
 fn camera_updates_reprepare_objects_without_pipeline_changes() {
     let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
-    for definition in [
-        examples::hy::scene::<3>().definition().unwrap(),
-        examples::sp::scene::<6>().definition().unwrap(),
-    ] {
+    fn check<G: Geometry>(gpu: &Gpu, definition: SceneDefinition<G>) {
         let scene = Scene::from_definition(&definition).unwrap();
         let canonical = bytemuck::cast_slice::<_, u8>(scene.objects()).to_vec();
         let mut renderer = Renderer::new(&gpu.device, &gpu.queue, (9, 7), scene, 19).unwrap();
@@ -128,10 +128,9 @@ fn camera_updates_reprepare_objects_without_pipeline_changes() {
         assert!(rendered.iter().all(|pixel| pixel[3] == 1.0));
         let installed = renderer.scene().camera.transform().components().unwrap();
 
-        // In hyperbolic space this exceeds the supported relative f32 range;
-        // for a spherical scene it is also the wrong camera geometry.
-        let invalid = Camera::from(Transform::from_isometry(Hyperboloid3::shift_x(15.0)).unwrap());
-        assert!(renderer.update_camera(invalid, 1.0).is_err());
+        // Validation failures must preserve both the installed camera and the
+        // already accumulated image. Geometry mismatches are compile errors.
+        assert!(renderer.update_camera(camera, f32::NAN).is_err());
         assert_eq!(renderer.pipeline_revision(), revision);
         assert_eq!(
             renderer.scene().camera.transform().components().unwrap(),
@@ -140,4 +139,6 @@ fn camera_updates_reprepare_objects_without_pipeline_changes() {
         assert_eq!(renderer.scene().fov, 0.95);
         assert_eq!(renderer.snapshot().unwrap(), rendered);
     }
+    check(&gpu, examples::factories::hy().unwrap());
+    check(&gpu, examples::factories::sp().unwrap());
 }

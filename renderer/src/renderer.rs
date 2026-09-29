@@ -4,9 +4,9 @@ use wgpu::util::DeviceExt;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::read_buffer;
 use crate::{Camera, Result, Scene, scene::Params};
-use scene_ir::{GpuObject, MaterialRecord};
+use scene_ir::{Geometry, GpuObject, MaterialRecord};
 
-fn scene_shader_source(scene: &Scene) -> String {
+fn scene_shader_source<G: Geometry>(scene: &Scene<G>) -> String {
     [
         include_str!("shaders/math.wgsl"),
         include_str!("shaders/embedded.wgsl"),
@@ -21,7 +21,16 @@ fn scene_shader_source(scene: &Scene) -> String {
 
 /// Progressive renderer sharing the caller's device/queue. Normal frames only
 /// encode compute; snapshots are explicit blocking operations.
-pub struct Renderer {
+///
+/// Scene updates preserve the renderer's geometry at compile time:
+/// ```compile_fail
+/// use ccgeom::{Flat3, Hyperboloid3};
+/// use hypertrace_renderer::{Renderer, Scene, Result};
+/// async fn replace(renderer: &mut Renderer<Flat3>, scene: Scene<Hyperboloid3>) -> Result<()> {
+///     renderer.update_scene_async(scene).await
+/// }
+/// ```
+pub struct Renderer<G: Geometry> {
     device: wgpu::Device,
     queue: wgpu::Queue,
     pipeline: wgpu::ComputePipeline,
@@ -32,7 +41,7 @@ pub struct Renderer {
     words: wgpu::Buffer,
     accumulation: wgpu::Buffer,
     seeds: wgpu::Buffer,
-    scene: Scene,
+    scene: Scene<G>,
     size: (u32, u32),
     seed: u32,
     samples: u32,
@@ -40,14 +49,14 @@ pub struct Renderer {
     pipeline_revision: u64,
 }
 
-impl Renderer {
+impl<G: Geometry> Renderer<G> {
     /// Blocking native convenience wrapper for [`Self::new_async`].
     #[cfg(not(target_arch = "wasm32"))]
     pub fn new(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         size: (u32, u32),
-        scene: Scene,
+        scene: Scene<G>,
         seed: u32,
     ) -> Result<Self> {
         futures::executor::block_on(Self::new_async(device, queue, size, scene, seed))
@@ -59,7 +68,7 @@ impl Renderer {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         size: (u32, u32),
-        scene: Scene,
+        scene: Scene<G>,
         seed: u32,
     ) -> Result<Self> {
         validate_size(device, size)?;
@@ -106,7 +115,7 @@ impl Renderer {
     pub fn size(&self) -> (u32, u32) {
         self.size
     }
-    pub fn scene(&self) -> &Scene {
+    pub fn scene(&self) -> &Scene<G> {
         &self.scene
     }
     /// Flattened source used by the current pipeline, including extension code.
@@ -126,7 +135,7 @@ impl Renderer {
 
     /// Blocking native convenience wrapper for [`Self::update_scene_async`].
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn update_scene(&mut self, scene: Scene) -> Result<()> {
+    pub fn update_scene(&mut self, scene: Scene<G>) -> Result<()> {
         futures::executor::block_on(self.update_scene_async(scene))
     }
 
@@ -134,7 +143,7 @@ impl Renderer {
     /// A failed compilation leaves the previous renderer usable.
     /// Buffers grow only when needed.
     /// A geometry/camera/material change always invalidates accumulated samples.
-    pub async fn update_scene_async(&mut self, scene: Scene) -> Result<()> {
+    pub async fn update_scene_async(&mut self, scene: Scene<G>) -> Result<()> {
         validate_scene(&self.device, &scene)?;
         let prepared_objects = scene.prepare_objects(scene.camera)?;
         let source = scene_shader_source(&scene);
@@ -189,11 +198,7 @@ impl Renderer {
         Ok(())
     }
 
-    pub fn update_camera(&mut self, camera: Camera, fov: f32) -> Result<()> {
-        anyhow::ensure!(
-            camera.geometry() == self.scene.camera.geometry(),
-            "camera geometry must match the scene"
-        );
+    pub fn update_camera(&mut self, camera: Camera<G>, fov: f32) -> Result<()> {
         anyhow::ensure!(fov.is_finite() && fov > 0.0, "invalid camera");
         let prepared_objects = self.scene.prepare_objects(camera)?;
         if !prepared_objects.is_empty() {
@@ -324,7 +329,7 @@ pub fn pixel_seed(seed: u32, index: u32) -> u32 {
 fn validate_size(device: &wgpu::Device, size: (u32, u32)) -> Result<()> {
     crate::resolution::validate_render_size(&device.limits(), size)
 }
-fn validate_scene(device: &wgpu::Device, scene: &Scene) -> Result<()> {
+fn validate_scene<G: Geometry>(device: &wgpu::Device, scene: &Scene<G>) -> Result<()> {
     scene.validate()?;
     let limits = device.limits();
     let limit = limits
@@ -342,7 +347,7 @@ fn validate_scene(device: &wgpu::Device, scene: &Scene) -> Result<()> {
     );
     Ok(())
 }
-fn material_buffer(device: &wgpu::Device, scene: &Scene) -> wgpu::Buffer {
+fn material_buffer<G: Geometry>(device: &wgpu::Device, scene: &Scene<G>) -> wgpu::Buffer {
     // An empty scene still binds one valid storage element.
     let mut bytes = scene.material_bytes().to_vec();
     bytes.resize(bytes.len().max(size_of::<MaterialRecord>()), 0);

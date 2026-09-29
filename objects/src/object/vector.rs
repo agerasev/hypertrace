@@ -1,16 +1,19 @@
+use crate::shader::Geometry;
 use crate::Object;
-use ccgeom::Geometry;
 
 impl<G: Geometry, T: Object<G>> Object<G> for Vec<T> {
-    fn shader_modules() -> crate::shader::Result<Vec<crate::shader::ShaderModule>> {
+    fn shader_modules() -> crate::shader::Result<crate::shader::Modules<G>> {
         T::shader_modules()
     }
 
-    fn object_node(&self) -> crate::shader::Result<crate::shader::ObjectNode> {
-        Ok(crate::shader::ObjectNode::Vector(
-            self.iter()
-                .map(T::object_node)
-                .collect::<crate::shader::Result<Vec<_>>>()?,
-        ))
+    fn encode_objects(
+        &self,
+        outer: crate::shader::Transform<G>,
+        output: &mut Vec<crate::shader::EncodedObject<G>>,
+    ) -> crate::shader::Result<()> {
+        for object in self {
+            object.encode_objects(outer, output)?;
+        }
+        Ok(())
     }
 }

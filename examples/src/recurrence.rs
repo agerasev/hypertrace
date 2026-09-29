@@ -71,10 +71,7 @@ pub fn scene<const H: usize>(fog: bool) -> ExampleScene<H> {
         ConstBg::new([0.0; 3].into()),
     );
     if fog {
-        scene.medium = Medium::Homogeneous {
-            extinction: 0.1,
-            albedo: [0.9; 3],
-        };
+        scene.medium = Medium::homogeneous(0.1, [0.9; 3]);
     }
     scene
 }
@@ -121,25 +118,15 @@ mod tests {
         let fog = scene::<12>(true);
         for scene in [&vacuum, &fog] {
             let definition = scene.definition().unwrap();
-            assert_eq!(definition.view.map.geometry(), shader::Geometry::Spherical);
             assert_eq!(definition.radius, 1.0);
             assert_eq!(definition.bounces, 12);
             assert_eq!(scene.object.len(), 4);
             let compiled = shader::compile(&definition).unwrap();
             assert_eq!(compiled.objects.len(), 4);
-            assert!(matches!(
-                definition.background,
-                shader::Background::Constant([0.0, 0.0, 0.0])
-            ));
+            assert_eq!(definition.background.colors(), [[0.0; 3]; 2]);
         }
-        assert!(matches!(vacuum.medium, Medium::Vacuum));
-        assert!(matches!(
-            fog.medium,
-            Medium::Homogeneous {
-                extinction: 0.1,
-                albedo: [0.9, 0.9, 0.9]
-            }
-        ));
+        assert_eq!(vacuum.medium, Medium::vacuum());
+        assert_eq!(fog.medium, Medium::homogeneous(0.1, [0.9; 3]));
         for (clear, hazy) in vacuum.object.iter().zip(&fog.object) {
             assert_eq!(clear.map.pair(), hazy.map.pair());
             assert_eq!(clear.inner.shape.radius, hazy.inner.shape.radius);

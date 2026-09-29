@@ -3,7 +3,7 @@
 use hypertrace_examples as examples;
 use hypertrace_renderer::{
     Gpu, Renderer, Scene, read_buffer,
-    shader::{ObjectNode, ShaderKind, ShaderModule},
+    shader::{LibraryModule, Modules},
 };
 use objects::object::tiling::{Pentagonal, Pentastar, Tiling as _};
 use wgpu::util::DeviceExt;
@@ -32,9 +32,8 @@ const FIXTURES: [([f32; 2], [u32; 2]); 12] = [
 fn production_tiling_matches_reference_fixtures() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
     let count = FIXTURES.len() as u32;
-    let mut probe = ShaderModule::new(
+    let mut probe = LibraryModule::<ccgeom::Hyperboloid3>::new(
         "tests::tiling_probe",
-        ShaderKind::Library,
         r#"
 fn {{self}}(gid: vec3<u32>) {
     if gid.x >= 12u || gid.y >= 2u { return; }
@@ -53,10 +52,16 @@ fn tiling_regression(@builtin(global_invocation_id) gid: vec3<u32>) { {{self}}(g
 "#,
         Some(0),
     );
-    probe.dependencies = vec![Pentastar::shader(), Pentagonal::shader()];
-    let mut definition = examples::find("hy").unwrap().definition().unwrap();
-    definition.object = ObjectNode::Vector(vec![]);
-    definition.modules = vec![probe];
+    probe.dependencies = vec![
+        Pentastar::shader().into_source(),
+        Pentagonal::shader().into_source(),
+    ];
+    let mut definition = examples::factories::hy().unwrap();
+    definition.objects.clear();
+    definition.modules = Modules {
+        libraries: vec![probe],
+        ..Default::default()
+    };
     let scene = Scene::from_definition(&definition).unwrap();
     let renderer = Renderer::new(&gpu.device, &gpu.queue, (1, 1), scene, 1).unwrap();
     let source = renderer.shader_source();

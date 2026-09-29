@@ -4,11 +4,10 @@ use hypertrace_renderer::{Gpu, Renderer, Scene, shader::*};
 use objects::{Material, material, material::MaterialValueExt, object::tiling, shape};
 
 struct Bands(Vec<[f32; 3]>);
-impl Material for Bands {
-    fn shader() -> Result<ShaderModule> {
-        let mut module = ShaderModule::new(
+impl Material<Flat3> for Bands {
+    fn shader() -> Result<MaterialModule<Flat3>> {
+        let mut module = MaterialModule::new(
             "tests.variable-bands",
-            ShaderKind::Material,
             r#"
 fn {{self}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {
     var emission=vec3<f32>(0);
@@ -39,7 +38,7 @@ fn {{self}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,
         };
         Ok(module)
     }
-    fn encode(&self) -> Result<MaterialValue> {
+    fn encode(&self) -> Result<MaterialValue<Flat3>> {
         let mut words = vec![u32::try_from(self.0.len())?];
         words.extend(self.0.iter().flatten().map(|value| value.to_bits()));
         MaterialValue::new(Self::shader()?, words)
@@ -50,7 +49,7 @@ fn definition(
     ordinary: Vec<[f32; 3]>,
     border: Vec<[f32; 3]>,
     use_border: bool,
-) -> Result<SceneDefinition> {
+) -> Result<SceneDefinition<Flat3>> {
     let ordinary = material::mixture(vec![
         (1.0, Bands(ordinary).encode()?),
         (0.0, material::transparent()),
@@ -64,9 +63,8 @@ fn definition(
     .colored([1.0, 0.5, 0.25])?;
     // This selector lets the test visit ordinary and border dispatch branches
     // using only parameter updates, independently of pixel jitter and geometry.
-    let selector = ShaderModule::new(
+    let selector = LibraryModule::new(
         "tests.branch-selector",
-        ShaderKind::Library,
         "fn {{self}}(position:vec4<f32>,cell:f32,width:f32,count:u32)->u32 {return select(0u,count,cell>1.5);}",
         Some(2),
     );
@@ -82,15 +80,16 @@ fn definition(
             map: Transform::from_isometry(Flat3::shift_z(3.0)).unwrap(),
             fov: 0.1,
         },
-        background: Background::Constant([0.0; 3]),
+        background: Background::constant([0.0; 3]),
         bounces: 1,
         radius: 1.0,
-        medium: Medium::Vacuum,
-        object: ObjectNode::Covered {
+        medium: Medium::vacuum(),
+        objects: vec![EncodedObject {
+            map: Transform::identity(),
             shape: shape::plane(),
             material,
-        },
-        modules: vec![],
+        }],
+        modules: Modules::default(),
     })
 }
 

@@ -1,19 +1,18 @@
 use super::*;
 #[derive(Clone, Copy, Debug)]
 pub struct Specular;
-impl Material for Specular {
-    fn shader() -> Result<ShaderModule> {
-        Ok(ShaderModule::new(
+impl<G: Geometry> Material<G> for Specular {
+    fn shader() -> Result<MaterialModule<G>> {
+        Ok(MaterialModule::new(
             "hypertrace.material.specular",
-            ShaderKind::Material,
             include_str!("shaders/specular.wgsl"),
             Some(0),
         ))
     }
-    fn encode(&self) -> Result<MaterialValue> {
-        MaterialValue::new(Self::shader()?, vec![])
+    fn encode(&self) -> Result<MaterialValue<G>> {
+        MaterialValue::new(<Self as Material<G>>::shader()?, vec![])
     }
 }
-pub fn specular() -> MaterialValue {
-    Specular.encode().expect("valid built-in material")
+pub fn specular<G: Geometry>() -> MaterialValue<G> {
+    <Specular as Material<G>>::encode(&Specular).expect("valid built-in material")
 }

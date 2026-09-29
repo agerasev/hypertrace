@@ -1,4 +1,5 @@
 //! Scene allocation limits must fail before changing a working renderer.
+use ccgeom::Flat3;
 use hypertrace_renderer::{Gpu, Renderer, Scene, shader::*};
 use objects::Material as _;
 
@@ -19,20 +20,21 @@ fn scene_update_exceeding_allocation_limit_preserves_previous_renderer() {
     assert_eq!(device.limits().max_buffer_size, 256);
     assert!(device.limits().max_storage_buffer_binding_size > 256);
 
-    let mut definition = SceneDefinition {
+    let mut definition: SceneDefinition<Flat3> = SceneDefinition {
         view: View {
-            map: Transform::identity(Geometry::Euclidean),
+            map: Transform::identity(),
             fov: 1.0,
         },
-        background: Background::Constant([0.125, 0.25, 0.5]),
+        background: Background::constant([0.125, 0.25, 0.5]),
         bounces: 1,
         radius: 1.0,
         medium: Default::default(),
-        object: ObjectNode::Vector(vec![]),
-        modules: vec![
-            objects::material::Absorbing::shader().unwrap(),
-            <objects::shape::Plane as objects::Shape<ccgeom::Flat3>>::shader().unwrap(),
-        ],
+        objects: vec![],
+        modules: Modules {
+            materials: vec![objects::material::Absorbing::shader().unwrap()],
+            shapes: vec![<objects::shape::Plane as objects::Shape<Flat3>>::shader().unwrap()],
+            libraries: vec![],
+        },
     };
     let mut renderer = Renderer::new(
         &device,
@@ -50,8 +52,9 @@ fn scene_update_exceeding_allocation_limit_preserves_previous_renderer() {
 
     // Six 48-byte records exceed allocation size while remaining well below
     // the device's independent storage-binding limit. The schema is unchanged.
-    definition.object = ObjectNode::Vector(vec![
-        ObjectNode::Covered {
+    definition.objects = vec![
+        EncodedObject {
+            map: Transform::identity(),
             shape: <objects::shape::Plane as objects::Shape<ccgeom::Flat3>>::encode(
                 &objects::shape::Plane
             )
@@ -59,7 +62,7 @@ fn scene_update_exceeding_allocation_limit_preserves_previous_renderer() {
             material: objects::material::Absorbing.encode().unwrap(),
         };
         6
-    ]);
+    ];
     let large_scene = Scene::from_definition(&definition).unwrap();
     let error = renderer.update_scene(large_scene).unwrap_err();
     assert!(

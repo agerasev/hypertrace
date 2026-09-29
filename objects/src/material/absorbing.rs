@@ -1,19 +1,18 @@
 use super::*;
 #[derive(Clone, Copy, Debug)]
 pub struct Absorbing;
-impl Material for Absorbing {
-    fn shader() -> Result<ShaderModule> {
-        Ok(ShaderModule::new(
+impl<G: Geometry> Material<G> for Absorbing {
+    fn shader() -> Result<MaterialModule<G>> {
+        Ok(MaterialModule::new(
             "hypertrace.material.absorbing",
-            ShaderKind::Material,
             include_str!("shaders/absorbing.wgsl"),
             Some(0),
         ))
     }
-    fn encode(&self) -> Result<MaterialValue> {
-        MaterialValue::new(Self::shader()?, vec![])
+    fn encode(&self) -> Result<MaterialValue<G>> {
+        MaterialValue::new(<Self as Material<G>>::shader()?, vec![])
     }
 }
-pub fn absorbing() -> MaterialValue {
-    Absorbing.encode().expect("valid built-in material")
+pub fn absorbing<G: Geometry>() -> MaterialValue<G> {
+    <Absorbing as Material<G>>::encode(&Absorbing).expect("valid built-in material")
 }

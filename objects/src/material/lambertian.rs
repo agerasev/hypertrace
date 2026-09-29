@@ -1,19 +1,18 @@
 use super::*;
 #[derive(Clone, Copy, Debug)]
 pub struct Lambertian;
-impl Material for Lambertian {
-    fn shader() -> Result<ShaderModule> {
-        Ok(ShaderModule::new(
+impl<G: Geometry> Material<G> for Lambertian {
+    fn shader() -> Result<MaterialModule<G>> {
+        Ok(MaterialModule::new(
             "hypertrace.material.lambertian",
-            ShaderKind::Material,
             include_str!("shaders/lambertian.wgsl"),
             Some(0),
         ))
     }
-    fn encode(&self) -> Result<MaterialValue> {
-        MaterialValue::new(Self::shader()?, vec![])
+    fn encode(&self) -> Result<MaterialValue<G>> {
+        MaterialValue::new(<Self as Material<G>>::shader()?, vec![])
     }
 }
-pub fn lambertian() -> MaterialValue {
-    Lambertian.encode().expect("valid built-in material")
+pub fn lambertian<G: Geometry>() -> MaterialValue<G> {
+    <Lambertian as Material<G>>::encode(&Lambertian).expect("valid built-in material")
 }

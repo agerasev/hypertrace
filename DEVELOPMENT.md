@@ -16,8 +16,8 @@ pinned in [.travis.yml](.travis.yml); update both places when changing them.
 | `../wgame` | [wgame](https://github.com/agerasev/wgame) | `42858dc961e1ac27a56a5cc84572e7489d036abc` |
 
 The workspace patches crates.io `ccgeom` and `vecmat` to these checkouts, and
-`ccgeom` also uses local `vecmat`. Cargo resolves the optional Wgame path dependency
-even for headless builds. Wgame must expose `WindowConfig::required_limits` and
+`ccgeom` also uses local `vecmat`. The examples package owns the optional Wgame
+path dependency, which Cargo resolves for workspace builds. Wgame must expose `WindowConfig::required_limits` and
 `use_adapter_buffer_limits` and use the same WGPU major version as Hypertrace.
 Companion commits must be available on their remotes before remote CI can fetch
 them. `Cargo.lock` is currently ignored by this repository.
@@ -30,7 +30,7 @@ Run from the Hypertrace root:
 cargo fmt --all -- --check
 cargo test --workspace --all-targets
 cargo test --workspace --doc
-cargo clippy --workspace --all-targets --features viewer -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings
 python3 -m unittest discover -s tools -p 'test_*.py'
 ```
 
@@ -39,8 +39,8 @@ adapter is available, so a passing CPU run is not GPU validation. Run GPU suites
 sequentially, recording the adapter and driver in each run:
 
 ```sh
-WGPU_BACKEND=vulkan cargo test -p hypertrace-renderer -- --ignored --test-threads=1
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-renderer --features viewer --example viewer -- --scene sp --smoke
+WGPU_BACKEND=vulkan cargo test --workspace -- --ignored --test-threads=1
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin viewer -- --scene sp --smoke
 ```
 
 The viewer smoke path exercises camera motion, accumulation resets, resizing
@@ -51,9 +51,12 @@ The [example guide](examples/README.md) describes comparison and recurrence case
 For the web viewer, install `wasm32-unknown-unknown` and Trunk 0.21 or newer:
 
 ```sh
-cargo clippy -p hypertrace-renderer --target wasm32-unknown-unknown --features web --example viewer -- -D warnings
+cargo clippy -p hypertrace-examples --target wasm32-unknown-unknown --features web --bin viewer -- -D warnings
 NO_COLOR=true trunk build --release
 ```
+
+The HTML asset selects `data-bin="viewer"`, so Trunk builds only the web gallery
+binary. Native headless and benchmark tools are separate binaries.
 
 Build success does not establish browser rendering correctness. A headed browser
 check should exercise scene selection, camera input, resizing, accumulation, and

@@ -1,17 +1,17 @@
 # Example scenes
 
-Native tools and the browser share the `examples::EXAMPLES` registry. Run any
-example with `--scene NAME`; `viewer`, `headless`, and `benchmark` also accept
-`--list-scenes`. The browser's grouped Example menu uses the same list, and
+Each scene is a standalone binary in `src/bin/`, using the rendering libraries.
+The optional gallery tools and browser share `hypertrace_examples::EXAMPLES`.
+Run a scene by its binary name; `viewer`, `headless`, and `benchmark` accept
+`--scene NAME` and `--list-scenes`. The browser's grouped Example menu uses the same list, and
 `?scene=NAME` selects an example directly.
 
 From the repository root:
 
 ```sh
-cargo run --release -p hypertrace-renderer --example headless -- --list-scenes
-cargo run --release -p hypertrace-renderer --features viewer --example viewer -- \
-  --scene compare-sp
-cargo run --release -p hypertrace-renderer --example headless -- \
+cargo run --release -p hypertrace-examples --bin headless -- --list-scenes
+cargo run --release -p hypertrace-examples --bin compare-sp
+cargo run --release -p hypertrace-examples --bin headless -- \
   --scene sp-loop-fog --width 640 --height 480 --samples 256 --output /tmp/sp-loop-fog
 ```
 
@@ -81,12 +81,12 @@ definition, then create the renderer scene:
 use objects::Scene as _;
 
 // The same physical comparison at spherical curvature +1/9.
-let source = examples::comparison::scene::<1, 1>(3.0)?;
+let source = hypertrace_examples::comparison::scene::<1, 1>(3.0)?;
 let definition = source.definition()?;
 let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
 
 // Unit-radius spherical recurrence with twelve surface/volume events and fog.
-let source = examples::recurrence::scene::<12>(true);
+let source = hypertrace_examples::recurrence::scene::<12>(true);
 let definition = source.definition()?;
 ```
 
@@ -96,3 +96,40 @@ past the camera's antipode. `recurrence::scene::<H>(false)` selects vacuum.
 Existing factories remain available as `eu::scene`, `hy::scene`, `sp::scene`,
 and `sp::fog_scene`. See the [renderer guide](../renderer/README.md) for
 custom shaders and [root README](../README.md) for browser setup.
+
+## Independent applications
+
+Run any catalogue ID as a binary, for example:
+
+```sh
+cargo run --release -p hypertrace-examples --bin hy
+cargo run --release -p hypertrace-examples --bin compare-sp-flat
+cargo run --release -p hypertrace-examples --bin sp-loop-fog
+```
+
+Each entry point supplies its factory directly to the shared viewer host. A new
+example does not need renderer changes or gallery registration. For example,
+`src/bin/my-scene.rs` can contain:
+
+```rust,ignore
+use objects::Scene as _;
+
+#[wgame::app]
+async fn main() -> wgame::Result<()> {
+    hypertrace_examples::viewer::run(hypertrace_examples::Example::new(
+        "my-scene", "My scene", || hypertrace_examples::sp::scene::<6>().definition(),
+    )).await
+}
+```
+
+Replace the factory with any typed scene builder or `SceneDefinition` producer.
+`viewer::run_gallery` accepts a caller-provided descriptor slice when selection
+is useful. The renderer only receives compiled scene data and knows no example
+names. The `viewer` feature is enabled by default; `--no-default-features` builds
+headless tools and factories without Wgame. All binaries retain `--help`, and
+interactive binaries accept `--smoke` for the twelve-frame presentation check.
+
+The dependency direction is `examples` → `renderer` / `objects` → `scene`.
+Window/WebAssembly hosting and `web/` assets belong here. GPU implementation
+tests remain in `renderer/tests`; tests that exercise example factories and the
+full application composition live in `examples/tests`.

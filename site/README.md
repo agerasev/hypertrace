@@ -12,9 +12,9 @@ From the repository root, render both previews on a compute-capable GPU:
 
 ```sh
 mkdir -p build/previews
-cargo build --release -p hypertrace-renderer --example headless
+cargo build --release -p hypertrace-examples --bin headless
 for scene in eu hy; do
-  cargo run --release -p hypertrace-renderer --example headless -- \
+  cargo run --release -p hypertrace-examples --bin headless -- \
     --scene "$scene" --width 2560 --height 1920 --samples 4096 \
     --seed 3735928559 --output "build/previews/$scene"
 done

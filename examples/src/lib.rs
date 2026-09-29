@@ -1,7 +1,7 @@
 //! Shared example scenes constructed through Hypertrace's generic Rust API.
 //!
-//! These factories only build scene data. They require neither a graphics
-//! device nor a windowing runtime and lower to the portable scene representation.
+//! The factories build scene data without a graphics device. With the `viewer`
+//! feature, a shared application host runs any independently supplied factory.
 //! The const parameter selects the maximum number of light bounces.
 //!
 //! ```
@@ -24,4 +24,8 @@ pub mod recurrence;
 pub mod sp;
 
 mod catalog;
-pub use catalog::{find, Example, EXAMPLES};
+pub use catalog::{EXAMPLES, Example, find};
+
+/// Native/WebGPU application host for independent example factories.
+#[cfg(feature = "viewer")]
+pub mod viewer;

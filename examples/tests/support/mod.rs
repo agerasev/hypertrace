@@ -1,3 +1,4 @@
+use hypertrace_examples as examples;
 use hypertrace_renderer::{
     Scene,
     shader::{Background, ObjectNode},

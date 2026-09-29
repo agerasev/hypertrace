@@ -1,5 +1,6 @@
 //! Runtime input fixtures are important here: an Intel Arc/Mesa 23.2.1 run
 //! diverged in full tile reduction while constant/early-return probes agreed.
+use hypertrace_examples as examples;
 use hypertrace_renderer::{
     Gpu, Renderer, Scene, read_buffer,
     shader::{ObjectNode, ShaderKind, ShaderModule},

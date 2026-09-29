@@ -1,6 +1,7 @@
 //! Read the actual production WGSL records on the GPU. Distinct values make
 //! matrix ordering, padding and array stride errors observable independently
 //! of whether a rendered image looks plausible.
+use hypertrace_examples as examples;
 use hypertrace_renderer::{
     Gpu, Renderer, Scene, read_buffer,
     shader::{GpuObject, MaterialRecord},
@@ -22,7 +23,7 @@ fn generated_uniform_carries_physical_radius_and_medium() {
     let renderer = Renderer::new(&gpu.device, &gpu.queue, (13, 7), scene, 123).unwrap();
     let source = format!(
         "{}\n{}",
-        include_str!("../src/shaders/abi.wgsl"),
+        include_str!("../../renderer/src/shaders/abi.wgsl"),
         r#"
 @group(0) @binding(0) var<uniform> params: Params;
 @group(0) @binding(1) var<storage,read_write> output: array<vec4<f32>>;
@@ -131,7 +132,7 @@ fn production_storage_records_and_word_arena_layout() {
     expected.push(words.map(|x| x as f32));
     let source = format!(
         "{}\n{}",
-        include_str!("../src/shaders/abi.wgsl"),
+        include_str!("../../renderer/src/shaders/abi.wgsl"),
         r#"
 @group(0) @binding(0) var<storage,read> objects: array<Object>;
 @group(0) @binding(1) var<storage,read> materials: array<MaterialRecord>;

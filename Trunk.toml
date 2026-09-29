@@ -1,7 +1,6 @@
 [build]
-target = "renderer/web/index.html"
+target = "examples/web/index.html"
 dist = "dist"
-example = "viewer"
 features = ["web"]
 
 [watch]

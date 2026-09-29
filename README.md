@@ -29,11 +29,16 @@ construction and compatibility adapters.
 From the repository root:
 
 ```sh
-cargo run --release -p hypertrace-renderer --features viewer --example viewer -- --scene sp
-cargo run --release -p hypertrace-renderer --example headless -- --list-scenes
-cargo run --release -p hypertrace-renderer --example headless -- \
+cargo run --release -p hypertrace-examples --bin sp
+cargo run --release -p hypertrace-examples --bin headless -- --list-scenes
+cargo run --release -p hypertrace-examples --bin headless -- \
   --scene eu --width 640 --height 480 --samples 64 --output /tmp/eu
 ```
+
+Each scene has its own binary: `eu`, `hy`, `sp`, `sp-fog`, all `compare-*`
+variants, `sp-loop`, and `sp-loop-fog`. The optional `viewer`, `headless`, and
+`benchmark` applications provide a shared gallery and capture tools. These
+applications live in `examples/` and depend on the rendering libraries.
 
 The shared example catalog includes the original `eu`, `hy`, and `sp` scenes,
 equal-layout curvature comparisons (`compare-eu`, `compare-hy`, `compare-sp`),
@@ -108,7 +113,7 @@ Rust builder:
 
 ```rust,ignore
 use objects::Scene as _;
-let mut source = examples::sp::fog_scene::<12>();
+let mut source = hypertrace_examples::sp::fog_scene::<12>();
 source.medium = objects::shader::Medium::Homogeneous {
     extinction: 0.08, // inverse world units
     albedo: [0.85, 0.9, 0.95],
@@ -126,9 +131,9 @@ custom shapes, materials and their shader modules.
 
 ```sh
 cargo test --workspace
-cargo clippy --workspace --all-targets --features viewer -- -D warnings
-cargo clippy -p hypertrace-renderer --target wasm32-unknown-unknown --features web --example viewer -- -D warnings
-WGPU_BACKEND=vulkan cargo test -p hypertrace-renderer -- --ignored --test-threads=1
+cargo clippy --workspace --all-targets -- -D warnings
+cargo clippy -p hypertrace-examples --target wasm32-unknown-unknown --features web --bin viewer -- -D warnings
+WGPU_BACKEND=vulkan cargo test --workspace -- --ignored --test-threads=1
 ```
 
 GPU tests are opt-in and require a working compute adapter. See [ABOUT.md](ABOUT.md)

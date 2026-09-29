@@ -1,5 +1,6 @@
 use ccgeom::{Euclidean3, Homogenous3};
 use objects::{
+    Mapped, SceneImpl,
     background::GradBg,
     material::{Colored, Lambertian, Refractive, Specular},
     mixture,
@@ -7,11 +8,10 @@ use objects::{
     shape::{Cube, Plane, Sphere},
     shape_choice,
     view::PointView,
-    Mapped, SceneImpl,
 };
 use vecmat::{
-    transform::{Rotation3, Shift},
     Transform, Vector,
+    transform::{Rotation3, Shift},
 };
 
 shape_choice! {

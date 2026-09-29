@@ -1,5 +1,6 @@
 //! Compile the shared generic Rust scene builders.
 
+use hypertrace_examples as examples;
 use hypertrace_renderer::{Result, Scene};
 
 pub fn catalog() -> String {

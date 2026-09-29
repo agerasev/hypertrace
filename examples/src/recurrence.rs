@@ -15,13 +15,13 @@
 
 use ccgeom::{EmbeddedIsometry, Space3, Spherical3};
 use objects::{
+    Mapped, SceneImpl,
     background::ConstBg,
     material::{Absorbing, Emissive},
     object::Covered,
     shader::Medium,
     shape::GeodesicSphere,
     view::PointView,
-    Mapped, SceneImpl,
 };
 
 type Object = Mapped<
@@ -83,7 +83,7 @@ pub fn scene<const H: usize>(fog: bool) -> ExampleScene<H> {
 mod tests {
     use super::*;
     use ccgeom::EmbeddedRay;
-    use objects::{shader, Scene as _};
+    use objects::{Scene as _, shader};
 
     #[test]
     fn behind_camera_beacon_has_a_forward_long_route() {

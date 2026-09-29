@@ -5,16 +5,18 @@ Hypertrace separates Rust scene construction from GPU rendering:
 - `objects`: composable cameras, shapes, materials, backgrounds, and object trees.
   Shapes, materials and tilings own their WGSL implementations, parameter layouts,
   dependencies and validation. Traits and macros compose their scene descriptions.
-- `examples`: Euclidean (`eu`), hyperbolic (`hy`), and spherical (`sp`) example
-  factories, including `sp::fog_scene` with homogeneous isotropic scattering.
+- `examples`: scene factories, standalone scene binaries, shared native/browser
+  viewer host, and optional gallery, headless, and benchmark applications.
+  Applications depend on the libraries; the renderer has no example dependency.
 - `scene`: CPU scene descriptions, a WGSL module linker and GPU data packing.
   Modules describe structure separately from parameter values so ordinary scene
   edits can reuse compiled pipelines. The linker has no built-in shape or material
   catalogue.
 - `renderer`: compute pipelines, progressive accumulation, explicit CPU
-  snapshots on native platforms, and direct GPU presentation through the optional
-  Wgame viewer. The same viewer runs in the browser using WebAssembly and WebGPU;
-  Trunk bundles it with the HTML controls in `renderer/web`.
+  snapshots on native platforms, and direct GPU presentation. It accepts scene
+  definitions and caller-owned WGPU devices; window hosting belongs to examples.
+  The examples' Wgame viewer runs natively and through WebAssembly/WebGPU;
+  Trunk bundles it with the HTML controls in `examples/web`.
 
 The three spaces use scalar-first embedded points `(w,x,y,z)`. Hyperbolic
 points lie on the positive hyperboloid, spherical points on the unit 3-sphere,

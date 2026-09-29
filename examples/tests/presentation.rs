@@ -1,4 +1,4 @@
-//! Native GPU checks; run explicitly with `cargo test -p hypertrace-renderer
+//! Native GPU checks; run explicitly with `cargo test -p hypertrace-examples
 //! --test presentation -- --ignored`. Missing adapters are failures.
 
 use hypertrace_renderer::{Gpu, Presenter, Renderer, read_buffer};

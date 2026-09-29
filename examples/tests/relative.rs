@@ -1,5 +1,6 @@
 //! Camera-relative upload updates remain transactional and preserve scene data.
 use ccgeom::{Geometry3, Hyperboloid3, Spherical3};
+use hypertrace_examples as examples;
 use hypertrace_renderer::{Camera, Gpu, Renderer, Scene, shader::Transform};
 use objects::Scene as _;
 

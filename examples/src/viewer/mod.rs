@@ -11,16 +11,20 @@ use wgame::{
     gfx::Target,
 };
 
-mod support;
+use crate::Example;
 #[cfg(target_arch = "wasm32")]
-#[path = "support/web.rs"]
 mod web;
 
 const SEED: u32 = 1;
 
-#[wgame::app]
-async fn main() -> wgame::Result<()> {
-    let result = start().await;
+/// Run a standalone scene factory with the common camera controls.
+pub async fn run(example: Example) -> wgame::Result<()> {
+    run_gallery(&[example]).await
+}
+
+/// Run a caller-supplied gallery. A factory need not belong to `EXAMPLES`.
+pub async fn run_gallery(examples: &[Example]) -> wgame::Result<()> {
+    let result = start(examples.to_vec()).await;
     #[cfg(target_arch = "wasm32")]
     {
         if let Err(error) = result {
@@ -33,14 +37,14 @@ async fn main() -> wgame::Result<()> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn options() -> wgame::Result<(String, bool)> {
-    let mut scene = "hy".to_owned();
+fn options(examples: &[Example]) -> wgame::Result<(String, bool)> {
+    let mut scene = examples[0].id.to_owned();
     let mut smoke = false;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--list-scenes" => {
-                println!("{}", support::catalog());
+                println!("{}", catalog(examples));
                 return Ok((String::new(), false));
             }
             "--scene" => {
@@ -61,16 +65,17 @@ fn options() -> wgame::Result<(String, bool)> {
     Ok((scene, smoke))
 }
 
-async fn start() -> wgame::Result<()> {
+async fn start(examples: Vec<Example>) -> wgame::Result<()> {
+    anyhow::ensure!(!examples.is_empty(), "provide at least one example factory");
     #[cfg(not(target_arch = "wasm32"))]
-    let (scene, smoke) = options()?;
+    let (scene, smoke) = options(&examples)?;
     #[cfg(target_arch = "wasm32")]
     let (scene, smoke) = {
         anyhow::ensure!(
             web::supported(),
             "WebGPU is unavailable. Use a WebGPU-capable browser on HTTPS or localhost."
         );
-        for example in examples::EXAMPLES {
+        for example in &examples {
             web::add_example(
                 example.id,
                 example.title,
@@ -84,12 +89,9 @@ async fn start() -> wgame::Result<()> {
     if scene.is_empty() {
         return Ok(());
     }
-    let initial_scene = support::scene(&scene)?;
+    let initial_scene = compile(&examples, &scene)?;
     let config = WindowConfig::default()
-        .title(&format!(
-            "Hypertrace · {}",
-            examples::find(&scene).unwrap().title
-        ))
+        .title(&format!("Hypertrace · {}", find(&examples, &scene)?.title))
         .size(if smoke { (320, 240) } else { (960, 720) })
         .required_limits(wgpu::Limits {
             // Exercise the hardware-limit fallback with small window sizes.
@@ -102,16 +104,17 @@ async fn start() -> wgame::Result<()> {
         })
         .use_adapter_buffer_limits(!smoke);
     wgame::within_window(config, async move |window| {
-        run(window, initial_scene, scene, smoke).await
+        render_loop(window, initial_scene, scene, smoke, examples).await
     })
     .await
 }
 
-async fn run(
+async fn render_loop(
     mut window: Window<'_>,
     initial_scene: Scene,
     _scene_name: String,
     smoke: bool,
+    _examples: Vec<Example>,
 ) -> wgame::Result<()> {
     #[cfg(target_arch = "wasm32")]
     let (mut scene_name, mut initial_scene) = (_scene_name, initial_scene);
@@ -163,7 +166,7 @@ async fn run(
             frame.discard();
             web::set_status("Preparing scene…", false);
             scene_name = web::scene_name();
-            initial_scene = support::scene(&scene_name)?;
+            initial_scene = compile(&_examples, &scene_name)?;
             renderer.update_scene_async(initial_scene.clone()).await?;
             presenter.rebind(graphics.device(), &renderer);
             camera = initial_scene.camera;
@@ -377,4 +380,33 @@ fn report_scaled_size(window: (u32, u32), render: (u32, u32)) {
         "Window {}x{} exceeds this device's full-resolution render capacity; rendering at {}x{} and scaling to the window",
         window.0, window.1, render.0, render.1
     );
+}
+
+fn catalog(examples: &[Example]) -> String {
+    examples
+        .iter()
+        .map(|example| {
+            format!(
+                "  {:20} {}\n    {}",
+                example.id, example.title, example.description
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn find<'a>(examples: &'a [Example], id: &str) -> wgame::Result<&'a Example> {
+    examples
+        .iter()
+        .find(|example| example.id == id)
+        .ok_or_else(|| {
+            anyhow::anyhow!(
+                "unknown example {id:?}; choose one of:\n{}",
+                catalog(examples)
+            )
+        })
+}
+
+fn compile(examples: &[Example], id: &str) -> wgame::Result<Scene> {
+    Scene::from_definition(&find(examples, id)?.definition()?)
 }

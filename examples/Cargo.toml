@@ -2,10 +2,74 @@
 name = "hypertrace-examples"
 version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
-edition = "2018"
+edition = "2024"
+
+[features]
+default = ["viewer"]
+viewer = ["dep:wgame"]
+web = ["viewer", "dep:wasm-bindgen"]
 
 [dependencies]
 anyhow = "1.0"
 objects = { package = "hypertrace-objects", path = "../objects" }
 ccgeom = "0.1"
 vecmat = "0.7"
+hypertrace-renderer = { path = "../renderer" }
+bytemuck = "1"
+futures = { version = "0.3", features = ["executor"] }
+wgpu = { version = "30.0.1", default-features = false, features = ["std"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wgame = { path = "../../wgame/wgame", default-features = false, features = ["desktop"], optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wgame = { path = "../../wgame/wgame", default-features = false, features = ["web"], optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+
+[[bin]]
+name = "viewer"
+required-features = ["viewer"]
+
+[[bin]]
+name = "hy"
+required-features = ["viewer"]
+
+[[bin]]
+name = "eu"
+required-features = ["viewer"]
+
+[[bin]]
+name = "sp"
+required-features = ["viewer"]
+
+[[bin]]
+name = "sp-fog"
+required-features = ["viewer"]
+
+[[bin]]
+name = "compare-eu"
+required-features = ["viewer"]
+
+[[bin]]
+name = "compare-hy"
+required-features = ["viewer"]
+
+[[bin]]
+name = "compare-sp"
+required-features = ["viewer"]
+
+[[bin]]
+name = "compare-hy-flat"
+required-features = ["viewer"]
+
+[[bin]]
+name = "compare-sp-flat"
+required-features = ["viewer"]
+
+[[bin]]
+name = "sp-loop"
+required-features = ["viewer"]
+
+[[bin]]
+name = "sp-loop-fog"
+required-features = ["viewer"]

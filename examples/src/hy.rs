@@ -1,15 +1,15 @@
 use ccgeom::{Geometry3, Hyperbolic3};
 use objects::{
+    Mapped, SceneImpl,
     background::ConstBg,
     material::*,
     mixture,
-    object::{tiling, TiledHorosphere, TiledPlane},
+    object::{TiledHorosphere, TiledPlane, tiling},
     object_choice,
     view::PointView,
-    Mapped, SceneImpl,
 };
 use std::f64::consts::PI;
-use vecmat::{transform::Moebius, Complex, Matrix, Vector};
+use vecmat::{Complex, Matrix, Vector, transform::Moebius};
 
 fn unpack_color(rgb: u32) -> Vector<f32, 3> {
     make_color(

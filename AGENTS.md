@@ -9,8 +9,25 @@ history in commits, not new migration diaries.
 
 - `objects/` owns composable Rust scene components and their shader behavior;
   `scene/` owns CPU scene compilation; `renderer/` owns GPU execution and
-  presentation. `examples/` is the shared demonstration catalogue, distinct from
-  `scene/` and the renderer's Cargo example binaries.
+  presentation. `examples/` owns standalone demonstration applications and their
+  shared application support, distinct from the `scene/` library.
+- This project is a library, not an application framework. Dependencies point
+  from applications to libraries: `examples` may depend on `renderer`, `objects`,
+  and `scene`; those libraries must not depend on `examples`, including through
+  development dependencies. Keep application-level integration tests with the
+  applications; library tests use independent fixtures.
+- Each scene example (`eu`, `hy`, `sp`, comparisons, fog, and recurrence scenes)
+  is a normal standalone binary that supplies its scene to library APIs. Adding
+  one must not require a renderer change or registration in a renderer-owned
+  catalogue. An optional gallery catalogue belongs to the examples package.
+- Viewer, headless, and benchmark entry points are normal binaries in the
+  applications package, not Cargo examples attached to the renderer library.
+  Window/event-loop, CLI, and browser UI dependencies belong there as well.
+  Share host utilities without making library users adopt that application host.
+- Use generic project names such as `renderer` and `shader`, and trait methods
+  such as `shader`, `encode`, and `definition`. Avoid `wgpu`/`wgsl` prefixes or
+  suffixes in project APIs and paths. Retain actual dependency/API identifiers,
+  environment variables, and `.wgsl` file extensions where required.
 - WGPU and WGSL are the sole rendering implementation. Do not add speculative
   backend abstractions. Keep CPU construction and validation usable without an
   adapter.
@@ -23,6 +40,13 @@ history in commits, not new migration diaries.
   validators own both geometry requirements and payload checks, including child
   payload validation in wrappers. A shape needs at least one word for a distinct
   leaf identity even when it has no parameters.
+- Deduplicate emitted shader source, not validation. Validate every dependency
+  instance even when its shader key was already linked; host validation callbacks
+  are not part of shader equality. Enforce shape identity allocation recursively.
+- Compose material payloads through checked offset tables, including an end
+  sentinel. Variable child payload lengths are data, not shader specializations;
+  zero-length material payloads are valid. Reuse shared shader helpers through
+  dependencies instead of copying primitive implementations.
 - Use [the downstream extension test](renderer/tests/extensions.rs) as the
   acceptance model: custom shape and material types compose and render in every
   curvature without core edits. Primitive shader reuse requires explicit module
@@ -69,6 +93,9 @@ history in commits, not new migration diaries.
 - Preserve independent analytic and invariant tests when removing old code.
   Port useful reset, resizing, tiling, accumulation and presentation tests rather
   than deleting them because their fixtures used a retired renderer path.
+- In the examples web asset, use Trunk `data-bin="viewer"` to select the Cargo
+  binary. `data-target-name` alone selects an artifact after building and does
+  not prevent native-only tools from being compiled for WASM.
 - Check both native viewer and WASM builds when touching shared viewer code.
   A successful web bundle does not prove browser WebGPU execution.
 - WGPU queue writes execute before the next submission. Submit encoded work

@@ -10,16 +10,16 @@
 //! without indirect-light noise. Increasing the curvature radius approaches
 //! the Euclidean image while preserving physical object sizes and distances.
 
-use anyhow::{ensure, Context as _};
+use anyhow::{Context as _, ensure};
 use ccgeom::{Embedded3, EmbeddedIsometry, Space3};
 use objects::{
+    Mapped, SceneImpl,
     background::ConstBg,
     material::{Absorbing, Emissive},
     object::Covered,
     shader::Result,
     shape::GeodesicSphere,
     view::PointView,
-    Mapped, SceneImpl,
 };
 
 type Geometry<const K: i8> = Embedded3<f64, K>;
@@ -82,7 +82,7 @@ pub fn scene<const K: i8, const H: usize>(radius: f64) -> Result<ExampleScene<K,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use objects::{shader, Scene as _};
+    use objects::{Scene as _, shader};
     use vecmat::Vector;
 
     fn endpoint(map: shader::Transform) -> Vector<f64, 4> {

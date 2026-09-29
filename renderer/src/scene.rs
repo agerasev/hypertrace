@@ -267,9 +267,34 @@ mod tests {
     use super::*;
     use objects::Scene as _;
 
+    fn fixture<const K: i8>() -> scene_ir::SceneDefinition {
+        use objects::{
+            Mapped, SceneImpl, background::ConstBg, material::Absorbing, object::Covered,
+            shape::GeodesicSphere, view::PointView,
+        };
+        type G<const K: i8> = ccgeom::Embedded3<f64, K>;
+        let space = ccgeom::Space3::<f64, K>::unit();
+        let objects: Vec<_> = [-0.5, 0.5]
+            .into_iter()
+            .map(|distance| {
+                Mapped::<G<K>, _, _>::new(
+                    Covered::new(GeodesicSphere::new(0.25), Absorbing),
+                    space.translation([1.0, 0.0, 0.0].into(), distance).unwrap(),
+                )
+            })
+            .collect();
+        SceneImpl::<G<K>, _, _, _, 6>::new(
+            PointView::new(1.0),
+            objects,
+            ConstBg::new([0.0; 3].into()),
+        )
+        .definition()
+        .unwrap()
+    }
+
     #[test]
     fn generated_params_keep_radius_medium_and_relative_camera_contract() {
-        let mut definition = examples::sp::scene::<6>().definition().unwrap();
+        let mut definition = fixture::<1>();
         definition.radius = 2.5;
         definition.medium = scene_ir::Medium::Homogeneous {
             extinction: 0.125,
@@ -281,7 +306,7 @@ mod tests {
         assert_eq!(params.camera1, [0.0; 4]);
         assert_eq!(params.misc, [1.0, 2.5, 1.0, 0.0]);
         assert_eq!(params.medium, [0.2, 0.4, 0.7, 0.125]);
-        assert_eq!(params.info, [13, 7, 2, 6]);
+        assert_eq!(params.info, [13, 7, 2, 2]);
         assert_eq!(std::mem::offset_of!(Params, medium), 128);
         assert_eq!(std::mem::align_of::<Params>(), 16);
     }
@@ -290,11 +315,11 @@ mod tests {
     fn relative_preparation_preserves_far_translated_scenes() {
         let cases = [
             (
-                examples::eu::scene::<4>().definition().unwrap(),
+                fixture::<0>(),
                 scene_ir::Transform::Euclidean(Euclidean3::shift_x(1e9)),
             ),
             (
-                examples::hy::scene::<3>().definition().unwrap(),
+                fixture::<-1>(),
                 scene_ir::Transform::Hyperboloid(
                     ccgeom::Space3::<f64, -1>::unit()
                         .translation([1.0, 0.0, 0.0].into(), 12.0)
@@ -358,8 +383,7 @@ mod tests {
 
     #[test]
     fn generated_validation_keeps_radius_constraints_and_medium_finite() {
-        let scene =
-            Scene::from_definition(&examples::sp::scene::<6>().definition().unwrap()).unwrap();
+        let scene = Scene::from_definition(&fixture::<1>()).unwrap();
         let mut changed = scene.clone();
         changed.radius = 0.01;
         assert!(
@@ -398,8 +422,7 @@ mod tests {
     }
     #[test]
     fn relative_upload_rejects_unrepresentable_camera_motion() {
-        let mut scene =
-            Scene::from_definition(&examples::hy::scene::<3>().definition().unwrap()).unwrap();
+        let mut scene = Scene::from_definition(&fixture::<-1>()).unwrap();
         scene.camera = Camera::Hyperbolic(Hyperbolic3::shift_x(18.0));
         assert!(scene.validate().is_err());
     }

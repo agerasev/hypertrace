@@ -1,4 +1,4 @@
-//! Explicit GPU checks: `cargo test -p hypertrace-renderer --test renderer -- --ignored`.
+//! Explicit GPU checks: `cargo test -p hypertrace-examples --test renderer -- --ignored`.
 use hypertrace_renderer::{Gpu, Renderer};
 mod support;
 

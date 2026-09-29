@@ -1,8 +1,9 @@
-# WGPU renderer
+# Renderer
 
 The renderer compiles generic Rust scene builders in all three curvatures to
-WGSL compute shaders. It includes headless tools and a `wgame` viewer with direct GPU
-presentation on native platforms and the web. See the repository
+WGSL compute shaders. This library owns GPU execution and presentation; the
+`hypertrace-examples` package owns standalone scenes, headless tools, and the
+Wgame application host for native platforms and the web. See the repository
 [web viewer instructions](../README.md#web-viewer) for Trunk setup and controls.
 
 ## Run
@@ -11,20 +12,20 @@ Use current stable Rust, a compute-capable native WGPU adapter (software Vulkan
 is sufficient for correctness tests), sibling `../../vecmat-rs` and
 `../../ccgeom` sources, and the sibling `../../wgame` checkout
 with configurable `WindowConfig::required_limits` and `use_adapter_buffer_limits`.
-WGPU is pinned to the same
-major version as that checkout, 30. The optional path dependency still needs to
-resolve even in a headless Cargo build.
+WGPU is pinned to the same major version as that checkout, 30. Wgame belongs to
+the examples package; Cargo still resolves its optional path dependency for
+workspace builds.
 
 From the Hypertrace repository root:
 
 ```sh
-cargo run --release -p hypertrace-renderer --features viewer --example viewer -- --scene sp
-cargo run --release -p hypertrace-renderer --example headless -- --list-scenes
-cargo run --release -p hypertrace-renderer --example headless -- \
-  --scene hy --width 320 --height 240 --samples 64 --seed 3735928559 --output /tmp/hy-wgpu
+cargo run --release -p hypertrace-examples --bin viewer -- --scene sp
+cargo run --release -p hypertrace-examples --bin headless -- --list-scenes
+cargo run --release -p hypertrace-examples --bin headless -- \
+  --scene hy --width 320 --height 240 --samples 64 --seed 3735928559 --output /tmp/hy
 ```
 
-`viewer`, `headless`, and `benchmark` share the `examples::EXAMPLES` catalog and
+`viewer`, `headless`, and `benchmark` share the `hypertrace_examples::EXAMPLES` catalog and
 support `--list-scenes`. Besides `eu`, `hy`, and `sp`, it includes the
 `compare-*` physical-layout comparisons, `sp-fog`, `sp-loop`, and `sp-loop-fog`.
 The browser presents the same grouped catalog and accepts `?scene=NAME` URLs.
@@ -144,20 +145,20 @@ accuracy range. See [the geometry contract](../GEOMETRY_CONTRACT.md).
 
 ## Generic scene builders
 
-`hypertrace-examples` contains the shared factories and catalog used by native and
-browser viewers. The WGPU examples lower those builders as follows:
+`hypertrace-examples` contains independent scene binaries, the optional gallery,
+and shared factories. Applications lower typed builders as follows:
 
 ```rust,ignore
 use objects::Scene as _;
-let definition = examples::hy::scene::<3>().definition()?;
+let definition = hypertrace_examples::hy::scene::<3>().definition()?;
 let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
 let renderer = hypertrace_renderer::Renderer::new(&device, &queue, (640, 480), scene, 1)?;
 ```
 
-The generic `examples::comparison::scene::<K,H>(radius)?` builder preserves the
+The generic `hypertrace_examples::comparison::scene::<K,H>(radius)?` builder preserves the
 physical marker layout across curvature signs and radii. For example,
 `scene::<1,1>(3.0)?` uses spherical curvature +1/9 with one surface event.
-`examples::recurrence::scene::<12>(true)` builds the floorless spherical long-route
+`hypertrace_examples::recurrence::scene::<12>(true)` builds the floorless spherical long-route
 scene with fog. Its `false` variant selects vacuum. These geometric examples
 use emissive absorbing spheres for clear silhouettes; the original studios
 retain diffuse, reflective, and refractive materials.
@@ -205,7 +206,7 @@ is isotropic. Both surface and volume interactions consume the bounce budget.
 
 ```rust,ignore
 use objects::Scene as _;
-let mut source = examples::sp::fog_scene::<12>();
+let mut source = hypertrace_examples::sp::fog_scene::<12>();
 source.medium = objects::shader::Medium::Homogeneous {
     extinction: 0.08,
     albedo: [0.85, 0.9, 0.95],
@@ -335,9 +336,9 @@ must be explicitly requested; missing adapters fail rather than silently skip.
 
 ```sh
 cargo test -p hypertrace-renderer
-WGPU_BACKEND=vulkan cargo test -p hypertrace-renderer -- --ignored --test-threads=1
-cargo clippy --no-deps -p hypertrace-renderer --all-targets --features viewer -- -D warnings
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-renderer --features viewer --example viewer -- --scene hy --smoke
+WGPU_BACKEND=vulkan cargo test --workspace -- --ignored --test-threads=1
+cargo clippy --no-deps --workspace --all-targets -- -D warnings
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin viewer -- --scene hy --smoke
 ```
 
 Coverage includes Möbius matrix ordering, inverse/distance/derivative checks,
@@ -387,13 +388,13 @@ to find a workload and consult the [example guide](../examples/README.md) for it
 layout; each spherical preset has a black miss background.
 
 ```sh
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-renderer --example benchmark -- \
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin benchmark -- \
   --scene hy --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
-  --batch 1 --seed 3735928559 --output /tmp/wgpu-batch1.json
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-renderer --example benchmark -- \
+  --batch 1 --seed 3735928559 --output /tmp/batch1.json
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin benchmark -- \
   --scene hy --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
-  --batch 16 --seed 3735928559 --output /tmp/wgpu-batch16.json
-python3 tools/compare_benchmarks.py /tmp/wgpu-batch1.json /tmp/wgpu-batch16.json \
+  --batch 16 --seed 3735928559 --output /tmp/batch16.json
+python3 tools/compare_benchmarks.py /tmp/batch1.json /tmp/batch16.json \
   --output /tmp/benchmark-comparison.md --json /tmp/benchmark-comparison.json
 ```
 

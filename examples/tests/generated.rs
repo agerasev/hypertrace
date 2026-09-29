@@ -1,5 +1,6 @@
 //! Generic Rust builders through generated WGSL, including GPU update semantics.
 use ccgeom::{Euclidean3, Homogenous3};
+use hypertrace_examples as examples;
 use hypertrace_renderer::{Camera, Gpu, Renderer, Scene};
 use objects::{
     Mapped, Scene as _, SceneImpl,
@@ -15,7 +16,7 @@ use vecmat::{
     transform::{Rotation3, Shift},
 };
 
-#[path = "../examples/support/mod.rs"]
+#[path = "../src/bin/support/mod.rs"]
 mod support;
 
 #[test]

@@ -5,6 +5,7 @@
 
 use ccgeom::{EmbeddedIsometry, Geometry3, Space3, Spherical3};
 use objects::{
+    Mapped, SceneImpl,
     background::ConstBg,
     material::{Colored, Emissive, Lambertian, Refractive, Specular},
     mixture,
@@ -12,7 +13,6 @@ use objects::{
     shape::{GeodesicSphere, Plane},
     shape_choice,
     view::PointView,
-    Mapped, SceneImpl,
 };
 
 shape_choice! {
@@ -137,7 +137,7 @@ pub fn fog_scene<const H: usize>() -> ExampleScene<H> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use objects::{shader, Scene as _};
+    use objects::{Scene as _, shader};
 
     #[test]
     fn spherical_demo_lowers_with_black_background_and_emissive_objects() {

@@ -48,8 +48,7 @@ def validate(run):
         for value in values:
             number(value, field, positive=field == "render_ms")
     number(run.get("setup_ms"), "setup_ms")
-    if "device_setup_ms" in run:
-        number(run["device_setup_ms"], "device_setup_ms")
+    number(run.get("device_setup_ms"), "device_setup_ms")
     checksum = run.get("checksum")
     if not isinstance(checksum, list) or len(checksum) != 3:
         raise ValueError("checksum must contain three finite RGB sums")
@@ -109,11 +108,8 @@ def summarize(runs):
             row["trials"] = sum(run["trials"] for _, run in measurements)
             for field in ("render_ms", "readback_ms"):
                 row[field] = distribution([value for _, run in measurements for value in run[field]])
-            row["setup_ms"] = distribution([run["setup_ms"] for _, run in measurements])
-            device_setup = [run["device_setup_ms"] for _, run in measurements if "device_setup_ms" in run]
-            if device_setup:
-                row["device_setup_ms"] = distribution(device_setup)
-                row["device_setup_measurements"] = len(device_setup)
+            for field in ("setup_ms", "device_setup_ms"):
+                row[field] = distribution([run[field] for _, run in measurements])
             row["checksums"] = [run["checksum"] for _, run in measurements]
             render_ms = row["render_ms"]["median"]
             work = group["workload"]
@@ -146,7 +142,7 @@ def markdown(summary):
         "# Hypertrace benchmark comparison", "",
         "Times are milliseconds: median [minimum–maximum]. Render timing includes a completion "
         "wait after every batch and excludes readback. Setup excludes adapter/device creation; "
-        "device setup is shown separately when recorded. Warmup samples are excluded from timing.", "",
+        "device setup is shown separately. Warmup samples are excluded from timing.", "",
         "One sample means one full-frame sample. Throughput counts width × height × samples. "
         "Only identical scene, dimensions, sample count, bounce limit, and seed share a group. "
         "Different device labels are marked as cross-device comparisons, not backend-only speedups.",
@@ -171,10 +167,9 @@ def markdown(summary):
         for row in group["runs"]:
             detail = (
                 f'- **{row["id"]}**: {cell(row["device_type"])}; driver {cell(row["driver"])}; '
-                f'{row["warmup_samples"]} warmup samples; {row["invocations"]} invocation(s).'
+                f'{row["warmup_samples"]} warmup samples; {row["invocations"]} invocation(s). '
+                f'Device setup ms: {timing(row["device_setup_ms"])}.'
             )
-            if "device_setup_ms" in row:
-                detail += f' Device setup ms: {timing(row["device_setup_ms"])}.'
             lines.append(detail)
         if group["comparisons"]:
             lines += ["", "Render-time ratios use the table IDs (numerator ÷ denominator):", ""]

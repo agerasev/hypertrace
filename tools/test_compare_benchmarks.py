@@ -12,7 +12,8 @@ def run(**changes):
         "device_type": "IntegratedGpu", "driver": "test driver", "backend_api": "Vulkan",
         "scene": "eu", "width": 100, "height": 50, "samples": 4, "bounces": 4,
         "seed": 123, "batch_size": 1, "sync_per_batch": True, "warmup_samples": 2,
-        "trials": 3, "setup_ms": 2.0, "render_ms": [10.0, 30.0, 20.0],
+        "trials": 3, "setup_ms": 2.0, "device_setup_ms": 1.0,
+        "render_ms": [10.0, 30.0, 20.0],
         "readback_ms": [1.0, 3.0, 2.0], "checksum": [1.0, 2.0, 3.0],
     }
     result.update(changes)
@@ -23,12 +24,14 @@ class ComparisonTests(unittest.TestCase):
     def test_units_and_aggregation_use_all_individual_trials(self):
         summary = compare.summarize([
             ("first.json", run()),
-            ("second.json", run(trials=1, render_ms=[100.0], readback_ms=[5.0], setup_ms=4.0)),
+            ("second.json", run(trials=1, render_ms=[100.0], readback_ms=[5.0],
+                                setup_ms=4.0, device_setup_ms=3.0)),
         ])
         row = summary["groups"][0]["runs"][0]
         self.assertEqual(row["render_ms"], {"median": 25.0, "min": 10.0, "max": 100.0})
         self.assertEqual(row["readback_ms"]["median"], 2.5)
         self.assertEqual(row["setup_ms"]["median"], 3.0)
+        self.assertEqual(row["device_setup_ms"], {"median": 2.0, "min": 1.0, "max": 3.0})
         self.assertEqual(row["ms_per_sample"], 6.25)
         self.assertEqual(row["megapixel_samples_per_second"], 0.8)
         self.assertEqual(row["trials"], 4)
@@ -51,9 +54,16 @@ class ComparisonTests(unittest.TestCase):
         for changes in [
             {"render_ms": [1.0]}, {"render_ms": [1.0, 0.0, 2.0]},
             {"setup_ms": float("nan")}, {"sync_per_batch": False}, {"width": True},
+            {"device_setup_ms": -1.0}, {"device_setup_ms": float("inf")},
         ]:
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 compare.validate(run(**changes))
+
+    def test_device_setup_is_required(self):
+        measurement = run()
+        del measurement["device_setup_ms"]
+        with self.assertRaisesRegex(ValueError, "device_setup_ms"):
+            compare.validate(measurement)
 
     def test_directory_cli_deduplicates_files_and_round_trips_reports(self):
         with tempfile.TemporaryDirectory() as directory:

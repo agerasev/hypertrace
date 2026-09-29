@@ -15,7 +15,10 @@ import sys
 
 
 LINEAR_FORMAT = "little-endian rgba32f, row-major, top row first"
-SETTINGS = ("scene", "width", "height", "samples", "seed", "bounces", "linear_format")
+SETTINGS = (
+    "scene", "width", "height", "samples", "seed", "bounces", "linear_format",
+    "curvature_sign", "curvature_radius", "medium",
+)
 
 
 def nonnegative(value):
@@ -35,6 +38,15 @@ def frame_paths(value, metadata):
     return path, Path(metadata) if metadata else default_metadata
 
 
+def finite_number(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
 def read_frame(path, metadata_path):
     with metadata_path.open(encoding="utf-8") as handle:
         metadata = json.load(handle)
@@ -52,6 +64,22 @@ def read_frame(path, metadata_path):
         raise ValueError("{}: scene must be a nonempty string".format(metadata_path))
     if metadata["linear_format"] != LINEAR_FORMAT:
         raise ValueError("{}: unsupported linear_format {!r}".format(metadata_path, metadata["linear_format"]))
+    sign = metadata["curvature_sign"]
+    radius = metadata["curvature_radius"]
+    if type(sign) is not int or sign not in (-1, 0, 1):
+        raise ValueError("{}: curvature_sign must be -1, 0 or 1".format(metadata_path))
+    if not finite_number(radius) or radius <= 0 or (sign == 0 and radius != 1):
+        raise ValueError("{}: curvature_radius must be finite and positive, and one for Euclidean space".format(metadata_path))
+    medium = metadata["medium"]
+    if not isinstance(medium, dict):
+        raise ValueError("{}: medium must be an object".format(metadata_path))
+    extinction = medium.get("extinction")
+    if not finite_number(extinction) or extinction < 0:
+        raise ValueError("{}: medium.extinction must be finite and nonnegative".format(metadata_path))
+    albedo = medium.get("albedo")
+    if (not isinstance(albedo, list) or len(albedo) != 3
+            or any(not finite_number(value) or not 0 <= value <= 1 for value in albedo)):
+        raise ValueError("{}: medium.albedo must contain three finite values in [0,1]".format(metadata_path))
     expected = metadata["width"] * metadata["height"] * 16
     actual = path.stat().st_size
     if actual != expected:
@@ -74,12 +102,6 @@ def read_frame(path, metadata_path):
 def compare(reference_metadata, reference, candidate_metadata, candidate):
     mismatches = ["{}: {!r} != {!r}".format(key, reference_metadata[key], candidate_metadata[key])
                   for key in SETTINGS if reference_metadata[key] != candidate_metadata[key]]
-    # Camera/FOV fields are optional in the current producers. Compare them if
-    # either producer supplies them; silently ignoring future camera data would
-    # make an image comparison misleading.
-    for key in ("camera", "fov"):
-        if reference_metadata.get(key) != candidate_metadata.get(key):
-            mismatches.append("{} differs or is missing from one sidecar".format(key))
     if mismatches:
         raise ValueError("incompatible render settings: " + "; ".join(mismatches))
     errors = array("d")

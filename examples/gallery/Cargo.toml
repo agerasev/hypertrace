@@ -1,0 +1,32 @@
+[package]
+name = "hypertrace-gallery"
+version = "0.0.0"
+authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
+edition = "2024"
+
+[features]
+default = ["viewer"]
+viewer = ["dep:wgame"]
+web = ["viewer", "dep:wasm-bindgen"]
+
+[dependencies]
+anyhow = "1.0"
+objects = { package = "hypertrace-objects", path = "../../objects" }
+ccgeom = "0.1"
+vecmat = "0.7"
+hypertrace-renderer = { path = "../../renderer" }
+bytemuck = "1"
+futures = { version = "0.3", features = ["executor"] }
+wgpu = { version = "30.0.1", default-features = false, features = ["std"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+wgame = { path = "../../../wgame/wgame", default-features = false, features = ["desktop"], optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wgame = { path = "../../../wgame/wgame", default-features = false, features = ["web"], optional = true }
+wasm-bindgen = { version = "0.2", optional = true }
+
+[[bin]]
+name = "viewer"
+required-features = ["viewer"]
+

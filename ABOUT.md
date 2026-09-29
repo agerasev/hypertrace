@@ -5,8 +5,13 @@ Hypertrace separates Rust scene construction from GPU rendering:
 - `objects`: composable cameras, shapes, materials, backgrounds, and object trees.
   Shapes, materials and tilings own their WGSL implementations, parameter layouts,
   dependencies and validation. Traits and macros compose their scene descriptions.
-- `examples`: scene factories, standalone scene binaries, shared native/browser
-  viewer host, and optional gallery, headless, and benchmark applications.
+- `examples`: the `hypertrace-examples` package contains independent demonstration
+  binaries and has no library target. Each `examples/src/bin/<name>/` owns
+  `scene.rs` and a `main.rs` that constructs its renderer, presenter, and Wgame
+  event loop. Standalone examples never depend on the gallery or a common runner.
+- `examples/gallery`: the separate `hypertrace-gallery` package owns the optional
+  viewer, headless, and benchmark applications and their integration tests. Its
+  `hypertrace_gallery` library imports example-owned scene files for its catalogue.
   Applications depend on the libraries; the renderer has no example dependency.
 - `scene`: CPU scene descriptions, a WGSL module linker and GPU data packing.
   Modules describe structure separately from parameter values so ordinary scene
@@ -15,8 +20,8 @@ Hypertrace separates Rust scene construction from GPU rendering:
 - `renderer`: compute pipelines, progressive accumulation, explicit CPU
   snapshots on native platforms, and direct GPU presentation. It accepts scene
   definitions and caller-owned WGPU devices; window hosting belongs to examples.
-  The examples' Wgame viewer runs natively and through WebAssembly/WebGPU;
-  Trunk bundles it with the HTML controls in `examples/web`.
+  The optional Wgame gallery viewer runs natively and through WebAssembly/WebGPU;
+  Trunk bundles it with the HTML controls in `examples/gallery/web`.
 
 The three spaces use scalar-first embedded points `(w,x,y,z)`. Hyperbolic
 points lie on the positive hyperboloid, spherical points on the unit 3-sphere,

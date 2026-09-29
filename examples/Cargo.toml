@@ -4,72 +4,55 @@ version = "0.0.0"
 authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2024"
 
-[features]
-default = ["viewer"]
-viewer = ["dep:wgame"]
-web = ["viewer", "dep:wasm-bindgen"]
-
 [dependencies]
 anyhow = "1.0"
 objects = { package = "hypertrace-objects", path = "../objects" }
 ccgeom = "0.1"
 vecmat = "0.7"
 hypertrace-renderer = { path = "../renderer" }
-bytemuck = "1"
-futures = { version = "0.3", features = ["executor"] }
 wgpu = { version = "30.0.1", default-features = false, features = ["std"] }
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-wgame = { path = "../../wgame/wgame", default-features = false, features = ["desktop"], optional = true }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wgame = { path = "../../wgame/wgame", default-features = false, features = ["web"], optional = true }
-wasm-bindgen = { version = "0.2", optional = true }
-
-[[bin]]
-name = "viewer"
-required-features = ["viewer"]
+wgame = { path = "../../wgame/wgame", default-features = false, features = ["desktop"] }
 
 [[bin]]
 name = "hy"
-required-features = ["viewer"]
+path = "src/bin/hy/main.rs"
 
 [[bin]]
 name = "eu"
-required-features = ["viewer"]
+path = "src/bin/eu/main.rs"
 
 [[bin]]
 name = "sp"
-required-features = ["viewer"]
+path = "src/bin/sp/main.rs"
 
 [[bin]]
 name = "sp-fog"
-required-features = ["viewer"]
+path = "src/bin/sp-fog/main.rs"
 
 [[bin]]
 name = "compare-eu"
-required-features = ["viewer"]
+path = "src/bin/compare-eu/main.rs"
 
 [[bin]]
 name = "compare-hy"
-required-features = ["viewer"]
+path = "src/bin/compare-hy/main.rs"
 
 [[bin]]
 name = "compare-sp"
-required-features = ["viewer"]
+path = "src/bin/compare-sp/main.rs"
 
 [[bin]]
 name = "compare-hy-flat"
-required-features = ["viewer"]
+path = "src/bin/compare-hy-flat/main.rs"
 
 [[bin]]
 name = "compare-sp-flat"
-required-features = ["viewer"]
+path = "src/bin/compare-sp-flat/main.rs"
 
 [[bin]]
 name = "sp-loop"
-required-features = ["viewer"]
+path = "src/bin/sp-loop/main.rs"
 
 [[bin]]
 name = "sp-loop-fog"
-required-features = ["viewer"]
+path = "src/bin/sp-loop-fog/main.rs"

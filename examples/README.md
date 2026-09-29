@@ -1,7 +1,20 @@
 # Example scenes
 
-Each scene is a standalone binary in `src/bin/`, using the rendering libraries.
-The optional gallery tools and browser share `hypertrace_examples::EXAMPLES`.
+Each scene has a self-contained directory under `src/bin/<name>/`:
+
+- `scene.rs` constructs its camera, shapes, materials, lights, and medium using
+  `objects` and `ccgeom` directly.
+- `main.rs` lowers that construction into a renderer scene, creates `Renderer`
+  and `Presenter`, and owns the window, input, resize, and frame loop.
+
+Start with [Euclidean construction](src/bin/eu/scene.rs) and its
+[application entry point](src/bin/eu/main.rs), or explore the
+[hyperbolic](src/bin/hy/scene.rs) and [spherical](src/bin/sp/scene.rs) constructions.
+You can copy one directory into your own application and edit it without adopting
+an examples library, shared runner, or catalogue.
+
+The separate `gallery/` package imports these example-owned scene files. Their
+`hypertrace_gallery::EXAMPLES` catalogue contains display metadata.
 Run a scene by its binary name; `viewer`, `headless`, and `benchmark` accept
 `--scene NAME` and `--list-scenes`. The browser's grouped Example menu uses the same list, and
 `?scene=NAME` selects an example directly. Changing the browser selection reloads
@@ -10,9 +23,9 @@ the selected application; each running renderer keeps its geometry type.
 From the repository root:
 
 ```sh
-cargo run --release -p hypertrace-examples --bin headless -- --list-scenes
+cargo run --release -p hypertrace-gallery --bin headless -- --list-scenes
 cargo run --release -p hypertrace-examples --bin compare-sp
-cargo run --release -p hypertrace-examples --bin headless -- \
+cargo run --release -p hypertrace-gallery --bin headless -- \
   --scene sp-loop-fog --width 640 --height 480 --samples 256 --output /tmp/sp-loop-fog
 ```
 
@@ -40,7 +53,7 @@ and benchmark tools accept `--bounces` to override the defaults.
 
 ## Compare the curvatures
 
-The five `compare-*` presets use one generic builder. Every sphere has physical
+The five `compare-*` examples each construct the same physical layout locally. Every sphere has physical
 radius 0.12. The amber top row is 0.8 units from the camera, the green middle row
 1.6 units, and the blue bottom row 2.5 units. Their initial viewing directions,
 physical distances, colors, and radii match in every preset.
@@ -73,73 +86,54 @@ and Q/E to roll. R restores the initial camera. Reset before comparing presets
 and leave the camera still while samples accumulate. Escape exits the native
 viewer or toggles pause in the browser.
 
-## Use the builders
+## Build your own scene
 
-Scene construction needs no GPU. Lower a builder to the portable scene
-definition, then create the renderer scene:
+An example's construction is ordinary Rust using library traits. For a minimal
+spherical scene with an emissive sphere:
 
 ```rust,ignore
-use objects::Scene as _;
+use ccgeom::Spherical3;
+use objects::{Scene as _, SceneImpl, background::ConstBg,
+    material::{Absorbing, Emissive}, object::Covered,
+    shape::GeodesicSphere, view::PointView};
 
-// The same physical comparison at spherical curvature +1/9.
-let source = hypertrace_examples::comparison::scene::<1, 1>(3.0)?;
+let source = SceneImpl::<Spherical3, _, _, _, 4>::new(
+    PointView::new(1.0),
+    Covered::new(
+        GeodesicSphere::new(0.7),
+        Emissive::new(Absorbing, [1.0, 0.8, 0.6].into()),
+    ),
+    ConstBg::new([0.0; 3].into()),
+);
 let definition = source.definition()?;
 let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
-
-// Unit-radius spherical recurrence with twelve surface/volume events and fog.
-let source = hypertrace_examples::recurrence::scene::<12>(true);
-let definition = source.definition()?;
+let renderer = hypertrace_renderer::Renderer::new_async(
+    device, queue, (640, 480), scene, 1,
+).await?;
 ```
 
-Every builder uses embedded positions and `EmbeddedIsometry` maps, with
-`Flat3`, `Hyperboloid3`, or `Spherical3` selecting the curvature. The hyperbolic
-tiling scene uses parabolic isometries to move along horospheres while preserving
-the chart-aligned material frame; these are distinct from geodesic translations.
+This camera is inside the glowing sphere. Use `Mapped` and
+`EmbeddedIsometry<f64, K>` to place objects and the camera. Tuples compose
+heterogeneous objects; vectors hold repeated objects of one type. `Flat3`,
+`Hyperboloid3`, and `Spherical3` select geometry at compile time. Curved scenes
+set a physical `radius`; construct matching displacements with `Space3::new(R)`.
+The [fog example](src/bin/sp-fog/scene.rs) sets the medium explicitly.
 
-`comparison::scene::<K,H>(radius)` supports all three signs; Euclidean radius
-must be one. The factory rejects spherical radii that would wrap the layout
-past the camera's antipode. `recurrence::scene::<H>(false)` selects vacuum.
-The scene factories are `eu::scene`, `hy::scene`, `sp::scene`,
-and `sp::fog_scene`. See the [renderer guide](../renderer/README.md) for
-custom shaders and [root README](../README.md) for browser setup.
+The complete `main.rs` files show how to obtain a device and queue from Wgame,
+resize the renderer, rebind presentation, update the camera, and submit frames.
+They share no application runner or source includes. Small amounts of window and
+input scaffolding repeat intentionally so each directory is readable on its own.
+Use the example dependencies in [Cargo.toml](Cargo.toml) when creating a separate
+package: `objects`, `hypertrace-renderer`, `ccgeom`, `vecmat`, `wgame`, `wgpu`, and
+`anyhow`. Wgame owns the window; Hypertrace accepts caller-owned devices.
 
-## Independent applications
-
-Run any catalogue ID as a binary, for example:
-
-```sh
-cargo run --release -p hypertrace-examples --bin hy
-cargo run --release -p hypertrace-examples --bin compare-sp-flat
-cargo run --release -p hypertrace-examples --bin sp-loop-fog
-```
-
-Each entry point supplies its factory directly to the shared viewer host. A new
-example does not need renderer changes or gallery registration. For example,
-`src/bin/my-scene.rs` can contain:
-
-```rust,ignore
-use objects::Scene as _;
-
-#[wgame::app]
-async fn main() -> wgame::Result<()> {
-    hypertrace_examples::viewer::run(
-        hypertrace_examples::Example::new("my-scene", "My scene"),
-        || hypertrace_examples::sp::scene::<6>().definition(),
-    ).await
-}
-```
-
-Replace the factory with any typed scene builder or `SceneDefinition` producer.
-The optional catalogue holds metadata only. `with_example!` dispatches gallery,
-headless, and benchmark startup to a concrete factory and generic host.
-`SceneDefinition<G>`, `Camera<G>`, and `Renderer<G>` retain the same geometry type
-throughout their lifetime. Heterogeneous object sets are tuples; repeated objects
-of one type use vectors. The renderer knows no example names. The `viewer` feature
-is enabled by default; `--no-default-features` builds headless tools and factories
-without Wgame. All binaries retain `--help`, and
-interactive binaries accept `--smoke` for the twelve-frame presentation check.
+All eleven scene binaries are native applications and accept `--help` and a
+bounded `--smoke` check. The separate gallery package enables its `viewer` feature
+by default; `cargo build -p hypertrace-gallery --no-default-features` builds its
+headless tools without Wgame. The optional `viewer`, `headless`, and
+`benchmark` applications use `hypertrace_gallery` to select a concrete typed
+example at startup; they never become dependencies of a standalone scene binary.
 
 The dependency direction is `examples` → `renderer` / `objects` → `scene`.
-Window/WebAssembly hosting and `web/` assets belong here. GPU implementation
-tests remain in `renderer/tests`; tests that exercise example factories and the
-full application composition live in `examples/tests`.
+Application tests, gallery controls, and web assets live under `gallery/`. Renderer tests
+use their own fixtures and remain independent of these demonstration sources.

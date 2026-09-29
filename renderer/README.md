@@ -2,9 +2,9 @@
 
 The renderer compiles generic Rust scene builders in all three curvatures to
 WGSL compute shaders. This library owns GPU execution and presentation; the
-`hypertrace-examples` package owns standalone scenes, headless tools, and the
-Wgame application host for native platforms and the web. See the repository
-[web viewer instructions](../README.md#web-viewer) for Trunk setup and controls.
+`hypertrace-examples` package owns standalone scene applications, each with its
+own Wgame setup. The separate `hypertrace-gallery` package in `examples/gallery`
+owns optional gallery, headless, and benchmark tools. See the repository [web viewer instructions](../README.md#web-viewer) for Trunk setup and controls.
 
 ## Run
 
@@ -13,19 +13,19 @@ is sufficient for correctness tests), sibling `../../vecmat-rs` and
 `../../ccgeom` sources, and the sibling `../../wgame` checkout
 with configurable `WindowConfig::required_limits` and `use_adapter_buffer_limits`.
 WGPU is pinned to the same major version as that checkout, 30. Wgame belongs to
-the examples package; Cargo still resolves its optional path dependency for
-workspace builds.
+the application packages; Cargo still resolves the gallery's optional path
+dependency for headless workspace builds.
 
 From the Hypertrace repository root:
 
 ```sh
-cargo run --release -p hypertrace-examples --bin viewer -- --scene sp
-cargo run --release -p hypertrace-examples --bin headless -- --list-scenes
-cargo run --release -p hypertrace-examples --bin headless -- \
+cargo run --release -p hypertrace-gallery --bin viewer -- --scene sp
+cargo run --release -p hypertrace-gallery --bin headless -- --list-scenes
+cargo run --release -p hypertrace-gallery --bin headless -- \
   --scene hy --width 320 --height 240 --samples 64 --seed 3735928559 --output /tmp/hy
 ```
 
-`viewer`, `headless`, and `benchmark` share the `hypertrace_examples::EXAMPLES` catalog and
+`viewer`, `headless`, and `benchmark` share the `hypertrace_gallery::EXAMPLES` catalog and
 support `--list-scenes`. Besides `eu`, `hy`, and `sp`, it includes the
 `compare-*` physical-layout comparisons, `sp-fog`, `sp-loop`, and `sp-loop-fog`.
 The browser presents the same grouped catalog and accepts `?scene=NAME` URLs.
@@ -153,23 +153,42 @@ accuracy range. See [the geometry contract](../GEOMETRY_CONTRACT.md).
 
 ## Generic scene builders
 
-`hypertrace-examples` contains independent scene binaries, the optional gallery,
-and shared factories. Applications lower typed builders as follows:
+Each demonstration folder under [`examples/src/bin`](../examples/src/bin) contains a complete
+application: `scene.rs` owns the concrete layout and materials, and `main.rs`
+constructs the scene, `Renderer`, `Presenter`, and Wgame event loop. A standalone
+example does not import another example, the `hypertrace_gallery` library, or a
+common application runner. Its package has no library target or gallery
+dependency. The separate [`examples/gallery`](../examples/gallery) package imports
+these scene files for its metadata, factories, and application integration tests.
+
+Applications construct and lower typed builders using the libraries directly:
 
 ```rust,ignore
-use objects::Scene as _;
-let definition = hypertrace_examples::hy::scene::<3>().definition()?;
+use ccgeom::{Flat3, Geometry3};
+use objects::{
+    Mapped, Scene as _, SceneImpl, background::ConstBg,
+    material::Lambertian, object::Covered, shape::Sphere, view::PointView,
+};
+let source = SceneImpl::<Flat3, _, _, _, 4>::new(
+    Mapped::new(PointView::new(1.0), Flat3::shift_z(3.0)),
+    Covered::new(Sphere, Lambertian),
+    ConstBg::new([0.1, 0.2, 0.3].into()),
+);
+let definition = source.definition()?;
 let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
 let renderer = hypertrace_renderer::Renderer::new(&device, &queue, (640, 480), scene, 1)?;
 ```
 
-The generic `hypertrace_examples::comparison::scene::<K,H>(radius)?` builder preserves the
-physical marker layout across curvature signs and radii. For example,
-`scene::<1,1>(3.0)?` uses spherical curvature +1/9 with one surface event.
-`hypertrace_examples::recurrence::scene::<12>(true)` builds the floorless spherical long-route
-scene with fog. Its `false` variant selects vacuum. These geometric examples
-use emissive absorbing spheres for clear silhouettes; the original studios
-retain diffuse, reflective, and refractive materials.
+The [`compare-*` examples](../examples/README.md) preserve a physical marker
+layout across curvature signs and radii. Each has a concrete `scene()` builder;
+[compare-sp-flat](../examples/src/bin/compare-sp-flat/scene.rs), for instance,
+uses spherical radius three, hence curvature +1/9, and one surface event.
+The [sp-loop](../examples/src/bin/sp-loop/scene.rs) and
+[sp-loop-fog](../examples/src/bin/sp-loop-fog/scene.rs) folders own their floorless
+long-route scenes. These examples use emissive absorbing spheres for clear
+silhouettes; the studio scenes retain diffuse, reflective, and refractive materials.
+The `eu`, `hy`, `sp`, and `sp-fog` studios expose local `scene::<H>()` constructors
+where `H` sets the interaction budget.
 
 `hypertrace-scene` is a CPU-only intermediate representation and WGSL compiler.
 It has no graphics runtime dependency. The `objects` traits require shader
@@ -214,24 +233,28 @@ uses scalar extinction per physical world unit and RGB scattering albedo in
 `[0,1]`. Zero extinction is vacuum; zero albedo is pure absorption. Scattering
 is isotropic. Both surface and volume interactions consume the bounce budget.
 
+A definition's medium can be changed before compiling it for the renderer:
+
 ```rust,ignore
-use objects::Scene as _;
-let mut source = hypertrace_examples::sp::fog_scene::<12>();
-source.medium = objects::shader::Medium {
-    extinction: 0.08,
-    albedo: [0.85, 0.9, 0.95],
-};
-let definition = source.definition()?;
-let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
+use objects::shader::{Geometry, Medium, Result, SceneDefinition};
+
+fn with_fog<G: Geometry>(mut definition: SceneDefinition<G>)
+    -> Result<hypertrace_renderer::Scene<G>>
+{
+    definition.medium = Medium::homogeneous(0.08, [0.85, 0.9, 0.95]);
+    hypertrace_renderer::Scene::from_definition(&definition)
+}
 ```
 
-`fog_scene` supplies those medium values with the emissive spherical studio;
-its mean free flight is 12.5 world units at radius one. The CLI selects it with
-`--scene sp-fog`; `sp::scene` and `--scene sp` select vacuum. Both use a
-configurable black miss background. The separate `sp-loop-fog` preset has no
-floor and uses extinction 0.1 with albedo 0.9. Rays missing its beacons can
-complete several circuits before scattering. Rendered color images do not
-report individual travelled distances or cycle counts.
+The [sp-fog scene](../examples/src/bin/sp-fog/scene.rs) supplies those medium
+values with the emissive spherical studio; its mean free flight is 12.5 world
+units at radius one. Run the `sp-fog` binary or select `--scene sp-fog` in a
+gallery tool. The [sp scene](../examples/src/bin/sp/scene.rs) selects vacuum.
+Both use a configurable black miss background. The independent
+[sp-loop-fog scene](../examples/src/bin/sp-loop-fog/scene.rs) has no floor and
+uses extinction 0.1 with albedo 0.9. Rays missing its beacons can complete several
+circuits before scattering. Rendered color images do not report individual
+travelled distances or cycle counts.
 
 The integrator samples `-log(1-u)/extinction` and compares that physical distance
 with the nearest surface. With no surface, the interval stays unbounded even
@@ -352,7 +375,7 @@ must be explicitly requested; missing adapters fail rather than silently skip.
 cargo test -p hypertrace-renderer
 WGPU_BACKEND=vulkan cargo test --workspace -- --ignored --test-threads=1
 cargo clippy --no-deps --workspace --all-targets -- -D warnings
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin viewer -- --scene hy --smoke
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin viewer -- --scene hy --smoke
 ```
 
 Coverage includes shared isometry composition, inverse and distance checks,
@@ -404,10 +427,10 @@ to find a workload and consult the [example guide](../examples/README.md) for it
 layout; each spherical preset has a black miss background.
 
 ```sh
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin benchmark -- \
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin benchmark -- \
   --scene hy --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
   --batch 1 --seed 3735928559 --output /tmp/batch1.json
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin benchmark -- \
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin benchmark -- \
   --scene hy --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
   --batch 16 --seed 3735928559 --output /tmp/batch16.json
 python3 tools/compare_benchmarks.py /tmp/batch1.json /tmp/batch16.json \

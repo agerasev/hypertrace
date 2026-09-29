@@ -17,13 +17,25 @@ history in commits, not new migration diaries.
   development dependencies. Keep application-level integration tests with the
   applications; library tests use independent fixtures.
 - Each scene example (`eu`, `hy`, `sp`, comparisons, fog, and recurrence scenes)
-  is a normal standalone binary that supplies its scene to library APIs. Adding
-  one must not require a renderer change or registration in a renderer-owned
-  catalogue. An optional gallery catalogue belongs to the examples package.
+  is a self-contained normal binary. Its directory owns the scene construction,
+  materials, camera setup, renderer initialization, and frame loop, using workspace
+  crates directly. Opening an example must show how to build a user's own scene;
+  a thin launcher around an example-library factory or shared application runner
+  does not satisfy this requirement. Keep small local scaffolding explicit even
+  when examples repeat it. Do not hide that scaffolding in generated includes or
+  a host macro. Adding an example requires no renderer change or registration.
+- Gallery, headless, and benchmark tools may import example-owned scene source
+  files to display the same content. Dependencies point from those tools toward
+  the examples, never from a standalone example toward the gallery, another
+  example, a shared scene factory, or a shared application runner. The optional
+  gallery catalogue belongs to `examples/gallery`, a separate Cargo package.
+  Keep `hypertrace-examples` binary-only: Cargo builds a same-package library for
+  its binaries even when their source never imports that library.
 - Viewer, headless, and benchmark entry points are normal binaries in the
   applications package, not Cargo examples attached to the renderer library.
   Window/event-loop, CLI, and browser UI dependencies belong there as well.
-  Share host utilities without making library users adopt that application host.
+  Gallery host utilities stay with the gallery; standalone examples show their
+  own direct use of the rendering and window libraries.
 - Use generic project names such as `renderer` and `shader`, and trait methods
   such as `shader`, `encode`, and `definition`. Avoid `wgpu`/`wgsl` prefixes or
   suffixes in project APIs and paths. Retain actual dependency/API identifiers,
@@ -139,7 +151,7 @@ history in commits, not new migration diaries.
 ## Repository workflow
 
 - Companion checkouts are `../vecmat-rs`, `../ccgeom`, and `../wgame`. Cargo resolves
-  the optional Wgame path even for headless builds. Keep compatible revision pins
+  the gallery's optional Wgame path even for headless builds. Keep compatible revision pins
   in `.travis.yml` and `DEVELOPMENT.md` synchronized when changing dependencies.
 - Check worktree status before editing and avoid overwriting concurrent work.
   Keep mechanical renames separate from semantic changes and commit meaningful

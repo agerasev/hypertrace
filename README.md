@@ -31,20 +31,28 @@ From the repository root:
 
 ```sh
 cargo run --release -p hypertrace-examples --bin sp
-cargo run --release -p hypertrace-examples --bin headless -- --list-scenes
-cargo run --release -p hypertrace-examples --bin headless -- \
+cargo run --release -p hypertrace-gallery --bin headless -- --list-scenes
+cargo run --release -p hypertrace-gallery --bin headless -- \
   --scene eu --width 640 --height 480 --samples 64 --output /tmp/eu
 ```
 
 Each scene has its own binary: `eu`, `hy`, `sp`, `sp-fog`, all `compare-*`
-variants, `sp-loop`, and `sp-loop-fog`. The optional `viewer`, `headless`, and
-`benchmark` applications provide a shared gallery and capture tools. These
-applications live in `examples/` and depend on the rendering libraries.
+variants, `sp-loop`, and `sp-loop-fog`. Each scene folder under
+[`examples/src/bin`](examples/src/bin) owns its `scene.rs` and `main.rs`: scene
+construction, renderer and presenter setup, and the Wgame event loop are visible
+in that example. Start with [the spherical studio](examples/src/bin/sp) to copy
+or adapt a complete application.
 
-The shared example catalog includes the original `eu`, `hy`, and `sp` scenes,
+The separate [`hypertrace-gallery` package](examples/gallery) owns the optional
+`viewer`, `headless`, and `benchmark` applications. Its `hypertrace_gallery`
+library imports the example-owned scene files and supplies metadata and factories.
+The `hypertrace-examples` package has no library target or gallery dependency;
+standalone examples use `objects`, `ccgeom`, and `renderer` directly.
+
+The gallery catalog includes the original `eu`, `hy`, and `sp` scenes,
 equal-layout curvature comparisons (`compare-eu`, `compare-hy`, `compare-sp`),
 gentler-curvature variants, and spherical fog and long-route examples. Use
-`--list-scenes` in any native tool to see all choices. Start with `compare-sp`
+`--list-scenes` in a gallery tool to see all choices. Start with `compare-sp`
 to see distant spheres grow again or `sp-loop` to see light arriving by the long
 route around spherical space. The [example guide](examples/README.md) explains
 what to observe and how the builders work.
@@ -65,8 +73,8 @@ Oversized windows render at a supported resolution and scale to the window.
 
 ## Web viewer
 
-The same viewer and scene builders run in WebAssembly, using Wgame's web runtime
-and WebGPU compute shaders. From the repository root:
+The gallery viewer runs the example-owned scenes in WebAssembly, using Wgame's
+web runtime and WebGPU compute shaders. From the repository root:
 
 ```sh
 rustup target add wasm32-unknown-unknown
@@ -110,31 +118,24 @@ distance includes complete circuits even when the ray returns to the same point.
 The [geometry contract](GEOMETRY_CONTRACT.md) specifies units, transforms, tangent
 frames, and precision limits; [ABOUT.md](ABOUT.md) describes the implementation.
 
-The spherical studio's fog variant is available as `--scene sp-fog` and as a
-Rust builder:
+The spherical studio's fog variant is available as `--scene sp-fog` and as the
+standalone `sp-fog` binary. Its [scene construction](examples/src/bin/sp-fog/scene.rs)
+sets extinction to `0.08` inverse world units and scattering albedo to
+`[0.85, 0.9, 0.95]`. Its [main function](examples/src/bin/sp-fog/main.rs) shows the
+complete application setup. The separate [vacuum studio](examples/src/bin/sp/scene.rs)
+uses the same material and object layout with no medium.
 
-```rust,ignore
-use objects::Scene as _;
-let mut source = hypertrace_examples::sp::fog_scene::<12>();
-source.medium = objects::shader::Medium {
-    extinction: 0.08, // inverse world units
-    albedo: [0.85, 0.9, 0.95],
-};
-let definition = source.definition()?;
-let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
-```
-
-The CLI's `sp` selection uses the vacuum version. The floorless `sp-loop-fog`
-example allows rays missing every object to scatter after multiple spherical
-circuits. Fog samples a physical free-flight distance before resolving a surface
-miss. See the [example guide](examples/README.md) for shared curvature and
-recurrence builders, and the [renderer guide](renderer/README.md) for
-custom shapes, materials and their shader modules.
+The floorless [sp-loop-fog example](examples/src/bin/sp-loop-fog/scene.rs) allows
+rays missing every object to scatter after multiple spherical circuits. Fog
+samples a physical free-flight distance before resolving a surface miss. See the
+[example guide](examples/README.md) for the independent curvature comparisons and
+long-route scenes, and the [renderer guide](renderer/README.md) for constructing
+scenes and implementing custom shapes and materials.
 
 ```sh
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
-cargo clippy -p hypertrace-examples --target wasm32-unknown-unknown --features web --bin viewer -- -D warnings
+cargo clippy -p hypertrace-gallery --target wasm32-unknown-unknown --features web --bin viewer -- -D warnings
 WGPU_BACKEND=vulkan cargo test --workspace -- --ignored --test-threads=1
 ```
 

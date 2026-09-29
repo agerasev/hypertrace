@@ -16,11 +16,28 @@ pinned in [.travis.yml](.travis.yml); update both places when changing them.
 | `../wgame` | [wgame](https://github.com/agerasev/wgame) | `42858dc961e1ac27a56a5cc84572e7489d036abc` |
 
 The workspace patches crates.io `ccgeom` and `vecmat` to these checkouts, and
-`ccgeom` also uses local `vecmat`. The examples package owns the optional Wgame
-path dependency, which Cargo resolves for workspace builds. Wgame must expose `WindowConfig::required_limits` and
+`ccgeom` also uses local `vecmat`. Standalone examples depend on Wgame directly;
+the gallery enables it through its optional viewer feature. Cargo resolves that
+path even for headless workspace builds. Wgame must expose `WindowConfig::required_limits` and
 `use_adapter_buffer_limits` and use the same WGPU major version as Hypertrace.
 Companion commits must be available on their remotes before remote CI can fetch
 them. `Cargo.lock` is currently ignored by this repository.
+
+## Example ownership
+
+Each demonstration under `examples/src/bin/<name>/` owns its scene construction
+in `scene.rs` and its application setup in `main.rs`. The entry point directly
+creates the scene, `Renderer`, `Presenter`, and Wgame event loop; there is no
+common example runner. Keep each folder usable as an independent tutorial.
+
+The `hypertrace-examples` package has no library target. The separate
+`hypertrace-gallery` package in `examples/gallery/` owns the optional viewer,
+headless, and benchmark tools. Its `hypertrace_gallery` library imports the
+example-owned scene files. Add metadata to
+[`examples/gallery/src/catalog.rs`](examples/gallery/src/catalog.rs) only when
+an example should appear in those tools. Standalone binaries must not depend on
+the gallery or another example. Keep scene tests beside their owned scene and
+application-level integration tests in `examples/gallery/tests`.
 
 ## Checks
 
@@ -40,7 +57,7 @@ sequentially, recording the adapter and driver in each run:
 
 ```sh
 WGPU_BACKEND=vulkan cargo test --workspace -- --ignored --test-threads=1
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin viewer -- --scene sp --smoke
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin viewer -- --scene sp --smoke
 ```
 
 The viewer smoke path exercises camera motion, accumulation resets, resizing
@@ -51,12 +68,13 @@ The [example guide](examples/README.md) describes comparison and recurrence case
 For the web viewer, install `wasm32-unknown-unknown` and Trunk 0.21 or newer:
 
 ```sh
-cargo clippy -p hypertrace-examples --target wasm32-unknown-unknown --features web --bin viewer -- -D warnings
+cargo clippy -p hypertrace-gallery --target wasm32-unknown-unknown --features web --bin viewer -- -D warnings
 NO_COLOR=true trunk build --release
 ```
 
-The HTML asset selects `data-bin="viewer"`, so Trunk builds only the web gallery
-binary. Native headless and benchmark tools are separate binaries.
+The HTML asset in `examples/gallery/web` points to the gallery package and selects
+`data-bin="viewer"`, so Trunk builds only the web gallery binary. Native headless
+and benchmark tools are separate binaries.
 
 Build success does not establish browser rendering correctness. A headed browser
 check should exercise scene selection, camera input, resizing, accumulation, and

@@ -100,9 +100,11 @@ scattering. Zero extinction is vacuum; zero albedo is pure absorption. Both
 surface and volume events consume the finite bounce budget. Deterministic tests
 force samples beyond several circuits. Free-flight survival and scattering
 weights follow the analog estimator; attenuation is not applied twice.
-`sp::fog_scene::<H>()` exposes the spherical example with extinction `0.08` and
-albedo `[0.85,0.9,0.95]`; ordinary `sp::scene::<H>()` is vacuum. General
-heterogeneous media and anisotropic scattering remain follow-up work.
+The standalone [spherical fog scene](examples/src/bin/sp-fog/scene.rs) uses
+extinction `0.08` and albedo `[0.85,0.9,0.95]`; the separate
+[spherical studio](examples/src/bin/sp/scene.rs) is vacuum. Each owns its
+`scene::<H>()` constructor and numerical settings. General heterogeneous media
+and anisotropic scattering remain follow-up work.
 
 **Finite precision and numerical termination**
 

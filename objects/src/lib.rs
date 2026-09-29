@@ -3,6 +3,7 @@ mod macros;
 mod mapped;
 pub mod material;
 pub mod object;
+mod parameters;
 pub mod scene;
 pub mod shader;
 pub mod shape;

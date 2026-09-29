@@ -19,8 +19,8 @@
 pub use ::scene::*;
 use ccgeom::{Embedded3, EmbeddedIsometry, Euclidean3, Homogenous3, Hyperbolic3};
 use vecmat::{
-    Complex, QuaternionPair, Transform as _,
     transform::{Moebius, Rotation3, Shift},
+    Complex, QuaternionPair, Transform as _,
 };
 
 /// Construction coordinates supported by a geometry adapter.
@@ -130,12 +130,12 @@ pub fn lower<G: ccgeom::Geometry, S: crate::Scene<G>>(scene: &S) -> Result<Scene
 mod tests {
     use super::*;
     use crate::{
-        Mapped, Material, Object, Scene, SceneImpl, Shape, View as _,
         background::{ConstBg, GradBg},
         material::{Absorbing, Colored, Emissive, Lambertian, Refractive, Specular, Transparent},
         object::Covered,
         shape::{Cube, GeodesicSphere, Horosphere, Plane, Sphere},
         view::PointView,
+        Mapped, Material, Object, Scene, SceneImpl, Shape, View as _,
     };
     use ccgeom::{Flat3, Geometry3, Hyperboloid3, Spherical3};
 
@@ -143,19 +143,15 @@ mod tests {
     fn specialized_shapes_and_gradient_share_geometry_families() {
         let legacy_cube = <Cube as Shape<Euclidean3>>::encode(&Cube).unwrap();
         let embedded_cube = <Cube as Shape<Flat3>>::encode(&Cube).unwrap();
-        assert!(
-            legacy_cube
-                .schema
-                .same_implementation(&embedded_cube.schema)
-        );
+        assert!(legacy_cube
+            .schema
+            .same_implementation(&embedded_cube.schema));
         assert_eq!(legacy_cube.words, embedded_cube.words);
         let legacy_horosphere = <Horosphere as Shape<Hyperbolic3>>::encode(&Horosphere).unwrap();
         let embedded_horosphere = <Horosphere as Shape<Hyperboloid3>>::encode(&Horosphere).unwrap();
-        assert!(
-            legacy_horosphere
-                .schema
-                .same_implementation(&embedded_horosphere.schema)
-        );
+        assert!(legacy_horosphere
+            .schema
+            .same_implementation(&embedded_horosphere.schema));
         assert_eq!(legacy_horosphere.words, embedded_horosphere.words);
         let gradient = GradBg::new(
             [0.0, 1.0, 0.0].into(),
@@ -216,12 +212,10 @@ mod tests {
             lowered.view.map.components().unwrap(),
             transform::<G<K>, _>(&map).unwrap().components().unwrap()
         );
-        assert!(
-            lowered
-                .modules
-                .iter()
-                .any(|module| module.same_implementation(&crate::shape::geodesic_sphere_schema()))
-        );
+        assert!(lowered
+            .modules
+            .iter()
+            .any(|module| module.same_implementation(&crate::shape::geodesic_sphere_schema())));
         assert_eq!(lowered.radius, scene.radius);
         assert!(matches!(
             lowered.medium,
@@ -230,16 +224,12 @@ mod tests {
                 albedo: [0.8, 0.8, 0.8]
             }
         ));
-        assert!(
-            <Plane as Shape<G<K>>>::shader()
-                .unwrap()
-                .same_implementation(&crate::shape::plane_schema())
-        );
-        assert!(
-            <Sphere as Shape<G<K>>>::shader()
-                .unwrap()
-                .same_implementation(&crate::shape::sphere_schema())
-        );
+        assert!(<Plane as Shape<G<K>>>::shader()
+            .unwrap()
+            .same_implementation(&crate::shape::plane_schema()));
+        assert!(<Sphere as Shape<G<K>>>::shader()
+            .unwrap()
+            .same_implementation(&crate::shape::sphere_schema()));
     }
 
     #[test]
@@ -268,11 +258,9 @@ mod tests {
         }
         let shape =
             <GeodesicSphere as Shape<Spherical3>>::encode(&GeodesicSphere::new(0.3)).unwrap();
-        assert!(
-            shape
-                .schema
-                .same_implementation(&crate::shape::geodesic_sphere_schema())
-        );
+        assert!(shape
+            .schema
+            .same_implementation(&crate::shape::geodesic_sphere_schema()));
         assert_eq!(f32::from_bits(shape.words[0]), 0.3);
     }
 
@@ -308,27 +296,34 @@ mod tests {
         assert!(nested.source.contains("var choice=uniform_random(rng)"));
         assert_eq!(nested.dependencies[0].key, "hypertrace.material.specular");
         assert_eq!(nested.dependencies[1].key, "hypertrace.material.refractive");
-        let actual: Vec<f32> = value.words.into_iter().map(f32::from_bits).collect();
-        assert_eq!(
-            actual,
-            vec![0.6, 0.4, 0.25, 0.5, 0.75, 2.0, 3.0, 4.0, 0.25, 0.75, 1.5]
-        );
+        let floats = |words: &[u32]| {
+            words
+                .iter()
+                .copied()
+                .map(f32::from_bits)
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(floats(&value.words[..2]), [0.6, 0.4]);
+        let branches = crate::parameters::slices(&value.words, 2, 2).unwrap();
+        assert_eq!(floats(&branches[0][..6]), [0.25, 0.5, 0.75, 2.0, 3.0, 4.0]);
+        assert!(branches[1].is_empty());
+        let nested = &branches[0][6..];
+        assert_eq!(floats(&nested[..2]), [0.25, 0.75]);
+        let branches = crate::parameters::slices(nested, 2, 2).unwrap();
+        assert!(branches[0].is_empty());
+        assert_eq!(floats(branches[1]), [1.5]);
         // A zero-weight branch still exists in the schema: flattening it would
         // change nested RNG behavior when values change on an existing pipeline.
         mixture.modified.portion = 0.0;
         mixture.transmitted.portion = 1.0;
-        assert!(
-            mixture
-                .encode()
-                .unwrap()
-                .schema
-                .same_implementation(&value.schema)
-        );
-        assert!(
-            OuterMixture::shader()
-                .unwrap()
-                .same_implementation(&value.schema)
-        );
+        assert!(mixture
+            .encode()
+            .unwrap()
+            .schema
+            .same_implementation(&value.schema));
+        assert!(OuterMixture::shader()
+            .unwrap()
+            .same_implementation(&value.schema));
     }
 
     crate::object_choice! {

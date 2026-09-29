@@ -1,5 +1,5 @@
 use super::*;
-use std::{convert::TryFrom, fmt::Write};
+use std::fmt::Write;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Component<M: Material> {
@@ -12,6 +12,8 @@ impl<M: Material> From<(M, f64)> for Component<M> {
     }
 }
 
+/// Describe a mixture independently of child parameter lengths.
+/// Weights precede a relative offset table and the concatenated child payloads.
 pub fn mixture_schema(children: Vec<ShaderModule>) -> Result<ShaderModule> {
     anyhow::ensure!(
         children
@@ -20,21 +22,18 @@ pub fn mixture_schema(children: Vec<ShaderModule>) -> Result<ShaderModule> {
         "expected a material dependency"
     );
     let mut source=String::from("fn {{self}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {\nvar choice=uniform_random(rng);\n");
-    let mut offset = u32::try_from(children.len())?;
-    for (index, child) in children.iter().enumerate() {
-        writeln!(source,"choice-=load_f32(base+{index}u);\nif choice<0 {{ {{{{dep{index}}}}}(base+{offset}u,ctx,sample,rng);return;}}")?;
-        offset = offset
-            .checked_add(child.parameter_words.ok_or_else(|| {
-                anyhow::anyhow!("mixture components require fixed-size material parameters")
-            })?)
-            .ok_or_else(|| anyhow::anyhow!("material parameters overflow"))?;
+    let count = children.len();
+    let parameter_words = crate::parameters::schema_size(count, &children)?;
+    for index in 0..count {
+        let slot = count + index;
+        writeln!(source,"choice-=load_f32(base+{index}u);\nif choice<0 {{ {{{{dep{index}}}}}(base+load_u32(base+{slot}u),ctx,sample,rng);return;}}")?;
     }
     source.push_str("(*sample).alive=0u;\n}\n");
     let mut module = ShaderModule::new(
-        "hypertrace.material.mixture",
+        "hypertrace.material.mixture.offsets",
         ShaderKind::Material,
         source,
-        Some(offset),
+        parameter_words,
     );
     module.dependencies = children;
     module.key = ShaderModule::specialized_key(&module.key, &module.dependencies);
@@ -58,15 +57,9 @@ pub fn mixture_schema(children: Vec<ShaderModule>) -> Result<ShaderModule> {
             total += f64::from(weight);
         }
         anyhow::ensure!(total <= 1.00001, "mixture portions exceed one");
-        let mut offset = count;
-        for child in &module.dependencies {
-            let end = offset
-                + child.parameter_words.ok_or_else(|| {
-                    anyhow::anyhow!("mixture components require fixed-size material parameters")
-                })? as usize;
-            anyhow::ensure!(end <= words.len(), "mixture child payload is truncated");
-            child.validate(ctx, &words[offset..end])?;
-            offset = end;
+        let payloads = crate::parameters::slices(words, count, count)?;
+        for (child, payload) in module.dependencies.iter().zip(payloads) {
+            child.validate(ctx, payload)?;
         }
         Ok(())
     };
@@ -84,11 +77,15 @@ pub fn mixture(components: Vec<(f64, MaterialValue)>) -> Result<MaterialValue> {
     }
     anyhow::ensure!(total <= 1.00001, "mixture portions exceed one");
     let mut children = Vec::new();
+    let mut payloads = Vec::new();
     for (_, value) in components {
         children.push(value.schema);
-        words.extend(value.words);
+        payloads.push(value.words);
     }
-    MaterialValue::new(mixture_schema(children)?, words)
+    MaterialValue::new(
+        mixture_schema(children)?,
+        crate::parameters::pack(words, &payloads)?,
+    )
 }
 
 #[macro_export]

@@ -247,10 +247,146 @@ fn tiling_components_validate_parameters_and_children() -> Result<()> {
         1.0,
         0.0,
     )?;
-    value.words[2] = f32::NAN.to_bits();
+    let child_offset = value.words[2] as usize;
+    value.words[child_offset] = f32::NAN.to_bits();
     assert!(
         value.schema.validate(context, &value.words).is_err(),
         "selector must validate nested material data"
     );
+    Ok(())
+}
+
+fn variable_material(values: &[f32]) -> Result<MaterialValue> {
+    let mut module = ShaderModule::new(
+        "tests.variable-material",
+        ShaderKind::Material,
+        "fn {{self}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) { for(var i=0u;i<load_u32(base);i+=1u) { (*sample).emission+=vec3<f32>(load_f32(base+1u+i)); } (*sample).alive=0u; }",
+        None,
+    );
+    module.validate_words = |_, _, words| {
+        let count = *words
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("missing variable material length"))?
+            as usize;
+        anyhow::ensure!(
+            count == words.len() - 1,
+            "variable material length mismatch"
+        );
+        anyhow::ensure!(
+            words[1..]
+                .iter()
+                .all(|&word| f32::from_bits(word).is_finite()),
+            "invalid variable material value"
+        );
+        Ok(())
+    };
+    let mut words = vec![values.len() as u32];
+    words.extend(values.iter().map(|value| value.to_bits()));
+    MaterialValue::new(module, words)
+}
+
+#[test]
+fn variable_material_lengths_are_data_through_nested_combinators() -> Result<()> {
+    let build = |values: &[f32], border: &[f32]| -> Result<SceneDefinition> {
+        let mixture = material::mixture(vec![
+            (0.25, material::transparent()),
+            (0.75, variable_material(values)?.colored([0.5; 3])?),
+        ])?;
+        let tiled = tiling::tiled(
+            tiling::Uniform::shader(),
+            vec![mixture],
+            material::mixture(vec![(1.0, variable_material(border)?)])?,
+            1.0,
+            0.0,
+        )?;
+        assert_eq!(tiled.schema.parameter_words, None);
+        Ok(scene(shape::plane(), tiled))
+    };
+    let empty = compile(&build(&[], &[])?)?;
+    let populated = compile(&build(&[0.25, 0.5, 0.75], &[1.0, 2.0])?)?;
+    assert_eq!(empty.source, populated.source);
+    assert_ne!(empty.words, populated.words);
+    assert_eq!(empty.materials.len(), populated.materials.len());
+    Ok(())
+}
+
+#[test]
+fn offset_tables_reject_malformed_ranges_and_validate_inactive_children() -> Result<()> {
+    let context = GeometryContext {
+        geometry: Geometry::Euclidean,
+        radius: 1.0,
+    };
+    // Both containers have a two-word prefix and two children; the first child
+    // is variable-sized, and the last child has an empty parameter payload.
+    let containers = [
+        material::mixture(vec![
+            (0.0, variable_material(&[0.25, 0.5])?),
+            (1.0, material::absorbing()),
+        ])?,
+        tiling::tiled(
+            tiling::Uniform::shader(),
+            vec![variable_material(&[0.25, 0.5])?],
+            material::absorbing(),
+            1.0,
+            0.0,
+        )?,
+    ];
+    for value in containers {
+        value.schema.validate(context, &value.words)?;
+        let mut corruptions = Vec::new();
+        let mut truncated = value.words.clone();
+        truncated.truncate(4);
+        corruptions.push(truncated);
+        for (slot, offset) in [(2, 4), (2, 6), (3, 4), (3, u32::MAX), (4, 7)] {
+            let mut invalid = value.words.clone();
+            invalid[slot] = offset;
+            corruptions.push(invalid);
+        }
+        let mut trailing = value.words.clone();
+        trailing.push(0);
+        corruptions.push(trailing);
+        let mut invalid_child = value.words.clone();
+        let child = invalid_child[2] as usize;
+        invalid_child[child] = u32::MAX;
+        corruptions.push(invalid_child);
+        for invalid in corruptions {
+            assert!(
+                value.schema.validate(context, &invalid).is_err(),
+                "accepted malformed offset table or child payload: {:?}",
+                invalid
+            );
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn fixed_and_empty_materials_share_offset_layouts_with_variable_children() -> Result<()> {
+    let context = GeometryContext {
+        geometry: Geometry::Euclidean,
+        radius: 1.0,
+    };
+    let empty = material::mixture(vec![])?;
+    assert_eq!(empty.schema.parameter_words, Some(1));
+    empty.schema.validate(context, &empty.words)?;
+    let fixed = material::mixture(vec![
+        (0.5, material::transparent()),
+        (0.5, material::absorbing()),
+    ])?;
+    assert_eq!(fixed.schema.parameter_words, Some(5));
+    fixed.schema.validate(context, &fixed.words)?;
+    assert_eq!(fixed.words[2], fixed.words[3]);
+    assert_eq!(fixed.words[3], fixed.words[4]);
+    let mut overflow = material::absorbing().schema;
+    overflow.parameter_words = Some(u32::MAX);
+    assert!(
+        material::mixture_schema(vec![variable_material(&[])?.schema, overflow.clone()]).is_err()
+    );
+    assert!(tiling::tiled_schema(
+        tiling::Uniform::shader(),
+        vec![overflow],
+        material::absorbing().schema
+    )
+    .is_err());
     Ok(())
 }

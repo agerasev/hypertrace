@@ -71,6 +71,8 @@ tiling!(Hexagonal, "hexagonal", true, true);
 tiling!(Pentagonal, "pentagonal", true, false);
 tiling!(Pentastar, "pentastar", true, false);
 
+/// Select among child materials with independently sized parameter payloads.
+/// Cell size and border width precede an offset table; the border is the last child.
 pub fn tiled_schema(
     selector: ShaderModule,
     materials: Vec<ShaderModule>,
@@ -93,32 +95,23 @@ pub fn tiled_schema(
     children.extend(materials);
     children.push(border);
     let mut source=format!("fn {{{{self}}}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {{\nlet index={{{{dep0}}}}(geo_to_chart_pos(ctx.position),load_f32(base),load_f32(base+1u),{count}u);\nswitch index {{\n");
-    let mut offset = 2u32;
-    let mut layout = String::new();
+    let parameter_words = crate::parameters::schema_size(2, &children[1..])?;
     for (index, child) in children[1..].iter().enumerate() {
         anyhow::ensure!(
             child.kind == ShaderKind::Material,
             "tiling child must be a material module"
         );
-        let words = child
-            .parameter_words
-            .ok_or_else(|| anyhow::anyhow!("tiling requires fixed-size material parameters"))?;
-        write!(layout, ".{words}")?;
+        let slot = 2 + index;
         let dependency = index + 1;
-        writeln!(
-            source,
-            "case {index}u: {{ {{{{dep{dependency}}}}}(base+{offset}u,ctx,sample,rng); }}"
-        )?;
-        offset = offset
-            .checked_add(words)
-            .ok_or_else(|| anyhow::anyhow!("tiling parameters overflow"))?;
+        writeln!(source,
+            "case {index}u: {{ {{{{dep{dependency}}}}}(base+load_u32(base+{slot}u),ctx,sample,rng); }}")?;
     }
     source.push_str("default: {(*sample).alive=0u;}\n}\n}\n");
     let mut module = ShaderModule::new(
-        format!("hypertrace.material.tiled{layout}"),
+        "hypertrace.material.tiled.offsets",
         ShaderKind::Material,
         source,
-        Some(offset),
+        parameter_words,
     );
     module.dependencies = children;
     module.key = ShaderModule::specialized_key(&module.key, &module.dependencies);
@@ -133,19 +126,14 @@ pub fn tiled_schema(
             "tiling selector must be a library module"
         );
         selector.validate(ctx, &words[..2])?;
-        let mut offset = 2;
-        for child in &module.dependencies[1..] {
+        let children = &module.dependencies[1..];
+        let payloads = crate::parameters::slices(words, 2, children.len())?;
+        for (child, payload) in children.iter().zip(payloads) {
             anyhow::ensure!(
                 child.kind == ShaderKind::Material,
                 "tiling child must be a material module"
             );
-            let end = offset
-                + child.parameter_words.ok_or_else(|| {
-                    anyhow::anyhow!("tiling requires fixed-size material parameters")
-                })? as usize;
-            anyhow::ensure!(end <= words.len(), "tiling material payload is truncated");
-            child.validate(ctx, &words[offset..end])?;
-            offset = end;
+            child.validate(ctx, payload)?;
         }
         Ok(())
     };
@@ -163,12 +151,16 @@ pub fn tiled(
     let cell = crate::shader::finite_f32(cell_size)?;
     let width = crate::shader::finite_f32(border_width)?;
     anyhow::ensure!(width >= 0.0, "tile border width must be nonnegative");
-    let mut words = vec![cell.to_bits(), width.to_bits()];
+    let prefix = vec![cell.to_bits(), width.to_bits()];
     let mut schemas = Vec::new();
+    let mut payloads = Vec::new();
     for material in materials {
         schemas.push(material.schema);
-        words.extend(material.words);
+        payloads.push(material.words);
     }
-    words.extend(border.words);
-    MaterialValue::new(tiled_schema(selector, schemas, border.schema)?, words)
+    payloads.push(border.words);
+    MaterialValue::new(
+        tiled_schema(selector, schemas, border.schema)?,
+        crate::parameters::pack(prefix, &payloads)?,
+    )
 }

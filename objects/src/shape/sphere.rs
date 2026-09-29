@@ -4,6 +4,15 @@ use super::*;
 #[derive(Clone, Default, Debug)]
 pub struct Sphere;
 
+fn intersection_module() -> ShaderModule {
+    ShaderModule::new(
+        "hypertrace.shape.sphere.intersection",
+        ShaderKind::Library,
+        include_str!("shaders/sphere.wgsl"),
+        None,
+    )
+}
+
 pub fn sphere_schema() -> ShaderModule {
     let mut module = ShaderModule::new(
         "hypertrace.shape.sphere",
@@ -11,6 +20,7 @@ pub fn sphere_schema() -> ShaderModule {
         include_str!("shaders/unit_sphere.wgsl"),
         Some(1),
     );
+    module.dependencies.push(intersection_module());
     module.validate_context = |ctx| validate_sphere_radius(1.0, ctx.geometry, ctx.radius);
     module
 }
@@ -40,9 +50,10 @@ pub fn geodesic_sphere_schema() -> ShaderModule {
     let mut module = ShaderModule::new(
         "hypertrace.shape.geodesic_sphere",
         ShaderKind::Shape,
-        include_str!("shaders/sphere.wgsl"),
+        include_str!("shaders/geodesic_sphere.wgsl"),
         Some(1),
     );
+    module.dependencies.push(intersection_module());
     module.validate_words =
         |_, ctx, words| validate_sphere_radius(f32::from_bits(words[0]), ctx.geometry, ctx.radius);
     module

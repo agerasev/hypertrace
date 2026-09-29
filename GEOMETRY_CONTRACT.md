@@ -49,16 +49,25 @@ Materials use three-component directions and normals in a local orthonormal
 tangent frame. Spherical frames use quaternion multiplication
 `V = P * Quaternion(0,local_direction)`, which is defined at antipodes as well.
 Hyperbolic frames use the canonical origin-to-point boost; Euclidean frames use
-the spatial components. Construction adapters and hyperbolic tilings use explicit
-half-space conversions, including direction derivatives where needed.
+the spatial components. Hyperbolic tilings use explicit half-space coordinates
+for classification,
+while their transformations use the same quaternion-pair isometries as tracing.
+The horosphere normal is computed directly as an ambient unit tangent.
 
 **CPU and shader boundaries**
 
 The CPU API is `ccgeom::embedded::{Space3<T,K>, EmbeddedRay<T>,
 EmbeddedIsometry<T,K>, Embedded3<T,K>}` with unit-radius builder aliases
-`Flat3`, `Hyperboloid3`, and `Spherical3`. Existing `Euclidean3` and
-`Hyperbolic3` keep their coordinate meaning. Construction geometries and maps
-convert explicitly through `objects::shader::RenderGeometry` and `RenderMap`.
+`Flat3`, `Hyperboloid3`, and `Spherical3`. These are curvature aliases for the
+same representation. `objects::shader::RenderGeometry` and `RenderMap` carry
+these canonical geometries and maps into CPU scene descriptions.
+
+`scene::Transform` is an opaque canonical isometry with runtime curvature
+selection; `from_isometry` erases a builder map's compile-time curvature.
+`renderer::Camera` contains one such transform. There are no alternate map or
+camera representations, compatibility adapters, or chart-dependent movement
+paths. Local motion takes physical distances, angles, and radius explicitly;
+translations in x/y/z order precede rotations in x/y/z order.
 
 GPU isometries contain the same two quaternion rows, in f32. Every scene uses
 the shared embedded tracing kernel.

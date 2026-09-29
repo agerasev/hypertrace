@@ -4,14 +4,12 @@ use super::*;
 pub struct Plane;
 
 pub fn plane_schema() -> ShaderModule {
-    #[allow(unused_mut)]
-    let mut module = ShaderModule::new(
+    ShaderModule::new(
         "hypertrace.shape.plane",
         ShaderKind::Shape,
         include_str!("shaders/plane.wgsl"),
         Some(1),
-    );
-    module
+    )
 }
 
 impl<G: crate::shader::RenderGeometry> Shape<G> for Plane {
@@ -25,5 +23,5 @@ impl<G: crate::shader::RenderGeometry> Shape<G> for Plane {
 }
 
 pub fn plane() -> ShapeValue {
-    <Plane as Shape<ccgeom::Euclidean3>>::encode(&Plane).expect("valid built-in plane")
+    <Plane as Shape<ccgeom::Flat3>>::encode(&Plane).expect("valid built-in plane")
 }

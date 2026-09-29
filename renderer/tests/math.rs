@@ -4,13 +4,19 @@ const CASES: usize = 4;
 const REGRESSION_SHADER: &str = r#"
 @group(0) @binding(0) var<storage,read_write> results: array<vec4<f32>>;
 @compute @workgroup_size(1) fn math_regression() {
-    let origin=vec3<f32>(0,0,1);
-    results[0]=vec4<f32>(hy_apply_pos(hy_xshift(0.6),origin),0);
-    results[1]=vec4<f32>(hy_apply_pos(hy_zrotate(PI/2),vec3<f32>(1,0,1)),0);
-    let a=hy_xshift(0.6); let b=hy_zrotate(0.8); let p=vec3<f32>(0.2,-0.3,1.1);
-    results[2]=vec4<f32>(hy_apply_pos(hy_chain(a,b),p)-hy_apply_pos(a,hy_apply_pos(b,p)),0);
-    let translate=HyMap(vec4<f32>(1,0,2,3),vec4<f32>(0,0,1,0));
-    results[3]=vec4<f32>(hy_apply_pos(translate,origin),0);
+    let origin=vec4<f32>(1,0,0,0);
+    let shift=geo_translation(vec3<f32>(1,0,0),0.6);
+    results[0]=vec4<f32>(geo_to_half_space_pos(geo_map_apply(shift,origin)),0);
+    let quarter=geo_rotation(vec3<f32>(0,0,1),PI/2);
+    // Half-space (1,0,1) embedded analytically.
+    results[1]=vec4<f32>(geo_to_half_space_pos(geo_map_apply(quarter,vec4<f32>(1.5,1,0,0.5))),0);
+    let rotation=geo_rotation(vec3<f32>(0,0,1),0.8);
+    let p=vec4<f32>(1.25,0.75,0,0);
+    results[2]=geo_map_apply(geo_chain(shift,rotation),p)-geo_map_apply(shift,geo_map_apply(rotation,p));
+    // Parabolic x/y translation encoded directly in the canonical pair.
+    let translate=GeoMap(vec4<f32>(1,1.5,-1,0),vec4<f32>(0,1,1.5,0));
+    results[3]=vec4<f32>(geo_to_half_space_pos(geo_map_apply(translate,origin)),0);
+
 }
 "#;
 
@@ -23,8 +29,9 @@ fn dispatch_math() -> Vec<[f32; 4]> {
             label: Some("production hyperbolic math regressions"),
             source: wgpu::ShaderSource::Wgsl(
                 format!(
-                    "{}\n{}",
+                    "const GEO_K:f32=-1.0;\n{}\n{}\n{}",
                     include_str!("../src/shaders/math.wgsl"),
+                    include_str!("../src/shaders/embedded.wgsl"),
                     REGRESSION_SHADER
                 )
                 .into(),

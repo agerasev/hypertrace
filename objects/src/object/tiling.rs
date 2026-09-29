@@ -3,7 +3,8 @@ use crate::shader::{Geometry, GeometryContext, MaterialValue, Result, ShaderKind
 use std::{convert::TryFrom, fmt::Write};
 
 pub trait Tiling: 'static {
-    /// A library entry returning a material index, or `count` for the border.
+    /// An embedded-position library entry returning a material index, or
+    /// `count` for the border. A selector explicitly chooses its chart if needed.
     fn shader() -> ShaderModule;
     fn uses_cell_size() -> bool {
         false
@@ -68,8 +69,36 @@ macro_rules! tiling {
 tiling!(Uniform, "uniform", false, false);
 tiling!(Square, "square", true, true);
 tiling!(Hexagonal, "hexagonal", true, true);
-tiling!(Pentagonal, "pentagonal", true, false);
-tiling!(Pentastar, "pentastar", true, false);
+fn pentagon_module() -> ShaderModule {
+    let mut module = ShaderModule::new(
+        "hypertrace.tiling.pentagon",
+        ShaderKind::Library,
+        include_str!("shaders/pentagon.wgsl"),
+        None,
+    );
+    module.validate_context = validate_hyperbolic;
+    module
+}
+macro_rules! pentagon_tiling {
+    ($name:ident, $file:literal) => {
+        #[derive(Clone, Copy, Debug)]
+        pub struct $name;
+        impl Tiling for $name {
+            fn shader() -> ShaderModule {
+                let mut module = selector(
+                    concat!("hypertrace.tiling.", $file),
+                    include_str!(concat!("shaders/", $file, ".wgsl")),
+                    true,
+                    false,
+                );
+                module.dependencies.push(pentagon_module());
+                module
+            }
+        }
+    };
+}
+pentagon_tiling!(Pentagonal, "pentagonal");
+pentagon_tiling!(Pentastar, "pentastar");
 
 /// Select among child materials with independently sized parameter payloads.
 /// Cell size and border width precede an offset table; the border is the last child.
@@ -94,7 +123,7 @@ pub fn tiled_schema(
     let mut children = vec![selector];
     children.extend(materials);
     children.push(border);
-    let mut source=format!("fn {{{{self}}}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {{\nlet index={{{{dep0}}}}(geo_to_chart_pos(ctx.position),load_f32(base),load_f32(base+1u),{count}u);\nswitch index {{\n");
+    let mut source=format!("fn {{{{self}}}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {{\nlet index={{{{dep0}}}}(ctx.position,load_f32(base),load_f32(base+1u),{count}u);\nswitch index {{\n");
     let parameter_words = crate::parameters::schema_size(2, &children[1..])?;
     for (index, child) in children[1..].iter().enumerate() {
         anyhow::ensure!(

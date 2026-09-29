@@ -282,7 +282,7 @@ async fn render_loop(
             let mut next_camera = camera;
             let next_fov = (fov * (-zoom * 0.002).exp()).clamp(0.05, 10.0);
             let updated = next_camera
-                .move_local_with_radius(translation, rotation, f64::from(renderer.scene().radius))
+                .move_local(translation, rotation, f64::from(renderer.scene().radius))
                 .and_then(|()| renderer.update_camera(next_camera, next_fov));
             match updated {
                 Ok(()) => {

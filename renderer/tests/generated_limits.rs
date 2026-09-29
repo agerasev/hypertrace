@@ -31,7 +31,7 @@ fn scene_update_exceeding_allocation_limit_preserves_previous_renderer() {
         object: ObjectNode::Vector(vec![]),
         modules: vec![
             objects::material::Absorbing::shader().unwrap(),
-            <objects::shape::Plane as objects::Shape<ccgeom::Euclidean3>>::shader().unwrap(),
+            <objects::shape::Plane as objects::Shape<ccgeom::Flat3>>::shader().unwrap(),
         ],
     };
     let mut renderer = Renderer::new(
@@ -52,7 +52,7 @@ fn scene_update_exceeding_allocation_limit_preserves_previous_renderer() {
     // the device's independent storage-binding limit. The schema is unchanged.
     definition.object = ObjectNode::Vector(vec![
         ObjectNode::Covered {
-            shape: <objects::shape::Plane as objects::Shape<ccgeom::Euclidean3>>::encode(
+            shape: <objects::shape::Plane as objects::Shape<ccgeom::Flat3>>::encode(
                 &objects::shape::Plane
             )
             .unwrap(),

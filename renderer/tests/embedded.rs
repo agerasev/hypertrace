@@ -128,45 +128,33 @@ fn row(actual: [f32; 4], expected: [f64; 4], tolerance: f64) {
 fn embedded_action_matches_independent_matrices_and_frames() {
     for k in [-1, 0, 1] {
         let (c, s) = cs(k, 0.4);
-        let (half_c, half_s) = cs(k, 0.35);
         let input = [
             [1.2, 0.3, -0.4, 0.5],
-            [half_c as f32, 0.0, 0.0, 0.0],
-            [0.0, half_s as f32, 0.0, 0.0],
-            [0.3_f32.cos(), 0.0, 0.0, 0.3_f32.sin()],
             [c as f32, 0.0, 0.0, s as f32],
             [0.0, 0.6, 0.8, 0.0],
             [-(k as f64 * s) as f32, 0.0, 0.0, c as f32],
-            [0.2, -0.3, 1.4, 0.0],
-            [0.3, 0.4, -0.8, 0.0],
+            [0.7, 0.6, 0.0, 0.0],
         ];
         let rows = dispatch(
             k,
             &input,
             r#"
-            let boost = GeoMap(input[1],input[2]);
-            let rotation = GeoMap(input[3],vec4<f32>(0));
+            let boost = geo_translation(vec3<f32>(1,0,0),input[4].x);
+            let rotation = geo_rotation(vec3<f32>(0,0,1),input[4].y);
             let map = geo_chain(boost,rotation);
             let mapped = geo_map_apply(map,input[0]);
             output[0] = mapped;
             output[1] = geo_map_apply(geo_inverse(map),mapped);
             output[2] = geo_map_apply(boost,geo_map_apply(rotation,input[0]));
-            let tangent = geo_from_local(input[4],input[5].yzw);
+            let tangent = geo_from_local(input[1],input[2].yzw);
             output[3] = tangent;
-            output[4] = vec4<f32>(0,geo_to_local(input[4],tangent));
-            let advanced = geo_advance(GeoRay(input[4],input[6]),1.5,2.5);
+            output[4] = vec4<f32>(0,geo_to_local(input[1],tangent));
+            let advanced = geo_advance(GeoRay(input[1],input[3]),1.5,2.5);
             output[5] = advanced.position;
             output[6] = advanced.tangent;
-            let chart_p = geo_from_chart_pos(input[7].xyz);
-            output[7] = chart_p;
-            output[8] = vec4<f32>(geo_to_chart_pos(chart_p),0);
-            let direction = normalize(input[8].xyz);
-            let chart_v = geo_from_chart_dir(chart_p,direction);
-            output[9] = chart_v;
-            output[10] = vec4<f32>(geo_to_chart_dir(chart_p,chart_v),0);
-            output[11] = geo_map_apply(geo_chain(geo_inverse(map),map),input[0]);
+            output[7] = geo_map_apply(geo_chain(geo_inverse(map),map),input[0]);
         "#,
-            12,
+            8,
         );
 
         // Independent spatial rotation followed by the (w,x) boost/rotation
@@ -178,7 +166,7 @@ fn embedded_action_matches_independent_matrices_and_frames() {
         row(rows[0], expected, 2e-6);
         row(rows[1], [1.2, 0.3, -0.4, 0.5], 2e-6);
         row(rows[2], expected, 2e-6);
-        row(rows[11], [1.2, 0.3, -0.4, 0.5], 2e-6);
+        row(rows[7], [1.2, 0.3, -0.4, 0.5], 2e-6);
         let frame = if k == 1 {
             [0.0, 0.6 * c - 0.8 * s, 0.8 * c + 0.6 * s, 0.0]
         } else {
@@ -190,35 +178,6 @@ fn embedded_action_matches_independent_matrices_and_frames() {
         let (ac, as_) = cs(k, 0.4 + travel);
         row(rows[5], [ac, 0.0, 0.0, as_], 2e-6);
         row(rows[6], [-f64::from(k) * as_, 0.0, 0.0, ac], 2e-6);
-        if k <= 0 {
-            let [x, y, z] = [0.2_f64, -0.3, 1.4];
-            let p = if k == 0 {
-                [1.0, x, y, z]
-            } else {
-                [
-                    (x * x + y * y + z * z + 1.0) / (2.0 * z),
-                    x / z,
-                    y / z,
-                    (x * x + y * y + z * z - 1.0) / (2.0 * z),
-                ]
-            };
-            row(rows[7], p, 2e-6);
-            row(rows[8], [x, y, z, 0.0], 2e-6);
-            let norm = (0.3_f64.powi(2) + 0.4_f64.powi(2) + 0.8_f64.powi(2)).sqrt();
-            let [dx, dy, dz] = [0.3 / norm, 0.4 / norm, -0.8 / norm];
-            let derivative = if k == 0 {
-                [0.0, dx, dy, dz]
-            } else {
-                [
-                    x * dx + y * dy + (z - p[0]) * dz,
-                    dx - p[1] * dz,
-                    dy - p[2] * dz,
-                    x * dx + y * dy + (z - p[3]) * dz,
-                ]
-            };
-            row(rows[9], derivative, 2e-6);
-            row(rows[10], [dx, dy, dz, 0.0], 2e-6);
-        }
     }
 }
 
@@ -281,6 +240,60 @@ fn embedded_primitives_respect_physical_intervals_and_normals() {
         };
         row(rows[10], special, 2e-6);
     }
+}
+
+#[test]
+#[ignore = "requires a working WGPU compute adapter"]
+fn horosphere_normal_matches_independent_half_space_derivative() {
+    let (x, y) = (0.4_f64, -0.3_f64);
+    let distance = 0.7_f64;
+    let radius = 2.5_f64;
+    let z = distance.exp();
+    let transverse = x * x + y * y;
+    // The vertical half-space geodesic z(s)=exp(distance-s) has normalized
+    // speed one and reaches z=1 after `distance`. Differentiate its analytic
+    // embedding with respect to s; no production map/frame code builds inputs.
+    let position = [
+        (transverse + z * z + 1.0) / (2.0 * z),
+        x / z,
+        y / z,
+        (transverse + z * z - 1.0) / (2.0 * z),
+    ];
+    let tangent = [
+        (transverse + 1.0 - z * z) / (2.0 * z),
+        x / z,
+        y / z,
+        (transverse - 1.0 - z * z) / (2.0 * z),
+    ];
+    let input = [
+        position.map(|value| value as f32),
+        tangent.map(|value| value as f32),
+        [radius as f32, 0.0, 0.0, 0.0],
+    ];
+    let rows = dispatch(
+        -1,
+        &input,
+        r#"
+        let hit=geo_horosphere(GeoRay(input[0],input[1]),0,10,input[2].x);
+        output[0]=vec4<f32>(f32(hit.valid),hit.distance,0,0);
+        output[1]=hit.position;
+        output[2]=hit.tangent;
+        output[3]=hit.normal;
+        output[4]=vec4<f32>(geo_metric(hit.position,hit.normal),
+            geo_metric(hit.normal,hit.normal),geo_metric(hit.tangent,hit.normal),0);
+        "#,
+        5,
+    );
+    let normal = [transverse / 2.0, x, y, transverse / 2.0 - 1.0];
+    row(rows[0], [1.0, distance * radius, 0.0, 0.0], 2e-6);
+    row(
+        rows[1],
+        [1.0 + transverse / 2.0, x, y, transverse / 2.0],
+        2e-6,
+    );
+    row(rows[2], normal, 2e-6);
+    row(rows[3], normal, 2e-6);
+    row(rows[4], [0.0, -1.0, -1.0, 0.0], 2e-6);
 }
 
 #[test]

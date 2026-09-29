@@ -101,8 +101,13 @@ bounded render resolution and `Presenter` scales it to the attachment.
 Generated scenes use a shared embedded kernel. Points and tangents have four
 scalar-first components `(w,x,y,z)`: positive hyperboloid for `hy`, unit 3-sphere
 for `sp`, and `w=1` points / `w=0` tangents for `eu`. Isometries use two quaternion
-rows, with the curvature sign specialized in generated WGSL. The original
-half-space model remains an explicit construction and tiling adapter. CPU `ccgeom::Space3` also provides Poincaré-ball conversions.
+rows, with the curvature sign specialized in generated WGSL. `Transform` is a
+single canonical isometry type, constructed from `ccgeom::EmbeddedIsometry`
+through `Transform::from_isometry`. `Camera` wraps that transform and its
+`move_local(translation, rotation, radius)` uses the same mathematics.
+Half-space coordinates are used explicitly for hyperbolic tiling classification;
+CPU `ccgeom::Space3` also provides point and tangent conversions for chart-based
+construction.
 
 `SceneDefinition.radius` is the physical curvature radius `R`; curved sectional
 curvature is `K/R²`, where `K` is −1 or +1. Euclidean radius is fixed to one.
@@ -171,12 +176,11 @@ intermediate representation directly.
 Supported compositions include `SceneImpl`, point and mapped views, constant and
 Euclidean gradient backgrounds, covered and mapped objects, object choices and
 vectors, shape choices and vectors, mapped shapes, nested mixtures, `Colored`,
-and `Emissive`. Primitive shapes and tilings share the same geometry contracts. Maps support Euclidean shifts, rotations and homogeneous rigid maps,
-and hyperbolic complex Möbius maps through explicit adapters. Embedded
-`Flat3`, `Hyperboloid3`, and `Spherical3` builders use their checked
-`EmbeddedIsometry<f64,K>` maps directly. Downstream construction geometries and
-map types implement `objects::shader::RenderGeometry` and `RenderMap<G>`; no
-runtime type whitelist is involved.
+and `Emissive`. Primitive shapes and tilings share the same geometry contracts.
+`Flat3`, `Hyperboloid3`, and `Spherical3` builders all use checked
+`EmbeddedIsometry<f64,K>` maps. `objects::shader::RenderGeometry` and
+`RenderMap<G>` encode these canonical builder types into the scene description;
+no alternate map formats or runtime type whitelist are involved.
 
 Shader modules describe composition independently of values. Choice variants and
 empty vector element types contribute dependencies before generation, so switching
@@ -341,14 +345,14 @@ cargo clippy --no-deps --workspace --all-targets -- -D warnings
 WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin viewer -- --scene hy --smoke
 ```
 
-Coverage includes Möbius matrix ordering, inverse/distance/derivative checks,
+Coverage includes shared isometry composition, inverse and distance checks,
 small and scaled distances, vertical and nearly vertical rays, hit/miss cases,
 reset, resize, scene uploads, deterministic batching, captured tile-selection
 fixtures, and presentation transfer and orientation. Generic scene tests cover
 nested materials, downstream modules, empty vectors, choices, repeated-hit identities,
 and recovery after shader compilation or resource-limit errors. Embedded checks
-compare map actions with independent matrices, verify chart derivatives and
-frames, test physical radii and interval boundaries, and force spherical medium
+compare map actions with independent matrices, verify parabolic placements and
+material frames, test physical radii and interval boundaries, and force spherical medium
 events beyond several circuits. Keep these invariant and behavior checks when
 changing internal representation; old implementation snapshots are not required.
 
@@ -360,9 +364,9 @@ See [DEVELOPMENT.md](../DEVELOPMENT.md) for the workspace validation workflow.
 
 ### Compare rendered frames
 
-Render two frames with matching scene, dimensions, sample count, seed, and bounce
-count using the `headless` example. Compare their linear outputs before display
-conversion:
+Render two frames with matching scene, dimensions, sample count, seed, bounce
+count, curvature sign/radius, and medium using the `headless` binary. Compare
+their linear outputs before display conversion:
 
 ```sh
 python3 tools/compare_frames.py /tmp/hy-a /tmp/hy-b \
@@ -379,7 +383,7 @@ later random paths, so cross-device comparisons need not be pixelwise identical.
 
 ## Performance measurements
 
-Use the release-mode `benchmark` example for completed-render timings. Run
+Use the release-mode `benchmark` binary for completed-render timings. Run
 configurations sequentially with identical scene, dimensions, samples, seed, and
 bounce limit. Defaults are four events for `eu`, three for `hy`, six for `sp`,
 one for geometric comparisons and `sp-loop`, and twelve for both fog presets.
@@ -414,8 +418,8 @@ GPUs do not isolate renderer changes.
 
 ## Current limitations
 
-1. Additional construction geometry, view, background, and map types need their
-   corresponding conversion traits; shader geometry uses the three curvature signs.
+1. Geometry supports the three constant-curvature signs through one embedded
+   representation. Other geometries require new mathematical support.
 2. GPU f32 arithmetic still loses precision near the ideal boundary. Camera-relative
    preparation is implemented; recentering later path segments remains future work.
 3. Workgroup sizes and sample batching remain workload/device choices; the viewer

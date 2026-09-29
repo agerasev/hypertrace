@@ -86,13 +86,7 @@ mod tests {
     use vecmat::Vector;
 
     fn endpoint(map: shader::Transform) -> Vector<f64, 4> {
-        let origin = [1.0, 0.0, 0.0, 0.0].into();
-        match map {
-            shader::Transform::Flat(map) => map.apply_vector(origin),
-            shader::Transform::Hyperboloid(map) => map.apply_vector(origin),
-            shader::Transform::Spherical(map) => map.apply_vector(origin),
-            _ => panic!("comparison must lower directly to embedded maps"),
-        }
+        map.apply_vector([1.0, 0.0, 0.0, 0.0]).into()
     }
 
     fn check_physical_layout<const K: i8>(radius: f64) -> Vec<u32> {

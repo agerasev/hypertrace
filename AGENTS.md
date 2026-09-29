@@ -28,6 +28,10 @@ history in commits, not new migration diaries.
   such as `shader`, `encode`, and `definition`. Avoid `wgpu`/`wgsl` prefixes or
   suffixes in project APIs and paths. Retain actual dependency/API identifiers,
   environment variables, and `.wgsl` file extensions where required.
+- Do not preserve compatibility paths, aliases, old formats, or duplicate APIs
+  when replacing a design. Update all callers and fixtures to the current API.
+  Keep one canonical quaternion-pair isometry representation for every curvature;
+  camera and scene transforms must not expose alternative storage formats.
 - WGPU and WGSL are the sole rendering implementation. Do not add speculative
   backend abstractions. Keep CPU construction and validation usable without an
   adapter.
@@ -72,6 +76,8 @@ history in commits, not new migration diaries.
   a second time. Surface and volume events both consume the interaction budget.
 - Canonical maps stay in CPU f64. Compose camera-relative object maps before
   checked f32 upload; do not mutate canonical data during camera movement.
+  Check the finite point action at construction and composition: finite pair
+  components alone do not guarantee that their sandwich product stays finite.
 - Invalid numerical states are distinct from misses. Propagate failure through
   wrappers and stop with prior emission, without adding environmental light.
 - The documented f32 limits matter. Hyperbolic step bounds are emergency guards,
@@ -81,8 +87,13 @@ history in commits, not new migration diaries.
 - Tangent section classification needs a coefficient-scaled backward-error band.
   GPU drivers have differed by one ULP at a spherical tangent. Keep resolved near
   misses as misses rather than loosening all geometric test tolerances.
-- Keep explicit chart conversion semantics. Legacy Euclidean/half-space maps and
-  embedded maps are not interchangeable merely because their scalar counts match.
+- Keep chart conversions explicit and local to calculations that need them.
+  Half-space coordinates used by tilings are coordinates, not an alternate ray
+  or transform representation. Parabolic translations along a horosphere differ
+  from geodesic translations; preserve that distinction when constructing scenes.
+- Camera motion uses the scene's physical curvature radius explicitly. Keep the
+  translation-then-rotation composition order and reject invalid motion without
+  changing the camera.
 
 ## Validation and GPU behavior
 

@@ -52,7 +52,7 @@ where `K` is −1, 0, or +1 and `R` is the physical curvature radius.
 
 These markers emit light and absorb incoming paths, producing clear silhouettes
 without indirect-light noise. The `sp` studio supplies the shaded material
-comparison; it and the new spherical presets keep a black miss background.
+comparison; the spherical examples keep a black miss background.
 
 ## Follow the long route
 
@@ -90,10 +90,15 @@ let source = hypertrace_examples::recurrence::scene::<12>(true);
 let definition = source.definition()?;
 ```
 
+Every builder uses embedded positions and `EmbeddedIsometry` maps, with
+`Flat3`, `Hyperboloid3`, or `Spherical3` selecting the curvature. The hyperbolic
+tiling scene uses parabolic isometries to move along horospheres while preserving
+the chart-aligned material frame; these are distinct from geodesic translations.
+
 `comparison::scene::<K,H>(radius)` supports all three signs; Euclidean radius
 must be one. The factory rejects spherical radii that would wrap the layout
 past the camera's antipode. `recurrence::scene::<H>(false)` selects vacuum.
-Existing factories remain available as `eu::scene`, `hy::scene`, `sp::scene`,
+The scene factories are `eu::scene`, `hy::scene`, `sp::scene`,
 and `sp::fog_scene`. See the [renderer guide](../renderer/README.md) for
 custom shaders and [root README](../README.md) for browser setup.
 

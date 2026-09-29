@@ -2,8 +2,6 @@
 //! Explicit storage records and parameter words define the GPU ABI.
 #![forbid(unsafe_code)]
 
-use vecmat::{Complex, transform::Moebius};
-
 pub type Result<T> = anyhow::Result<T>;
 
 pub fn unsupported<T: ?Sized>() -> anyhow::Error {
@@ -246,42 +244,6 @@ pub fn finite_f32(value: f64) -> Result<f32> {
     let value = value as f32;
     anyhow::ensure!(value.is_finite(), "value is outside finite f32 range");
     Ok(value)
-}
-
-/// Stored hyperbolic maps use SL(2,C), not an arbitrary projective matrix.
-/// A complex scalar cannot be discarded inside the quaternion action as it
-/// can for a purely complex fractional linear transformation.
-pub fn validate_moebius(map: Moebius<Complex<f64>>) -> Result<()> {
-    let (a, b, c, d) = map.into_tuple();
-    let det = a * d - b * c;
-    anyhow::ensure!(
-        det.re().is_finite()
-            && det.im().is_finite()
-            && (det.re() - 1.0).abs() < 1e-6
-            && det.im().abs() < 1e-6,
-        "hyperbolic Möbius map must have complex determinant one (SL(2,C))"
-    );
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn reject_non_sl2c_matrices_before_quaternion_action() {
-        let i = Complex::new(0.0, 1.0);
-        let zero = Complex::new(0.0, 0.0);
-        let map = Moebius::new(i, zero, zero, i);
-        // On the complex boundary this acts as the identity; on the interior
-        // its unnormalized quaternion action would reverse the height sign.
-        assert!(
-            Transform::Hyperbolic(map)
-                .rows()
-                .unwrap_err()
-                .to_string()
-                .contains("determinant one")
-        );
-    }
 }
 
 mod compiler;

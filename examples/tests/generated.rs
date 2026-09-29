@@ -1,7 +1,7 @@
 //! Generic Rust builders through generated WGSL, including GPU update semantics.
-use ccgeom::{Euclidean3, Homogenous3};
+use ccgeom::{Flat3, Geometry3};
 use hypertrace_examples as examples;
-use hypertrace_renderer::{Camera, Gpu, Renderer, Scene};
+use hypertrace_renderer::{Camera, Gpu, Renderer, Scene, shader::Transform};
 use objects::{
     Mapped, Scene as _, SceneImpl,
     background::ConstBg,
@@ -11,24 +11,26 @@ use objects::{
     shape::{Cube, Plane},
     view::PointView,
 };
-use vecmat::{
-    Transform as _,
-    transform::{Rotation3, Shift},
-};
 
 #[path = "../src/bin/support/mod.rs"]
 mod support;
 
 #[test]
-fn shared_builders_compile_with_original_cameras_and_bounce_limits() {
+fn shared_builders_compile_with_declared_cameras_and_bounce_limits() {
     for (name, camera, bounces) in [
-        ("eu", Camera::Euclidean(examples::eu::camera()), 4),
-        ("hy", Camera::Hyperbolic(examples::hy::camera()), 3),
+        (
+            "eu",
+            Camera::from(Transform::from_isometry(examples::eu::camera()).unwrap()),
+            4,
+        ),
+        (
+            "hy",
+            Camera::from(Transform::from_isometry(examples::hy::camera()).unwrap()),
+            3,
+        ),
         (
             "sp",
-            Camera::Embedded(hypertrace_renderer::shader::Transform::Spherical(
-                examples::sp::camera(),
-            )),
+            Camera::from(Transform::from_isometry(examples::sp::camera()).unwrap()),
             6,
         ),
     ] {
@@ -157,7 +159,7 @@ fn data_updates_choice_switches_and_empty_vectors_reuse_the_pipeline() {
 
     builder.object[0].inner.shape = examples::eu::Choice::Cube(Cube);
     builder.object[1].inner.material.diffuse.material.color = [0.9, 0.1, 0.4].into();
-    builder.object[1].map = Shift::from_vector([0.5, -1.0, 0.0].into());
+    builder.object[1].map = Flat3::shift_x(0.5).chain(Flat3::shift_y(-1.0));
     builder.view.inner.fov = 0.8;
     let duplicate = builder.object[1].clone();
     builder.object.push(duplicate);
@@ -219,14 +221,8 @@ fn emission_scene(first: bool) -> Scene {
 }
 
 fn plane_scene<M: objects::Material>(material: M) -> Scene {
-    let builder = SceneImpl::<Euclidean3, _, _, _, 1>::new(
-        Mapped::new(
-            PointView::<Euclidean3>::new(1.0),
-            Homogenous3::new(
-                Shift::from_vector([0.0, 0.0, 1.0].into()),
-                Rotation3::identity(),
-            ),
-        ),
+    let builder = SceneImpl::<Flat3, _, _, _, 1>::new(
+        Mapped::new(PointView::<Flat3>::new(1.0), Flat3::shift_z(1.0)),
         Covered::new(Plane, material),
         ConstBg::new([0.0; 3].into()),
     );

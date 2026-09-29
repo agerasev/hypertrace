@@ -1,93 +1,46 @@
 //! Compiled scene configuration and camera-relative GPU preparation.
 
 use bytemuck::{Pod, Zeroable};
-use ccgeom::{Euclidean3, Geometry3, Homogenous3, Hyperbolic3};
-use vecmat::{Complex, Transform, transform::Moebius};
+use scene_ir::{Geometry, Transform};
 
 use crate::Result;
 
+/// A camera pose in the scene's canonical isometry representation.
 #[derive(Clone, Copy, Debug)]
-pub enum Camera {
-    Euclidean(Homogenous3<f64>),
-    Hyperbolic(Moebius<Complex<f64>>),
-    /// Shared embedded coordinates. The geometry is part of the transform.
-    Embedded(scene_ir::Transform),
+pub struct Camera {
+    map: Transform,
 }
 
 impl Camera {
-    pub fn geometry(&self) -> u32 {
-        match self {
-            Self::Euclidean(_) => 0,
-            Self::Hyperbolic(_) => 1,
-            Self::Embedded(map) => map.geometry().tag(),
-        }
+    pub fn geometry(&self) -> Geometry {
+        self.map.geometry()
     }
 
     /// Canonical f64 transform, before preparing camera-relative GPU data.
-    pub fn transform(self) -> scene_ir::Transform {
-        match self {
-            Self::Euclidean(map) => scene_ir::Transform::Euclidean(map),
-            Self::Hyperbolic(map) => scene_ir::Transform::Hyperbolic(map),
-            Self::Embedded(map) => map,
-        }
+    pub fn transform(self) -> Transform {
+        self.map
     }
 
     /// Compose a local motion in f64. Distances/angles are already integrated
     /// over the caller's elapsed frame time; there is no assumed frame rate.
-    pub fn move_local(&mut self, translation: [f64; 3], rotation: [f64; 3]) -> Result<()> {
-        self.move_local_with_radius(translation, rotation, 1.0)
-    }
-
-    /// Move by physical distances in a space with the supplied curvature radius.
+    /// Translation uses physical distances and the scene's curvature radius.
     /// Invalid motion leaves the camera unchanged.
-    pub fn move_local_with_radius(
+    pub fn move_local(
         &mut self,
         translation: [f64; 3],
         rotation: [f64; 3],
         radius: f64,
     ) -> Result<()> {
-        anyhow::ensure!(
-            translation.into_iter().chain(rotation).all(f64::is_finite),
-            "camera motion must be finite"
-        );
-        anyhow::ensure!(
-            radius.is_finite() && radius > 0.0 && (self.geometry() != 0 || radius == 1.0),
-            "invalid curvature radius"
-        );
-        let [x, y, z] = translation.map(|distance| distance / radius);
-        let [pitch, yaw, roll] = rotation;
-        let next = match *self {
-            Self::Euclidean(map) => Self::Euclidean(
-                map.chain(Euclidean3::shift_x(x))
-                    .chain(Euclidean3::shift_y(y))
-                    .chain(Euclidean3::shift_z(z))
-                    .chain(Euclidean3::rotate_x(pitch))
-                    .chain(Euclidean3::rotate_y(yaw))
-                    .chain(Euclidean3::rotate_z(roll)),
-            ),
-            Self::Hyperbolic(map) => Self::Hyperbolic(
-                map.chain(Hyperbolic3::shift_x(x))
-                    .chain(Hyperbolic3::shift_y(y))
-                    .chain(Hyperbolic3::shift_z(z))
-                    .chain(Hyperbolic3::rotate_x(pitch))
-                    .chain(Hyperbolic3::rotate_y(yaw))
-                    .chain(Hyperbolic3::rotate_z(roll)),
-            ),
-            Self::Embedded(map) => Self::Embedded(map.move_local(translation, rotation, radius)?),
-        };
-        next.transform().components()?;
-        *self = next;
+        let next = self.map.move_local(translation, rotation, radius)?;
+        next.components()?;
+        self.map = next;
         Ok(())
     }
 }
 
-impl From<scene_ir::Transform> for Camera {
-    fn from(map: scene_ir::Transform) -> Self {
-        match map {
-            scene_ir::Transform::Euclidean(map) => Self::Euclidean(map),
-            scene_ir::Transform::Hyperbolic(map) => Self::Hyperbolic(map),
-            map => Self::Embedded(map),
-        }
+impl From<Transform> for Camera {
+    fn from(map: Transform) -> Self {
+        Self { map }
     }
 }
 
@@ -140,7 +93,7 @@ impl Scene {
     /// happens in f64; only the relative transforms are converted to f32.
     pub(crate) fn prepare_objects(&self, camera: Camera) -> Result<Vec<scene_ir::GpuObject>> {
         anyhow::ensure!(
-            camera.geometry() == self.compiled.geometry.tag(),
+            camera.geometry() == self.compiled.geometry,
             "camera geometry must match the scene"
         );
         let mut objects = self.compiled.objects.clone();
@@ -159,7 +112,7 @@ impl Scene {
 
     pub fn validate(&self) -> Result<()> {
         anyhow::ensure!(
-            self.camera.geometry() == self.compiled.geometry.tag(),
+            self.camera.geometry() == self.compiled.geometry,
             "camera geometry differs from the compiled scene; compile a new SceneDefinition"
         );
         anyhow::ensure!(
@@ -170,7 +123,7 @@ impl Scene {
         anyhow::ensure!(
             self.radius.is_finite()
                 && self.radius > 0.0
-                && (self.camera.geometry() != 0 || self.radius == 1.0),
+                && (self.camera.geometry() != Geometry::Euclidean || self.radius == 1.0),
             "invalid curvature radius"
         );
         self.medium.validate_for_radius(self.radius)?;
@@ -223,7 +176,7 @@ impl Params {
     pub fn new(scene: &Scene, size: (u32, u32), samples: u32) -> Self {
         // The kernel starts rays at the camera-relative origin. Only a
         // Euclidean gradient needs the absolute camera rotation.
-        let camera0 = if scene.camera.geometry() == 0 {
+        let camera0 = if scene.camera.geometry() == Geometry::Euclidean {
             scene
                 .camera
                 .transform()
@@ -252,7 +205,7 @@ impl Params {
             info: [
                 size.0,
                 size.1,
-                scene.camera.geometry(),
+                scene.camera.geometry().tag(),
                 scene.objects().len() as u32,
             ],
             options: [samples, scene.bounces, mode, 0],
@@ -316,15 +269,18 @@ mod tests {
         let cases = [
             (
                 fixture::<0>(),
-                scene_ir::Transform::Euclidean(Euclidean3::shift_x(1e9)),
+                Transform::identity(Geometry::Euclidean)
+                    .move_local([1e9, 0.0, 0.0], [0.0; 3], 1.0)
+                    .unwrap(),
             ),
             (
                 fixture::<-1>(),
-                scene_ir::Transform::Hyperboloid(
+                Transform::from_isometry(
                     ccgeom::Space3::<f64, -1>::unit()
                         .translation([1.0, 0.0, 0.0].into(), 12.0)
                         .unwrap(),
-                ),
+                )
+                .unwrap(),
             ),
         ];
         for (mut definition, global) in cases {
@@ -360,22 +316,17 @@ mod tests {
 
     #[test]
     fn physical_camera_motion_respects_radius_and_rejects_bad_input() {
-        let mut camera = Camera::Embedded(scene_ir::Transform::Spherical(
-            ccgeom::EmbeddedIsometry::identity(),
-        ));
+        let mut camera = Camera::from(Transform::identity(Geometry::Spherical));
         camera
-            .move_local_with_radius([std::f64::consts::PI, 0.0, 0.0], [0.0; 3], 2.0)
+            .move_local([std::f64::consts::PI, 0.0, 0.0], [0.0; 3], 2.0)
             .unwrap();
-        let scene_ir::Transform::Spherical(map) = camera.transform() else {
-            unreachable!()
-        };
-        let position = map.apply_vector([1.0, 0.0, 0.0, 0.0].into());
+        let position = camera.transform().apply_vector([1.0, 0.0, 0.0, 0.0]);
         assert!(position[0].abs() < 1e-14);
         assert!((position[1] - 1.0).abs() < 1e-14);
         let original = camera.transform().components().unwrap();
         assert!(
             camera
-                .move_local_with_radius([f64::NAN, 0.0, 0.0], [0.0; 3], 2.0)
+                .move_local([f64::NAN, 0.0, 0.0], [0.0; 3], 2.0)
                 .is_err()
         );
         assert_eq!(camera.transform().components().unwrap(), original);
@@ -423,7 +374,10 @@ mod tests {
     #[test]
     fn relative_upload_rejects_unrepresentable_camera_motion() {
         let mut scene = Scene::from_definition(&fixture::<-1>()).unwrap();
-        scene.camera = Camera::Hyperbolic(Hyperbolic3::shift_x(18.0));
+        scene.camera = Transform::identity(Geometry::Hyperbolic)
+            .move_local([18.0, 0.0, 0.0], [0.0; 3], 1.0)
+            .unwrap()
+            .into();
         assert!(scene.validate().is_err());
     }
 

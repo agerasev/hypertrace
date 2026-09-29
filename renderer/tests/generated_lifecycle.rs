@@ -1,21 +1,21 @@
 //! Composition regressions that require actual WGSL execution.
-use ccgeom::{Euclidean3, Geometry3};
+use ccgeom::{Flat3, Geometry3};
 use hypertrace_renderer::{Gpu, Renderer, Scene, shader::*};
 use objects::Material as _;
 
 fn planes(count: usize) -> SceneDefinition {
     let shapes: Vec<_> = (0..count)
         .map(|index| {
-            objects::Mapped::<Euclidean3, _, _>::new(
+            objects::Mapped::<Flat3, _, _>::new(
                 objects::shape::Plane,
-                Euclidean3::shift_z(-(index as f64)),
+                Flat3::shift_z(-(index as f64)),
             )
         })
         .collect();
-    let shape = <Vec<_> as objects::Shape<Euclidean3>>::encode(&shapes).unwrap();
+    let shape = <Vec<_> as objects::Shape<Flat3>>::encode(&shapes).unwrap();
     SceneDefinition {
         view: View {
-            map: Transform::Euclidean(Euclidean3::shift_z(3.0)),
+            map: Transform::from_isometry(Flat3::shift_z(3.0)).unwrap(),
             fov: 0.1,
         },
         background: Background::Constant([0.0; 3]),
@@ -38,7 +38,7 @@ fn planes(count: usize) -> SceneDefinition {
 #[test]
 fn compiled_geometry_stays_coupled_to_validated_payload() {
     let mut scene = Scene::from_definition(&planes(1)).unwrap();
-    scene.camera = Transform::Hyperboloid(ccgeom::EmbeddedIsometry::identity()).into();
+    scene.camera = Transform::identity(Geometry::Hyperbolic).into();
     assert!(
         scene
             .validate()

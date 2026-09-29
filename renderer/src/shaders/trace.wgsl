@@ -1,5 +1,5 @@
 // Shared runtime for structurally generated shapes and compositional materials.
-// Embedded v2 contracts. Normals/directions passed to materials use the local
+// Shared geometry contracts. Normals/directions passed to materials use the local
 // orthonormal frame at the object's hit position.
 struct GeoTaggedHit { hit: GeoHit, identity: u32 }
 struct GeoSceneHit { hit: GeoHit, object_index: u32, identity: u32 }
@@ -64,7 +64,7 @@ fn geo_background(ray: GeoRay) -> vec3<f32> {
     // Euclidean directional environments retain their world-space orientation.
     // Curved environments are evaluated in the camera-relative tangent frame.
     var direction = normalize(geo_to_local(ray.position,ray.tangent));
-    if GEO_K == 0 { direction = eu_rotate(params.camera0,direction); }
+    if GEO_K == 0 { direction = rotate_vector(params.camera0,direction); }
     return background(direction);
 }
 fn sample_path(pixel: vec2<u32>, state: ptr<function,u32>) -> vec3<f32> {

@@ -1,5 +1,5 @@
 //! Execute extension leaves through the same compiler/runtime as scene builders.
-use ccgeom::{Euclidean3, Geometry3};
+use ccgeom::{Flat3, Geometry3};
 use hypertrace_renderer::{Gpu, Renderer, Scene, pixel_seed, shader::*};
 use objects::{
     material,
@@ -9,7 +9,7 @@ use objects::{
 fn definition(shape: ShapeValue, material: MaterialValue) -> SceneDefinition {
     SceneDefinition {
         view: View {
-            map: Transform::Euclidean(Euclidean3::shift_z(3.0)),
+            map: Transform::from_isometry(Flat3::shift_z(3.0)).unwrap(),
             fov: 0.1,
         },
         background: Background::Constant([0.0; 3]),
@@ -94,7 +94,7 @@ fn {{self}}(base:u32,ctx:GeoMaterialContext,
 }
 "#,
     );
-    let shift = Transform::Euclidean(Euclidean3::shift_z(1.0));
+    let shift = Transform::from_isometry(Flat3::shift_z(1.0)).unwrap();
     let mapped_shape = definition(plane.clone().mapped(shift).unwrap(), material.clone());
     let mut mapped_object = definition(plane, material);
     mapped_object.object = ObjectNode::Mapped {

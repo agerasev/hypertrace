@@ -12,7 +12,7 @@ use crate::Renderer;
 /// The image fills the attachment using nearest-neighbor scaling, preserving
 /// its top-left orientation. Equal dimensions display each source pixel once.
 ///
-/// The legacy display transform is a gamma of 1/2.2. An sRGB attachment receives
+/// The display transform is a gamma of 1/2.2. An sRGB attachment receives
 /// the inverse sRGB transfer first, so its automatic encoding applies that
 /// display transform exactly once. Output is opaque.
 pub struct Presenter {

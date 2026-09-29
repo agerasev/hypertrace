@@ -70,10 +70,10 @@ impl<G: crate::shader::RenderGeometry> Shape<G> for GeodesicSphere {
     }
 }
 pub fn sphere() -> ShapeValue {
-    <Sphere as Shape<ccgeom::Euclidean3>>::encode(&Sphere).expect("valid unit sphere")
+    <Sphere as Shape<ccgeom::Flat3>>::encode(&Sphere).expect("valid unit sphere")
 }
 pub fn geodesic_sphere(radius: f64) -> Result<ShapeValue> {
-    <GeodesicSphere as Shape<ccgeom::Euclidean3>>::encode(&GeodesicSphere::new(radius))
+    <GeodesicSphere as Shape<ccgeom::Flat3>>::encode(&GeodesicSphere::new(radius))
 }
 
 fn validate_sphere_radius(radius: f32, geometry: RenderGeometry, space_radius: f32) -> Result<()> {

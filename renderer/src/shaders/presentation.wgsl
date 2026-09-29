@@ -34,7 +34,7 @@ fn display(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
         display_rgb = pow(max(sum.xyz / sum.w, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
     }
     if ATTACHMENT_SRGB {
-        // The attachment then encodes sRGB, restoring the legacy display gamma.
+        // The attachment then encodes sRGB, preserving the display gamma.
         display_rgb = select(
             display_rgb / 12.92,
             pow((display_rgb + 0.055) / 1.055, vec3<f32>(2.4)),

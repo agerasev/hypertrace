@@ -44,13 +44,11 @@ fn spherical_camera_circuit_uses_physical_radius_without_recompilation() {
     let mut travelled = 0.0;
     for quarter in 1..=4 {
         camera
-            .move_local_with_radius([step, 0.0, 0.0], [0.0; 3], radius)
+            .move_local([step, 0.0, 0.0], [0.0; 3], radius)
             .unwrap();
         travelled += step;
-        let Transform::Spherical(map) = camera.transform() else {
-            unreachable!()
-        };
-        let position = map.apply_vector([1.0, 0.0, 0.0, 0.0].into());
+        let map = camera.transform();
+        let position = map.apply_vector([1.0, 0.0, 0.0, 0.0]);
         let phase = travelled / radius;
         for (actual, expected) in position
             .into_iter()
@@ -89,7 +87,7 @@ fn spherical_camera_circuit_uses_physical_radius_without_recompilation() {
                 [0.0, 0.0, 1.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0],
             ] {
-                for (actual, expected) in map.apply_vector(basis.into()).into_iter().zip(basis) {
+                for (actual, expected) in map.apply_vector(basis).into_iter().zip(basis) {
                     assert!((actual - expected).abs() < 1e-12);
                 }
             }
@@ -112,7 +110,7 @@ fn camera_updates_reprepare_objects_without_pipeline_changes() {
         let revision = renderer.pipeline_revision();
         let mut camera = renderer.scene().camera;
         camera
-            .move_local_with_radius(
+            .move_local(
                 [0.02, 0.0, -0.03],
                 [0.01, 0.02, 0.0],
                 f64::from(renderer.scene().radius),
@@ -132,7 +130,7 @@ fn camera_updates_reprepare_objects_without_pipeline_changes() {
 
         // In hyperbolic space this exceeds the supported relative f32 range;
         // for a spherical scene it is also the wrong camera geometry.
-        let invalid = Camera::Embedded(Transform::Hyperboloid(Hyperboloid3::shift_x(15.0)));
+        let invalid = Camera::from(Transform::from_isometry(Hyperboloid3::shift_x(15.0)).unwrap());
         assert!(renderer.update_camera(invalid, 1.0).is_err());
         assert_eq!(renderer.pipeline_revision(), revision);
         assert_eq!(

@@ -16,7 +16,7 @@
 pub mod comparison;
 /// Euclidean shapes with diffuse, specular and refractive materials.
 pub mod eu;
-/// Hyperbolic planes and horospheres with their original tilings and materials.
+/// Hyperbolic planes and horospheres with pentagonal, square, and hexagonal tilings.
 pub mod hy;
 /// A light behind the camera, visible by travelling around spherical space.
 pub mod recurrence;

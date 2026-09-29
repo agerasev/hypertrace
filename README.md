@@ -5,9 +5,10 @@ Rust scene builders compile to WGSL, with headless rendering and an interactive
 viewer powered by [`wgame`](https://github.com/agerasev/wgame).
 
 This project is primarily educational. Euclidean, hyperbolic, and spherical
-geometries share a constant-curvature tracing kernel. Hyperbolic tracing uses
-the hyperboloid; half-space and Poincaré-ball coordinates remain explicit
-construction and compatibility adapters.
+geometries share a constant-curvature tracing kernel. Scene construction,
+camera movement and GPU tracing all use embedded points and quaternion-pair
+isometries. Hyperbolic points lie on the hyperboloid; half-space and Poincaré-ball
+coordinates are explicit charts for construction and surface patterns.
 
 [Scene gallery and web demos](https://agerasev.github.io/hypertrace/) ·
 [Theory](https://agerasev.github.io/hypertrace/theory.html) ·

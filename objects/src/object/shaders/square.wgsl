@@ -1,5 +1,6 @@
 fn {{self}}_remainder(value:i32,modulus:i32)->i32 {return ((value%modulus)+modulus)%modulus;}
-fn {{self}}(position:vec3<f32>,cell:f32,width:f32,count:u32)->u32 {
+fn {{self}}(embedded:vec4<f32>,cell:f32,width:f32,count:u32)->u32 {
+    let position = geo_to_half_space_pos(embedded);
     var index=0i;
     var border=false;
         let g = position.xy/cell;

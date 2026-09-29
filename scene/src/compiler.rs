@@ -459,11 +459,11 @@ mod tests {
                 assert!(compile(&a).is_err());
             }
         }
-        use ccgeom::{Geometry3, Hyperbolic3};
+        use ccgeom::{Geometry3, Hyperboloid3};
         let mut a = scene();
-        a.view.map = Transform::Hyperbolic(Hyperbolic3::shift_z(12.0));
+        a.view.map = Transform::from_isometry(Hyperboloid3::shift_z(12.0)).unwrap();
         a.object = ObjectNode::Mapped {
-            map: Transform::Hyperbolic(Hyperbolic3::shift_z(12.2)),
+            map: Transform::from_isometry(Hyperboloid3::shift_z(12.2)).unwrap(),
             inner: Box::new(a.object),
         };
         assert!(compile(&a).is_ok());

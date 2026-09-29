@@ -27,11 +27,13 @@ one implementation with the necessary zero-curvature and periodic-root cases.
 
 Sibling libraries own the CPU mathematics: `vecmat-rs` supplies the quaternion
 pair algebra; `ccgeom` supplies checked isometries, points/tangents, physical
-radius contexts, advancement, and ball/half-space conversions. Legacy
-`Euclidean3` and `Hyperbolic3` keep their original coordinate meaning. Their
-scene transforms convert explicitly through `RenderGeometry` and `RenderMap`
-traits. Hyperbolic tilings use half-space coordinates through explicit adapters;
-shader entry points receive embedded geometry in every curvature.
+radius contexts, advancement, and ball/half-space conversions. Scene builders
+use `Embedded3<f64, K>` and `EmbeddedIsometry<f64, K>` throughout. The scene
+library's `Transform` stores the same isometry with runtime curvature selection;
+the renderer's camera wraps this transform. All shader entry points receive
+embedded geometry. Components can explicitly derive chart coordinates for
+surface patterns, and the CPU geometry library can convert chart points and
+their differentials when constructing embedded data.
 
 Canonical scene and camera transforms remain in CPU f64. Before GPU upload,
 object maps are composed with the inverse camera in f64, then checked and
@@ -53,7 +55,7 @@ miss does not discard later medium events. Vacuum misses sample the configured
 background, which starts black in `sp`.
 
 The [theory guide](https://agerasev.github.io/hypertrace/theory.html) develops the
-shared geometry, unwrapped travel distance, legacy chart adapters, surface types,
+shared geometry, unwrapped travel distance, coordinate charts, surface types,
 path tracing, and numerical limitations. Its source is
 [site/theory.html](site/theory.html), expanding on the
 [original article](https://agerasev.github.io/2020/03/12/hypertrace.html).

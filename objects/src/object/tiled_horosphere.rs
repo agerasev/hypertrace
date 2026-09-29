@@ -2,7 +2,7 @@ use crate::{
     object::tiling::{self, Tiling},
     Material, Object,
 };
-use ccgeom::Hyperbolic3;
+use ccgeom::Hyperboloid3;
 use std::marker::PhantomData;
 
 pub trait HorosphereTiling: Tiling {}
@@ -31,7 +31,7 @@ impl<M: Material, K: HorosphereTiling, const N: usize> TiledHorosphere<M, K, N> 
     }
 }
 
-impl<M: Material, K: HorosphereTiling, const N: usize> Object<Hyperbolic3>
+impl<M: Material, K: HorosphereTiling, const N: usize> Object<Hyperboloid3>
     for TiledHorosphere<M, K, N>
 {
     fn shader_modules() -> crate::shader::Result<Vec<crate::shader::ShaderModule>> {

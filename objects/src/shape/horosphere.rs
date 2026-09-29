@@ -4,7 +4,6 @@ use super::*;
 pub struct Horosphere;
 
 pub fn horosphere_schema() -> ShaderModule {
-    #[allow(unused_mut)]
     let mut module = ShaderModule::new(
         "hypertrace.shape.horosphere",
         ShaderKind::Shape,
@@ -37,6 +36,6 @@ impl<G: crate::shader::RenderGeometry> Shape<G> for Horosphere {
 }
 
 pub fn horosphere() -> ShapeValue {
-    <Horosphere as Shape<ccgeom::Hyperbolic3>>::encode(&Horosphere)
+    <Horosphere as Shape<ccgeom::Hyperboloid3>>::encode(&Horosphere)
         .expect("valid built-in horosphere")
 }

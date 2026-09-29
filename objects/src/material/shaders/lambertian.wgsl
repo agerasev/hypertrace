@@ -5,5 +5,5 @@ let phi=2*PI*uniform_random(rng);
 let square_cosine=uniform_random(rng);
 let sine=sqrt(max(0,1-square_cosine));
 let local=vec3<f32>(cos(phi)*sine,sin(phi)*sine,sqrt(square_cosine));
-(*sample).direction=eu_rotate(rotation_look(-normal),local);
+(*sample).direction=rotate_vector(rotation_look(-normal),local);
 }

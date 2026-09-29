@@ -1,4 +1,4 @@
-use ccgeom::{Euclidean3, Homogenous3};
+use ccgeom::{EmbeddedIsometry, Flat3, Geometry3};
 use objects::{
     Mapped, SceneImpl,
     background::GradBg,
@@ -8,10 +8,6 @@ use objects::{
     shape::{Cube, Plane, Sphere},
     shape_choice,
     view::PointView,
-};
-use vecmat::{
-    Transform, Vector,
-    transform::{Rotation3, Shift},
 };
 
 shape_choice! {
@@ -31,18 +27,15 @@ mixture! {
 }
 
 pub type ExampleScene<const H: usize> = SceneImpl<
-    Euclidean3,
-    Mapped<Euclidean3, PointView<Euclidean3>, Homogenous3<f64>>,
-    Vec<Mapped<Euclidean3, Covered<Euclidean3, Choice, Mixture>, Shift<f64, 3>>>,
+    Flat3,
+    Mapped<Flat3, PointView<Flat3>, EmbeddedIsometry<f64, 0>>,
+    Vec<Mapped<Flat3, Covered<Flat3, Choice, Mixture>, EmbeddedIsometry<f64, 0>>>,
     GradBg,
     H,
 >;
 
-pub fn camera() -> Homogenous3<f64> {
-    Homogenous3::new(
-        Shift::from(Vector::from([0.0, 0.5, 2.0])),
-        Rotation3::identity(),
-    )
+pub fn camera() -> EmbeddedIsometry<f64, 0> {
+    Flat3::shift_y(0.5).chain(Flat3::shift_z(2.0))
 }
 
 pub fn scene<const H: usize>() -> ExampleScene<H> {
@@ -61,7 +54,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
                         .into(),
                 ),
             ),
-            Shift::from_vector([0.0, 1.0, 0.0].into()),
+            Flat3::shift_y(1.0),
         ),
         Mapped::new(
             Covered::new(
@@ -76,7 +69,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
                         .into(),
                 ),
             ),
-            Shift::from_vector([0.0, -1.0, 0.0].into()),
+            Flat3::shift_y(-1.0),
         ),
         Mapped::new(
             Covered::new(
@@ -91,7 +84,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
                         .into(),
                 ),
             ),
-            Shift::from_vector([0.0, 0.0, -1.0].into()),
+            Flat3::shift_z(-1.0),
         ),
     ];
     let background = GradBg::new(
@@ -100,4 +93,26 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         2.4,
     );
     SceneImpl::<_, _, _, _, H>::new(view, objects, background)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn studio_placements_use_physical_flat_coordinates() {
+        let example = scene::<4>();
+        let origin = [1.0, 0.0, 0.0, 0.0].into();
+        assert_eq!(
+            example.view.map.apply_vector(origin).into_array(),
+            [1.0, 0.0, 0.5, 2.0]
+        );
+        for (object, expected) in example.object.iter().zip([
+            [1.0, 0.0, 1.0, 0.0],
+            [1.0, 0.0, -1.0, 0.0],
+            [1.0, 0.0, 0.0, -1.0],
+        ]) {
+            assert_eq!(object.map.apply_vector(origin).into_array(), expected);
+        }
+    }
 }

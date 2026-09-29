@@ -46,7 +46,7 @@ fn main() -> Result<()> {
         scene.bounces = b;
     }
     let bounces = scene.bounces;
-    let curvature = scene.camera.transform().geometry().sign();
+    let curvature = scene.camera.geometry().sign();
     let radius = scene.radius;
     let [red, green, blue, extinction] = scene.medium.gpu_row();
     let gpu = futures::executor::block_on(Gpu::headless())?;

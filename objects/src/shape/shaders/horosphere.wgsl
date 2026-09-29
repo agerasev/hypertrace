@@ -4,7 +4,10 @@ fn {{self}}_intersect(ray: GeoRay, minimum: f32, maximum: f32, radius: f32) -> G
         ray.tangent.x-ray.tangent.w,1,minimum,maximum,radius);
     if distance < 0 { return geo_miss(); }
     let state = geo_advance(ray,distance,radius);
-    let normal = geo_from_chart_dir(state.position,vec3<f32>(0,0,-1));
+    // Project the null section covector into the hyperboloid tangent space.
+    // This unit normal points toward decreasing half-space height.
+    let normal = state.position
+        - vec4<f32>(1,0,0,1)/(state.position.x-state.position.w);
     return GeoHit(1u,distance,state.position,state.tangent,normal);
 }
 

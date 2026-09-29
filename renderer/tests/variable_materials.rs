@@ -1,5 +1,5 @@
 //! A downstream material can resize parameters inside standard combinators.
-use ccgeom::{Euclidean3, Geometry3};
+use ccgeom::{Flat3, Geometry3};
 use hypertrace_renderer::{Gpu, Renderer, Scene, shader::*};
 use objects::{Material, material, material::MaterialValueExt, object::tiling, shape};
 
@@ -67,7 +67,7 @@ fn definition(
     let selector = ShaderModule::new(
         "tests.branch-selector",
         ShaderKind::Library,
-        "fn {{self}}(position:vec3<f32>,cell:f32,width:f32,count:u32)->u32 {return select(0u,count,cell>1.5);}",
+        "fn {{self}}(position:vec4<f32>,cell:f32,width:f32,count:u32)->u32 {return select(0u,count,cell>1.5);}",
         Some(2),
     );
     let material = tiling::tiled(
@@ -79,7 +79,7 @@ fn definition(
     )?;
     Ok(SceneDefinition {
         view: View {
-            map: Transform::Euclidean(Euclidean3::shift_z(3.0)),
+            map: Transform::from_isometry(Flat3::shift_z(3.0)).unwrap(),
             fov: 0.1,
         },
         background: Background::Constant([0.0; 3]),

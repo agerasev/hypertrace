@@ -4,7 +4,6 @@ use super::*;
 pub struct Cube;
 
 pub fn cube_schema() -> ShaderModule {
-    #[allow(unused_mut)]
     let mut module = ShaderModule::new(
         "hypertrace.shape.cube",
         ShaderKind::Shape,
@@ -37,5 +36,5 @@ impl<G: crate::shader::RenderGeometry> Shape<G> for Cube {
 }
 
 pub fn cube() -> ShapeValue {
-    <Cube as Shape<ccgeom::Euclidean3>>::encode(&Cube).expect("valid built-in cube")
+    <Cube as Shape<ccgeom::Flat3>>::encode(&Cube).expect("valid built-in cube")
 }

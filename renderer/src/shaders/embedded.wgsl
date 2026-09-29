@@ -84,6 +84,15 @@ fn geo_cs(t: f32) -> vec2<f32> {
     }
     return vec2<f32>(1,t);
 }
+// Unit axes and normalized distances/angles; curvature is selected by GEO_K.
+fn geo_translation(axis: vec3<f32>, phase: f32) -> GeoMap {
+    let cs = geo_cs(phase/2);
+    return GeoMap(vec4<f32>(cs.x,0,0,0),vec4<f32>(0,normalize(axis)*cs.y));
+}
+fn geo_rotation(axis: vec3<f32>, angle: f32) -> GeoMap {
+    let half = angle/2;
+    return GeoMap(vec4<f32>(cos(half),normalize(axis)*sin(half)),vec4<f32>(0));
+}
 fn geo_advance(ray: GeoRay, distance: f32, radius: f32) -> GeoRay {
     let t = distance/select(1.0,radius,GEO_K != 0);
     let cs = geo_cs(t);
@@ -103,36 +112,9 @@ fn geo_to_local(p: vec4<f32>, tangent: vec4<f32>) -> vec3<f32> {
     if GEO_K < 0 { return tangent.yzw-p.yzw*(tangent.x/(p.x+1)); }
     return tangent.yzw;
 }
-fn geo_from_chart_pos(p: vec3<f32>) -> vec4<f32> {
-    if GEO_K < 0 {
-        let square = dot(p,p);
-        return vec4<f32>((square+1)/(2*p.z),p.xy/p.z,(square-1)/(2*p.z));
-    }
-    // Legacy charts are only defined for Euclidean and hyperbolic geometries.
-    // Scene validation rejects spherical legacy custom leaves.
-    return vec4<f32>(1,p);
-}
-fn geo_to_chart_pos(p: vec4<f32>) -> vec3<f32> {
-    if GEO_K < 0 { return vec3<f32>(p.yz,1)/(p.x-p.w); }
-    return p.yzw;
-}
-fn geo_from_chart_dir(p: vec4<f32>, direction: vec3<f32>) -> vec4<f32> {
-    if GEO_K < 0 {
-        let chart = geo_to_chart_pos(p);
-        let horizontal = dot(chart.xy,direction.xy);
-        return vec4<f32>(horizontal+(chart.z-p.x)*direction.z,
-            direction.xy-p.yz*direction.z,
-            horizontal+(chart.z-p.w)*direction.z);
-    }
-    return vec4<f32>(0,direction);
-}
-fn geo_to_chart_dir(p: vec4<f32>, tangent: vec4<f32>) -> vec3<f32> {
-    if GEO_K < 0 {
-        let chart = geo_to_chart_pos(p);
-        let vertical = tangent.x-tangent.w;
-        return vec3<f32>(tangent.yz-chart.xy*vertical,-chart.z*vertical);
-    }
-    return tangent.yzw;
+// Explicit coordinates on the hyperbolic half-space chart, used by tilings.
+fn geo_to_half_space_pos(p: vec4<f32>) -> vec3<f32> {
+    return vec3<f32>(p.yz,1)/(p.x-p.w);
 }
 
 fn geo_in_interval(distance: f32, minimum: f32, maximum: f32) -> bool {

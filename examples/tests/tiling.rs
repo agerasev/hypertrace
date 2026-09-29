@@ -8,23 +8,23 @@ use hypertrace_renderer::{
 use objects::object::tiling::{Pentagonal, Pentastar, Tiling as _};
 use wgpu::util::DeviceExt;
 
-// Canonical hemisphere points and material IDs measured with the original
-// reference renderer. Its material IDs are translated to the current records.
+// Independent reference fixtures on the canonical hemisphere. Expected values
+// select material zero or one, with two denoting the border.
 // The first eight exercise the native regression; remaining points cover borders
 // and the distinction between the star pattern and ordinary pentagons.
 const FIXTURES: [([f32; 2], [u32; 2]); 12] = [
-    ([-0.171875, -0.984375], [8, 10]),
-    ([0.140625, -0.953125], [9, 11]),
-    ([-0.421875, -0.796875], [8, 10]),
-    ([0.390625, -0.796875], [9, 11]),
-    ([0.328125, 0.796875], [8, 10]),
-    ([-0.359375, 0.921875], [8, 11]),
-    ([-0.234375, 0.953125], [9, 11]),
-    ([0.078125, 0.984375], [8, 11]),
-    ([-0.015625, -0.015625], [0, 0]),
-    ([0.015625, -0.015625], [0, 0]),
-    ([0.015625, 0.015625], [0, 0]),
-    ([0.265625, -0.515625], [0, 10]),
+    ([-0.171875, -0.984375], [0, 0]),
+    ([0.140625, -0.953125], [1, 1]),
+    ([-0.421875, -0.796875], [0, 0]),
+    ([0.390625, -0.796875], [1, 1]),
+    ([0.328125, 0.796875], [0, 0]),
+    ([-0.359375, 0.921875], [0, 1]),
+    ([-0.234375, 0.953125], [1, 1]),
+    ([0.078125, 0.984375], [0, 1]),
+    ([-0.015625, -0.015625], [2, 2]),
+    ([0.015625, -0.015625], [2, 2]),
+    ([0.015625, 0.015625], [2, 2]),
+    ([0.265625, -0.515625], [2, 0]),
 ];
 
 #[test]
@@ -39,7 +39,10 @@ fn production_tiling_matches_reference_fixtures() {
 fn {{self}}(gid: vec3<u32>) {
     if gid.x >= 12u || gid.y >= 2u { return; }
     let index = gid.x + 12u * gid.y;
-    let position = accumulation[index].xyz;
+    let chart = accumulation[index].xyz;
+    // Independent half-space -> hyperboloid conversion for this fixture.
+    let squared = dot(chart,chart);
+    let position = vec4<f32>((squared+1)/(2*chart.z),chart.xy/chart.z,(squared-1)/(2*chart.z));
     var selected = 0u;
     if gid.y == 0u { selected = {{dep0}}(position,1.0,0.01,2u); }
     else { selected = {{dep1}}(position,1.0,0.02,2u); }
@@ -108,12 +111,7 @@ fn tiling_regression(@builtin(global_invocation_id) gid: vec3<u32>) { {{self}}(g
         let actual = f32::from_le_bytes(row[12..16].try_into().unwrap());
         let fixture = index % FIXTURES.len();
         let tiling = index / FIXTURES.len();
-        let old_material = FIXTURES[fixture].1[tiling];
-        let expected = if old_material == 0 {
-            2
-        } else {
-            old_material - [8, 10][tiling]
-        } as f32;
+        let expected = FIXTURES[fixture].1[tiling] as f32;
         assert_eq!(
             actual,
             expected,

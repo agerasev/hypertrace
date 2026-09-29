@@ -4,11 +4,11 @@
 //! and map conversions are traits: downstream adapters need no type whitelist.
 //!
 //! ```
-//! use ccgeom::Euclidean3;
+//! use ccgeom::Flat3;
 //! use hypertrace_objects::{background::ConstBg, material::Lambertian,
 //!     object::Covered, shape::Sphere, view::PointView, Scene, SceneImpl};
 //! # fn main() -> hypertrace_objects::shader::Result<()> {
-//! let scene = SceneImpl::<Euclidean3, _, _, _, 4>::new(
+//! let scene = SceneImpl::<Flat3, _, _, _, 4>::new(
 //!     PointView::new(1.0), vec![Covered::new(Sphere, Lambertian)],
 //!     ConstBg::new([0.1, 0.2, 0.3].into()));
 //! assert_eq!(scene.definition()?.bounces, 4);
@@ -17,40 +17,19 @@
 //! ```
 
 pub use ::scene::*;
-use ccgeom::{Embedded3, EmbeddedIsometry, Euclidean3, Homogenous3, Hyperbolic3};
-use vecmat::{
-    transform::{Moebius, Rotation3, Shift},
-    Complex, QuaternionPair, Transform as _,
-};
+use ccgeom::{Embedded3, EmbeddedIsometry};
 
-/// Construction coordinates supported by a geometry adapter.
-/// The renderer itself always receives embedded constant-curvature geometry.
+/// Geometry used by a scene builder. Rendering uses canonical embedded
+/// constant-curvature positions and tangents for every geometry.
 pub trait RenderGeometry: ccgeom::Geometry {
     fn render_geometry() -> Result<Geometry>;
-    fn render_identity() -> Result<Transform>;
 }
 
-/// Convert a construction map to a checked, canonical f64 isometry.
+/// Encode a map as a checked, canonical f64 isometry.
 pub trait RenderMap<G: ccgeom::Geometry>: ccgeom::Map<G::Pos, G::Dir> {
     fn render_transform(&self) -> Result<Transform>;
 }
 
-impl RenderGeometry for Euclidean3 {
-    fn render_geometry() -> Result<Geometry> {
-        Ok(Geometry::Euclidean)
-    }
-    fn render_identity() -> Result<Transform> {
-        Ok(Transform::Euclidean(Homogenous3::identity()))
-    }
-}
-impl RenderGeometry for Hyperbolic3 {
-    fn render_geometry() -> Result<Geometry> {
-        Ok(Geometry::Hyperbolic)
-    }
-    fn render_identity() -> Result<Transform> {
-        Ok(Transform::Hyperbolic(Moebius::identity()))
-    }
-}
 impl<const K: i8> RenderGeometry for Embedded3<f64, K> {
     fn render_geometry() -> Result<Geometry> {
         match K {
@@ -60,70 +39,21 @@ impl<const K: i8> RenderGeometry for Embedded3<f64, K> {
             _ => Err(unsupported::<Self>()),
         }
     }
-    fn render_identity() -> Result<Transform> {
-        embedded_transform(&EmbeddedIsometry::<f64, K>::identity())
-    }
-}
-fn embedded_transform<const K: i8>(map: &EmbeddedIsometry<f64, K>) -> Result<Transform> {
-    let values = map.pair().into_array();
-    // Reconstruct across const parameters without runtime type inspection. Each
-    // constructor validates the same pair in its explicitly chosen algebra.
-    let invalid = || unsupported::<EmbeddedIsometry<f64, K>>();
-    Ok(match K {
-        0 => Transform::Flat(
-            EmbeddedIsometry::from_pair(QuaternionPair::from_array(values)).ok_or_else(invalid)?,
-        ),
-        -1 => Transform::Hyperboloid(
-            EmbeddedIsometry::from_pair(QuaternionPair::from_array(values)).ok_or_else(invalid)?,
-        ),
-        1 => Transform::Spherical(
-            EmbeddedIsometry::from_pair(QuaternionPair::from_array(values)).ok_or_else(invalid)?,
-        ),
-        _ => return Err(invalid()),
-    })
 }
 impl<const K: i8> RenderMap<Embedded3<f64, K>> for EmbeddedIsometry<f64, K> {
     fn render_transform(&self) -> Result<Transform> {
-        embedded_transform(self)
+        Transform::from_isometry(*self)
     }
 }
-impl RenderMap<Euclidean3> for Homogenous3<f64> {
-    fn render_transform(&self) -> Result<Transform> {
-        Ok(Transform::Euclidean(*self))
-    }
-}
-impl RenderMap<Euclidean3> for Shift<f64, 3> {
-    fn render_transform(&self) -> Result<Transform> {
-        Ok(Transform::Euclidean(Homogenous3::new(
-            *self,
-            Rotation3::identity(),
-        )))
-    }
-}
-impl RenderMap<Euclidean3> for Rotation3<f64> {
-    fn render_transform(&self) -> Result<Transform> {
-        Ok(Transform::Euclidean(Homogenous3::new(
-            Shift::identity(),
-            *self,
-        )))
-    }
-}
-impl RenderMap<Hyperbolic3> for Moebius<Complex<f64>> {
-    fn render_transform(&self) -> Result<Transform> {
-        Ok(Transform::Hyperbolic(*self))
-    }
-}
+
 pub fn geometry<G: RenderGeometry>() -> Result<Geometry> {
     G::render_geometry()
 }
 pub fn identity<G: RenderGeometry>() -> Result<Transform> {
-    G::render_identity()
+    Ok(Transform::identity(G::render_geometry()?))
 }
 pub fn transform<G: ccgeom::Geometry, M: RenderMap<G>>(map: &M) -> Result<Transform> {
     map.render_transform()
-}
-pub fn lower<G: ccgeom::Geometry, S: crate::Scene<G>>(scene: &S) -> Result<SceneDefinition> {
-    scene.definition()
 }
 
 #[cfg(test)]
@@ -137,43 +67,26 @@ mod tests {
         view::PointView,
         Mapped, Material, Object, Scene, SceneImpl, Shape, View as _,
     };
-    use ccgeom::{Flat3, Geometry3, Hyperboloid3, Spherical3};
+    use ccgeom::{Flat3, Hyperboloid3, Space3, Spherical3};
 
     #[test]
-    fn specialized_shapes_and_gradient_share_geometry_families() {
-        let legacy_cube = <Cube as Shape<Euclidean3>>::encode(&Cube).unwrap();
-        let embedded_cube = <Cube as Shape<Flat3>>::encode(&Cube).unwrap();
-        assert!(legacy_cube
-            .schema
-            .same_implementation(&embedded_cube.schema));
-        assert_eq!(legacy_cube.words, embedded_cube.words);
-        let legacy_horosphere = <Horosphere as Shape<Hyperbolic3>>::encode(&Horosphere).unwrap();
-        let embedded_horosphere = <Horosphere as Shape<Hyperboloid3>>::encode(&Horosphere).unwrap();
-        assert!(legacy_horosphere
-            .schema
-            .same_implementation(&embedded_horosphere.schema));
-        assert_eq!(legacy_horosphere.words, embedded_horosphere.words);
+    fn specialized_shapes_and_gradient_enforce_geometry_requirements() {
+        assert!(<Cube as Shape<Flat3>>::encode(&Cube).is_ok());
+        assert!(<Horosphere as Shape<Hyperboloid3>>::encode(&Horosphere).is_ok());
         let gradient = GradBg::new(
             [0.0, 1.0, 0.0].into(),
             [[1.0; 3].into(), [0.0; 3].into()],
             2.4,
         );
-        let legacy = <GradBg as crate::Background<Euclidean3>>::background(&gradient).unwrap();
-        let embedded = <GradBg as crate::Background<Flat3>>::background(&gradient).unwrap();
-        match (legacy, embedded) {
-            (
-                Background::Gradient {
-                    colors: a,
-                    axis: b,
-                    power: c,
-                },
-                Background::Gradient {
-                    colors: x,
-                    axis: y,
-                    power: z,
-                },
-            ) => {
-                assert_eq!((a, b, c), (x, y, z));
+        match <GradBg as crate::Background<Flat3>>::background(&gradient).unwrap() {
+            Background::Gradient {
+                colors,
+                axis,
+                power,
+            } => {
+                assert_eq!(colors, [[1.0; 3], [0.0; 3]]);
+                assert_eq!(axis, [0.0, 1.0, 0.0]);
+                assert_eq!(power, 2.4);
             }
             _ => panic!("gradient lowering changed its kind"),
         }
@@ -237,15 +150,14 @@ mod tests {
         embedded_lowering::<-1>();
         embedded_lowering::<0>();
         embedded_lowering::<1>();
-        assert!(matches!(identity::<Flat3>().unwrap(), Transform::Flat(_)));
-        assert!(matches!(
-            identity::<Hyperboloid3>().unwrap(),
-            Transform::Hyperboloid(_)
-        ));
-        assert!(matches!(
-            identity::<Spherical3>().unwrap(),
-            Transform::Spherical(_)
-        ));
+        for (map, geometry) in [
+            (identity::<Flat3>().unwrap(), Geometry::Euclidean),
+            (identity::<Hyperboloid3>().unwrap(), Geometry::Hyperbolic),
+            (identity::<Spherical3>().unwrap(), Geometry::Spherical),
+        ] {
+            assert_eq!(map.geometry(), geometry);
+            assert_eq!(map.apply_vector([1.0, 0.0, 0.0, 0.0]), [1.0, 0.0, 0.0, 0.0]);
+        }
     }
 
     #[test]
@@ -328,14 +240,14 @@ mod tests {
 
     crate::object_choice! {
         ObjectChoices {
-            Diffuse(Covered<Euclidean3, Sphere, Lambertian>),
-            Emitting(Covered<Euclidean3, Cube, Emissive<Absorbing>>),
+            Diffuse(Covered<Flat3, Sphere, Lambertian>),
+            Emitting(Covered<Flat3, Cube, Emissive<Absorbing>>),
         }
     }
 
     #[test]
     fn empty_object_vectors_register_inactive_choice_implementations() {
-        let mut scene = SceneImpl::<Euclidean3, _, _, _, 3>::new(
+        let mut scene = SceneImpl::<Flat3, _, _, _, 3>::new(
             PointView::new(1.0),
             Vec::<ObjectChoices>::new(),
             ConstBg::new([0.0; 3].into()),
@@ -358,18 +270,23 @@ mod tests {
 
     #[test]
     fn nested_camera_maps_keep_outer_inner_order_in_f64() {
-        let shifted = Mapped::<Euclidean3, _, _>::new(
+        let shifted = Mapped::<Flat3, _, _>::new(
             PointView::new(0.7),
-            Shift::from_vector([1.0, 0.0, 0.0].into()),
+            Space3::<f64, 0>::unit()
+                .translation([1.0, 0.0, 0.0].into(), 1.0)
+                .unwrap(),
         );
-        let rotated = Mapped::new(shifted, Euclidean3::rotate_z(std::f64::consts::FRAC_PI_2));
+        let rotated = Mapped::new(
+            shifted,
+            EmbeddedIsometry::<f64, 0>::rotation(
+                [0.0, 0.0, 1.0].into(),
+                std::f64::consts::FRAC_PI_2,
+            )
+            .unwrap(),
+        );
         let view = rotated.view().unwrap();
         assert_eq!(view.fov, 0.7);
-        let map = match view.map.embedded().unwrap() {
-            Transform::Flat(map) => map,
-            _ => panic!("wrong geometry"),
-        };
-        let position = map.apply_vector([1.0, 0.0, 0.0, 0.0].into());
+        let position = view.map.apply_vector([1.0, 0.0, 0.0, 0.0]);
         assert_eq!(position[0], 1.0);
         assert!(position[1].abs() < 1e-14);
         assert!((position[2] - 1.0).abs() < 1e-14);
@@ -378,8 +295,10 @@ mod tests {
 
     #[test]
     fn mapped_shapes_and_mapped_objects_keep_distinct_material_frames() {
-        let offset = Shift::from_vector([2.0, 0.0, 0.0].into());
-        let shape = Mapped::<Euclidean3, _, _>::new(Plane, offset);
+        let offset = Space3::<f64, 0>::unit()
+            .translation([1.0, 0.0, 0.0].into(), 2.0)
+            .unwrap();
+        let shape = Mapped::<Flat3, _, _>::new(Plane, offset);
         let covered_shape = Covered::new(shape, Lambertian).object_node().unwrap();
         match covered_shape {
             ObjectNode::Covered { shape, .. } => {
@@ -387,14 +306,14 @@ mod tests {
             }
             _ => panic!("shape transform was moved across its material"),
         }
-        let covered = Covered::<Euclidean3, _, _>::new(Plane, Lambertian);
+        let covered = Covered::<Flat3, _, _>::new(Plane, Lambertian);
         let mapped_object = Mapped::new(covered, offset).object_node().unwrap();
         assert!(matches!(mapped_object, ObjectNode::Mapped { .. }));
     }
 
     #[test]
     fn nested_shape_leaves_cannot_omit_their_identity_word() -> Result<()> {
-        let mut definition = SceneImpl::<Euclidean3, _, _, _, 1>::new(
+        let mut definition = SceneImpl::<Flat3, _, _, _, 1>::new(
             PointView::new(1.0),
             Covered::new(Plane, Absorbing),
             ConstBg::new([0.0; 3].into()),
@@ -432,25 +351,25 @@ mod tests {
 
     #[derive(Clone)]
     struct CustomShift(vecmat::Vector<f64, 3>);
-    impl ccgeom::Map<vecmat::Vector<f64, 3>> for CustomShift {
+    impl ccgeom::Map<vecmat::Vector<f64, 4>> for CustomShift {
         fn identity() -> Self {
             Self([0.0; 3].into())
         }
-        fn apply_pos(&self, pos: vecmat::Vector<f64, 3>) -> vecmat::Vector<f64, 3> {
-            pos + self.0
+        fn apply_pos(&self, pos: vecmat::Vector<f64, 4>) -> vecmat::Vector<f64, 4> {
+            pos + vecmat::Vector::from([0.0, self.0[0], self.0[1], self.0[2]])
         }
         fn apply_dir(
             &self,
-            _pos: vecmat::Vector<f64, 3>,
-            dir: vecmat::Vector<f64, 3>,
-        ) -> vecmat::Vector<f64, 3> {
+            _: vecmat::Vector<f64, 4>,
+            dir: vecmat::Vector<f64, 4>,
+        ) -> vecmat::Vector<f64, 4> {
             dir
         }
         fn apply_normal(
             &self,
-            _pos: vecmat::Vector<f64, 3>,
-            normal: vecmat::Vector<f64, 3>,
-        ) -> vecmat::Vector<f64, 3> {
+            _: vecmat::Vector<f64, 4>,
+            normal: vecmat::Vector<f64, 4>,
+        ) -> vecmat::Vector<f64, 4> {
             normal
         }
         fn chain(self, other: Self) -> Self {
@@ -460,26 +379,29 @@ mod tests {
             Self(-self.0)
         }
     }
-    impl RenderMap<Euclidean3> for CustomShift {
+    impl RenderMap<Flat3> for CustomShift {
         fn render_transform(&self) -> Result<Transform> {
-            Ok(Transform::Euclidean(Homogenous3::new(
-                Shift::from_vector(self.0),
-                Rotation3::identity(),
-            )))
+            let map = if self.0.length() == 0.0 {
+                EmbeddedIsometry::identity()
+            } else {
+                Space3::<f64, 0>::unit()
+                    .translation(self.0, self.0.length())
+                    .unwrap()
+            };
+            Transform::from_isometry(map)
         }
     }
     #[test]
     fn downstream_map_adapter_lowers_without_type_registration() {
         let map = CustomShift([1.25, -2.0, 3.0].into());
-        let view = Mapped::<Euclidean3, _, _>::new(PointView::new(1.0), map.clone())
+        let view = Mapped::<Flat3, _, _>::new(PointView::new(1.0), map.clone())
             .view()
             .unwrap();
-        let position = match view.map.embedded().unwrap() {
-            Transform::Flat(map) => map.apply_vector([1.0, 0.0, 0.0, 0.0].into()),
-            _ => unreachable!(),
-        };
-        assert_eq!(position.into_array(), [1.0, 1.25, -2.0, 3.0]);
-        let scene = SceneImpl::<Euclidean3, _, _, _, 2>::new(
+        let position = view.map.apply_vector([1.0, 0.0, 0.0, 0.0]);
+        for (actual, expected) in position.iter().copied().zip([1.0, 1.25, -2.0, 3.0]) {
+            assert!((actual - expected).abs() < 1e-14);
+        }
+        let scene = SceneImpl::<Flat3, _, _, _, 2>::new(
             PointView::new(1.0),
             Mapped::new(Covered::new(Plane, Lambertian), map.clone()),
             ConstBg::new([0.0; 3].into()),

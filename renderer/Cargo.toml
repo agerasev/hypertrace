@@ -7,9 +7,7 @@ edition = "2024"
 anyhow = "1"
 scene_ir = { package = "hypertrace-scene", path = "../scene" }
 bytemuck = { version = "1", features = ["derive"] }
-ccgeom = "0.1"
 futures = { version = "0.3", features = ["executor"] }
-vecmat = "0.7"
 wgpu = { version = "30.0.1", default-features = false, features = ["std", "wgsl"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -20,4 +18,5 @@ getrandom = { version = "0.2", features = ["js"] }
 wgpu = { version = "30.0.1", default-features = false, features = ["webgpu"] }
 
 [dev-dependencies]
+ccgeom = "0.1"
 objects = { package = "hypertrace-objects", path = "../objects" }

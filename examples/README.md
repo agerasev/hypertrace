@@ -26,7 +26,7 @@ From the repository root:
 cargo run --release -p hypertrace-gallery --bin headless -- --list-scenes
 cargo run --release -p hypertrace-examples --bin sp
 cargo run --release -p hypertrace-gallery --bin headless -- \
-  --scene sp-fog --width 640 --height 480 --samples 256 --output /tmp/sp-fog
+  --scene eu-fog --width 640 --height 480 --samples 256 --output /tmp/eu-fog
 ```
 
 Headless output includes a PPM preview, linear RGBA floats, and JSON settings
@@ -39,7 +39,7 @@ scattering and indirect illumination need more samples to settle.
 | `eu` | Glass, diffuse surfaces, and a directional background in flat space. | 4 |
 | `hy` | Pentagonal plane tilings and tiled horospheres. | 3 |
 | `sp` | Asymmetric sunlight, diffuse and refractive balls, and a glowing sphere crossing the floor. | 6 |
-| `sp-fog` | Small lights, opaque companions and a glass sphere in dark, floorless fog. | 12 |
+| `eu-fog` | Small lights, opaque companions and a glass sphere in dark, floorless fog. | 12 |
 
 Surface and volume interactions both consume the path-event budget. Headless
 and benchmark tools accept `--bounces` to override the defaults.
@@ -56,7 +56,7 @@ and the beacon; turn around to find the clear ball.
 The floor material is 85% diffuse, 5% specular, and 10% transparent. Look for
 contact shadows, refracted light, and faint reflections. There is no ambient light.
 
-The separate `sp-fog` example has no plane. Two small distant lights are surrounded
+The separate `eu-fog` example has no plane. Two small distant lights are surrounded
 by opaque balls, with one larger glass sphere in front. Tune the emitters,
 extinction and scattering albedo directly in its `scene.rs`. With small emitters,
 look near the lights for scattered illumination and shadows. Begin with thousands
@@ -101,7 +101,7 @@ This camera is inside the glowing sphere. Use `Mapped` and
 heterogeneous objects; vectors hold repeated objects of one type. `Flat3`,
 `Hyperboloid3`, and `Spherical3` select geometry at compile time. Curved scenes
 set a physical `radius`; construct matching displacements with `Space3::new(R)`.
-The [fog example](src/bin/sp-fog/scene.rs) sets the medium explicitly.
+The [fog example](src/bin/eu-fog/scene.rs) sets the medium explicitly.
 
 The complete `main.rs` files show how to obtain a device and queue from Wgame,
 resize the renderer, rebind presentation, update the camera, and submit frames.

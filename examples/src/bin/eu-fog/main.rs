@@ -54,7 +54,7 @@ fn main() -> wgame::Result<()> {
             "--smoke" => smoke = true,
             "--help" | "-h" => {
                 println!(
-                    "sp-fog [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; Tab: toggle mouse lock; scroll: zoom; R: reset; Esc: close"
+                    "eu-fog [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; Tab: toggle mouse lock; scroll: zoom; R: reset; Esc: close"
                 );
                 return Ok(());
             }

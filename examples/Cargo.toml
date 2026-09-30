@@ -27,5 +27,5 @@ name = "sp"
 path = "src/bin/sp/main.rs"
 
 [[bin]]
-name = "sp-fog"
-path = "src/bin/sp-fog/main.rs"
+name = "eu-fog"
+path = "src/bin/eu-fog/main.rs"

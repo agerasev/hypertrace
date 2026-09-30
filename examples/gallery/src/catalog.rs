@@ -32,7 +32,7 @@ pub const EXAMPLES: &[Example] = &[
         description: "An off-center sun lights red, clear and blue balls. Explore the opposite pole and a glowing sphere crossing the floor.",
     },
     Example {
-        id: "sp-fog",
+        id: "eu-fog",
         title: "Spherical lights in fog",
         group: "Materials and lighting",
         description: "Small warm and cool lights, opaque companions and a glass sphere in dark fog. No floor or ambient light; let scattering accumulate.",
@@ -55,8 +55,8 @@ pub mod factories {
     pub fn sp() -> Result<SceneDefinition<Spherical3>> {
         crate::sp::scene::<6>().definition()
     }
-    pub fn sp_fog() -> Result<SceneDefinition<Spherical3>> {
-        crate::sp_fog::scene::<12>().definition()
+    pub fn eu_fog() -> Result<SceneDefinition<Spherical3>> {
+        crate::eu_fog::scene::<12>().definition()
     }
 }
 
@@ -81,9 +81,9 @@ macro_rules! with_example {
                 let $factory = $crate::factories::sp;
                 $body
             }
-            "sp-fog" => {
-                let $metadata = *$crate::find("sp-fog").expect("catalogue entry");
-                let $factory = $crate::factories::sp_fog;
+            "eu-fog" => {
+                let $metadata = *$crate::find("eu-fog").expect("catalogue entry");
+                let $factory = $crate::factories::eu_fog;
                 $body
             }
             unknown => Err(anyhow::anyhow!(

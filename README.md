@@ -36,7 +36,7 @@ cargo run --release -p hypertrace-gallery --bin headless -- \
   --scene eu --width 640 --height 480 --samples 64 --output /tmp/eu
 ```
 
-Each scene has its own binary: `eu`, `hy`, `sp`, and `sp-fog`. Each scene folder under
+Each scene has its own binary: `eu`, `hy`, `sp`, and `eu-fog`. Each scene folder under
 [`examples/src/bin`](examples/src/bin) owns its `scene.rs` and `main.rs`: scene
 construction, renderer and presenter setup, and the Wgame event loop are visible
 in that example. Start with [the spherical studio](examples/src/bin/sp) to copy
@@ -81,7 +81,7 @@ NO_COLOR=true trunk serve --release
 
 Open <http://127.0.0.1:8080>. Use the grouped Example menu to select a scene,
 or start with any catalog ID such as `?scene=sp` or
-`?scene=sp-fog`. Selection reloads the page into the chosen typed application.
+`?scene=eu-fog`. Selection reloads the page into the chosen typed application.
 Each example includes a short description. Click the canvas to use
 the camera controls above. Tab locks/unlocks the mouse while the canvas is focused.
 Escape releases browser mouse lock; when unlocked it toggles pause. Quality caps the
@@ -116,10 +116,10 @@ distance includes complete circuits even when the ray returns to the same point.
 The [geometry contract](GEOMETRY_CONTRACT.md) specifies units, transforms, tangent
 frames, and precision limits; [ABOUT.md](ABOUT.md) describes the implementation.
 
-The floorless spherical fog scene is available as `--scene sp-fog` and as the
-standalone `sp-fog` binary. Its [scene construction](examples/src/bin/sp-fog/scene.rs)
+The floorless spherical fog scene is available as `--scene eu-fog` and as the
+standalone `eu-fog` binary. Its [scene construction](examples/src/bin/eu-fog/scene.rs)
 uses two small emitters, opaque companions and a glass sphere. Light intensity,
-extinction and scattering albedo are adjustable directly in that source. Its [main function](examples/src/bin/sp-fog/main.rs) shows the
+extinction and scattering albedo are adjustable directly in that source. Its [main function](examples/src/bin/eu-fog/main.rs) shows the
 complete application setup. The simpler [vacuum studio](examples/src/bin/sp/scene.rs)
 keeps two balls at opposite floor poles, with asymmetric sunlight, a nearby blue
 ball, and a glowing sphere intersecting the floor.

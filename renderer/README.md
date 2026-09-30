@@ -26,7 +26,7 @@ cargo run --release -p hypertrace-gallery --bin headless -- \
 ```
 
 `viewer`, `headless`, and `benchmark` share the `hypertrace_gallery::EXAMPLES` catalog and
-support `--list-scenes`. The four choices are `eu`, `hy`, `sp`, and `sp-fog`.
+support `--list-scenes`. The four choices are `eu`, `hy`, `sp`, and `eu-fog`.
 The browser presents the same grouped catalog and accepts `?scene=NAME` URLs.
 See the [example guide](../examples/README.md) for all IDs, default event budgets,
 and the geometric effects to look for. Start with 256 samples and increase the count for indirect lighting and fog.
@@ -182,7 +182,7 @@ let renderer = hypertrace_renderer::Renderer::new(&device, &queue, (640, 480), s
 The [spherical studio](../examples/src/bin/sp/scene.rs) demonstrates shadows
 with an off-center sun, diffuse and refractive balls, a glowing landmark, and
 a mostly diffuse plane. The `eu`, `hy`,
-`sp`, and `sp-fog` scenes expose local `scene::<H>()` constructors where `H`
+`sp`, and `eu-fog` scenes expose local `scene::<H>()` constructors where `H`
 sets the interaction budget. Numerical curvature and recurrence comparisons
 live in independent tests.
 
@@ -242,9 +242,9 @@ fn with_fog<G: Geometry>(mut definition: SceneDefinition<G>)
 }
 ```
 
-The [sp-fog scene](../examples/src/bin/sp-fog/scene.rs) sets its own medium
+The [eu-fog scene](../examples/src/bin/eu-fog/scene.rs) sets its own medium
 values alongside small emitters, opaque companions and a glass sphere, without
-a floor. Mean free flight is the reciprocal of extinction in physical world units. Run the `sp-fog` binary or select `--scene sp-fog` in a
+a floor. Mean free flight is the reciprocal of extinction in physical world units. Run the `eu-fog` binary or select `--scene eu-fog` in a
 gallery tool. The [sp scene](../examples/src/bin/sp/scene.rs) selects vacuum.
 Both use a configurable black miss background, with different object layouts.
 Independent transport tests cover unbounded misses and multiple spherical circuits;
@@ -415,7 +415,7 @@ later random paths, so cross-device comparisons need not be pixelwise identical.
 Use the release-mode `benchmark` binary for completed-render timings. Run
 configurations sequentially with identical scene, dimensions, samples, seed, and
 bounce limit. Defaults are four events for `eu`, three for `hy`, six for `sp`,
-and twelve for `sp-fog`.
+and twelve for `eu-fog`.
 Surface and volume interactions both consume this budget. Use `--list-scenes`
 to find a workload and consult the [example guide](../examples/README.md) for its
 layout; each spherical preset has a black miss background.

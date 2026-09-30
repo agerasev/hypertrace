@@ -6,12 +6,12 @@
 
 #[path = "../../src/bin/eu/scene.rs"]
 pub mod eu;
+#[path = "../../src/bin/eu-fog/scene.rs"]
+pub mod eu_fog;
 #[path = "../../src/bin/hy/scene.rs"]
 pub mod hy;
 #[path = "../../src/bin/sp/scene.rs"]
 pub mod sp;
-#[path = "../../src/bin/sp-fog/scene.rs"]
-pub mod sp_fog;
 
 mod catalog;
 pub use catalog::{EXAMPLES, Example, factories, find};

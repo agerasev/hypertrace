@@ -201,6 +201,9 @@ and `Emissive`. Primitive shapes and tilings share the same geometry contracts.
 when encoding the scene description. Component trait implementations specify
 supported geometries: for example, `Cube` supports only `Flat3`, and `Horosphere`
 supports only `Hyperboloid3`.
+`Cube::new(half_extent)` sizes a cube in physical units; its edge length is twice
+that value. `GeodesicSphere::new(radius)` likewise sets a ball's physical radius.
+Change these shape parameters to resize objects; their isometries preserve distances.
 
 Shader modules describe composition independently of values. Every tuple child
 and empty vector element type contributes dependencies before generation, so

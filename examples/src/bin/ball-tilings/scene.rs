@@ -13,6 +13,8 @@ use objects::{
 };
 
 type Map = EmbeddedIsometry<f64, 0>;
+// Match the main spherical balls; layout and camera distances scale with them.
+const BALL_RADIUS: f64 = 0.25;
 type Matte = Colored<Lambertian>;
 type Ball<const P: usize, const Q: usize> =
     Mapped<Flat3, Tiled<GeodesicSphere, RegularSpherical<P, Q>, Matte, Matte, 4>, Map>;
@@ -35,14 +37,14 @@ pub type ExampleScene<const H: usize> = SceneImpl<
 >;
 
 pub fn camera() -> Map {
-    Flat3::shift_z(12.0)
+    Flat3::shift_z(12.0 * BALL_RADIUS)
 }
 
 fn ball<const P: usize, const Q: usize>(position: [f64; 2], rotation: Map) -> Ball<P, Q> {
     let matte = |color: [f32; 3]| Colored::new(Lambertian, color.into());
     Mapped::new(
         Tiled::new(
-            GeodesicSphere::new(1.0),
+            GeodesicSphere::new(BALL_RADIUS),
             // Border half-width is an angle on the sphere, in radians.
             RegularSpherical::<P, Q>::new(0.025),
             [
@@ -55,8 +57,8 @@ fn ball<const P: usize, const Q: usize>(position: [f64; 2], rotation: Map) -> Ba
             matte([0.015, 0.020, 0.025]),
         ),
         // Map the complete object so the tiling rotates with its surface.
-        Flat3::shift_x(position[0])
-            .chain(Flat3::shift_y(position[1]))
+        Flat3::shift_x(position[0] * BALL_RADIUS)
+            .chain(Flat3::shift_y(position[1] * BALL_RADIUS))
             .chain(rotation),
     )
 }

@@ -162,6 +162,9 @@ history in commits, not new migration diaries.
   and placement constraints rather than changing them to improve framing.
   Pattern showcases should document viewing order and `{P,Q}` symbols, and use
   comparable surface sizes, palettes and border widths to make differences clear.
+  Keep demonstration objects at comparable physical scales across geometries so
+  common camera controls feel consistent. Resize shapes, placements, cameras and
+  physical pattern lengths together; angular pattern widths remain unchanged.
 - Verify fog with an off-axis emitter: scattering must reveal its light, pure
   absorption must not, and switching off all emission with a black environment
   must yield black. In spherical scenes long free flights and repeated paths can

@@ -12,7 +12,7 @@ use ccgeom::{Flat3, Hyperboloid3, Space3, Spherical3};
 
 #[test]
 fn specialized_shapes_and_gradient_enforce_geometry_requirements() {
-    assert!(<Cube as Shape<Flat3>>::encode(&Cube).is_ok());
+    assert!(<Cube as Shape<Flat3>>::encode(&Cube::new(1.0)).is_ok());
     assert!(<Horosphere as Shape<Hyperboloid3>>::encode(&Horosphere).is_ok());
     let gradient = GradBg::new(
         [0.0, 1.0, 0.0].into(),
@@ -175,7 +175,7 @@ fn empty_object_vectors_preserve_statically_known_implementations() {
     assert_eq!(empty_source, compile(&populated).unwrap().source);
     scene.object.0.clear();
     scene.object.1.push(Covered::new(
-        Cube,
+        Cube::new(1.0),
         Emissive::new(Absorbing, [1.0; 3].into()),
     ));
     assert_eq!(

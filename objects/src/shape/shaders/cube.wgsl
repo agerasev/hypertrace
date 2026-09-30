@@ -1,4 +1,4 @@
-fn {{self}}_intersect(ray: GeoRay, minimum: f32, maximum: f32, radius: f32) -> GeoHit {
+fn {{self}}_intersect(ray: GeoRay, minimum: f32, maximum: f32, radius: f32, half_extent: f32) -> GeoHit {
     if GEO_K != 0 || minimum < 0 || minimum >= maximum { return geo_miss(); }
     var near = -1e30;
     var far = 1e30;
@@ -8,10 +8,10 @@ fn {{self}}_intersect(ray: GeoRay, minimum: f32, maximum: f32, radius: f32) -> G
         let p = ray.position[axis];
         let d = ray.tangent[axis];
         if d == 0 {
-            if abs(p) > 1 { return geo_miss(); }
+            if abs(p) > half_extent { return geo_miss(); }
         } else {
-            let first = (-1-p)/d;
-            let second = (1-p)/d;
+            let first = (-half_extent-p)/d;
+            let second = (half_extent-p)/d;
             let lo = min(first,second);
             let hi = max(first,second);
             if lo >= near {
@@ -35,5 +35,5 @@ fn {{self}}_intersect(ray: GeoRay, minimum: f32, maximum: f32, radius: f32) -> G
 }
 
 fn {{self}}(base:u32,ray:GeoRay,previous_identity:u32)->GeoTaggedHit {
-    return GeoTaggedHit({{self}}_intersect(ray,select(0.0,8.0*EPS*params.misc.y,base==previous_identity),geo_infinity(),params.misc.y),base);
+    return GeoTaggedHit({{self}}_intersect(ray,select(0.0,8.0*EPS*params.misc.y,base==previous_identity),geo_infinity(),params.misc.y,load_f32(base)),base);
 }

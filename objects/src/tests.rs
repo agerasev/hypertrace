@@ -53,6 +53,26 @@ fn values_and_vector_lengths_do_not_change_shader_source() -> Result<()> {
 }
 
 #[test]
+fn cube_extent_is_validated_instance_data() -> Result<()> {
+    let small = compile(&scene(shape::cube(0.25)?, material::transparent()))?;
+    let large = compile(&scene(shape::cube(2.0)?, material::transparent()))?;
+    assert_eq!(small.source, large.source);
+    assert_ne!(small.words, large.words);
+    for invalid in [0.0_f32, -0.25, f32::NAN, f32::INFINITY, f32::from_bits(1)] {
+        let malformed = ShapeValue {
+            schema: shape::cube_schema(),
+            words: vec![invalid.to_bits()],
+        };
+        let nested = shape::tuple(vec![malformed])?;
+        let error = compile(&scene(nested, material::transparent())).unwrap_err();
+        assert!(format!("{error:#}").contains("cube half-extent"));
+    }
+    assert!(shape::cube(f64::NAN).is_err());
+    assert!(shape::cube(f64::MAX).is_err());
+    Ok(())
+}
+
+#[test]
 fn malformed_public_payloads_are_rejected() -> Result<()> {
     let mut value = scene(
         shape::vector(shape::plane_schema(), vec![shape::plane()])?,

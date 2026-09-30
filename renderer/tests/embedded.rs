@@ -217,7 +217,7 @@ fn embedded_primitives_respect_physical_intervals_and_normals() {
             let coplanar = geo_plane(GeoRay(origin,vec4<f32>(0,1,0,0)),0,100,radius);
             output[9] = vec4<f32>(f32(start.valid),start.distance,f32(coplanar.valid),0);
             let special = geo_horosphere(ray,0,100,radius);
-            let cube = geo_cube(ray,0,100,radius);
+            let cube = geo_cube(ray,0,100,radius,1.0);
             output[10] = vec4<f32>(f32(special.valid),special.distance,f32(cube.valid),cube.distance);
         "#,
             11,
@@ -239,6 +239,55 @@ fn embedded_primitives_respect_physical_intervals_and_normals() {
             _ => [0.0; 4],
         };
         row(rows[10], special, 2e-6);
+    }
+}
+
+#[test]
+#[ignore = "requires a working WGPU compute adapter"]
+fn sized_cubes_preserve_physical_distances_normals_and_intervals() {
+    for extent in [0.125_f32, 0.25, 2.0] {
+        let rows = dispatch(
+            0,
+            &[[extent, 0.0, 0.0, 0.0]],
+            r#"
+            let extent=input[0].x;
+            for(var axis=1u;axis<4u;axis+=1u) {
+                var p=vec4<f32>(1,0,0,0);
+                var v=vec4<f32>(0);
+                p[axis]=3*extent;
+                v[axis]=-1;
+                let ray=GeoRay(p,v);
+                let entry=geo_cube(ray,2*extent,10*extent,1,extent);
+                let exit=geo_cube(ray,3*extent,10*extent,1,extent);
+                let excluded=geo_cube(ray,0,2*extent,1,extent);
+                let inside=geo_cube(GeoRay(vec4<f32>(1,0,0,0),v),0,10*extent,1,extent);
+                // The perpendicular component never changes along this ray.
+                p[axis%3u+1u]=1.25*extent;
+                let missed=geo_cube(GeoRay(p,v),0,10*extent,1,extent);
+                let offset=4u*(axis-1u);
+                output[offset]=vec4<f32>(f32(entry.valid),entry.distance,exit.distance,inside.distance);
+                output[offset+1u]=entry.normal;
+                output[offset+2u]=exit.normal;
+                output[offset+3u]=vec4<f32>(f32(excluded.valid),f32(missed.valid),0,0);
+            }
+            "#,
+            12,
+        );
+        for axis in 1..4 {
+            let offset = 4 * (axis - 1);
+            let extent = f64::from(extent);
+            row(
+                rows[offset],
+                [1.0, 2.0 * extent, 4.0 * extent, extent],
+                2e-6,
+            );
+            let mut normal = [0.0; 4];
+            normal[axis] = 1.0;
+            row(rows[offset + 1], normal, 0.0);
+            normal[axis] = -1.0;
+            row(rows[offset + 2], normal, 0.0);
+            row(rows[offset + 3], [0.0; 4], 0.0);
+        }
     }
 }
 

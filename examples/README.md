@@ -81,7 +81,7 @@ From the initial camera, read each row left to right:
 | Bottom | Eight lunes (hosohedron) | `{2,8}` | 8 lunes |
 | Bottom | Dihedron | `{6,2}` | 2 hemispheres |
 
-All balls have radius 1, the same matte palette, and border half-width 0.025
+All balls have radius 0.25, the same matte palette, and border half-width 0.025
 radians. A broad environment gradient illuminates them, so shadows and shiny
 reflections do not obscure the patterns. The tiles form spherical polygons on
 smooth balls in Euclidean space. The same patterns work on
@@ -120,6 +120,10 @@ current camera-path sampler, and the scene-wide medium also occupies the glass.
 The fog scatters light from the emitter; it does not emit light itself.
 
 ## Camera controls
+
+The Euclidean glass and ball-tiling scenes use 0.25-sized objects, comparable to
+the curved-space balls and the 0.28-radius fog balls. Their camera distances and
+spacing use the same scale, so the shared movement speed feels consistent.
 
 Left-drag to look, or press Tab to lock/unlock the mouse. Scroll to zoom, use
 WASD/arrows to move, Space/C for up/down,

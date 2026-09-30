@@ -115,5 +115,5 @@ revisions, options, adapter/driver, and hashes alongside the files.
 - The scene-wide homogeneous medium also occupies refractive objects. Medium
   boundaries are needed to exclude fog from glass. Small emitters and volumetric
   caustics converge slowly with the current camera-path sampler.
-- Heterogeneous media, anisotropic scattering, spherical tilings, triangle
+- Heterogeneous media, anisotropic scattering, triangle
   geometry, acceleration structures, and importance sampling remain extensions.

@@ -8,7 +8,7 @@ use objects::{
     background::ConstBg,
     material::{Absorbing, Colored, Emissive, Lambertian, Refractive, Specular, Transparent},
     mixture,
-    object::Covered,
+    object::{Covered, Tiled, tiling::RegularSpherical},
     shape::{GeodesicSphere, Plane},
     view::PointView,
 };
@@ -23,16 +23,17 @@ mixture! {
 
 type Map = EmbeddedIsometry<f64, 1>;
 type Object<S, M> = Mapped<Spherical3, Covered<Spherical3, S, M>, Map>;
+type TiledObject<S, P, M, const N: usize> = Mapped<Spherical3, Tiled<S, P, M, M, N>, Map>;
 pub type ExampleScene<const H: usize> = SceneImpl<
     Spherical3,
     Mapped<Spherical3, PointView<Spherical3>, Map>,
     (
-        Object<GeodesicSphere, Colored<Lambertian>>,
+        TiledObject<GeodesicSphere, RegularSpherical<3, 3>, Colored<Lambertian>, 3>,
         Object<GeodesicSphere, Refractive>,
         Object<GeodesicSphere, Emissive<Absorbing>>,
-        Object<Plane, Floor>,
+        TiledObject<Plane, RegularSpherical<5, 3>, Floor, 3>,
         Object<GeodesicSphere, Emissive<Absorbing>>,
-        Object<GeodesicSphere, Colored<Refractive>>,
+        TiledObject<GeodesicSphere, RegularSpherical<4, 3>, Colored<Refractive>, 3>,
     ),
     ConstBg,
     H,
@@ -70,6 +71,19 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         0.25,
         Colored::new(Lambertian, [0.8, 0.18, 0.08].into()),
     );
+    let diffuse = Mapped::new(
+        Tiled::new(
+            diffuse.inner.shape,
+            RegularSpherical::<3, 3>::new(0.025),
+            [
+                diffuse.inner.material,
+                Colored::new(Lambertian, [0.65, 0.08, 0.04].into()),
+                Colored::new(Lambertian, [0.95, 0.35, 0.15].into()),
+            ],
+            Colored::new(Lambertian, [0.12, 0.025, 0.01].into()),
+        ),
+        diffuse.map,
+    );
     let glass = resting_sphere(
         floor,
         [0.0, std::f64::consts::FRAC_PI_2],
@@ -89,14 +103,19 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
             )
             .chain(Spherical3::shift_z(-0.55)),
     );
+    let floor_material = |color: [f32; 3]| {
+        Floor::new(
+            (Colored::new(Lambertian, color.into()), 0.85).into(),
+            (Specular, 0.05).into(),
+            (Transparent, 0.10).into(),
+        )
+    };
     let ground = Mapped::new(
-        Covered::new(
+        Tiled::new(
             Plane,
-            Floor::new(
-                (Colored::new(Lambertian, [0.65, 0.68, 0.72].into()), 0.85).into(),
-                (Specular, 0.05).into(),
-                (Transparent, 0.10).into(),
-            ),
+            RegularSpherical::<5, 3>::new(0.012),
+            [[0.65, 0.68, 0.72], [0.5, 0.57, 0.65], [0.72, 0.65, 0.55]].map(floor_material),
+            floor_material([0.2, 0.23, 0.26]),
         ),
         floor,
     );
@@ -124,6 +143,19 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         [0.65, -1.5],
         0.11,
         Colored::new(Refractive::new(1.08), [0.4, 0.65, 1.0].into()),
+    );
+    let blue = Mapped::new(
+        Tiled::new(
+            blue.inner.shape,
+            RegularSpherical::<4, 3>::new(0.02),
+            [
+                blue.inner.material,
+                Colored::new(Refractive::new(1.08), [0.25, 0.5, 0.9].into()),
+                Colored::new(Refractive::new(1.08), [0.55, 0.8, 1.0].into()),
+            ],
+            Colored::new(Refractive::new(1.08), [0.15, 0.3, 0.65].into()),
+        ),
+        blue.map,
     );
     SceneImpl::new(
         Mapped::new(PointView::new(1.5), camera()),

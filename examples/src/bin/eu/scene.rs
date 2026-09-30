@@ -1,10 +1,14 @@
+//! Square backdrop tiles and an octahedral tiling on a refractive sphere.
 use ccgeom::{EmbeddedIsometry, Flat3, Geometry3};
 use objects::{
     Mapped, SceneImpl,
     background::GradBg,
     material::{Colored, Lambertian, Refractive, Specular},
     mixture,
-    object::Covered,
+    object::{
+        Covered, Tiled,
+        tiling::{RegularSpherical, Square},
+    },
     shape::{Cube, Plane, Sphere},
     view::PointView,
 };
@@ -17,65 +21,67 @@ mixture! {
     }
 }
 
-pub type Object<S> = Mapped<Flat3, Covered<Flat3, S, Mixture>, EmbeddedIsometry<f64, 0>>;
+type Map = EmbeddedIsometry<f64, 0>;
+pub type Object<S> = Mapped<Flat3, Covered<Flat3, S, Mixture>, Map>;
+type TiledObject<S, P, const N: usize> = Mapped<Flat3, Tiled<S, P, Mixture, Mixture, N>, Map>;
 
 pub type ExampleScene<const H: usize> = SceneImpl<
     Flat3,
-    Mapped<Flat3, PointView<Flat3>, EmbeddedIsometry<f64, 0>>,
-    (Vec<Object<Sphere>>, Vec<Object<Cube>>, Vec<Object<Plane>>),
+    Mapped<Flat3, PointView<Flat3>, Map>,
+    (
+        Vec<TiledObject<Sphere, RegularSpherical<3, 4>, 3>>,
+        Vec<Object<Cube>>,
+        Vec<TiledObject<Plane, Square, 4>>,
+    ),
     GradBg,
     H,
 >;
 
-pub fn camera() -> EmbeddedIsometry<f64, 0> {
+pub fn camera() -> Map {
     Flat3::shift_y(0.5).chain(Flat3::shift_z(2.0))
+}
+
+fn material(color: [f32; 3], diffuse: f64, specular: f64) -> Mixture {
+    Mixture::new(
+        (Colored::new(Lambertian, color.into()), diffuse).into(),
+        (Specular, specular).into(),
+        (
+            Colored::new(Refractive::new(1.2), color.into()),
+            1.0 - (diffuse + specular),
+        )
+            .into(),
+    )
 }
 
 pub fn scene<const H: usize>() -> ExampleScene<H> {
     let view = Mapped::new(PointView::new(1.0), camera());
     let objects = (
         vec![Mapped::new(
-            Covered::new(
+            Tiled::new(
                 Sphere,
-                Mixture::new(
-                    (Colored::new(Lambertian, [1.0, 0.2, 0.2].into()), 0.0).into(),
-                    (Specular, 0.1).into(),
-                    (
-                        Colored::new(Refractive::new(1.2), [1.0, 1.0, 0.2].into()),
-                        0.9,
-                    )
-                        .into(),
-                ),
+                RegularSpherical::<3, 4>::new(0.025),
+                [[1.0, 0.9, 0.3], [0.45, 0.8, 1.0], [1.0, 0.45, 0.25]]
+                    .map(|color| material(color, 0.08, 0.1)),
+                material([0.08, 0.1, 0.12], 0.9, 0.1),
             ),
             Flat3::shift_y(1.0),
         )],
         vec![Mapped::new(
-            Covered::new(
-                Cube,
-                Mixture::new(
-                    (Colored::new(Lambertian, [0.2, 0.8, 0.8].into()), 1.0).into(),
-                    (Specular, 0.0).into(),
-                    (
-                        Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()),
-                        0.0,
-                    )
-                        .into(),
-                ),
-            ),
+            Covered::new(Cube, material([0.2, 0.8, 0.8], 1.0, 0.0)),
             Flat3::shift_y(-1.0),
         )],
         vec![Mapped::new(
-            Covered::new(
+            Tiled::new(
                 Plane,
-                Mixture::new(
-                    (Colored::new(Lambertian, [1.0, 1.0, 1.0].into()), 0.9).into(),
-                    (Specular, 0.1).into(),
-                    (
-                        Colored::new(Refractive::new(1.0), [1.0, 1.0, 1.0].into()),
-                        0.0,
-                    )
-                        .into(),
-                ),
+                Square::new(0.5, 0.012),
+                [
+                    [0.85, 0.85, 0.85],
+                    [0.48, 0.55, 0.65],
+                    [0.7, 0.75, 0.8],
+                    [0.35, 0.42, 0.5],
+                ]
+                .map(|color| material(color, 0.9, 0.1)),
+                material([0.1, 0.12, 0.15], 1.0, 0.0),
             ),
             Flat3::shift_z(-1.0),
         )],
@@ -86,32 +92,4 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         2.4,
     );
     SceneImpl::<_, _, _, _, H>::new(view, objects, background)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn studio_placements_use_physical_flat_coordinates() {
-        let example = scene::<4>();
-        let origin = [1.0, 0.0, 0.0, 0.0].into();
-        assert_eq!(
-            example.view.map.apply_vector(origin).into_array(),
-            [1.0, 0.0, 0.5, 2.0]
-        );
-        for (map, expected) in [
-            example.object.0[0].map,
-            example.object.1[0].map,
-            example.object.2[0].map,
-        ]
-        .into_iter()
-        .zip([
-            [1.0, 0.0, 1.0, 0.0],
-            [1.0, 0.0, -1.0, 0.0],
-            [1.0, 0.0, 0.0, -1.0],
-        ]) {
-            assert_eq!(map.apply_vector(origin).into_array(), expected);
-        }
-    }
 }

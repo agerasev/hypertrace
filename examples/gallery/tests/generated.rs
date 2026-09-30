@@ -49,6 +49,7 @@ fn static_groups_and_vector_lengths_do_not_change_shader_dependencies() {
     builder.object.1.clear();
     builder.object.2.clear();
     builder.object.3.clear();
+    builder.object.4.clear();
     for definition in [changed, builder.definition().unwrap()] {
         assert_eq!(
             hypertrace_renderer::shader::compile(&definition)

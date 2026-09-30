@@ -1,5 +1,5 @@
 //! Component validation and stable linking behavior, independent of WGPU.
-use crate::object::tiling::{self, Tiling};
+use crate::object::tiling;
 use crate::shader::*;
 use crate::{material, material::MaterialValueExt, shape, shape::ShapeValueExt};
 use ccgeom::{Flat3, Hyperboloid3, Spherical3};
@@ -111,7 +111,7 @@ fn spherical_sphere_radii_are_validated_through_nested_payloads() -> Result<()> 
 #[test]
 fn spherical_uniform_tiling_keeps_shared_material_semantics() -> Result<()> {
     let material = tiling::tiled(
-        <tiling::Uniform as Tiling<Spherical3>>::shader(),
+        tiling::selector::<Spherical3, shape::Plane, tiling::Uniform>()?,
         vec![material::transparent()],
         material::absorbing(),
         1.0,
@@ -163,8 +163,17 @@ fn curved_spheres_reject_unresolvable_f32_sections() -> Result<()> {
 #[test]
 fn tiling_components_validate_parameters_and_children() -> Result<()> {
     let context = GeometryContext::<Hyperboloid3>::new(1.0);
-    for selector in [tiling::Square::shader(), tiling::Hexagonal::shader()] {
-        for cell in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+    for selector in [
+        tiling::selector::<Hyperboloid3, shape::Horosphere, tiling::Square>()?,
+        tiling::selector::<Hyperboloid3, shape::Horosphere, tiling::Hexagonal>()?,
+    ] {
+        for cell in [
+            0.0,
+            -1.0,
+            f64::NAN,
+            f64::INFINITY,
+            f64::from(f32::from_bits(1)),
+        ] {
             let value = tiling::tiled(
                 selector.clone(),
                 vec![material::transparent()],
@@ -179,7 +188,7 @@ fn tiling_components_validate_parameters_and_children() -> Result<()> {
     }
     for width in [-1.0, f64::NAN, f64::INFINITY] {
         assert!(tiling::tiled(
-            <tiling::Uniform as Tiling<Flat3>>::shader(),
+            tiling::selector::<Flat3, shape::Plane, tiling::Uniform>()?,
             vec![material::transparent()],
             material::absorbing(),
             1.0,
@@ -188,7 +197,7 @@ fn tiling_components_validate_parameters_and_children() -> Result<()> {
         .is_err());
     }
     assert!(tiling::tiled(
-        <tiling::Uniform as Tiling<Flat3>>::shader(),
+        tiling::selector::<Flat3, shape::Plane, tiling::Uniform>()?,
         vec![],
         material::absorbing(),
         1.0,
@@ -196,7 +205,7 @@ fn tiling_components_validate_parameters_and_children() -> Result<()> {
     )
     .is_err());
     let mut value = tiling::tiled(
-        tiling::Square::shader(),
+        tiling::selector::<Hyperboloid3, shape::Horosphere, tiling::Square>()?,
         vec![material::refractive(1.5)?],
         material::absorbing(),
         1.0,
@@ -247,7 +256,7 @@ fn variable_material_lengths_are_data_through_nested_combinators() -> Result<()>
             (0.75, variable_material(values)?.colored([0.5; 3])?),
         ])?;
         let tiled = tiling::tiled(
-            <tiling::Uniform as Tiling<Flat3>>::shader(),
+            tiling::selector::<Flat3, shape::Plane, tiling::Uniform>()?,
             vec![mixture],
             material::mixture(vec![(1.0, variable_material(border)?)])?,
             1.0,
@@ -275,7 +284,7 @@ fn offset_tables_reject_malformed_ranges_and_validate_inactive_children() -> Res
             (1.0, material::absorbing()),
         ])?,
         tiling::tiled(
-            <tiling::Uniform as Tiling<Flat3>>::shader(),
+            tiling::selector::<Flat3, shape::Plane, tiling::Uniform>()?,
             vec![variable_material(&[0.25, 0.5])?],
             material::absorbing(),
             1.0,
@@ -331,10 +340,118 @@ fn fixed_and_empty_materials_share_offset_layouts_with_variable_children() -> Re
         material::mixture_schema(vec![variable_material(&[])?.schema, overflow.clone()]).is_err()
     );
     assert!(tiling::tiled_schema(
-        <tiling::Uniform as Tiling<Flat3>>::shader(),
+        tiling::selector::<Flat3, shape::Plane, tiling::Uniform>()?,
         vec![overflow],
         material::absorbing().schema
     )
     .is_err());
+    Ok(())
+}
+
+#[test]
+fn spherical_patterns_keep_structure_and_validate_each_payload_in_every_curvature() -> Result<()> {
+    fn check<G: Geometry>() -> Result<()> {
+        use tiling::RegularSpherical as Regular;
+        let selectors = [
+            tiling::selector::<G, shape::GeodesicSphere, Regular<3, 3>>()?,
+            tiling::selector::<G, shape::GeodesicSphere, Regular<4, 3>>()?,
+            tiling::selector::<G, shape::GeodesicSphere, Regular<3, 4>>()?,
+            tiling::selector::<G, shape::GeodesicSphere, Regular<5, 3>>()?,
+            tiling::selector::<G, shape::GeodesicSphere, Regular<3, 5>>()?,
+            tiling::selector::<G, shape::GeodesicSphere, Regular<2, 7>>()?,
+            tiling::selector::<G, shape::GeodesicSphere, Regular<7, 2>>()?,
+        ];
+        for selector in selectors {
+            let material = |width, index| {
+                tiling::tiled(
+                    selector.clone(),
+                    vec![material::refractive(index)?, material::transparent()],
+                    material::absorbing().emissive([0.3; 3])?,
+                    1.0,
+                    width,
+                )
+            };
+            let a = definition(shape::geodesic_sphere(0.4)?, material(0.01, 1.1)?, 1.0);
+            let b = definition(
+                shape::geodesic_sphere(0.7)?,
+                material(0.05, 1.4)?,
+                if G::SIGN == 0 { 1.0 } else { 3.0 },
+            );
+            let ca = compile(&a)?;
+            let cb = compile(&b)?;
+            assert_eq!(ca.source, cb.source, "parameters and radius are data");
+            assert_ne!(ca.words, cb.words);
+            // Check a repeated same-key material too: deduplication must never
+            // skip the later instance's numerical validation.
+            for slot in [1, 2, 4] {
+                let mut invalid = a.clone();
+                let mut object = invalid.objects[0].clone();
+                let target = if slot == 1 {
+                    1
+                } else {
+                    object.material.words[slot] as usize
+                };
+                object.material.words[target] = f32::NAN.to_bits();
+                invalid.objects.push(object);
+                assert!(
+                    compile(&invalid).is_err(),
+                    "invalid spherical pattern/child accepted"
+                );
+            }
+        }
+        Ok(())
+    }
+    check::<Flat3>()?;
+    check::<Hyperboloid3>()?;
+    check::<Spherical3>()
+}
+
+#[test]
+fn empty_tiled_object_vectors_retain_domain_and_material_modules() -> Result<()> {
+    use crate::{
+        material::{Absorbing, Refractive},
+        object::Tiled,
+        Object,
+    };
+    type Tile =
+        Tiled<shape::GeodesicSphere, tiling::RegularSpherical<3, 5>, Refractive, Absorbing, 2>;
+    let mut definition = definition::<Spherical3>(shape::plane(), material::absorbing(), 1.0);
+    definition.objects.clear();
+    definition.modules = <Vec<Tile> as Object<Spherical3>>::shader_modules()?;
+    let empty = compile(&definition)?;
+    let tiles = vec![Tile::new(
+        shape::GeodesicSphere::new(0.4),
+        tiling::RegularSpherical::new(0.02),
+        [Refractive::new(1.1), Refractive::new(1.4)],
+        Absorbing,
+    )];
+    tiles.encode_objects(Transform::identity(), &mut definition.objects)?;
+    let populated = compile(&definition)?;
+    assert_eq!(empty.source, populated.source);
+    assert_ne!(empty.words, populated.words);
+    Ok(())
+}
+
+#[test]
+fn spherical_patterns_reject_non_spherical_or_unresolvable_numeric_parameters() -> Result<()> {
+    use tiling::RegularSpherical as Regular;
+    assert!(tiling::selector::<Flat3, shape::Sphere, Regular<4, 4>>().is_err());
+    assert!(tiling::selector::<Flat3, shape::Sphere, Regular<7, 3>>().is_err());
+    assert!(tiling::selector::<Flat3, shape::Sphere, Regular<1, 3>>().is_err());
+    assert!(tiling::selector::<Flat3, shape::Sphere, Regular<3, 1>>().is_err());
+    assert!(tiling::selector::<Flat3, shape::Sphere, Regular<2, 1048576>>().is_err());
+    let selector = tiling::selector::<Flat3, shape::Sphere, Regular<2, 7>>()?;
+    for width in [-0.1, f64::NAN, f64::INFINITY, 2.0] {
+        let value = tiling::tiled(
+            selector.clone(),
+            vec![material::transparent()],
+            material::absorbing(),
+            1.0,
+            width,
+        );
+        assert!(value
+            .and_then(|value| compile(&scene(shape::sphere(), value)))
+            .is_err());
+    }
     Ok(())
 }

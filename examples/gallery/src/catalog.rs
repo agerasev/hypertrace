@@ -17,19 +17,19 @@ pub const EXAMPLES: &[Example] = &[
         id: "hy",
         title: "Hyperbolic tilings",
         group: "Materials and lighting",
-        description: "Explore pentagonal and horosphere tilings in hyperbolic space.",
+        description: "Pentagonal planes, square and hexagonal horospheres, and an icosahedrally tiled sphere in hyperbolic space.",
     },
     Example {
         id: "eu",
         title: "Euclidean glass",
         group: "Materials and lighting",
-        description: "Glass, diffuse surfaces and a directional background in flat space.",
+        description: "An octahedrally tiled glass sphere, a diffuse cube and a square-tiled backdrop in flat space.",
     },
     Example {
         id: "sp",
         title: "Spherical studio",
         group: "Materials and lighting",
-        description: "An off-center sun lights red, clear and blue balls. Explore the opposite pole and a glowing sphere crossing the floor.",
+        description: "An off-center sun lights tetrahedral red and cubic blue balls on a dodecahedrally tiled floor. Explore the opposite pole and glowing landmark.",
     },
     Example {
         id: "eu-fog",

@@ -85,6 +85,14 @@ history in commits, not new migration diaries.
   object mapping have different material-frame semantics. Nested mixtures retain
   their own random draws; emission and color wrappers run in their nesting order.
 
+- Tiling compatibility follows the surface's intrinsic domain, not ambient
+  curvature. Keep chart extraction, pattern selection and child materials
+  separate. Map a tiled object as a whole to preserve its material frame.
+  Flat pattern dimensions are physical, hyperbolic pentagon widths are
+  curvature-normalized, and spherical border widths are angles; document these
+  units explicitly. For hexagonal borders, convert edge-form thresholds by the
+  gradient magnitude rather than treating chart coefficients as distances.
+
 ## Geometry and transport invariants
 
 - Positions and tangents are scalar-first `(w,x,y,z)`. Curvature signs are

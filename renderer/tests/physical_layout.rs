@@ -136,3 +136,43 @@ fn behind_camera_beacon_has_a_forward_long_route() -> Result<()> {
     assert!((space.distance(short_hit.position, center) - radius).abs() < 1e-12);
     Ok(())
 }
+
+#[test]
+fn parabolic_horosphere_maps_preserve_height_and_material_directions() {
+    let space = Space3::<f64, -1>::unit();
+    for [x, y] in [[2.0f64.sqrt(), 0.0], [0.0, 2.0], [-0.7, 0.4]] {
+        // A parabolic translation, rather than a geodesic displacement of the
+        // same length: the entire horosphere keeps its half-space height.
+        let map = <Embedded3<f64, -1> as Geometry>::map_from_components([
+            1.0,
+            y / 2.0,
+            -x / 2.0,
+            0.0,
+            0.0,
+            x / 2.0,
+            y / 2.0,
+            0.0,
+        ])
+        .unwrap();
+        for point in [[0.0, 0.0, 1.0], [0.2, -0.4, 0.7], [-0.3, 0.8, 2.0]] {
+            let embedded = space.point_from_half_space(point.into()).unwrap();
+            let mapped = map.apply_vector(embedded);
+            for (actual, expected) in space.point_to_half_space(mapped).into_iter().zip([
+                point[0] + x,
+                point[1] + y,
+                point[2],
+            ]) {
+                assert!((actual - expected).abs() < 1e-12);
+            }
+            for direction in [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]] {
+                let tangent = space
+                    .tangent_from_half_space(point.into(), direction.into())
+                    .unwrap();
+                let actual = space.tangent_to_half_space(mapped, map.apply_vector(tangent));
+                for (actual, expected) in actual.into_iter().zip(direction) {
+                    assert!((actual - expected).abs() < 1e-12);
+                }
+            }
+        }
+    }
+}

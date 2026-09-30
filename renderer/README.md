@@ -222,6 +222,57 @@ weights in order, `Colored` changes throughput before calling its child, and
 `Emissive` adds light before calling its child. Nested mixtures keep their own
 random draws.
 
+### Intrinsic surface tilings
+
+`objects::object::Tiled` combines a shape, a pattern, a fixed array of tile
+materials, and a border material. Shapes implement `TileSurface<G>` to supply
+an intrinsic domain and chart; patterns implement `Tiling<Domain>`. Unsupported
+surface/pattern combinations fail to compile. Downstream shapes and patterns use
+these same traits without renderer or compiler registration.
+
+| Surface | Intrinsic domain | Patterns |
+| --- | --- | --- |
+| Euclidean plane | Euclidean | `Square`, `Hexagonal` |
+| Hyperbolic horosphere | Euclidean | `Square`, `Hexagonal` |
+| Hyperbolic plane | Hyperbolic | `Pentagonal`, `Pentastar` |
+| Spherical plane | Spherical | `RegularSpherical<P,Q>` |
+| `Sphere` or `GeodesicSphere` in any geometry | Spherical | `RegularSpherical<P,Q>` |
+
+`Uniform` works in every domain. Flat cell sizes and border half-widths use
+physical units, including the curvature-radius scaling of horosphere charts.
+Hyperbolic pentagon widths retain curvature-normalized units. Spherical widths
+are angular half-widths in radians, independent of the sphere's radius.
+
+For `RegularSpherical<P,Q>`, `P` is the number of edges per face and `Q` is the
+number of faces meeting at each vertex. Supported families are tetrahedral
+`<3,3>`, cubic `<4,3>`, octahedral `<3,4>`, dodecahedral `<5,3>`, icosahedral
+`<3,5>`, lunes `<2,Q>`, and dihedra `<P,2>`. A dihedron has two hemispherical
+faces; subdividing its equator does not create additional material boundaries.
+The Platonic patterns use spherical Voronoi faces and great-circle borders,
+so their charts have no longitude seam or pole singularity.
+
+```rust,ignore
+use objects::{material::{Colored, Lambertian}, object::{Tiled, tiling}, shape::Plane};
+let floor = Tiled::new(
+    Plane,
+    tiling::Square::new(0.5, 0.01),
+    [[0.8, 0.8, 0.8], [0.3, 0.4, 0.5]]
+        .map(|rgb| Colored::new(Lambertian, rgb.into())),
+    Colored::new(Lambertian, [0.05; 3].into()),
+);
+```
+
+Place this object in a `Flat3` scene, or change the shape to `Horosphere` in a
+`Hyperboloid3` scene. Use `GeodesicSphere::new(radius)` and
+`RegularSpherical::<5,3>::new(0.02)` for a pentagonal sphere in any geometry.
+Wrap the whole `Tiled` object in `Mapped` to carry its material coordinates with
+its shape. Tile and border material types may differ; all child payloads retain
+checked offsets and validation. Sizes, widths and material values remain buffer
+data, so editing them does not rebuild the pipeline. Flat cells must remain
+normal positive f32 values; samples with unresolved lattice coordinates at or
+beyond `2^24` terminate rather than convert overflowing indices. Lune counts
+must be below `2^20` so their sectors remain resolvable in f32 longitude.
+
 ### Homogeneous media
 
 `Medium::vacuum()` is the default. `Medium { extinction, albedo }`

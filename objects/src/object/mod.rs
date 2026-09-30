@@ -1,8 +1,7 @@
 use crate::shader::Geometry;
 mod covered;
 mod mapped;
-pub mod tiled_horosphere;
-pub mod tiled_plane;
+mod tiled;
 pub mod tiling;
 mod tuple;
 mod vector;
@@ -19,6 +18,5 @@ pub trait Object<G: Geometry>: Sized {
 }
 
 pub use covered::Covered;
-pub use tiled_horosphere::TiledHorosphere;
-pub use tiled_plane::TiledPlane;
+pub use tiled::Tiled;
 pub use tiling::Tiling;

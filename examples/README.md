@@ -36,13 +36,29 @@ scattering and indirect illumination need more samples to settle.
 
 | Example | What to observe | Default path events |
 | --- | --- | ---: |
-| `eu` | Glass, diffuse surfaces, and a directional background in flat space. | 4 |
-| `hy` | Pentagonal plane tilings and tiled horospheres. | 3 |
-| `sp` | Asymmetric sunlight, diffuse and refractive balls, and a glowing sphere crossing the floor. | 6 |
+| `eu` | A glass sphere with octahedral tiles and a square-tiled backdrop. | 4 |
+| `hy` | Pentagonal planes, square/hexagonal horospheres, and an icosahedrally tiled sphere. | 3 |
+| `sp` | Tetrahedral and cubic balls on a dodecahedrally tiled floor under asymmetric sunlight. | 6 |
 | `eu-fog` | One light with red diffuse, green reflective and blue refractive spheres in Euclidean fog. | 12 |
 
 Surface and volume interactions both consume the path-event budget. Headless
 and benchmark tools accept `--bounces` to override the defaults.
+
+## Surface patterns
+
+The same `Tiled::new(shape, pattern, materials, border)` construction appears in
+all three geometry examples. The surface determines its intrinsic domain;
+ambient curvature remains a compile-time geometry type. A Euclidean plane and a
+hyperbolic horosphere share the same square/hexagonal selector. Every round
+sphere supports the regular spherical families, and so does a spherical plane.
+See the [tiling API](../renderer/README.md#intrinsic-surface-tilings) for domains,
+units and custom extension traits.
+
+The examples collectively show all five Platonic patterns: octahedral in `eu`,
+icosahedral in `hy`, and tetrahedral, cubic and dodecahedral in `sp`. Edit the
+`RegularSpherical<P,Q>` parameters to compare other families; `P` counts face
+edges and `Q` counts faces meeting at a vertex. The fog example keeps its plain
+materials so their lighting remains easy to compare.
 
 ## Spherical shadows
 
@@ -54,7 +70,9 @@ floor footprint, where direct sunlight is weakest; the antipodal point brightens
 again as spherical rays converge. The starting view shows the red and blue balls
 and the beacon; turn around to find the clear ball.
 The floor material is 85% diffuse, 5% specular, and 10% transparent. Look for
-contact shadows, refracted light, and faint reflections. There is no ambient light.
+contact shadows, refracted light, and faint reflections across the pentagonal floor
+tiles. The red sphere has triangular tetrahedral tiles and the blue sphere has
+cubic tiles. There is no ambient light.
 
 ## Euclidean fog
 

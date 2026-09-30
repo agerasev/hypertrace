@@ -1,9 +1,11 @@
 fn {{self}}_remainder(value:i32,modulus:i32)->i32 {return ((value%modulus)+modulus)%modulus;}
-fn {{self}}(embedded:vec4<f32>,cell:f32,width:f32,count:u32)->u32 {
-    let position = geo_to_half_space_pos(embedded);
+fn {{self}}(position:vec4<f32>,cell:f32,width:f32,count:u32)->u32 {
     var index=0i;
     var border=false;
         let g = position.xy/cell;
+        // Beyond this range f32 cannot resolve adjacent integer cells. Stop
+        // the sample instead of saturating a float-to-integer conversion.
+        if !all(abs(g)<vec2<f32>(16777216.0)) {return count+1u;}
         let whole = floor(g);
         let part = fract(g);
         let border_ratio = width/cell;

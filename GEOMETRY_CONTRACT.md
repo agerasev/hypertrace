@@ -54,6 +54,27 @@ for classification,
 while their transformations use the same quaternion-pair isometries as tracing.
 The horosphere normal is computed directly as an ambient unit tangent.
 
+**Surface tilings**
+
+`TileSurface<G>` extracts an intrinsic domain from a local embedded position;
+`Tiling<Domain>` selects a tile material in that domain. Euclidean planes and
+hyperbolic horospheres share physical two-dimensional coordinates. Horosphere
+charts multiply canonical half-space x/y by the scene radius. Hyperbolic planes
+retain their normalized hyperboloid coordinates. Sphere charts use normalized
+spatial `(x,y,z)` directions for every ambient curvature; the spherical plane
+uses its unit `(w,x,y)` great sphere. Mapping the entire object carries its
+material coordinates with it.
+
+Flat tile sizes and border half-widths are physical lengths. Hyperbolic pentagon
+widths are curvature-normalized; spherical borders are geodesic angles in radians.
+Regular spherical `{p,q}` families use dual face-centre Voronoi regions with
+great-circle bisectors; lunes and dihedra use their meridian/equatorial boundaries.
+Family selection is static, while widths, cell sizes and material values remain
+validated instance data. Flat cells must be positive normal f32 values. Flat
+selectors stop samples whose lattice coordinates reach `2^24`; they do not cast
+unresolved values to integer tile indices. Lune counts must be below `2^20` to
+retain a resolved angular sector in f32.
+
 **CPU and shader boundaries**
 
 The CPU API is `ccgeom::embedded::{Space3<T,K>, EmbeddedRay<T>,

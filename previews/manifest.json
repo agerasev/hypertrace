@@ -11,7 +11,21 @@
     "linear_format": "little-endian rgba32f, row-major, top row first",
     "display_gamma": 2.2,
     "png_sha256": "30ec0f5b19e5d09d5dc7d19789988787ac9b1cd264ddb96f9eb427d7a2d60c46",
-    "source_commit": "292dfc2103052d476412eea5a618a1b16f7e5939"
+    "source_commit": "292dfc2103052d476412eea5a618a1b16f7e5939",
+    "responsive": [
+      {
+        "file": "eu-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "b54c11f92e0eda3ba01b70b8b4be2f475a1895830085445767337f047b0096c8"
+      },
+      {
+        "file": "eu.webp",
+        "width": 1280,
+        "height": 960,
+        "sha256": "68c0df5148f589efecfc7051bad0de46e0d8d61f2c521524de1ce148044e6bf0"
+      }
+    ]
   },
   "hy": {
     "backend": "wgpu",
@@ -25,6 +39,52 @@
     "linear_format": "little-endian rgba32f, row-major, top row first",
     "display_gamma": 2.2,
     "png_sha256": "0033056d6dd37e202c1200afb66f250f1f90375df7afcead09619febe60302a0",
-    "source_commit": "292dfc2103052d476412eea5a618a1b16f7e5939"
+    "source_commit": "292dfc2103052d476412eea5a618a1b16f7e5939",
+    "responsive": [
+      {
+        "file": "hy-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "4df52783eacf9ff62a21431f860d1131ea7a3652c349ae4e35d941c851c28185"
+      },
+      {
+        "file": "hy.webp",
+        "width": 1280,
+        "height": 960,
+        "sha256": "b70c0237e246449bd2895083dcf70770a5b421e7075548f463d1edcd82a0f0b7"
+      }
+    ]
+  },
+  "eu-fog": {
+    "backend": "wgpu",
+    "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+    "scene": "eu-fog",
+    "width": 640,
+    "height": 480,
+    "samples": 32768,
+    "seed": 3735928559,
+    "bounces": 12,
+    "curvature_sign": 0,
+    "curvature_radius": 1,
+    "medium": {
+      "extinction": 0.35,
+      "albedo": [
+        0.95,
+        0.95,
+        0.95
+      ]
+    },
+    "linear_format": "little-endian rgba32f, row-major, top row first",
+    "display_gamma": 2.2,
+    "source_commit": "596f9b08e47b097610eabe6bc8f6b76972880508",
+    "png_sha256": "7ba737c4576f03a9f500a5964912a63d638e90fa9fbaeffca44427526ee4a3a3",
+    "responsive": [
+      {
+        "file": "eu-fog-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "fd21f582088608a286e10108906c61cc0296e3c71d8639b8c1d1b00b420e8404"
+      }
+    ]
   }
 }

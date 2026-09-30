@@ -8,8 +8,8 @@
   <link rel="icon" href="data:,">
   
 <script type="module">
-import init, * as bindings from '/hypertrace/viewer/hypertrace-wgpu-babb166ec30b2e4b.js';
-const wasm = await init({ module_or_path: '/hypertrace/viewer/hypertrace-wgpu-babb166ec30b2e4b_bg.wasm' });
+import init, * as bindings from '/hypertrace/viewer/viewer-4dbe1ff7abb96c45.js';
+const wasm = await init({ module_or_path: '/hypertrace/viewer/viewer-4dbe1ff7abb96c45_bg.wasm' });
 
 
 window.wasmBindings = bindings;
@@ -34,6 +34,7 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
     #pause { width: 6em; }
     button:hover, select:hover { background: #29394e; }
     :focus-visible { outline: 2px solid #86c7ff; outline-offset: 3px; }
+    .example-description { margin: 0; padding: 10px 24px; color: #b9cadd; background: #151d29; border-bottom: 1px solid #293343; line-height: 1.5; }
     main { position: relative; flex: 1; min-height: 0; contain: size; }
     /* Winit sets an initial inline size; let its ResizeObserver follow the page. */
     canvas { display: block; width: 100% !important; height: 100% !important; outline: none; touch-action: none; }
@@ -44,25 +45,26 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
     footer > span:first-child { flex: 1 1 600px; }
     #stats { color: #d2e5f7; font-variant-numeric: tabular-nums; flex: 0 0 38ch; text-align: right; white-space: nowrap; }
     noscript { padding: 20px; }
-    @media (max-width: 640px) { header { padding: 12px; gap: 10px; } footer { padding: 10px 12px; } .controls { gap: 6px; } }
+    @media (max-width: 640px) { header { padding: 12px; gap: 10px; } footer, .example-description { padding: 10px 12px; } .controls { gap: 6px; } }
   </style>
-<link rel="modulepreload" href="/hypertrace/viewer/hypertrace-wgpu-babb166ec30b2e4b.js" crossorigin="anonymous" integrity="sha384-SpgHhzrWV0YQWvcokEX6O1pymDTsCGRkMelxujIvIBpJWlVOqP1ybGAxcYGE5/Bg"><link rel="modulepreload" href="/hypertrace/viewer/snippets/hypertrace-wgpu-e33a823a8435a5f9/web/controls.js" crossorigin="anonymous" integrity="sha384-9B1v/8J+PiK6C896lnrXS2Xug2AfMFLPktfh9PbwQtqSV72i74ATQsmV4E/Erq6p"><link rel="preload" href="/hypertrace/viewer/hypertrace-wgpu-babb166ec30b2e4b_bg.wasm" crossorigin="anonymous" integrity="sha384-hWLqitNu3eS+vxK9E29OnqKWHalbHemX5+rNZPCAJBU3dwVXuysh8X1v1qUTbsSk" as="fetch" type="application/wasm"></head>
+<link rel="modulepreload" href="/hypertrace/viewer/viewer-4dbe1ff7abb96c45.js" crossorigin="anonymous" integrity="sha384-+AnQPBPT///fhCPMpSpXKruDUTObyc7F0hxAx2wwxRUBYEGFHkH4fPyhfpk7PxFF"><link rel="modulepreload" href="/hypertrace/viewer/snippets/hypertrace-examples-a14a87a78d2b4706/web/controls.js" crossorigin="anonymous" integrity="sha384-xv6djTCE7rNIsJVkj4ZElo/XgFKKq1tw4hdeJSi6SsKf3R1noYlJcGH0Lm/U0CBh"><link rel="modulepreload" href="/hypertrace/viewer/snippets/hypertrace-gallery-c31691e5631ec1f2/web/controls.js" crossorigin="anonymous" integrity="sha384-2rnIxyoIl4B2vH7aiLOjVlG2QTUmAEG9eOHw+bz19+KvNWxk1bNm2LAldNVf0pyH"><link rel="preload" href="/hypertrace/viewer/viewer-4dbe1ff7abb96c45_bg.wasm" crossorigin="anonymous" integrity="sha384-0BEST0oFRLbUkFfJION8bayUkyyv4x7I3mvXlvmFFk7Cosh77DXiZN7XuN1RmGbm" as="fetch" type="application/wasm"></head>
 <body>
   <header>
-    <div class="title"><h1>Hypertrace</h1><p>Light in Euclidean &amp; hyperbolic space</p></div>
+    <div class="title"><h1>Hypertrace</h1><p>Light in Euclidean, hyperbolic &amp; spherical space</p></div>
     <div class="controls" aria-label="Scene controls">
-      <label>Space <select id="scene"><option value="hy">Hyperbolic</option><option value="eu">Euclidean</option></select></label>
+      <label>Example <select id="scene" aria-describedby="example-description" disabled><option value="">Loading examples…</option></select></label>
       <label>Quality <select id="resolution"><option value="640">Fast</option><option value="960" selected>Balanced</option><option value="1440">Sharp</option><option value="0">Full resolution</option></select></label>
       <button id="reset" type="button">Reset view</button>
       <button id="pause" type="button" aria-pressed="false">Pause</button>
     </div>
   </header>
+  <p id="example-description" class="example-description" aria-live="polite">Examples are loading…</p>
   <main>
-    <canvas id="canvas" tabindex="0" aria-label="Interactive path traced scene. Drag to look, WASD to move."></canvas>
+    <canvas id="canvas" tabindex="0" aria-label="Interactive path traced scene. Drag to look, Tab to lock the mouse, WASD to move."></canvas>
     <p id="status" role="status" aria-live="polite">Loading renderer…</p>
   </main>
   <footer>
-    <span>Drag: look · WASD / arrows: move · Space / C: up / down · Q / E: roll · Scroll: zoom · R: reset · Esc: pause</span>
+    <span>Drag: look · <span id="mouse-lock-status" role="status" aria-live="polite">Tab: lock mouse</span> · WASD / arrows: move · Space / C: up / down · Q / E: roll · Scroll: zoom · R: reset · Esc: pause when unlocked</span>
     <span id="stats">Progressive path tracing</span>
   </footer>
   <noscript>Enable JavaScript to run the renderer.</noscript>

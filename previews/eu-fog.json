@@ -1,0 +1,32 @@
+{
+  "backend": "wgpu",
+  "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+  "scene": "eu-fog",
+  "width": 640,
+  "height": 480,
+  "samples": 32768,
+  "seed": 3735928559,
+  "bounces": 12,
+  "curvature_sign": 0,
+  "curvature_radius": 1,
+  "medium": {
+    "extinction": 0.35,
+    "albedo": [
+      0.95,
+      0.95,
+      0.95
+    ]
+  },
+  "linear_format": "little-endian rgba32f, row-major, top row first",
+  "display_gamma": 2.2,
+  "source_commit": "596f9b08e47b097610eabe6bc8f6b76972880508",
+  "png_sha256": "7ba737c4576f03a9f500a5964912a63d638e90fa9fbaeffca44427526ee4a3a3",
+  "responsive": [
+    {
+      "file": "eu-fog-small.webp",
+      "width": 640,
+      "height": 480,
+      "sha256": "fd21f582088608a286e10108906c61cc0296e3c71d8639b8c1d1b00b420e8404"
+    }
+  ]
+}

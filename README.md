@@ -1,18 +1,21 @@
 # Hypertrace website
 
-Static publication built from source commit [292dfc2103052d476412eea5a618a1b16f7e5939](https://github.com/agerasev/hypertrace/tree/292dfc2103052d476412eea5a618a1b16f7e5939).
+Website and interactive viewer built from source commit [10651435cb511d68fdb1977bda261ca6af522f33](https://github.com/agerasev/hypertrace/tree/10651435cb511d68fdb1977bda261ca6af522f33).
 
 - [Scene gallery](https://agerasev.github.io/hypertrace/)
 - [Hyperbolic viewer](https://agerasev.github.io/hypertrace/viewer/?scene=hy)
 - [Euclidean viewer](https://agerasev.github.io/hypertrace/viewer/?scene=eu)
+- [Fog viewer](https://agerasev.github.io/hypertrace/viewer/?scene=eu-fog)
 - [Theory](https://agerasev.github.io/hypertrace/theory.html)
 
-The `previews/` directory contains full-resolution PNGs, 1280 × 960 WebP images,
-640 × 480 low-resolution previews,
-and exact render settings. The `viewer/` directory is a release WebAssembly build.
-Images retain the default scenes' cameras and bounce limits, at 2560 × 1920 and
-4096 samples per pixel. Linear samples are averaged before display gamma 1/2.2.
+The `previews/` directory contains original-resolution PNGs, responsive WebP images,
+and exact render settings, dimensions, image hashes and source revisions in JSON.
+Each preview retains its own render source revision; older previews need not match
+the current interactive examples. PNG inputs are preserved byte for byte, and
+responsive variants are never upscaled. The `viewer/` directory is a release
+WebAssembly build. Linear samples are averaged before display gamma 1/2.2.
 
-To reproduce, check out the source commit and follow `site/README.md`.
+To reproduce the site, check out the website source commit and follow `site/README.md`.
+To reproduce an image, use its `source_commit` and render settings from `previews/`.
 Configure GitHub Pages to **Deploy from a branch**, **gh-pages**, **/ (root)**.
 The `.nojekyll` file makes this a static deployment; no build service is needed.

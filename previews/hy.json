@@ -10,5 +10,19 @@
   "linear_format": "little-endian rgba32f, row-major, top row first",
   "display_gamma": 2.2,
   "png_sha256": "0033056d6dd37e202c1200afb66f250f1f90375df7afcead09619febe60302a0",
-  "source_commit": "292dfc2103052d476412eea5a618a1b16f7e5939"
+  "source_commit": "292dfc2103052d476412eea5a618a1b16f7e5939",
+  "responsive": [
+    {
+      "file": "hy-small.webp",
+      "width": 640,
+      "height": 480,
+      "sha256": "4df52783eacf9ff62a21431f860d1131ea7a3652c349ae4e35d941c851c28185"
+    },
+    {
+      "file": "hy.webp",
+      "width": 1280,
+      "height": 960,
+      "sha256": "b70c0237e246449bd2895083dcf70770a5b421e7075548f463d1edcd82a0f0b7"
+    }
+  ]
 }

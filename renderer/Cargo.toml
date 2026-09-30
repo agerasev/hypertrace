@@ -18,5 +18,5 @@ getrandom = { version = "0.2", features = ["js"] }
 wgpu = { version = "30.0.1", default-features = false, features = ["webgpu"] }
 
 [dev-dependencies]
-ccgeom = "0.1"
+ccgeom = "0.1.1"
 objects = { package = "hypertrace-objects", path = "../objects" }

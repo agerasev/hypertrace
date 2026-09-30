@@ -9,7 +9,3 @@ members = [
     "examples",
     "examples/gallery",
 ]
-
-[patch.crates-io]
-ccgeom = { path = "../ccgeom" }
-vecmat = { path = "../vecmat-rs" }

@@ -1,27 +1,25 @@
 # Development
 
-The workspace uses current stable Rust, local geometry libraries, and WGPU/WGSL.
+The workspace uses current stable Rust, crates.io geometry libraries, and WGPU/WGSL.
 Its CPU scene compiler does not require a graphics adapter. Native GPU tests need
 a compute-capable adapter; software Vulkan is sufficient for correctness checks.
 
-## Companion repositories
+## External dependencies
 
-Keep these repositories next to `hypertrace/`. The checked revisions are also
-pinned in [.travis.yml](.travis.yml); update both places when changing them.
+Cargo fetches external libraries from crates.io. No sibling checkouts are required
+for development, headless builds, or CI. The workspace requires these minimum versions:
 
-| Directory | Repository | Compatible revision |
+| Crate | Repository | Minimum version |
 | --- | --- | --- |
-| `../vecmat-rs` | [vecmat-rs](https://github.com/agerasev/vecmat-rs) | `47a355837959b90a256ff6d5de6c2fdf2cd2e578` |
-| `../ccgeom` | [ccgeom](https://github.com/agerasev/ccgeom) | `902af7e33d9eb0aeae7bf916ab838d364b4ec65b` |
-| `../wgame` | [wgame](https://github.com/agerasev/wgame) | `42858dc961e1ac27a56a5cc84572e7489d036abc` |
+| `vecmat` | [vecmat-rs](https://github.com/agerasev/vecmat-rs) | `0.7.9` |
+| `ccgeom` | [ccgeom](https://github.com/agerasev/ccgeom) | `0.1.1` |
+| `wgame` | [wgame](https://github.com/agerasev/wgame) | `0.1.0` |
 
-The workspace patches crates.io `ccgeom` and `vecmat` to these checkouts, and
-`ccgeom` also uses local `vecmat`. Standalone examples depend on Wgame directly;
-the gallery enables it through its optional viewer feature. Cargo resolves that
-path even for headless workspace builds. Wgame must expose `WindowConfig::required_limits` and
-`use_adapter_buffer_limits` and use the same WGPU major version as Hypertrace.
-Companion commits must be available on their remotes before remote CI can fetch
-them. `Cargo.lock` is currently ignored by this repository.
+`ccgeom` uses the published `vecmat` package. Standalone examples depend on Wgame
+directly; the gallery enables it through its optional viewer feature. Wgame exposes
+`WindowConfig::required_limits` and `use_adapter_buffer_limits` and uses the same
+WGPU major version as Hypertrace, 30. Keep dependency requirements and this table
+in sync. `Cargo.lock` is currently ignored by this repository.
 
 ## Example ownership
 

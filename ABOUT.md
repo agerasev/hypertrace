@@ -30,7 +30,7 @@ quaternions `a + e*b`, with `e*e` equal to the curvature sign. Ray advancement,
 transform action, tangent frames, analytic sections, and event ordering share
 one implementation with the necessary zero-curvature and periodic-root cases.
 
-Sibling libraries own the CPU mathematics: `vecmat-rs` supplies the quaternion
+External libraries own the CPU mathematics: `vecmat` supplies the quaternion
 pair algebra; `ccgeom` supplies checked isometries, points/tangents, physical
 radius contexts, advancement, and ball/half-space conversions. Scene builders
 use `Embedded3<f64, K>` and `EmbeddedIsometry<f64, K>` throughout. The scene

@@ -3,22 +3,6 @@ os: linux
 dist: jammy
 rust: stable
 
-# Companion revisions must be available on their remotes before CI can fetch them.
-env:
-  global:
-    - VECMAT_REV=47a355837959b90a256ff6d5de6c2fdf2cd2e578
-    - CCGEOM_REV=902af7e33d9eb0aeae7bf916ab838d364b4ec65b
-    - WGAME_REV=42858dc961e1ac27a56a5cc84572e7489d036abc
-
-before_script:
-  - git clone https://github.com/agerasev/vecmat-rs.git ../vecmat-rs
-  - git clone https://github.com/agerasev/ccgeom.git ../ccgeom
-  - git -C ../vecmat-rs checkout "$VECMAT_REV"
-  - git -C ../ccgeom checkout "$CCGEOM_REV"
-  # Cargo resolves the optional viewer path dependency for headless builds too.
-  - git clone https://github.com/agerasev/wgame.git ../wgame
-  - git -C ../wgame checkout "$WGAME_REV"
-
 script:
   - cargo fmt --all -- --check
   - cargo test --workspace --all-targets

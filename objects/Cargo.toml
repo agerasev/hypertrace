@@ -5,7 +5,7 @@ authors = ["Alexey Gerasev <alexey.gerasev@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-ccgeom = "0.1"
-vecmat = "0.7"
+ccgeom = "0.1.1"
+vecmat = "0.7.9"
 scene = { package = "hypertrace-scene", path = "../scene" }
 anyhow = "1"

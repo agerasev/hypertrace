@@ -17,13 +17,10 @@ coordinates are explicit charts for construction and surface patterns.
 ## Requirements
 
 - Current stable Rust and Cargo.
-- Sibling `../vecmat-rs` and `../ccgeom` checkouts. Workspace patches use these
-  sources for the shared geometry kernel; `ccgeom` also uses local `vecmat`.
-  Compatible revisions and setup are recorded in [DEVELOPMENT.md](DEVELOPMENT.md).
 - A native WGPU adapter with compute support. Software Vulkan can run the tests.
-- A sibling `../wgame` checkout with `WindowConfig::required_limits` and
-  `use_adapter_buffer_limits`. Cargo resolves this optional path dependency even
-  for headless builds.
+
+Cargo fetches `vecmat`, `ccgeom`, and `wgame` from crates.io; no sibling checkouts
+are required. See [DEVELOPMENT.md](DEVELOPMENT.md) for dependency versions and checks.
 
 ## Run
 

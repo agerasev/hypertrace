@@ -8,13 +8,10 @@ owns optional gallery, headless, and benchmark tools. See the repository [web vi
 
 ## Run
 
-Use current stable Rust, a compute-capable native WGPU adapter (software Vulkan
-is sufficient for correctness tests), sibling `../../vecmat-rs` and
-`../../ccgeom` sources, and the sibling `../../wgame` checkout
-with configurable `WindowConfig::required_limits` and `use_adapter_buffer_limits`.
-WGPU is pinned to the same major version as that checkout, 30. Wgame belongs to
-the application packages; Cargo still resolves the gallery's optional path
-dependency for headless workspace builds.
+Use current stable Rust and a compute-capable native WGPU adapter (software Vulkan
+is sufficient for correctness tests). Cargo fetches external dependencies from
+crates.io. Wgame belongs to the application packages and uses the same WGPU major
+version as the renderer, 30.
 
 From the Hypertrace repository root:
 

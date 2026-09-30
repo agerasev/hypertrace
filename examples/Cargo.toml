@@ -7,12 +7,12 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0"
 objects = { package = "hypertrace-objects", path = "../objects" }
-ccgeom = "0.1"
-vecmat = "0.7"
+ccgeom = "0.1.1"
+vecmat = "0.7.9"
 hypertrace-renderer = { path = "../renderer" }
 winit = { version = "0.30.13", default-features = false, features = ["rwh_06"] }
 wgpu = { version = "30.0.1", default-features = false, features = ["std"] }
-wgame = { path = "../../wgame/wgame", default-features = false, features = ["desktop"] }
+wgame = { version = "0.1.0", default-features = false, features = ["desktop"] }
 
 [[bin]]
 name = "hyperbolic"

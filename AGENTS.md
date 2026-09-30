@@ -183,9 +183,15 @@ history in commits, not new migration diaries.
 
 ## Repository workflow
 
-- Companion checkouts are `../vecmat-rs`, `../ccgeom`, and `../wgame`. Cargo resolves
-  the gallery's optional Wgame path even for headless builds. Keep compatible revision pins
-  in `.travis.yml` and `DEVELOPMENT.md` synchronized when changing dependencies.
+- External dependencies, including `vecmat`, `ccgeom`, and `wgame`, come from
+  crates.io. Set minimum versions that include the APIs used by the workspace and
+  keep `DEVELOPMENT.md` synchronized. Do not commit sibling path dependencies or
+  registry patches. Local overrides are temporary development tools; verify
+  releases against the published packages, including native and WASM builds.
+- Before choosing a release version, compare with the actual published source,
+  including public signatures, trait implementations, and exposed dependency
+  types. Publish dependencies before their consumers and verify each package's
+  dry run before uploading it.
 - Check worktree status before editing and avoid overwriting concurrent work.
   Keep mechanical renames separate from semantic changes and commit meaningful
   milestones when requested. Do not push or publish solely to complete local work.

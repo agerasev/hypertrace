@@ -12,8 +12,8 @@ web = ["viewer", "dep:wasm-bindgen"]
 [dependencies]
 anyhow = "1.0"
 objects = { package = "hypertrace-objects", path = "../../objects" }
-ccgeom = "0.1"
-vecmat = "0.7"
+ccgeom = "0.1.1"
+vecmat = "0.7.9"
 hypertrace-renderer = { path = "../../renderer" }
 bytemuck = "1"
 futures = { version = "0.3", features = ["executor"] }
@@ -21,13 +21,12 @@ wgpu = { version = "30.0.1", default-features = false, features = ["std"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 winit = { version = "0.30.13", default-features = false, features = ["rwh_06"], optional = true }
-wgame = { path = "../../../wgame/wgame", default-features = false, features = ["desktop"], optional = true }
+wgame = { version = "0.1.0", default-features = false, features = ["desktop"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wgame = { path = "../../../wgame/wgame", default-features = false, features = ["web"], optional = true }
+wgame = { version = "0.1.0", default-features = false, features = ["web"], optional = true }
 wasm-bindgen = { version = "0.2", optional = true }
 
 [[bin]]
 name = "viewer"
 required-features = ["viewer"]
-

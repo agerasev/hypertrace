@@ -125,9 +125,11 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
             )
             .chain(Spherical3::shift_z(-0.04)),
     );
+    // The sun lies toward negative floor x; put the glass ahead of the diffuse
+    // ball so direct sunlight reaches it before the orange ball casts a shadow.
     let blue = resting_sphere(
         floor,
-        [0.65, -1.5],
+        [-0.65, -1.5],
         0.11,
         Colored::new(Refractive::new(1.08), [0.4, 0.65, 1.0].into()),
     );

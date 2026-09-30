@@ -6,7 +6,7 @@ rust: stable
 # Companion revisions must be available on their remotes before CI can fetch them.
 env:
   global:
-    - VECMAT_REV=2e43fd9dce251658a217a8556ba2695f83b36fdd
+    - VECMAT_REV=47a355837959b90a256ff6d5de6c2fdf2cd2e578
     - CCGEOM_REV=902af7e33d9eb0aeae7bf916ab838d364b4ec65b
     - WGAME_REV=42858dc961e1ac27a56a5cc84572e7489d036abc
 

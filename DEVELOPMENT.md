@@ -11,7 +11,7 @@ pinned in [.travis.yml](.travis.yml); update both places when changing them.
 
 | Directory | Repository | Compatible revision |
 | --- | --- | --- |
-| `../vecmat-rs` | [vecmat-rs](https://github.com/agerasev/vecmat-rs) | `2e43fd9dce251658a217a8556ba2695f83b36fdd` |
+| `../vecmat-rs` | [vecmat-rs](https://github.com/agerasev/vecmat-rs) | `47a355837959b90a256ff6d5de6c2fdf2cd2e578` |
 | `../ccgeom` | [ccgeom](https://github.com/agerasev/ccgeom) | `902af7e33d9eb0aeae7bf916ab838d364b4ec65b` |
 | `../wgame` | [wgame](https://github.com/agerasev/wgame) | `42858dc961e1ac27a56a5cc84572e7489d036abc` |
 

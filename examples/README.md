@@ -100,12 +100,12 @@ in a tuple, using a local generic `ball::<P,Q>` helper with no runtime type eras
 ## Spherical shadows
 
 The [spherical studio](src/bin/spherical/scene.rs) has red and clear balls resting at
-opposite floor poles, a small weakly refracting blue ball near the red one, and
-a green emitter intersecting the plane in a dark region. The low, off-center sun
-casts long asymmetric shadows. The beacon is a quarter circuit from the sun's
-floor footprint, where direct sunlight is weakest; the antipodal point brightens
-again as spherical rays converge. The starting view shows the red and blue balls
-and the beacon; turn around to find the clear ball.
+opposite floor poles, a small weakly refracting blue ball on the sun-facing side
+of the red one, and a green emitter intersecting the plane in a dark region.
+The low, off-center sun casts long asymmetric shadows. The beacon is a quarter
+circuit from the sun's floor footprint, where direct sunlight is weakest; the
+antipodal point brightens again as spherical rays converge. The starting view shows
+the red and blue balls and the beacon; turn around to find the clear ball.
 The floor material is 90% diffuse, 5% specular, and 5% transparent. Look for
 contact shadows, refracted light, and faint reflections across the pentagonal floor
 tiles. The red and blue spheres use plain materials. There is no ambient light.

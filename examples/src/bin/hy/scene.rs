@@ -94,18 +94,21 @@ fn horosphere_translation([x, y]: [f64; 2]) -> EmbeddedIsometry<f64, -1> {
 pub fn scene<const H: usize>() -> ExampleScene<H> {
     let view = Mapped::new(PointView::new(1.0), camera());
 
-    // In half-space coordinates the horospheres are z=1 and a radius-1/2
-    // sphere centered at (sqrt(2), 0, 1/2); the star plane is the unit hemisphere.
+    let pentagonal_plane_map = horosphere_translation([0.0, 2.0]);
+
+    // In the pentagonal plane's half-space frame it is the unit hemisphere,
+    // and the hexagonal horosphere is z=1.
     // A hyperbolic ball of radius r tangent below z=1 has chart center height
     // exp(-r), Euclidean radius s=(1-exp(-2r))/2 and Euclidean center height 1-s.
-    // The other two tangencies give x=(1+s)/sqrt(2) and x*x+y*y=4s.
-    // Choose negative y to put the ball behind the horospheres from this camera.
+    // Tangency to the plane leaves a circle x*x+y*y=4s.
     let ball_radius = 0.36_f64;
     let chart_radius = -(-2.0 * ball_radius).exp_m1() / 2.0;
-    let ball_x = (1.0 + chart_radius) / 2.0_f64.sqrt();
-    let ball_y = -(4.0 * chart_radius - ball_x * ball_x).sqrt();
-    let ball_map =
-        horosphere_translation([ball_x, ball_y]).chain(Hyperboloid3::shift_z(-ball_radius));
+    let contact_radius = 2.0 * chart_radius.sqrt();
+    // The star plane is centered at (0,-2,0) in this chart. Positive y maximizes
+    // distance from it along the contact circle, keeping the radius and contacts.
+    let ball_map = pentagonal_plane_map
+        .chain(horosphere_translation([0.0, contact_radius]))
+        .chain(Hyperboloid3::shift_z(-ball_radius));
 
     let background = ConstBg::new(unpack_color(0xeeeeee));
     let border_material = make_material(
@@ -164,7 +167,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
                 ],
                 border_material.clone(),
             ),
-            horosphere_translation([0.0, 2.0]),
+            pentagonal_plane_map,
         )],
         vec![Mapped::new(
             Tiled::new(

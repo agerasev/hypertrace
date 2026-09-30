@@ -14,25 +14,25 @@ pub fn find(id: &str) -> Option<&'static Example> {
 
 pub const EXAMPLES: &[Example] = &[
     Example {
-        id: "hy",
+        id: "hyperbolic",
         title: "Hyperbolic tilings",
         group: "Materials and lighting",
         description: "Pentagonal planes, square and hexagonal horospheres, and a dodecahedrally tiled sphere in hyperbolic space.",
     },
     Example {
-        id: "eu",
+        id: "euclidean",
         title: "Euclidean glass",
         group: "Materials and lighting",
         description: "A glass sphere, a diffuse cube and a square-tiled backdrop in flat space.",
     },
     Example {
-        id: "sp",
+        id: "spherical",
         title: "Spherical studio",
         group: "Materials and lighting",
         description: "An off-center sun lights diffuse red and refractive blue balls on a dodecahedrally tiled floor. Explore the opposite pole and glowing landmark.",
     },
     Example {
-        id: "eu-fog",
+        id: "fog",
         title: "Euclidean light in fog",
         group: "Materials and lighting",
         description: "One bright light surrounded by red diffuse, green mirror and blue glass spheres in Euclidean fog. No floor or ambient light; let scattering accumulate.",
@@ -52,17 +52,17 @@ pub mod factories {
         Scene as _,
         shader::{Result, SceneDefinition},
     };
-    pub fn eu() -> Result<SceneDefinition<Flat3>> {
-        crate::eu::scene::<4>().definition()
+    pub fn euclidean() -> Result<SceneDefinition<Flat3>> {
+        crate::euclidean::scene::<4>().definition()
     }
-    pub fn hy() -> Result<SceneDefinition<Hyperboloid3>> {
-        crate::hy::scene::<3>().definition()
+    pub fn hyperbolic() -> Result<SceneDefinition<Hyperboloid3>> {
+        crate::hyperbolic::scene::<3>().definition()
     }
-    pub fn sp() -> Result<SceneDefinition<Spherical3>> {
-        crate::sp::scene::<6>().definition()
+    pub fn spherical() -> Result<SceneDefinition<Spherical3>> {
+        crate::spherical::scene::<6>().definition()
     }
-    pub fn eu_fog() -> Result<SceneDefinition<Flat3>> {
-        crate::eu_fog::scene::<12>().definition()
+    pub fn fog() -> Result<SceneDefinition<Flat3>> {
+        crate::fog::scene::<12>().definition()
     }
     pub fn ball_tilings() -> Result<SceneDefinition<Flat3>> {
         crate::ball_tilings::scene::<4>().definition()
@@ -75,24 +75,24 @@ pub mod factories {
 macro_rules! with_example {
     ($id:expr, |$metadata:ident, $factory:ident| $body:expr) => {{
         match $id {
-            "hy" => {
-                let $metadata = *$crate::find("hy").expect("catalogue entry");
-                let $factory = $crate::factories::hy;
+            "hyperbolic" => {
+                let $metadata = *$crate::find("hyperbolic").expect("catalogue entry");
+                let $factory = $crate::factories::hyperbolic;
                 $body
             }
-            "eu" => {
-                let $metadata = *$crate::find("eu").expect("catalogue entry");
-                let $factory = $crate::factories::eu;
+            "euclidean" => {
+                let $metadata = *$crate::find("euclidean").expect("catalogue entry");
+                let $factory = $crate::factories::euclidean;
                 $body
             }
-            "sp" => {
-                let $metadata = *$crate::find("sp").expect("catalogue entry");
-                let $factory = $crate::factories::sp;
+            "spherical" => {
+                let $metadata = *$crate::find("spherical").expect("catalogue entry");
+                let $factory = $crate::factories::spherical;
                 $body
             }
-            "eu-fog" => {
-                let $metadata = *$crate::find("eu-fog").expect("catalogue entry");
-                let $factory = $crate::factories::eu_fog;
+            "fog" => {
+                let $metadata = *$crate::find("fog").expect("catalogue entry");
+                let $factory = $crate::factories::fog;
                 $body
             }
             "ball-tilings" => {

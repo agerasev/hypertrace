@@ -58,7 +58,7 @@ sequentially, recording the adapter and driver in each run:
 
 ```sh
 WGPU_BACKEND=vulkan cargo test --workspace -- --ignored --test-threads=1
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin viewer -- --scene sp --smoke
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin viewer -- --scene spherical --smoke
 ```
 
 The viewer smoke path exercises camera motion, accumulation resets, resizing

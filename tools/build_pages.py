@@ -11,7 +11,7 @@ import shutil
 import subprocess
 
 
-SCENES = ("eu", "hy", "eu-fog")
+SCENES = ("euclidean", "hyperbolic", "fog")
 
 
 def run(*args, **kwargs):
@@ -110,7 +110,7 @@ def render_template(source, values):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("renders", type=Path,
-                        help="directory with eu, hy and eu-fog PNG/PPM and JSON metadata")
+                        help="directory with euclidean, hyperbolic and fog PNG/PPM and JSON metadata")
     parser.add_argument("--output", type=Path, default=Path("build/pages"))
     parser.add_argument("--public-url", default="/hypertrace/")
     args = parser.parse_args()
@@ -152,9 +152,9 @@ def main():
 Website and interactive viewer built from source commit [{commit}](https://github.com/agerasev/hypertrace/tree/{commit}).
 
 - [Scene gallery](https://agerasev.github.io{args.public_url})
-- [Hyperbolic viewer](https://agerasev.github.io{args.public_url}viewer/?scene=hy)
-- [Euclidean viewer](https://agerasev.github.io{args.public_url}viewer/?scene=eu)
-- [Fog viewer](https://agerasev.github.io{args.public_url}viewer/?scene=eu-fog)
+- [Hyperbolic viewer](https://agerasev.github.io{args.public_url}viewer/?scene=hyperbolic)
+- [Euclidean viewer](https://agerasev.github.io{args.public_url}viewer/?scene=euclidean)
+- [Fog viewer](https://agerasev.github.io{args.public_url}viewer/?scene=fog)
 - [Theory](https://agerasev.github.io{args.public_url}theory.html)
 
 The `previews/` directory contains original-resolution PNGs, responsive WebP images,

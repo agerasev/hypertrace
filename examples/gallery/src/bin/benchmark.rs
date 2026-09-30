@@ -59,7 +59,7 @@ fn json_string(value: &str) -> String {
 }
 
 fn main() -> Result<()> {
-    let mut scene_name = String::from("hy");
+    let mut scene_name = String::from("hyperbolic");
     let (mut width, mut height, mut samples) = (640u32, 480u32, 16u32);
     let (mut trials, mut warmup, mut batch, mut seed) = (5u32, 2u32, 1u32, 3735928559u32);
     let mut bounces = None;

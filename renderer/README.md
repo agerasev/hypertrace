@@ -19,14 +19,15 @@ dependency for headless workspace builds.
 From the Hypertrace repository root:
 
 ```sh
-cargo run --release -p hypertrace-gallery --bin viewer -- --scene sp
+cargo run --release -p hypertrace-gallery --bin viewer -- --scene spherical
 cargo run --release -p hypertrace-gallery --bin headless -- --list-scenes
 cargo run --release -p hypertrace-gallery --bin headless -- \
-  --scene hy --width 320 --height 240 --samples 64 --seed 3735928559 --output /tmp/hy
+  --scene hyperbolic --width 320 --height 240 --samples 64 --seed 3735928559 --output /tmp/hyperbolic
 ```
 
 `viewer`, `headless`, and `benchmark` share the `hypertrace_gallery::EXAMPLES` catalog and
-support `--list-scenes`. The four choices are `eu`, `hy`, `sp`, and `eu-fog`.
+support `--list-scenes`. The choices are `euclidean`, `hyperbolic`, `spherical`,
+`fog`, and `ball-tilings`.
 The browser presents the same grouped catalog and accepts `?scene=NAME` URLs.
 See the [example guide](../examples/README.md) for all IDs, default event budgets,
 and the geometric effects to look for. Start with 256 samples and increase the count for indirect lighting and fog.
@@ -99,8 +100,8 @@ bounded render resolution and `Presenter` scales it to the attachment.
 ### Geometry, units, and numerical limits
 
 Generated scenes use a shared embedded kernel. Points and tangents have four
-scalar-first components `(w,x,y,z)`: positive hyperboloid for `hy`, unit 3-sphere
-for `sp`, and `w=1` points / `w=0` tangents for `eu`. Isometries use two quaternion
+scalar-first components `(w,x,y,z)`: positive hyperboloid for `hyperbolic`, unit 3-sphere
+for `spherical`, and `w=1` points / `w=0` tangents for `euclidean`. Isometries use two quaternion
 rows, with the curvature sign specialized in generated WGSL. `Transform<G>` is a
 canonical isometry of geometry `G`, constructed from `ccgeom::EmbeddedIsometry`
 through `Transform::from_isometry`. `Camera<G>` wraps that transform and its
@@ -179,10 +180,10 @@ let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
 let renderer = hypertrace_renderer::Renderer::new(&device, &queue, (640, 480), scene, 1)?;
 ```
 
-The [spherical studio](../examples/src/bin/sp/scene.rs) demonstrates shadows
+The [spherical studio](../examples/src/bin/spherical/scene.rs) demonstrates shadows
 with an off-center sun, diffuse and refractive balls, a glowing landmark, and
-a mostly diffuse plane. The `eu`, `hy`,
-`sp`, and `eu-fog` scenes expose local `scene::<H>()` constructors where `H`
+a mostly diffuse plane. The `euclidean`, `hyperbolic`,
+`spherical`, and `fog` scenes expose local `scene::<H>()` constructors where `H`
 sets the interaction budget. Numerical curvature and recurrence comparisons
 live in independent tests.
 
@@ -296,12 +297,12 @@ fn with_fog<G: Geometry>(mut definition: SceneDefinition<G>)
 }
 ```
 
-The [eu-fog scene](../examples/src/bin/eu-fog/scene.rs) sets its own medium
+The [fog scene](../examples/src/bin/fog/scene.rs) sets its own medium
 values alongside one bright source and red diffuse, green reflective, and blue
 refractive spheres in Euclidean space, without a floor. Mean free flight is the
-reciprocal of extinction in physical world units. Run the `eu-fog` binary or
-select `--scene eu-fog` in a gallery tool.
-The [sp scene](../examples/src/bin/sp/scene.rs) selects vacuum.
+reciprocal of extinction in physical world units. Run the `fog` binary or
+select `--scene fog` in a gallery tool.
+The [spherical scene](../examples/src/bin/spherical/scene.rs) selects vacuum.
 Both use a configurable black miss background, with different object layouts.
 Independent transport tests cover unbounded misses and multiple spherical circuits;
 rendered color images do not report individual travelled distances or cycle counts.
@@ -425,7 +426,7 @@ must be explicitly requested; missing adapters fail rather than silently skip.
 cargo test -p hypertrace-renderer
 WGPU_BACKEND=vulkan cargo test --workspace -- --ignored --test-threads=1
 cargo clippy --no-deps --workspace --all-targets -- -D warnings
-WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin viewer -- --scene hy --smoke
+WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin viewer -- --scene hyperbolic --smoke
 ```
 
 Coverage includes shared isometry composition, inverse and distance checks,
@@ -442,7 +443,7 @@ Keep these invariant and behavior checks when
 changing internal representation; old implementation snapshots are not required.
 
 Native numerical tests have run on software Vulkan. Viewer smoke tests passed
-for `eu`, `hy` and `sp` on Intel Arc Vulkan, including camera motion, resizing
+for `euclidean`, `hyperbolic` and `spherical` on Intel Arc Vulkan, including camera motion, resizing
 across binding limits, restoration and presentation. The WASM viewer build check
 passed; a headed browser run of the shared renderer remains unverified.
 See [DEVELOPMENT.md](../DEVELOPMENT.md) for the workspace validation workflow.
@@ -454,8 +455,8 @@ count, curvature sign/radius, and medium using the `headless` binary. Compare
 their linear outputs before display conversion:
 
 ```sh
-python3 tools/compare_frames.py /tmp/hy-a /tmp/hy-b \
-  --diff /tmp/hy-difference.ppm --diff-scale 4 --report /tmp/hy-comparison.json
+python3 tools/compare_frames.py /tmp/hyperbolic-a /tmp/hyperbolic-b \
+  --diff /tmp/hyperbolic-difference.ppm --diff-scale 4 --report /tmp/hyperbolic-comparison.json
 ```
 
 Output is normalized little-endian f32 RGBA, top row first, with alpha one after
@@ -470,18 +471,18 @@ later random paths, so cross-device comparisons need not be pixelwise identical.
 
 Use the release-mode `benchmark` binary for completed-render timings. Run
 configurations sequentially with identical scene, dimensions, samples, seed, and
-bounce limit. Defaults are four events for `eu`, three for `hy`, six for `sp`,
-and twelve for `eu-fog`.
+bounce limit. Defaults are four events for `euclidean`, three for `hyperbolic`, six for `spherical`,
+and twelve for `fog`; `ball-tilings` uses four.
 Surface and volume interactions both consume this budget. Use `--list-scenes`
 to find a workload and consult the [example guide](../examples/README.md) for its
 layout; each spherical preset has a black miss background.
 
 ```sh
 WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin benchmark -- \
-  --scene hy --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
+  --scene hyperbolic --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
   --batch 1 --seed 3735928559 --output /tmp/batch1.json
 WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin benchmark -- \
-  --scene hy --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
+  --scene hyperbolic --width 1280 --height 720 --samples 16 --warmup 64 --trials 10 \
   --batch 16 --seed 3735928559 --output /tmp/batch16.json
 python3 tools/compare_benchmarks.py /tmp/batch1.json /tmp/batch16.json \
   --output /tmp/benchmark-comparison.md --json /tmp/benchmark-comparison.json

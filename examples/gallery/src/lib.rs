@@ -6,14 +6,14 @@
 
 #[path = "../../src/bin/ball-tilings/scene.rs"]
 pub mod ball_tilings;
-#[path = "../../src/bin/eu/scene.rs"]
-pub mod eu;
-#[path = "../../src/bin/eu-fog/scene.rs"]
-pub mod eu_fog;
-#[path = "../../src/bin/hy/scene.rs"]
-pub mod hy;
-#[path = "../../src/bin/sp/scene.rs"]
-pub mod sp;
+#[path = "../../src/bin/euclidean/scene.rs"]
+pub mod euclidean;
+#[path = "../../src/bin/fog/scene.rs"]
+pub mod fog;
+#[path = "../../src/bin/hyperbolic/scene.rs"]
+pub mod hyperbolic;
+#[path = "../../src/bin/spherical/scene.rs"]
+pub mod spherical;
 
 mod catalog;
 pub use catalog::{EXAMPLES, Example, factories, find};

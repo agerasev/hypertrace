@@ -92,7 +92,7 @@ fn real_scenes_present_current_compute_results_without_an_intermediate_wait() {
     eprintln!("Presentation adapter: {:?}", gpu.adapter.get_info());
     let size = (37, 29);
     let format = wgpu::TextureFormat::Rgba8Unorm;
-    for name in ["eu", "hy", "sp"] {
+    for name in ["euclidean", "hyperbolic", "spherical"] {
         hypertrace_gallery::with_example!(name, |_metadata, factory| {
             let scene = support::scene(factory);
             let mut renderer = Renderer::new(&gpu.device, &gpu.queue, size, scene, 123).unwrap();
@@ -152,7 +152,7 @@ fn accumulation_normalization_orientation_and_gamma_match_attachment_formats() {
         &gpu.device,
         &gpu.queue,
         (2, 2),
-        support::scene(hypertrace_gallery::factories::eu),
+        support::scene(hypertrace_gallery::factories::euclidean),
         1,
     )
     .unwrap();
@@ -224,7 +224,7 @@ fn scaled_targets_sample_nearest_pixels_and_rebind_after_renderer_resize() {
         &gpu.device,
         &gpu.queue,
         (2, 2),
-        support::scene(hypertrace_gallery::factories::eu),
+        support::scene(hypertrace_gallery::factories::euclidean),
         1,
     )
     .unwrap();

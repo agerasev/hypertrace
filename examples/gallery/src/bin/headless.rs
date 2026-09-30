@@ -12,7 +12,7 @@ use std::{
 mod support;
 
 fn main() -> Result<()> {
-    let mut name = String::from("hy");
+    let mut name = String::from("hyperbolic");
     let (mut width, mut height, mut samples, mut seed) = (320u32, 240u32, 64u32, 3735928559u32);
     let mut bounces = None;
     let mut output = String::from("render");

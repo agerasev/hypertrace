@@ -30,17 +30,17 @@ coordinates are explicit charts for construction and surface patterns.
 From the repository root:
 
 ```sh
-cargo run --release -p hypertrace-examples --bin sp
+cargo run --release -p hypertrace-examples --bin spherical
 cargo run --release -p hypertrace-gallery --bin headless -- --list-scenes
 cargo run --release -p hypertrace-gallery --bin headless -- \
-  --scene eu --width 640 --height 480 --samples 64 --output /tmp/eu
+  --scene euclidean --width 640 --height 480 --samples 64 --output /tmp/euclidean
 ```
 
-Each scene has its own binary: `eu`, `hy`, `sp`, `eu-fog`, and `ball-tilings`.
+Each scene has its own binary: `euclidean`, `hyperbolic`, `spherical`, `fog`, and `ball-tilings`.
 Each scene folder under
 [`examples/src/bin`](examples/src/bin) owns its `scene.rs` and `main.rs`: scene
 construction, renderer and presenter setup, and the Wgame event loop are visible
-in that example. Start with [the spherical studio](examples/src/bin/sp) to copy
+in that example. Start with [the spherical studio](examples/src/bin/spherical) to copy
 or adapt a complete application.
 
 The separate [`hypertrace-gallery` package](examples/gallery) owns the optional
@@ -53,7 +53,7 @@ The gallery catalog includes Euclidean glass, hyperbolic tilings, a spherical
 shadow studio, one floorless Euclidean fog scene, and a showcase of seven ball
 tilings. Run `cargo run --release -p hypertrace-examples --bin ball-tilings` to
 see the five Platonic patterns, eight lunes and two hemispheres together.
-Use `--list-scenes` in a gallery tool to see the choices. Start with `sp` to explore an off-center sun and
+Use `--list-scenes` in a gallery tool to see the choices. Start with `spherical` to explore an off-center sun and
 diffuse, refractive, and glowing balls on a slightly transparent, mostly diffuse plane. The
 [example guide](examples/README.md) explains what to observe and how the builders work.
 
@@ -83,8 +83,8 @@ NO_COLOR=true trunk serve --release
 ```
 
 Open <http://127.0.0.1:8080>. Use the grouped Example menu to select a scene,
-or start with any catalog ID such as `?scene=sp` or
-`?scene=eu-fog`. Selection reloads the page into the chosen typed application.
+or start with any catalog ID such as `?scene=spherical` or
+`?scene=fog`. Selection reloads the page into the chosen typed application.
 Each example includes a short description. Click the canvas to use
 the camera controls above. Tab locks/unlocks the mouse while the canvas is focused.
 Escape releases browser mouse lock; when unlocked it toggles pause. Quality caps the
@@ -119,12 +119,12 @@ distance includes complete circuits even when the ray returns to the same point.
 The [geometry contract](GEOMETRY_CONTRACT.md) specifies units, transforms, tangent
 frames, and precision limits; [ABOUT.md](ABOUT.md) describes the implementation.
 
-The floorless Euclidean fog scene is available as `--scene eu-fog` and as the
-standalone `eu-fog` binary. Its [scene construction](examples/src/bin/eu-fog/scene.rs)
+The floorless Euclidean fog scene is available as `--scene fog` and as the
+standalone `fog` binary. Its [scene construction](examples/src/bin/fog/scene.rs)
 uses one bright emitter surrounded by red diffuse, green reflective, and blue
 refractive spheres. Light intensity, extinction and scattering albedo are adjustable
-directly in that source. Its [main function](examples/src/bin/eu-fog/main.rs) shows
-the complete application setup. The [vacuum studio](examples/src/bin/sp/scene.rs)
+directly in that source. Its [main function](examples/src/bin/fog/main.rs) shows
+the complete application setup. The [vacuum studio](examples/src/bin/spherical/scene.rs)
 keeps two balls at opposite floor poles, with asymmetric sunlight, a nearby blue
 ball, and a glowing sphere intersecting the floor.
 

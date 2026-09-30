@@ -10,7 +10,7 @@ def run(**changes):
     result = {
         "schema_version": 1, "backend": "wgpu", "device": "Example GPU",
         "device_type": "IntegratedGpu", "driver": "test driver", "backend_api": "Vulkan",
-        "scene": "eu", "width": 100, "height": 50, "samples": 4, "bounces": 4,
+        "scene": "euclidean", "width": 100, "height": 50, "samples": 4, "bounces": 4,
         "seed": 123, "batch_size": 1, "sync_per_batch": True, "warmup_samples": 2,
         "trials": 3, "setup_ms": 2.0, "device_setup_ms": 1.0,
         "render_ms": [10.0, 30.0, 20.0],
@@ -70,7 +70,7 @@ class ComparisonTests(unittest.TestCase):
             root = Path(directory)
             source = root / "run.json"
             source.write_text(json.dumps(run()))
-            (root / "frame.json").write_text(json.dumps({"backend": "wgpu", "scene": "eu"}))
+            (root / "frame.json").write_text(json.dumps({"backend": "wgpu", "scene": "euclidean"}))
             markdown = root / "report.md"
             summary = root / "summary.json"
             compare.main([str(root), str(source), "--output", str(markdown), "--json", str(summary)])

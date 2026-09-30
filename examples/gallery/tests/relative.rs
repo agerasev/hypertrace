@@ -139,6 +139,6 @@ fn camera_updates_reprepare_objects_without_pipeline_changes() {
         assert_eq!(renderer.scene().fov, 0.95);
         assert_eq!(renderer.snapshot().unwrap(), rendered);
     }
-    check(&gpu, examples::factories::hy().unwrap());
-    check(&gpu, examples::factories::sp().unwrap());
+    check(&gpu, examples::factories::hyperbolic().unwrap());
+    check(&gpu, examples::factories::spherical().unwrap());
 }

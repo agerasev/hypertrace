@@ -63,7 +63,7 @@ fn accumulation_reset_resize_and_scene_upload() {
     r.render();
     assert_eq!(r.snapshot().unwrap(), vec![[0.25, 0.5, 0.75, 1.0]; 99]);
     // Grow from an empty scene, then shrink back to an empty scene.
-    r.update_scene(support::scene(hypertrace_gallery::factories::eu))
+    r.update_scene(support::scene(hypertrace_gallery::factories::euclidean))
         .unwrap();
     r.render();
     let pixels = r.snapshot().unwrap();
@@ -78,7 +78,7 @@ fn accumulation_reset_resize_and_scene_upload() {
 #[ignore = "requires a native WGPU compute adapter"]
 fn fixed_seed_batching_and_repeated_renders_agree() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
-    for name in ["eu", "hy", "sp"] {
+    for name in ["euclidean", "hyperbolic", "spherical"] {
         hypertrace_gallery::with_example!(name, |_metadata, factory| {
             let scene = support::scene(factory);
             let mut r =

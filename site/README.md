@@ -10,7 +10,7 @@ README, Python 3, and ImageMagick (`magick` or `convert`).
 
 ## Preview inputs and provenance
 
-The builder reads `eu`, `hy`, and `eu-fog` previews from one directory. Each needs
+The builder reads `euclidean`, `hyperbolic`, and `fog` previews from one directory. Each needs
 `<scene>.json` from the headless renderer and either `<scene>.png` or
 `<scene>.ppm`. PNG takes priority and is copied byte for byte, so an approved
 screenshot can be published without rerendering or re-encoding it.
@@ -18,28 +18,30 @@ screenshot can be published without rerendering or re-encoding it.
 Each JSON must also contain `source_commit`: the full Git revision of the code
 that produced **that image**. Record it at render time, after committing its
 source changes. Do not replace older images' revisions with the website's latest
-revision. Existing `gh-pages/previews/*.png` and their matching JSON files can be
+revision. Existing previews with matching scene IDs and their JSON files can be
 copied into the input directory unchanged; the recorded PNG hashes are checked.
+Historical captures retain the scene IDs from their source revisions. Reproduce
+them using those revisions and recorded IDs rather than rewriting their metadata.
 
 For example, to capture fresh previews from a clean, committed checkout:
 
 ```sh
 mkdir -p build/previews
 cargo build --release -p hypertrace-gallery --bin headless
-for scene in eu hy; do
+for scene in euclidean hyperbolic; do
   cargo run --release -p hypertrace-gallery --bin headless -- \
     --scene "$scene" --width 2560 --height 1920 --samples 4096 \
     --seed 3735928559 --output "build/previews/$scene"
 done
 cargo run --release -p hypertrace-gallery --bin headless -- \
-  --scene eu-fog --width 640 --height 480 --samples 32768 \
-  --seed 3735928559 --output build/previews/eu-fog
+  --scene fog --width 640 --height 480 --samples 32768 \
+  --seed 3735928559 --output build/previews/fog
 python3 - <<'PY'
 import json
 from pathlib import Path
 import subprocess
 commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-for scene in ('eu', 'hy', 'eu-fog'):
+for scene in ('euclidean', 'hyperbolic', 'fog'):
     path = Path('build/previews') / f'{scene}.json'
     metadata = json.loads(path.read_text())
     metadata['source_commit'] = commit

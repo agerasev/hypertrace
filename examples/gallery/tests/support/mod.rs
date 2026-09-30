@@ -10,7 +10,7 @@ pub fn scene<G: Geometry>(factory: fn() -> Result<SceneDefinition<G>>) -> Scene<
 }
 
 pub fn background(color: [f32; 3]) -> Scene<Flat3> {
-    let mut definition = examples::factories::eu().unwrap();
+    let mut definition = examples::factories::euclidean().unwrap();
     definition.objects.clear();
     definition.background = Background::constant(color);
     Scene::from_definition(&definition).unwrap()

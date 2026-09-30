@@ -15,20 +15,20 @@ wgpu = { version = "30.0.1", default-features = false, features = ["std"] }
 wgame = { path = "../../wgame/wgame", default-features = false, features = ["desktop"] }
 
 [[bin]]
-name = "hy"
-path = "src/bin/hy/main.rs"
+name = "hyperbolic"
+path = "src/bin/hyperbolic/main.rs"
 
 [[bin]]
-name = "eu"
-path = "src/bin/eu/main.rs"
+name = "euclidean"
+path = "src/bin/euclidean/main.rs"
 
 [[bin]]
-name = "sp"
-path = "src/bin/sp/main.rs"
+name = "spherical"
+path = "src/bin/spherical/main.rs"
 
 [[bin]]
-name = "eu-fog"
-path = "src/bin/eu-fog/main.rs"
+name = "fog"
+path = "src/bin/fog/main.rs"
 
 [[bin]]
 name = "ball-tilings"

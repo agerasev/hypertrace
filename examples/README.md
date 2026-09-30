@@ -7,11 +7,15 @@ Each scene has a self-contained directory under `src/bin/<name>/`:
 - `main.rs` lowers that construction into a renderer scene, creates `Renderer`
   and `Presenter`, and owns the window, input, resize, and frame loop.
 
-Start with [Euclidean construction](src/bin/eu/scene.rs) and its
-[application entry point](src/bin/eu/main.rs), or explore the
-[hyperbolic](src/bin/hy/scene.rs) and [spherical](src/bin/sp/scene.rs) constructions.
+Start with [Euclidean construction](src/bin/euclidean/scene.rs) and its
+[application entry point](src/bin/euclidean/main.rs), or explore the
+[hyperbolic](src/bin/hyperbolic/scene.rs) and [spherical](src/bin/spherical/scene.rs) constructions.
 You can copy one directory into your own application and edit it without adopting
 an examples library, shared runner, or catalogue.
+
+The geometry demonstrations use full names: `euclidean`, `hyperbolic`, and
+`spherical`. Descriptive names without a geometry prefix, such as `fog` and
+`ball-tilings`, use Euclidean space.
 
 The separate `gallery/` package imports these example-owned scene files. Their
 `hypertrace_gallery::EXAMPLES` catalogue contains display metadata.
@@ -24,10 +28,10 @@ From the repository root:
 
 ```sh
 cargo run --release -p hypertrace-gallery --bin headless -- --list-scenes
-cargo run --release -p hypertrace-examples --bin sp
+cargo run --release -p hypertrace-examples --bin spherical
 cargo run --release -p hypertrace-examples --bin ball-tilings
 cargo run --release -p hypertrace-gallery --bin headless -- \
-  --scene eu-fog --width 640 --height 480 --samples 256 --output /tmp/eu-fog
+  --scene fog --width 640 --height 480 --samples 256 --output /tmp/fog
 ```
 
 Headless output includes a PPM preview, linear RGBA floats, and JSON settings
@@ -37,10 +41,10 @@ scattering and indirect illumination need more samples to settle.
 
 | Example | What to observe | Default path events |
 | --- | --- | ---: |
-| `eu` | A glass sphere, diffuse cube and square-tiled backdrop. | 4 |
-| `hy` | Pentagonal planes, square/hexagonal horospheres, and a dodecahedrally tiled sphere. | 3 |
-| `sp` | Diffuse and refractive balls on a dodecahedrally tiled floor under asymmetric sunlight. | 6 |
-| `eu-fog` | One light with red diffuse, green reflective and blue refractive spheres in Euclidean fog. | 12 |
+| `euclidean` | A glass sphere, diffuse cube and square-tiled backdrop. | 4 |
+| `hyperbolic` | Pentagonal planes, square/hexagonal horospheres, and a dodecahedrally tiled sphere. | 3 |
+| `spherical` | Diffuse and refractive balls on a dodecahedrally tiled floor under asymmetric sunlight. | 6 |
+| `fog` | One light with red diffuse, green reflective and blue refractive spheres in Euclidean fog. | 12 |
 | `ball-tilings` | All five Platonic tilings, eight lunes and two hemispheres on equal-sized matte balls. | 4 |
 
 Surface and volume interactions both consume the path-event budget. Headless
@@ -95,7 +99,7 @@ in a tuple, using a local generic `ball::<P,Q>` helper with no runtime type eras
 
 ## Spherical shadows
 
-The [spherical studio](src/bin/sp/scene.rs) has red and clear balls resting at
+The [spherical studio](src/bin/spherical/scene.rs) has red and clear balls resting at
 opposite floor poles, a small weakly refracting blue ball near the red one, and
 a green emitter intersecting the plane in a dark region. The low, off-center sun
 casts long asymmetric shadows. The beacon is a quarter circuit from the sun's
@@ -108,7 +112,7 @@ tiles. The red and blue spheres use plain materials. There is no ambient light.
 
 ## Euclidean fog
 
-The [eu-fog example](src/bin/eu-fog/scene.rs) places one bright neutral emitter
+The [fog example](src/bin/fog/scene.rs) places one bright neutral emitter
 among three spheres: opaque red Lambertian, green specular, and blue refractive.
 There is no plane or ambient light. Look for the glow around the source, the red
 sphere's shadow, a green mirror highlight, and light refracted through the blue
@@ -162,7 +166,7 @@ This camera is inside the glowing sphere. Use `Mapped` and
 heterogeneous objects; vectors hold repeated objects of one type. `Flat3`,
 `Hyperboloid3`, and `Spherical3` select geometry at compile time. Curved scenes
 set a physical `radius`; construct matching displacements with `Space3::new(R)`.
-The [fog example](src/bin/eu-fog/scene.rs) sets the medium explicitly.
+The [fog example](src/bin/fog/scene.rs) sets the medium explicitly.
 
 The complete `main.rs` files show how to obtain a device and queue from Wgame,
 resize the renderer, rebind presentation, update the camera, and submit frames.

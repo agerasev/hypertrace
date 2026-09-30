@@ -14,7 +14,7 @@ use objects::{
 
 #[test]
 fn static_groups_and_vector_lengths_do_not_change_shader_dependencies() {
-    let mut builder = examples::eu::scene::<4>();
+    let mut builder = examples::euclidean::scene::<4>();
     let original = builder.definition().unwrap();
     let original_source = hypertrace_renderer::shader::compile(&original)
         .unwrap()
@@ -36,7 +36,7 @@ fn static_groups_and_vector_lengths_do_not_change_shader_dependencies() {
         Scene::from_definition(&definition).unwrap();
     }
 
-    let mut builder = examples::hy::scene::<3>();
+    let mut builder = examples::hyperbolic::scene::<3>();
     let original = builder.definition().unwrap();
     let original_source = hypertrace_renderer::shader::compile(&original)
         .unwrap()
@@ -95,8 +95,8 @@ fn all_standalone_scenes_render() {
 #[ignore = "requires a native WGPU compute adapter"]
 fn data_updates_and_empty_static_groups_reuse_the_pipeline() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
-    let mut builder = examples::eu::scene::<4>();
-    let compile = |builder: &examples::eu::ExampleScene<4>| {
+    let mut builder = examples::euclidean::scene::<4>();
+    let compile = |builder: &examples::euclidean::ExampleScene<4>| {
         Scene::from_definition(&builder.definition().unwrap()).unwrap()
     };
     let mut renderer =

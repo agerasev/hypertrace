@@ -16,7 +16,7 @@ history in commits, not new migration diaries.
   and `scene`; those libraries must not depend on `examples`, including through
   development dependencies. Keep application-level integration tests with the
   applications; library tests use independent fixtures.
-- Each scene example (`eu`, `hy`, `sp`, and fog scenes)
+- Each scene example (`euclidean`, `hyperbolic`, `spherical`, and fog scenes)
   is a self-contained normal binary. Its directory owns the scene construction,
   materials, camera setup, renderer initialization, and frame loop, using workspace
   crates directly. Opening an example must show how to build a user's own scene;
@@ -24,6 +24,8 @@ history in commits, not new migration diaries.
   does not satisfy this requirement. Keep small local scaffolding explicit even
   when examples repeat it. Do not hide that scaffolding in generated includes or
   a host macro. Adding an example requires no renderer change or registration.
+- Use full geometry names in example IDs and paths. Descriptive names without a
+  geometry prefix, such as `fog` and `ball-tilings`, use Euclidean space.
 - Gallery, headless, and benchmark tools may import example-owned scene source
   files to display the same content. Dependencies point from those tools toward
   the examples, never from a standalone example toward the gallery, another

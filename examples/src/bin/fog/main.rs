@@ -1,4 +1,4 @@
-//! Spherical studio: a complete application built directly from workspace crates.
+//! Euclidean light in fog: a complete application built directly from workspace crates.
 use hypertrace_renderer::{Presenter, Renderer, Scene, fit_render_size};
 use objects::Scene as _;
 use wgame::{
@@ -54,7 +54,7 @@ fn main() -> wgame::Result<()> {
             "--smoke" => smoke = true,
             "--help" | "-h" => {
                 println!(
-                    "sp [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; Tab: toggle mouse lock; scroll: zoom; R: reset; Esc: close"
+                    "fog [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; Tab: toggle mouse lock; scroll: zoom; R: reset; Esc: close"
                 );
                 return Ok(());
             }
@@ -63,10 +63,10 @@ fn main() -> wgame::Result<()> {
     }
 
     // Scene construction and CPU validation do not require a window or GPU.
-    let source = scene::scene::<6>();
+    let source = scene::scene::<12>();
     let scene = Scene::from_definition(&source.definition()?)?;
     let config = WindowConfig::default()
-        .title("Hypertrace · Spherical studio")
+        .title("Hypertrace · Euclidean light in fog")
         .size(if smoke { (320, 240) } else { (960, 720) })
         .required_limits(wgpu::Limits {
             max_storage_buffer_binding_size: if smoke {
@@ -218,7 +218,7 @@ fn main() -> wgame::Result<()> {
                         smoke_scaled && smoke_restored,
                         "smoke test missed resize across the buffer limit and back"
                     );
-                    eprintln!("Spherical studio smoke passed: 12 frames, mouse lock/unlock, camera movement, resize and GPU presentation");
+                    eprintln!("Euclidean light in fog smoke passed: 12 frames, mouse lock/unlock, camera movement, resize and GPU presentation");
                     break;
                 }
             }

@@ -59,7 +59,7 @@ interval; repeated-hit suppression removes only the immediate numerical
 self-hit. The shared integrator selects the nearer surface or medium event.
 Homogeneous media use scalar extinction and RGB scattering albedo; a surface
 miss does not discard later medium events. Vacuum misses sample the configured
-background, which starts black in `sp`.
+background, which starts black in `spherical`.
 
 The [theory guide](https://agerasev.github.io/hypertrace/theory.html) develops the
 shared geometry, unwrapped travel distance, coordinate charts, surface types,

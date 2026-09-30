@@ -6,7 +6,7 @@ edition = "2024"
 
 [features]
 default = ["viewer"]
-viewer = ["dep:wgame"]
+viewer = ["dep:wgame", "dep:winit"]
 web = ["viewer", "dep:wasm-bindgen"]
 
 [dependencies]
@@ -20,6 +20,7 @@ futures = { version = "0.3", features = ["executor"] }
 wgpu = { version = "30.0.1", default-features = false, features = ["std"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+winit = { version = "0.30.13", default-features = false, features = ["rwh_06"], optional = true }
 wgame = { path = "../../../wgame/wgame", default-features = false, features = ["desktop"], optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

@@ -10,6 +10,7 @@ objects = { package = "hypertrace-objects", path = "../objects" }
 ccgeom = "0.1"
 vecmat = "0.7"
 hypertrace-renderer = { path = "../renderer" }
+winit = { version = "0.30.13", default-features = false, features = ["rwh_06"] }
 wgpu = { version = "30.0.1", default-features = false, features = ["std"] }
 wgame = { path = "../../wgame/wgame", default-features = false, features = ["desktop"] }
 

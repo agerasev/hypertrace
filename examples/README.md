@@ -38,7 +38,7 @@ scattering and indirect illumination need more samples to settle.
 | --- | --- | ---: |
 | `eu` | Glass, diffuse surfaces, and a directional background in flat space. | 4 |
 | `hy` | Pentagonal plane tilings and tiled horospheres. | 3 |
-| `sp` | A sun and two balls resting on a mostly diffuse plane: one diffuse, one refractive. | 6 |
+| `sp` | Asymmetric sunlight, diffuse and refractive balls, and a glowing sphere crossing the floor. | 6 |
 | `sp-fog` | Small lights, opaque companions and a glass sphere in dark, floorless fog. | 12 |
 
 Surface and volume interactions both consume the path-event budget. Headless
@@ -46,26 +46,29 @@ and benchmark tools accept `--bounces` to override the defaults.
 
 ## Spherical shadows
 
-The [spherical studio](src/bin/sp/scene.rs) contains just a sun, a diffuse ball,
-a refractive ball, and a great-sphere plane. The balls touch opposite poles on
-the top of the plane, placing their centers `π − 0.5` units apart. The sun is
-halfway along the geodesic joining their centers. The starting view shows the
-diffuse ball and sun; turn around to see the glass ball. The floor material is 85% diffuse, 5% specular, and 10% transparent; look for
-contact shadows, light refracted through the glass, and a faint reflection.
-There is no ambient illumination. Let samples accumulate to resolve indirect
-lighting and the sun's soft shadows.
+The [spherical studio](src/bin/sp/scene.rs) has red and clear balls resting at
+opposite floor poles, a small weakly refracting blue ball near the red one, and
+a green emitter intersecting the plane in a dark region. The low, off-center sun
+casts long asymmetric shadows. The beacon is a quarter circuit from the sun's
+floor footprint, where direct sunlight is weakest; the antipodal point brightens
+again as spherical rays converge. The starting view shows the red and blue balls
+and the beacon; turn around to find the clear ball.
+The floor material is 85% diffuse, 5% specular, and 10% transparent. Look for
+contact shadows, refracted light, and faint reflections. There is no ambient light.
 
 The separate `sp-fog` example has no plane. Two small distant lights are surrounded
-by opaque balls, with one larger glass sphere in front. The medium has extinction
-0.65 per world unit and scattering albedo 0.95. Most of the scene stays dark;
+by opaque balls, with one larger glass sphere in front. Tune the emitters,
+extinction and scattering albedo directly in its `scene.rs`. With small emitters,
 look near the lights for scattered illumination and shadows. Begin with thousands
 of samples for these small emitters. Volumetric caustics converge slowly with the
 current camera-path sampler, and the scene-wide medium also occupies the glass.
 Neither example adds environmental light or independently glowing fog.
 
-Left-drag to look, scroll to zoom, use WASD/arrows to move, Space/C for up/down,
+Left-drag to look, or press Tab to lock/unlock the mouse. Scroll to zoom, use
+WASD/arrows to move, Space/C for up/down,
 and Q/E to roll. R restores the initial camera. Leave the camera still while
-samples accumulate. Escape exits the native viewer or toggles pause in the browser.
+samples accumulate. Mouse lock releases on focus loss. Escape exits native
+applications; in the browser it releases mouse lock, or toggles pause when unlocked.
 
 ## Build your own scene
 
@@ -106,7 +109,7 @@ They share no application runner or source includes. Small amounts of window and
 input scaffolding repeat intentionally so each directory is readable on its own.
 Use the example dependencies in [Cargo.toml](Cargo.toml) when creating a separate
 package: `objects`, `hypertrace-renderer`, `ccgeom`, `vecmat`, `wgame`, `wgpu`, and
-`anyhow`. Wgame owns the window; Hypertrace accepts caller-owned devices.
+`anyhow`, plus `winit` for native cursor capture. Wgame owns the window; Hypertrace accepts caller-owned devices.
 
 All four scene binaries are native applications and accept `--help` and a
 bounded `--smoke` check. The separate gallery package enables its `viewer` feature

@@ -7,6 +7,8 @@ extern "C" {
     pub fn add_example(id: &str, title: &str, description: &str, group: &str);
     pub fn scene_name() -> String;
     pub fn resolution() -> u32;
+    pub fn mouse_locked() -> bool;
+    pub fn take_mouse_lock_change() -> bool;
     pub fn take_reset() -> bool;
     pub fn paused() -> bool;
     pub fn toggle_pause();

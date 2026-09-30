@@ -1,10 +1,7 @@
 //! Generic Rust builders through generated WGSL, including GPU update semantics.
 use ccgeom::{Flat3, Geometry3};
 use hypertrace_gallery as examples;
-use hypertrace_renderer::{
-    Gpu, Renderer, Scene,
-    shader::{Geometry, SceneDefinition, Transform},
-};
+use hypertrace_renderer::{Gpu, Renderer, Scene, shader::Geometry};
 use objects::{
     Mapped, Scene as _, SceneImpl,
     background::ConstBg,
@@ -14,50 +11,6 @@ use objects::{
     shape::Plane,
     view::PointView,
 };
-
-#[test]
-fn owned_scenes_compile_with_declared_cameras_and_bounce_limits() {
-    fn check<G: Geometry>(
-        definition: SceneDefinition<G>,
-        camera: Transform<G>,
-        bounces: u32,
-        fov: f32,
-    ) {
-        let scene = Scene::from_definition(&definition).unwrap();
-        scene.validate().unwrap();
-        for (actual, expected) in scene
-            .camera
-            .transform()
-            .components()
-            .unwrap()
-            .into_iter()
-            .flatten()
-            .zip(camera.components().unwrap().into_iter().flatten())
-        {
-            assert!((actual - expected).abs() < 1e-12);
-        }
-        assert_eq!(scene.fov, fov);
-        assert_eq!(scene.bounces, bounces);
-    }
-    check(
-        examples::factories::eu().unwrap(),
-        Transform::from_isometry(examples::eu::camera()).unwrap(),
-        4,
-        1.0,
-    );
-    check(
-        examples::factories::hy().unwrap(),
-        Transform::from_isometry(examples::hy::camera()).unwrap(),
-        3,
-        1.0,
-    );
-    check(
-        examples::factories::sp().unwrap(),
-        Transform::from_isometry(examples::sp::camera()).unwrap(),
-        6,
-        1.5,
-    );
-}
 
 #[test]
 fn static_groups_and_vector_lengths_do_not_change_shader_dependencies() {

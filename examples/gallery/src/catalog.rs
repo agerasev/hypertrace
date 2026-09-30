@@ -29,7 +29,7 @@ pub const EXAMPLES: &[Example] = &[
         id: "sp",
         title: "Spherical studio",
         group: "Materials and lighting",
-        description: "Two balls rest at opposite poles of a mostly diffuse plane, with a sun between them. Turn around to find the glass ball.",
+        description: "An off-center sun lights red, clear and blue balls. Explore the opposite pole and a glowing sphere crossing the floor.",
     },
     Example {
         id: "sp-fog",
@@ -91,17 +91,4 @@ macro_rules! with_example {
             )),
         }
     }};
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn every_selectable_example_compiles_without_a_device() {
-        for example in super::EXAMPLES {
-            crate::with_example!(example.id, |_metadata, factory| {
-                objects::shader::compile(&factory().unwrap()).map(|_| ())
-            })
-            .unwrap_or_else(|error| panic!("{}: {error:#}", example.id));
-        }
-    }
 }

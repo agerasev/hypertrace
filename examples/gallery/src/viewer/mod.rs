@@ -1,5 +1,5 @@
 //! Native and web viewer. WASD/arrows move, Space/C move vertically, Q/E roll,
-//! left-drag looks around, scroll changes field of view, R resets, Esc closes.
+//! left-drag looks around, Tab toggles mouse lock, scroll zooms, R resets, Esc closes.
 //! `--scene NAME --smoke` processes twelve frames with a small binding limit,
 //! resizing across that limit and back, camera updates and one discarded frame.
 
@@ -13,6 +13,8 @@ use wgame::{
 
 use crate::Example;
 use objects::shader::{Geometry, Result, SceneDefinition};
+#[cfg(not(target_arch = "wasm32"))]
+mod cursor;
 #[cfg(target_arch = "wasm32")]
 mod web;
 
@@ -91,7 +93,7 @@ fn options(examples: &[Example]) -> wgame::Result<(String, bool)> {
             "--smoke" => smoke = true,
             "--help" | "-h" => {
                 println!(
-                    "viewer [--scene NAME] [--smoke] [--list-scenes]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; scroll: zoom; R: reset; Esc: close"
+                    "viewer [--scene NAME] [--smoke] [--list-scenes]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; Tab: toggle mouse lock; scroll: zoom; R: reset; Esc: close"
                 );
                 return Ok((String::new(), false));
             }
@@ -134,6 +136,8 @@ async fn render_loop<G: Geometry>(
     let graphics = window.graphics().clone();
     eprintln!("Adapter: {:?}", graphics.adapter().get_info());
     let raw = window.raw();
+    #[cfg(not(target_arch = "wasm32"))]
+    let mut capture = cursor::MouseCapture::new(raw);
     let initial_size = raw.inner_size();
     let limits = graphics.device().limits();
     eprintln!(
@@ -214,6 +218,10 @@ async fn render_loop<G: Geometry>(
             reset |= web::take_reset();
         }
         let mut zoom = 0.0;
+        #[cfg(not(target_arch = "wasm32"))]
+        let mut suppress_look = false;
+        #[cfg(target_arch = "wasm32")]
+        let mut suppress_look = web::take_mouse_lock_change();
         for event in &input.events {
             match event {
                 Event::Key {
@@ -234,6 +242,25 @@ async fn render_loop<G: Geometry>(
                     pressed: true,
                     repeat: false,
                 } => reset = true,
+                #[cfg(not(target_arch = "wasm32"))]
+                Event::Key {
+                    key: Key::Tab,
+                    pressed: true,
+                    repeat: false,
+                } => {
+                    if let Err(error) = capture.set(!capture.active) {
+                        eprintln!("Unable to change mouse lock: {error:#}");
+                    }
+                    suppress_look = true;
+                }
+                Event::Focused(false) => {
+                    #[cfg(not(target_arch = "wasm32"))]
+                    if let Err(error) = capture.set(false) {
+                        eprintln!("Unable to release mouse: {error:#}");
+                    }
+                    suppress_look = true;
+                }
+                Event::Cancelled => suppress_look = true,
                 Event::Scroll(delta) => zoom += delta.y,
                 _ => {}
             }
@@ -263,7 +290,11 @@ async fn render_loop<G: Geometry>(
             ) * dt,
         ];
         let mut rotation = [0.0, 0.0, axis(key('q'), key('e')) * dt];
-        if input.button_down(Button::Primary) {
+        #[cfg(not(target_arch = "wasm32"))]
+        let captured = capture.active;
+        #[cfg(target_arch = "wasm32")]
+        let captured = web::mouse_locked();
+        if !suppress_look && input.focused && (captured || input.button_down(Button::Primary)) {
             rotation[0] -= 2.0 * f64::from(input.relative_motion.y) / f64::from(size.1);
             rotation[1] -= 2.0 * f64::from(input.relative_motion.x) / f64::from(size.0);
         }
@@ -336,6 +367,16 @@ async fn render_loop<G: Geometry>(
             frame.present();
         }
         frames += 1;
+        #[cfg(not(target_arch = "wasm32"))]
+        if smoke && frames == 2 {
+            capture.set(true)?;
+            anyhow::ensure!(capture.active, "smoke test failed to lock mouse");
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        if smoke && frames == 4 {
+            capture.set(false)?;
+            anyhow::ensure!(!capture.active, "smoke test failed to release mouse");
+        }
         if smoke && frames == 3 {
             let _ = raw.request_inner_size(wgame::app::Size::new(640, 480));
         }

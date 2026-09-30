@@ -36,8 +36,8 @@ headless, and benchmark tools. Its `hypertrace_gallery` library imports the
 example-owned scene files. Add metadata to
 [`examples/gallery/src/catalog.rs`](examples/gallery/src/catalog.rs) only when
 an example should appear in those tools. Standalone binaries must not depend on
-the gallery or another example. Keep scene tests beside their owned scene and
-application-level integration tests in `examples/gallery/tests`.
+the gallery or another example. Keep application-level integration tests in
+`examples/gallery/tests`; avoid tests that pin demonstration layouts or tuning.
 
 ## Checks
 
@@ -49,6 +49,7 @@ cargo test --workspace --all-targets
 cargo test --workspace --doc
 cargo clippy --workspace --all-targets -- -D warnings
 python3 -m unittest discover -s tools -p 'test_*.py'
+node examples/gallery/web/controls.test.cjs
 ```
 
 GPU tests are ignored by ordinary Cargo test runs. They fail if no suitable
@@ -61,8 +62,9 @@ WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin viewer -- --
 ```
 
 The viewer smoke path exercises camera motion, accumulation resets, resizing
-across storage-binding limits, and presentation. Exercise the Euclidean and
-hyperbolic examples as well when changing their construction or geometry.
+across storage-binding limits, presentation, and cursor lock/release. Exercise
+the Euclidean and hyperbolic examples as well when changing their construction
+or geometry.
 The [example guide](examples/README.md) describes the lighting and material demonstrations.
 
 For the web viewer, install `wasm32-unknown-unknown` and Trunk 0.21 or newer:

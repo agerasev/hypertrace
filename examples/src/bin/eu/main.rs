@@ -10,6 +10,43 @@ use wgame::{
 
 mod scene;
 
+// Cursor capture is application policy. The guard also releases it on errors.
+struct MouseCapture<'a> {
+    window: &'a wgame::app::RawWindow,
+    active: bool,
+}
+
+impl<'a> MouseCapture<'a> {
+    fn new(window: &'a wgame::app::RawWindow) -> Self {
+        Self {
+            window,
+            active: false,
+        }
+    }
+
+    fn set(&mut self, active: bool) -> wgame::Result<()> {
+        use winit::window::CursorGrabMode;
+        if active {
+            self.window
+                .set_cursor_grab(CursorGrabMode::Locked)
+                .or_else(|_| self.window.set_cursor_grab(CursorGrabMode::Confined))?;
+        } else {
+            self.window.set_cursor_grab(CursorGrabMode::None)?;
+        }
+        self.window.set_cursor_visible(!active);
+        self.active = active;
+        Ok(())
+    }
+}
+
+impl Drop for MouseCapture<'_> {
+    fn drop(&mut self) {
+        if let Err(error) = self.set(false) {
+            eprintln!("Unable to release mouse: {error:#}");
+        }
+    }
+}
+
 fn main() -> wgame::Result<()> {
     let mut smoke = false;
     for argument in std::env::args().skip(1) {
@@ -17,7 +54,7 @@ fn main() -> wgame::Result<()> {
             "--smoke" => smoke = true,
             "--help" | "-h" => {
                 println!(
-                    "eu [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; scroll: zoom; R: reset; Esc: close"
+                    "eu [--smoke]\nWASD/arrows: move; Space/C: up/down; Q/E: roll; left-drag: look; Tab: toggle mouse lock; scroll: zoom; R: reset; Esc: close"
                 );
                 return Ok(());
             }
@@ -47,6 +84,7 @@ fn main() -> wgame::Result<()> {
             eprintln!("Adapter: {:?}", graphics.adapter().get_info());
             let limits = graphics.device().limits();
             let raw = window.raw();
+            let mut capture = MouseCapture::new(raw);
             let size = raw.inner_size();
             let size = fit_render_size(&limits, (size.width.max(1), size.height.max(1)))?;
             let (initial_camera, initial_fov) = (scene.camera, scene.fov);
@@ -82,6 +120,7 @@ fn main() -> wgame::Result<()> {
                 let input = frame.input();
                 let mut reset = false;
                 let mut zoom = 0.0;
+                let mut suppress_look = false;
                 for event in &input.events {
                     match event {
                         Event::Key {
@@ -93,6 +132,21 @@ fn main() -> wgame::Result<()> {
                         Event::Key {
                             key: Key::Character('r'), pressed: true, repeat: false,
                         } => reset = true,
+                        Event::Key {
+                            key: Key::Tab, pressed: true, repeat: false,
+                        } => {
+                            if let Err(error) = capture.set(!capture.active) {
+                                eprintln!("Unable to change mouse lock: {error:#}");
+                            }
+                            suppress_look = true;
+                        }
+                        Event::Focused(false) => {
+                            if let Err(error) = capture.set(false) {
+                                eprintln!("Unable to release mouse: {error:#}");
+                            }
+                            suppress_look = true;
+                        }
+                        Event::Cancelled => suppress_look = true,
                         Event::Scroll(delta) => zoom += delta.y,
                         _ => {}
                     }
@@ -111,7 +165,8 @@ fn main() -> wgame::Result<()> {
                     axis(key_or('s', Key::ArrowDown), key_or('w', Key::ArrowUp)) * dt,
                 ];
                 let mut rotation = [0.0, 0.0, axis(key('q'), key('e')) * dt];
-                if input.button_down(Button::Primary) {
+                if !suppress_look && input.focused
+                    && (capture.active || input.button_down(Button::Primary)) {
                     rotation[0] -= 2.0 * f64::from(input.relative_motion.y) / f64::from(size.1);
                     rotation[1] -= 2.0 * f64::from(input.relative_motion.x) / f64::from(size.0);
                 }
@@ -144,6 +199,14 @@ fn main() -> wgame::Result<()> {
                 presenter.draw(frame.encoder(), &view);
                 frame.present();
                 frames += 1;
+                if smoke && frames == 2 {
+                    capture.set(true)?;
+                    anyhow::ensure!(capture.active, "smoke test failed to lock mouse");
+                }
+                if smoke && frames == 4 {
+                    capture.set(false)?;
+                    anyhow::ensure!(!capture.active, "smoke test failed to release mouse");
+                }
                 if smoke && frames == 3 {
                     let _ = raw.request_inner_size(wgame::app::Size::new(640, 480));
                 }
@@ -155,7 +218,7 @@ fn main() -> wgame::Result<()> {
                         smoke_scaled && smoke_restored,
                         "smoke test missed resize across the buffer limit and back"
                     );
-                    eprintln!("Euclidean glass smoke passed: 12 frames, camera movement, resize and GPU presentation");
+                    eprintln!("Euclidean glass smoke passed: 12 frames, mouse lock/unlock, camera movement, resize and GPU presentation");
                     break;
                 }
             }

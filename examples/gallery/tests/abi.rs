@@ -1,22 +1,29 @@
 //! Read the actual production WGSL records on the GPU. Distinct values make
 //! matrix ordering, padding and array stride errors observable independently
 //! of whether a rendered image looks plausible.
-use hypertrace_gallery as examples;
+use ccgeom::Spherical3;
 use hypertrace_renderer::{
     Gpu, Renderer, Scene, read_buffer,
     shader::{GpuObject, MaterialRecord},
 };
-use objects::Scene as _;
+use objects::{
+    Scene as _, SceneImpl, background::ConstBg, material::Absorbing, object::Covered,
+    shape::GeodesicSphere, view::PointView,
+};
 use wgpu::util::DeviceExt;
 
 #[test]
 #[ignore = "requires a native WGPU compute adapter"]
 fn generated_uniform_carries_physical_radius_and_medium() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
-    let mut definition = examples::sp::scene::<6>().definition().unwrap();
-    // Keep this ABI fixture independent of the demonstration's camera framing.
-    definition.view.map = hypertrace_renderer::shader::Transform::identity();
-    definition.view.fov = 1.0;
+    // Keep the ABI fixture independent of demonstration layouts and tuning.
+    let mut definition = SceneImpl::<Spherical3, _, _, _, 6>::new(
+        PointView::new(1.0),
+        Covered::new(GeodesicSphere::new(0.25), Absorbing),
+        ConstBg::new([0.0; 3].into()),
+    )
+    .definition()
+    .unwrap();
     definition.radius = 2.5;
     definition.medium = hypertrace_renderer::shader::Medium::homogeneous(0.125, [0.2, 0.4, 0.7]);
     let scene = Scene::from_definition(&definition).unwrap();
@@ -93,7 +100,7 @@ fn probe() {
             [0.0; 4],
             [0.0; 4],
             [0.0; 4],
-            [13.0, 7.0, 0.0, 4.0],
+            [13.0, 7.0, 0.0, 1.0],
             [1.0, 6.0, 0.0, 0.0],
             [1.0, 2.5, 1.0, 0.0],
             [0.2, 0.4, 0.7, 0.125],

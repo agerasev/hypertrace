@@ -50,8 +50,8 @@ standalone examples use `objects`, `ccgeom`, and `renderer` directly.
 
 The gallery catalog includes Euclidean glass, hyperbolic tilings, a spherical
 shadow studio, and one floorless spherical fog scene. Use `--list-scenes`
-in a gallery tool to see the choices. Start with `sp` to explore a sun and two
-balls touching a slightly transparent, mostly diffuse plane. The
+in a gallery tool to see the choices. Start with `sp` to explore an off-center sun and
+diffuse, refractive, and glowing balls on a slightly transparent, mostly diffuse plane. The
 [example guide](examples/README.md) explains what to observe and how the builders work.
 
 Spherical scenes use emissive objects and a configurable black miss background.
@@ -61,7 +61,7 @@ extensions, validation, and benchmarking.
 
 ### Controls
 
-- Left-drag to look; scroll to zoom.
+- Left-drag to look, or press Tab to lock/unlock the mouse; scroll to zoom.
 - WASD or arrow keys to move; Space/C to move up/down; Q/E to roll.
 - R to restore the initial camera; Escape to exit.
 
@@ -83,7 +83,8 @@ Open <http://127.0.0.1:8080>. Use the grouped Example menu to select a scene,
 or start with any catalog ID such as `?scene=sp` or
 `?scene=sp-fog`. Selection reloads the page into the chosen typed application.
 Each example includes a short description. Click the canvas to use
-the camera controls above. Escape toggles pause in the browser. Quality caps the
+the camera controls above. Tab locks/unlocks the mouse while the canvas is focused.
+Escape releases browser mouse lock; when unlocked it toggles pause. Quality caps the
 longest render dimension (Fast: 640, Balanced: 960, Sharp: 1440 pixels); Full
 resolution follows the canvas size, subject to device limits. The default is
 Balanced to bound the work on large or high-DPI displays.
@@ -117,10 +118,11 @@ frames, and precision limits; [ABOUT.md](ABOUT.md) describes the implementation.
 
 The floorless spherical fog scene is available as `--scene sp-fog` and as the
 standalone `sp-fog` binary. Its [scene construction](examples/src/bin/sp-fog/scene.rs)
-uses two small emitters, opaque companions and a glass sphere, with extinction
-`0.65` inverse world units and scattering albedo `[0.95; 3]`. Its [main function](examples/src/bin/sp-fog/main.rs) shows the
+uses two small emitters, opaque companions and a glass sphere. Light intensity,
+extinction and scattering albedo are adjustable directly in that source. Its [main function](examples/src/bin/sp-fog/main.rs) shows the
 complete application setup. The simpler [vacuum studio](examples/src/bin/sp/scene.rs)
-places two balls at opposite poles of the floor, with a small sun between them.
+keeps two balls at opposite floor poles, with asymmetric sunlight, a nearby blue
+ball, and a glowing sphere intersecting the floor.
 
 Fog samples a physical free-flight distance before resolving a surface miss;
 that distance can span multiple spherical circuits. Independent transport tests

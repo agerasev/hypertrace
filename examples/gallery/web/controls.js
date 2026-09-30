@@ -5,11 +5,15 @@ const status = document.querySelector("#status");
 const stats = document.querySelector("#stats");
 const pause = document.querySelector("#pause");
 const description = document.querySelector("#example-description");
+const mouseLockStatus = document.querySelector("#mouse-lock-status");
 const examples = new Map();
 const groups = new Map();
 let resetRequested = false;
 let isPaused = false;
 let lastStats = "";
+let mouseLockChanged = false;
+let wantsMouseLock = false;
+let mouseLockPending = false;
 
 const requestedScene = new URLSearchParams(location.search).get("scene");
 function describe_example() {
@@ -32,6 +36,68 @@ pause.addEventListener("click", () => {
 });
 canvas.addEventListener("pointerdown", () => canvas.focus());
 canvas.addEventListener("contextmenu", event => event.preventDefault());
+
+export function mouse_locked() { return document.pointerLockElement === canvas; }
+export function take_mouse_lock_change() {
+    const changed = mouseLockChanged;
+    mouseLockChanged = false;
+    return changed;
+}
+function release_mouse() {
+    wantsMouseLock = false;
+    mouseLockPending = false;
+    if (mouse_locked()) document.exitPointerLock();
+}
+function mouse_lock_failed() {
+    wantsMouseLock = false;
+    mouseLockPending = false;
+    mouseLockChanged = true;
+    mouseLockStatus.textContent = "Mouse lock unavailable · drag to look";
+}
+// Request synchronously inside the key gesture: deferring this to a render
+// frame can lose the browser's user-activation permission. DOM state is the
+// authority because requests can fail and Escape can release lock externally.
+canvas.addEventListener("keydown", event => {
+    if (event.key === "Escape" && (mouse_locked() || mouseLockPending)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        release_mouse();
+    }
+    if (event.key !== "Tab" || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (event.repeat) return;
+    if (mouse_locked() || mouseLockPending) {
+        release_mouse();
+        return;
+    }
+    wantsMouseLock = true;
+    mouseLockPending = true;
+    try {
+        const request = canvas.requestPointerLock();
+        request?.catch(mouse_lock_failed);
+    } catch {
+        mouse_lock_failed();
+    }
+}, { capture: true });
+document.addEventListener("pointerlockchange", () => {
+    mouseLockPending = false;
+    mouseLockChanged = true;
+    if (mouse_locked() && !wantsMouseLock) {
+        // Focus loss or a second Tab can cancel a request before it succeeds.
+        document.exitPointerLock();
+        return;
+    }
+    if (!mouse_locked()) wantsMouseLock = false;
+    mouseLockStatus.textContent = mouse_locked()
+        ? "Mouse locked · Tab / Esc: release" : "Tab: lock mouse";
+});
+document.addEventListener("pointerlockerror", mouse_lock_failed);
+canvas.addEventListener("blur", release_mouse);
+window.addEventListener("blur", release_mouse);
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) release_mouse();
+});
 
 export function supported() { return isSecureContext && !!navigator.gpu; }
 export function add_example(id, title, text, group) {

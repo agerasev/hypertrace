@@ -80,25 +80,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         (lights, companions, glass),
         ConstBg::new([0.0; 3].into()),
     );
-    // A mean free flight of about 1.54 world units localizes scattering more
-    // than flights spanning several complete circuits of the unit sphere.
+    // Extinction is per physical world unit; its reciprocal is the mean free flight.
     scene.medium = Medium::homogeneous(0.65, [0.95; 3]);
     scene
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use objects::{Scene as _, shader};
-
-    #[test]
-    fn spherical_fog_scene_has_small_lights_companions_glass_and_no_floor() {
-        let scene = scene::<12>();
-        let definition = scene.definition().unwrap();
-        assert_eq!(definition.background.colors(), [[0.0; 3]; 2]);
-        assert_eq!(definition.medium, Medium::homogeneous(0.65, [0.95; 3]));
-        assert_eq!(definition.radius, 1.0);
-        assert_eq!(definition.bounces, 12);
-        assert_eq!(shader::compile(&definition).unwrap().objects.len(), 11);
-    }
 }

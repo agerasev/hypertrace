@@ -155,6 +155,14 @@ history in commits, not new migration diaries.
   must yield black. In spherical scenes long free flights and repeated paths can
   spread illumination throughout the space; do not mistake that for fog emission.
   Smaller emitters at unchanged radiance reduce total light and sharpen shadows.
+  Do not add example-specific scene/layout tests or pin visual tuning values.
+  Keep numerical tuning in the scene source and geometry/transport invariants in
+  independent library fixtures. Test host input and renderer behavior separately.
+- Mouse capture belongs to application hosts. Native hosts use locked capture
+  with confined fallback, restore the cursor on focus loss and exit, and consume
+  raw relative motion once. Browser capture requests must run synchronously in a
+  user gesture; use actual `pointerLockElement` state, handle denial and Escape,
+  and discard accumulated look motion when capture changes.
 
 ## Repository workflow
 

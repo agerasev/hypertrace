@@ -32,7 +32,9 @@ See the [example guide](../examples/README.md) for all IDs, default event budget
 and the geometric effects to look for. Start with 256 samples and increase the count for indirect lighting and fog.
 
 The viewer supports WASD/arrows, Space/C, Q/E, left-drag to look, scroll to zoom,
-R to restore the initial camera, and Escape to close. Movement integrates actual
+Tab to lock/unlock the mouse, R to restore the initial camera, and Escape to close.
+Capture releases on focus loss; in the browser Escape releases capture before
+acting as the pause shortcut. Movement integrates actual
 elapsed time. Camera/scene changes and resizing reset progressive accumulation.
 The viewer requests the adapter's supported buffer sizes. If a window exceeds
 those limits, it reduces render resolution proportionally and scales the image
@@ -178,7 +180,8 @@ let renderer = hypertrace_renderer::Renderer::new(&device, &queue, (640, 480), s
 ```
 
 The [spherical studio](../examples/src/bin/sp/scene.rs) demonstrates shadows
-with a sun, two touching balls, and a mostly diffuse plane. The `eu`, `hy`,
+with an off-center sun, diffuse and refractive balls, a glowing landmark, and
+a mostly diffuse plane. The `eu`, `hy`,
 `sp`, and `sp-fog` scenes expose local `scene::<H>()` constructors where `H`
 sets the interaction budget. Numerical curvature and recurrence comparisons
 live in independent tests.
@@ -239,9 +242,9 @@ fn with_fog<G: Geometry>(mut definition: SceneDefinition<G>)
 }
 ```
 
-The [sp-fog scene](../examples/src/bin/sp-fog/scene.rs) supplies those medium
-values with small emitters, opaque companions and a glass sphere, without a
-floor; its mean free flight is about 1.54 world units at radius one. Run the `sp-fog` binary or select `--scene sp-fog` in a
+The [sp-fog scene](../examples/src/bin/sp-fog/scene.rs) sets its own medium
+values alongside small emitters, opaque companions and a glass sphere, without
+a floor. Mean free flight is the reciprocal of extinction in physical world units. Run the `sp-fog` binary or select `--scene sp-fog` in a
 gallery tool. The [sp scene](../examples/src/bin/sp/scene.rs) selects vacuum.
 Both use a configurable black miss background, with different object layouts.
 Independent transport tests cover unbounded misses and multiple spherical circuits;

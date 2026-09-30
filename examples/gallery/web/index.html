@@ -49,11 +49,11 @@
   </header>
   <p id="example-description" class="example-description" aria-live="polite">Examples are loading…</p>
   <main>
-    <canvas id="canvas" tabindex="0" aria-label="Interactive path traced scene. Drag to look, WASD to move."></canvas>
+    <canvas id="canvas" tabindex="0" aria-label="Interactive path traced scene. Drag to look, Tab to lock the mouse, WASD to move."></canvas>
     <p id="status" role="status" aria-live="polite">Loading renderer…</p>
   </main>
   <footer>
-    <span>Drag: look · WASD / arrows: move · Space / C: up / down · Q / E: roll · Scroll: zoom · R: reset · Esc: pause</span>
+    <span>Drag: look · <span id="mouse-lock-status" role="status" aria-live="polite">Tab: lock mouse</span> · WASD / arrows: move · Space / C: up / down · Q / E: roll · Scroll: zoom · R: reset · Esc: pause when unlocked</span>
     <span id="stats">Progressive path tracing</span>
   </footer>
   <noscript>Enable JavaScript to run the renderer.</noscript>

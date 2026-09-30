@@ -26,12 +26,10 @@ cargo run --release -p hypertrace-gallery --bin headless -- \
 ```
 
 `viewer`, `headless`, and `benchmark` share the `hypertrace_gallery::EXAMPLES` catalog and
-support `--list-scenes`. Besides `eu`, `hy`, and `sp`, it includes the
-`compare-*` physical-layout comparisons, `sp-fog`, `sp-loop`, and `sp-loop-fog`.
+support `--list-scenes`. The four choices are `eu`, `hy`, `sp`, and `sp-fog`.
 The browser presents the same grouped catalog and accepts `?scene=NAME` URLs.
 See the [example guide](../examples/README.md) for all IDs, default event budgets,
-and the geometric effects to look for. Start with 64 samples for comparison
-markers and 256 or more for fog.
+and the geometric effects to look for. Start with 256 samples and increase the count for indirect lighting and fog.
 
 The viewer supports WASD/arrows, Space/C, Q/E, left-drag to look, scroll to zoom,
 R to restore the initial camera, and Escape to close. Movement integrates actual
@@ -179,16 +177,11 @@ let scene = hypertrace_renderer::Scene::from_definition(&definition)?;
 let renderer = hypertrace_renderer::Renderer::new(&device, &queue, (640, 480), scene, 1)?;
 ```
 
-The [`compare-*` examples](../examples/README.md) preserve a physical marker
-layout across curvature signs and radii. Each has a concrete `scene()` builder;
-[compare-sp-flat](../examples/src/bin/compare-sp-flat/scene.rs), for instance,
-uses spherical radius three, hence curvature +1/9, and one surface event.
-The [sp-loop](../examples/src/bin/sp-loop/scene.rs) and
-[sp-loop-fog](../examples/src/bin/sp-loop-fog/scene.rs) folders own their floorless
-long-route scenes. These examples use emissive absorbing spheres for clear
-silhouettes; the studio scenes retain diffuse, reflective, and refractive materials.
-The `eu`, `hy`, `sp`, and `sp-fog` studios expose local `scene::<H>()` constructors
-where `H` sets the interaction budget.
+The [spherical studio](../examples/src/bin/sp/scene.rs) demonstrates shadows
+with a sun, two touching balls, and a mostly diffuse plane. The `eu`, `hy`,
+`sp`, and `sp-fog` scenes expose local `scene::<H>()` constructors where `H`
+sets the interaction budget. Numerical curvature and recurrence comparisons
+live in independent tests.
 
 `hypertrace-scene` is a CPU-only intermediate representation and WGSL compiler.
 It has no graphics runtime dependency. The `objects` traits require shader
@@ -250,11 +243,9 @@ The [sp-fog scene](../examples/src/bin/sp-fog/scene.rs) supplies those medium
 values with the emissive spherical studio; its mean free flight is 12.5 world
 units at radius one. Run the `sp-fog` binary or select `--scene sp-fog` in a
 gallery tool. The [sp scene](../examples/src/bin/sp/scene.rs) selects vacuum.
-Both use a configurable black miss background. The independent
-[sp-loop-fog scene](../examples/src/bin/sp-loop-fog/scene.rs) has no floor and
-uses extinction 0.1 with albedo 0.9. Rays missing its beacons can complete several
-circuits before scattering. Rendered color images do not report individual
-travelled distances or cycle counts.
+Both use a configurable black miss background, with different object layouts.
+Independent transport tests cover unbounded misses and multiple spherical circuits;
+rendered color images do not report individual travelled distances or cycle counts.
 
 The integrator samples `-log(1-u)/extinction` and compares that physical distance
 with the nearest surface. With no surface, the interval stays unbounded even
@@ -421,7 +412,7 @@ later random paths, so cross-device comparisons need not be pixelwise identical.
 Use the release-mode `benchmark` binary for completed-render timings. Run
 configurations sequentially with identical scene, dimensions, samples, seed, and
 bounce limit. Defaults are four events for `eu`, three for `hy`, six for `sp`,
-one for geometric comparisons and `sp-loop`, and twelve for both fog presets.
+and twelve for `sp-fog`.
 Surface and volume interactions both consume this budget. Use `--list-scenes`
 to find a workload and consult the [example guide](../examples/README.md) for its
 layout; each spherical preset has a black miss background.

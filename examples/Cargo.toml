@@ -28,31 +28,3 @@ path = "src/bin/sp/main.rs"
 [[bin]]
 name = "sp-fog"
 path = "src/bin/sp-fog/main.rs"
-
-[[bin]]
-name = "compare-eu"
-path = "src/bin/compare-eu/main.rs"
-
-[[bin]]
-name = "compare-hy"
-path = "src/bin/compare-hy/main.rs"
-
-[[bin]]
-name = "compare-sp"
-path = "src/bin/compare-sp/main.rs"
-
-[[bin]]
-name = "compare-hy-flat"
-path = "src/bin/compare-hy-flat/main.rs"
-
-[[bin]]
-name = "compare-sp-flat"
-path = "src/bin/compare-sp-flat/main.rs"
-
-[[bin]]
-name = "sp-loop"
-path = "src/bin/sp-loop/main.rs"
-
-[[bin]]
-name = "sp-loop-fog"
-path = "src/bin/sp-loop-fog/main.rs"

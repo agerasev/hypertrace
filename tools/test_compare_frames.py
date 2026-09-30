@@ -11,7 +11,7 @@ import compare_frames as compare
 
 def metadata(**changes):
     result = {
-        "scene": "compare-sp", "width": 1, "height": 1, "samples": 4,
+        "scene": "sp", "width": 1, "height": 1, "samples": 4,
         "seed": 123, "bounces": 6, "linear_format": compare.LINEAR_FORMAT,
         "curvature_sign": 1, "curvature_radius": 2.0,
         "medium": {"extinction": 0.08, "albedo": [0.85, 0.9, 0.95]},

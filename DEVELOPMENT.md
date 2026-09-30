@@ -63,7 +63,7 @@ WGPU_BACKEND=vulkan cargo run --release -p hypertrace-gallery --bin viewer -- --
 The viewer smoke path exercises camera motion, accumulation resets, resizing
 across storage-binding limits, and presentation. Exercise the Euclidean and
 hyperbolic examples as well when changing their construction or geometry.
-The [example guide](examples/README.md) describes comparison and recurrence cases.
+The [example guide](examples/README.md) describes the lighting and material demonstrations.
 
 For the web viewer, install `wasm32-unknown-unknown` and Trunk 0.21 or newer:
 

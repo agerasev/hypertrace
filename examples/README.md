@@ -24,67 +24,42 @@ From the repository root:
 
 ```sh
 cargo run --release -p hypertrace-gallery --bin headless -- --list-scenes
-cargo run --release -p hypertrace-examples --bin compare-sp
+cargo run --release -p hypertrace-examples --bin sp
 cargo run --release -p hypertrace-gallery --bin headless -- \
-  --scene sp-loop-fog --width 640 --height 480 --samples 256 --output /tmp/sp-loop-fog
+  --scene sp-fog --width 640 --height 480 --samples 256 --output /tmp/sp-fog
 ```
 
 Headless output includes a PPM preview, linear RGBA floats, and JSON settings
 recording the curvature sign, radius, and medium alongside the render options.
-Start with 64 samples for the geometric comparisons and 256 or more for fog;
+Start with 256 samples and increase the count for fog and soft shadows;
 scattering and indirect illumination need more samples to settle.
 
 | Example | What to observe | Default path events |
 | --- | --- | ---: |
 | `eu` | Glass, diffuse surfaces, and a directional background in flat space. | 4 |
 | `hy` | Pentagonal plane tilings and tiled horospheres. | 3 |
-| `sp` | Diffuse, glass, and mirror spheres illuminated by emissive objects. | 6 |
-| `sp-fog` | The same spherical studio with scattering fog. | 12 |
-| `compare-eu` | Equal physical spheres shrinking with Euclidean distance. | 1 |
-| `compare-hy` | Faster apparent shrinking at curvature −1. | 1 |
-| `compare-sp` | Apparent size growing again beyond the spherical equator. | 1 |
-| `compare-hy-flat` | The hyperbolic comparison at radius 3, curvature −1/9. | 1 |
-| `compare-sp-flat` | The spherical comparison at radius 3, curvature +1/9. | 1 |
-| `sp-loop` | Lights behind the camera arriving from ahead by the long route. | 1 |
-| `sp-loop-fog` | The same long route with scattering and absorption. | 12 |
+| `sp` | A sun and two balls resting on a mostly diffuse plane: one diffuse, one refractive. | 6 |
+| `sp-fog` | An experimental emissive studio with scattering fog. | 12 |
 
 Surface and volume interactions both consume the path-event budget. Headless
 and benchmark tools accept `--bounces` to override the defaults.
 
-## Compare the curvatures
+## Spherical shadows
 
-The five `compare-*` examples each construct the same physical layout locally. Every sphere has physical
-radius 0.12. The amber top row is 0.8 units from the camera, the green middle row
-1.6 units, and the blue bottom row 2.5 units. Their initial viewing directions,
-physical distances, colors, and radii match in every preset.
+The [spherical studio](src/bin/sp/scene.rs) contains just a sun, a diffuse ball,
+a refractive ball, and a great-sphere plane. Both balls touch the top of the
+plane. Its material is 85% diffuse, 5% specular, and 10% transparent; look for
+contact shadows, light refracted through the glass, and a faint reflection.
+There is no ambient illumination. Let samples accumulate to resolve indirect
+lighting and the sun's soft shadows.
 
-At spherical radius 1, the blue row lies beyond the equator and looks larger
-than the green row. In hyperbolic space it becomes especially small. Increasing
-the curvature radius to 3 brings both curved layouts closer to the Euclidean
-view without changing physical placements or object sizes. Curvature is `K/R²`,
-where `K` is −1, 0, or +1 and `R` is the physical curvature radius.
-
-These markers emit light and absorb incoming paths, producing clear silhouettes
-without indirect-light noise. The `sp` studio supplies the shaded material
-comparison; the spherical examples keep a black miss background.
-
-## Follow the long route
-
-In `sp-loop`, all four beacons are behind the initial camera. The central cyan
-beacon is one physical unit away and has radius 0.24. Looking forward reaches
-its surface after `2π − 1 − 0.24 ≈ 5.04` units; turning around reaches it after
-`1 − 0.24 = 0.76` units. There is no floor to intercept the long route.
-
-Compare that view with `sp-loop-fog`, then turn around to see the shorter route.
-Fog has extinction 0.1 per physical unit, mean free flight 10 units, and
-scattering albedo 0.9. A ray that misses every beacon can travel several complete
-circuits before a sampled scattering event. The renderer retains that full
-distance; these color images do not display or measure individual cycle counts.
+The separate `sp-fog` example uses a larger studio with two emitters and
+isotropic scattering. Surface and volume scattering need many samples with
+the current path tracer.
 
 Left-drag to look, scroll to zoom, use WASD/arrows to move, Space/C for up/down,
-and Q/E to roll. R restores the initial camera. Reset before comparing presets
-and leave the camera still while samples accumulate. Escape exits the native
-viewer or toggles pause in the browser.
+and Q/E to roll. R restores the initial camera. Leave the camera still while
+samples accumulate. Escape exits the native viewer or toggles pause in the browser.
 
 ## Build your own scene
 
@@ -127,7 +102,7 @@ Use the example dependencies in [Cargo.toml](Cargo.toml) when creating a separat
 package: `objects`, `hypertrace-renderer`, `ccgeom`, `vecmat`, `wgame`, `wgpu`, and
 `anyhow`. Wgame owns the window; Hypertrace accepts caller-owned devices.
 
-All eleven scene binaries are native applications and accept `--help` and a
+All four scene binaries are native applications and accept `--help` and a
 bounded `--smoke` check. The separate gallery package enables its `viewer` feature
 by default; `cargo build -p hypertrace-gallery --no-default-features` builds its
 headless tools without Wgame. The optional `viewer`, `headless`, and

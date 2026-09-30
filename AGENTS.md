@@ -16,7 +16,7 @@ history in commits, not new migration diaries.
   and `scene`; those libraries must not depend on `examples`, including through
   development dependencies. Keep application-level integration tests with the
   applications; library tests use independent fixtures.
-- Each scene example (`eu`, `hy`, `sp`, comparisons, fog, and recurrence scenes)
+- Each scene example (`eu`, `hy`, `sp`, and fog scenes)
   is a self-contained normal binary. Its directory owns the scene construction,
   materials, camera setup, renderer initialization, and frame loop, using workspace
   crates directly. Opening an example must show how to build a user's own scene;
@@ -146,7 +146,10 @@ history in commits, not new migration diaries.
   render resolution to supported bindings and scale presentation; headless tools
   preserve requested dimensions and report an unsupported size.
 - Use the shared example catalogue for CLI and browser choices. Keep demonstrations
-  focused on observable geometry, lighting and transport behavior.
+  focused on observable geometry, lighting and transport behavior. Keep numerical
+  comparison and recurrence fixtures in tests rather than standalone demos.
+  Place touching objects using intrinsic surface normals and physical distances;
+  a coordinate offset need not produce tangency on a curved surface.
 
 ## Repository workflow
 

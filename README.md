@@ -36,8 +36,7 @@ cargo run --release -p hypertrace-gallery --bin headless -- \
   --scene eu --width 640 --height 480 --samples 64 --output /tmp/eu
 ```
 
-Each scene has its own binary: `eu`, `hy`, `sp`, `sp-fog`, all `compare-*`
-variants, `sp-loop`, and `sp-loop-fog`. Each scene folder under
+Each scene has its own binary: `eu`, `hy`, `sp`, and `sp-fog`. Each scene folder under
 [`examples/src/bin`](examples/src/bin) owns its `scene.rs` and `main.rs`: scene
 construction, renderer and presenter setup, and the Wgame event loop are visible
 in that example. Start with [the spherical studio](examples/src/bin/sp) to copy
@@ -49,13 +48,11 @@ library imports the example-owned scene files and supplies metadata and factorie
 The `hypertrace-examples` package has no library target or gallery dependency;
 standalone examples use `objects`, `ccgeom`, and `renderer` directly.
 
-The gallery catalog includes the original `eu`, `hy`, and `sp` scenes,
-equal-layout curvature comparisons (`compare-eu`, `compare-hy`, `compare-sp`),
-gentler-curvature variants, and spherical fog and long-route examples. Use
-`--list-scenes` in a gallery tool to see all choices. Start with `compare-sp`
-to see distant spheres grow again or `sp-loop` to see light arriving by the long
-route around spherical space. The [example guide](examples/README.md) explains
-what to observe and how the builders work.
+The gallery catalog includes Euclidean glass, hyperbolic tilings, a spherical
+shadow studio, and one experimental spherical fog scene. Use `--list-scenes`
+in a gallery tool to see the choices. Start with `sp` to explore a sun and two
+balls touching a slightly transparent, mostly diffuse plane. The
+[example guide](examples/README.md) explains what to observe and how the builders work.
 
 Spherical scenes use emissive objects and a configurable black miss background.
 Headless output includes linear RGBA floats, a PPM preview, and JSON settings.
@@ -83,8 +80,8 @@ NO_COLOR=true trunk serve --release
 ```
 
 Open <http://127.0.0.1:8080>. Use the grouped Example menu to select a scene,
-or start with any catalog ID such as `?scene=compare-sp` or
-`?scene=sp-loop-fog`. Selection reloads the page into the chosen typed application.
+or start with any catalog ID such as `?scene=sp` or
+`?scene=sp-fog`. Selection reloads the page into the chosen typed application.
 Each example includes a short description. Click the canvas to use
 the camera controls above. Escape toggles pause in the browser. Quality caps the
 longest render dimension (Fast: 640, Balanced: 960, Sharp: 1440 pixels); Full
@@ -118,19 +115,17 @@ distance includes complete circuits even when the ray returns to the same point.
 The [geometry contract](GEOMETRY_CONTRACT.md) specifies units, transforms, tangent
 frames, and precision limits; [ABOUT.md](ABOUT.md) describes the implementation.
 
-The spherical studio's fog variant is available as `--scene sp-fog` and as the
+The experimental spherical fog scene is available as `--scene sp-fog` and as the
 standalone `sp-fog` binary. Its [scene construction](examples/src/bin/sp-fog/scene.rs)
 sets extinction to `0.08` inverse world units and scattering albedo to
 `[0.85, 0.9, 0.95]`. Its [main function](examples/src/bin/sp-fog/main.rs) shows the
-complete application setup. The separate [vacuum studio](examples/src/bin/sp/scene.rs)
-uses the same material and object layout with no medium.
+complete application setup. The simpler [vacuum studio](examples/src/bin/sp/scene.rs)
+focuses on shadows and contact geometry.
 
-The floorless [sp-loop-fog example](examples/src/bin/sp-loop-fog/scene.rs) allows
-rays missing every object to scatter after multiple spherical circuits. Fog
-samples a physical free-flight distance before resolving a surface miss. See the
-[example guide](examples/README.md) for the independent curvature comparisons and
-long-route scenes, and the [renderer guide](renderer/README.md) for constructing
-scenes and implementing custom shapes and materials.
+Fog samples a physical free-flight distance before resolving a surface miss;
+that distance can span multiple spherical circuits. Independent transport tests
+cover recurrence. See the [example guide](examples/README.md) and the
+[renderer guide](renderer/README.md) for scene construction and custom components.
 
 ```sh
 cargo test --workspace

@@ -29,13 +29,13 @@ pub const EXAMPLES: &[Example] = &[
         id: "sp",
         title: "Spherical studio",
         group: "Materials and lighting",
-        description: "A sun lights glass and diffuse spheres resting on a mostly diffuse, slightly transparent and reflective plane.",
+        description: "Two balls rest at opposite poles of a mostly diffuse plane, with a sun between them. Turn around to find the glass ball.",
     },
     Example {
         id: "sp-fog",
-        title: "Spherical studio with fog",
+        title: "Spherical lights in fog",
         group: "Materials and lighting",
-        description: "An experimental studio with isotropic scattering; let indirect illumination accumulate samples.",
+        description: "Small warm and cool lights, opaque companions and a glass sphere in dark fog. No floor or ambient light; let scattering accumulate.",
     },
 ];
 

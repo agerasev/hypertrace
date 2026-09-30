@@ -150,6 +150,11 @@ history in commits, not new migration diaries.
   comparison and recurrence fixtures in tests rather than standalone demos.
   Place touching objects using intrinsic surface normals and physical distances;
   a coordinate offset need not produce tangency on a curved surface.
+- Verify fog with an off-axis emitter: scattering must reveal its light, pure
+  absorption must not, and switching off all emission with a black environment
+  must yield black. In spherical scenes long free flights and repeated paths can
+  spread illumination throughout the space; do not mistake that for fog emission.
+  Smaller emitters at unchanged radiance reduce total light and sharpen shadows.
 
 ## Repository workflow
 

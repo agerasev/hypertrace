@@ -1,5 +1,6 @@
 //! A sun and two spheres resting on a great-sphere plane in unit-radius S³.
-//! All illumination comes from the sun; the miss background is black.
+//! The balls touch opposite poles of the floor, with the sun between their
+//! centers. Turn around to see the other ball. The miss background is black.
 
 use ccgeom::{EmbeddedIsometry, Geometry3, Space3, Spherical3};
 use objects::{
@@ -36,7 +37,7 @@ pub type ExampleScene<const H: usize> = SceneImpl<
 >;
 
 pub fn camera() -> Map {
-    Map::identity()
+    Spherical3::rotate_x(0.85)
 }
 
 /// Move along the plane first, then lift its sphere center along the normal by
@@ -63,19 +64,24 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
     let floor = Spherical3::shift_y(-0.55).chain(Spherical3::rotate_x(std::f64::consts::FRAC_PI_2));
     let diffuse = resting_sphere(
         floor,
-        [-0.42, -0.95],
+        [0.0, -std::f64::consts::FRAC_PI_2],
         0.25,
         Colored::new(Lambertian, [0.8, 0.18, 0.08].into()),
     );
-    let glass = resting_sphere(floor, [0.42, -0.95], 0.25, Refractive::new(1.4));
+    let glass = resting_sphere(
+        floor,
+        [0.0, std::f64::consts::FRAC_PI_2],
+        0.25,
+        Refractive::new(1.4),
+    );
     let sun = Mapped::new(
         Covered::new(
-            GeodesicSphere::new(0.16),
+            GeodesicSphere::new(0.05),
             Emissive::new(Absorbing, [5.5, 4.95, 4.0].into()),
         ),
-        Space3::<f64, 1>::unit()
-            .translation([-0.5, 0.6, -1.0].into(), 1.25)
-            .expect("finite sun position"),
+        // The upper pole of the floor is halfway along the shortest geodesic
+        // joining these equal-radius balls above antipodal contact points.
+        floor.chain(Spherical3::shift_z(-std::f64::consts::FRAC_PI_2)),
     );
     let ground = Mapped::new(
         Covered::new(
@@ -89,7 +95,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         floor,
     );
     SceneImpl::new(
-        Mapped::new(PointView::new(1.0), camera()),
+        Mapped::new(PointView::new(1.5), camera()),
         (diffuse, glass, sun, ground),
         ConstBg::new([0.0; 3].into()),
     )
@@ -129,5 +135,18 @@ mod tests {
             let foot = vecmat::Vector::from([center[0], center[1], center[2], 0.0]).normalize();
             assert!((space.distance(center, foot) - radius).abs() < 1e-12);
         }
+    }
+
+    #[test]
+    fn balls_rest_at_opposite_poles_with_the_sun_halfway_between() {
+        let scene = scene::<6>();
+        let space = Space3::<f64, 1>::unit();
+        let diffuse = scene.object.0.map.apply_vector(space.origin());
+        let glass = scene.object.1.map.apply_vector(space.origin());
+        let sun = scene.object.2.map.apply_vector(space.origin());
+        let separation = std::f64::consts::PI - 2.0 * scene.object.0.inner.shape.radius;
+        assert!((space.distance(diffuse, glass) - separation).abs() < 1e-12);
+        assert!((space.distance(diffuse, sun) - separation / 2.0).abs() < 1e-12);
+        assert!((space.distance(glass, sun) - separation / 2.0).abs() < 1e-12);
     }
 }

@@ -14,6 +14,9 @@ use wgpu::util::DeviceExt;
 fn generated_uniform_carries_physical_radius_and_medium() {
     let gpu = futures::executor::block_on(Gpu::headless()).expect("compute adapter required");
     let mut definition = examples::sp::scene::<6>().definition().unwrap();
+    // Keep this ABI fixture independent of the demonstration's camera framing.
+    definition.view.map = hypertrace_renderer::shader::Transform::identity();
+    definition.view.fov = 1.0;
     definition.radius = 2.5;
     definition.medium = hypertrace_renderer::shader::Medium::homogeneous(0.125, [0.2, 0.4, 0.7]);
     let scene = Scene::from_definition(&definition).unwrap();

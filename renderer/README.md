@@ -234,14 +234,14 @@ use objects::shader::{Geometry, Medium, Result, SceneDefinition};
 fn with_fog<G: Geometry>(mut definition: SceneDefinition<G>)
     -> Result<hypertrace_renderer::Scene<G>>
 {
-    definition.medium = Medium::homogeneous(0.08, [0.85, 0.9, 0.95]);
+    definition.medium = Medium::homogeneous(0.65, [0.95; 3]);
     hypertrace_renderer::Scene::from_definition(&definition)
 }
 ```
 
 The [sp-fog scene](../examples/src/bin/sp-fog/scene.rs) supplies those medium
-values with the emissive spherical studio; its mean free flight is 12.5 world
-units at radius one. Run the `sp-fog` binary or select `--scene sp-fog` in a
+values with small emitters, opaque companions and a glass sphere, without a
+floor; its mean free flight is about 1.54 world units at radius one. Run the `sp-fog` binary or select `--scene sp-fog` in a
 gallery tool. The [sp scene](../examples/src/bin/sp/scene.rs) selects vacuum.
 Both use a configurable black miss background, with different object layouts.
 Independent transport tests cover unbounded misses and multiple spherical circuits;

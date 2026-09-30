@@ -17,7 +17,12 @@ use objects::{
 
 #[test]
 fn owned_scenes_compile_with_declared_cameras_and_bounce_limits() {
-    fn check<G: Geometry>(definition: SceneDefinition<G>, camera: Transform<G>, bounces: u32) {
+    fn check<G: Geometry>(
+        definition: SceneDefinition<G>,
+        camera: Transform<G>,
+        bounces: u32,
+        fov: f32,
+    ) {
         let scene = Scene::from_definition(&definition).unwrap();
         scene.validate().unwrap();
         for (actual, expected) in scene
@@ -31,23 +36,26 @@ fn owned_scenes_compile_with_declared_cameras_and_bounce_limits() {
         {
             assert!((actual - expected).abs() < 1e-12);
         }
-        assert_eq!(scene.fov, 1.0);
+        assert_eq!(scene.fov, fov);
         assert_eq!(scene.bounces, bounces);
     }
     check(
         examples::factories::eu().unwrap(),
         Transform::from_isometry(examples::eu::camera()).unwrap(),
         4,
+        1.0,
     );
     check(
         examples::factories::hy().unwrap(),
         Transform::from_isometry(examples::hy::camera()).unwrap(),
         3,
+        1.0,
     );
     check(
         examples::factories::sp().unwrap(),
         Transform::from_isometry(examples::sp::camera()).unwrap(),
         6,
+        1.5,
     );
 }
 

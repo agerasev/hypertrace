@@ -39,7 +39,7 @@ scattering and indirect illumination need more samples to settle.
 | `eu` | Glass, diffuse surfaces, and a directional background in flat space. | 4 |
 | `hy` | Pentagonal plane tilings and tiled horospheres. | 3 |
 | `sp` | A sun and two balls resting on a mostly diffuse plane: one diffuse, one refractive. | 6 |
-| `sp-fog` | An experimental emissive studio with scattering fog. | 12 |
+| `sp-fog` | Small lights, opaque companions and a glass sphere in dark, floorless fog. | 12 |
 
 Surface and volume interactions both consume the path-event budget. Headless
 and benchmark tools accept `--bounces` to override the defaults.
@@ -47,15 +47,21 @@ and benchmark tools accept `--bounces` to override the defaults.
 ## Spherical shadows
 
 The [spherical studio](src/bin/sp/scene.rs) contains just a sun, a diffuse ball,
-a refractive ball, and a great-sphere plane. Both balls touch the top of the
-plane. Its material is 85% diffuse, 5% specular, and 10% transparent; look for
+a refractive ball, and a great-sphere plane. The balls touch opposite poles on
+the top of the plane, placing their centers `π − 0.5` units apart. The sun is
+halfway along the geodesic joining their centers. The starting view shows the
+diffuse ball and sun; turn around to see the glass ball. The floor material is 85% diffuse, 5% specular, and 10% transparent; look for
 contact shadows, light refracted through the glass, and a faint reflection.
 There is no ambient illumination. Let samples accumulate to resolve indirect
 lighting and the sun's soft shadows.
 
-The separate `sp-fog` example uses a larger studio with two emitters and
-isotropic scattering. Surface and volume scattering need many samples with
-the current path tracer.
+The separate `sp-fog` example has no plane. Two small distant lights are surrounded
+by opaque balls, with one larger glass sphere in front. The medium has extinction
+0.65 per world unit and scattering albedo 0.95. Most of the scene stays dark;
+look near the lights for scattered illumination and shadows. Begin with thousands
+of samples for these small emitters. Volumetric caustics converge slowly with the
+current camera-path sampler, and the scene-wide medium also occupies the glass.
+Neither example adds environmental light or independently glowing fog.
 
 Left-drag to look, scroll to zoom, use WASD/arrows to move, Space/C for up/down,
 and Q/E to roll. R restores the initial camera. Leave the camera still while

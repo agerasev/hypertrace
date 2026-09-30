@@ -137,6 +137,44 @@ fn absorbing_case<G: Geometry>(gpu: &Gpu) {
 
 #[test]
 #[ignore = "requires a native WGPU compute adapter"]
+fn fog_scatters_off_axis_light_and_stays_black_without_emitters() {
+    let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
+    eprintln!("Scattering adapter: {:?}", gpu.adapter.get_info());
+    scattering_case::<Flat3>(&gpu);
+    scattering_case::<Hyperboloid3>(&gpu);
+    scattering_case::<Spherical3>(&gpu);
+}
+
+fn scattering_case<G: Geometry>(gpu: &Gpu) {
+    let mut scene = definition::<G>(vec![EncodedObject {
+        map: Transform::identity()
+            .move_local([0.9, 0.0, 0.0], [0.0; 3], 1.0)
+            .unwrap(),
+        shape: shape::geodesic_sphere(0.2).unwrap(),
+        material: material::absorbing().emissive([1.0, 0.25, 0.125]).unwrap(),
+    }]);
+    // All primary rays look nearly along -z and miss the light at +x,
+    // including every circuit in spherical space. Only scattering can reveal it.
+    scene.view.fov = 0.001;
+    scene.bounces = 2;
+    scene.background = Background::constant([0.0; 3]);
+    let black = vec![[0.0, 0.0, 0.0, 1.0]; 128];
+    assert_eq!(render(gpu, &scene, (64, 2), 64), black);
+    scene.medium = Medium::homogeneous(2.0, [0.0; 3]);
+    assert_eq!(render(gpu, &scene, (64, 2), 64), black);
+    scene.medium.albedo = [0.8; 3];
+    let scattered = render(gpu, &scene, (64, 2), 64);
+    assert!(scattered.iter().map(|p| p[0]).sum::<f32>() > 0.01);
+    for pixel in scattered {
+        assert_eq!(pixel[1], pixel[0] * 0.25);
+        assert_eq!(pixel[2], pixel[0] * 0.125);
+    }
+    scene.objects[0].material = material::absorbing();
+    assert_eq!(render(gpu, &scene, (64, 2), 64), black);
+}
+
+#[test]
+#[ignore = "requires a native WGPU compute adapter"]
 fn embedded_custom_leaves_use_spherical_positions_and_tangent_frames() {
     let mut shape_module = ShapeModule::<Spherical3>::new(
         "test.embedded-sphere",

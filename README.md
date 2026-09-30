@@ -49,7 +49,7 @@ The `hypertrace-examples` package has no library target or gallery dependency;
 standalone examples use `objects`, `ccgeom`, and `renderer` directly.
 
 The gallery catalog includes Euclidean glass, hyperbolic tilings, a spherical
-shadow studio, and one experimental spherical fog scene. Use `--list-scenes`
+shadow studio, and one floorless spherical fog scene. Use `--list-scenes`
 in a gallery tool to see the choices. Start with `sp` to explore a sun and two
 balls touching a slightly transparent, mostly diffuse plane. The
 [example guide](examples/README.md) explains what to observe and how the builders work.
@@ -115,12 +115,12 @@ distance includes complete circuits even when the ray returns to the same point.
 The [geometry contract](GEOMETRY_CONTRACT.md) specifies units, transforms, tangent
 frames, and precision limits; [ABOUT.md](ABOUT.md) describes the implementation.
 
-The experimental spherical fog scene is available as `--scene sp-fog` and as the
+The floorless spherical fog scene is available as `--scene sp-fog` and as the
 standalone `sp-fog` binary. Its [scene construction](examples/src/bin/sp-fog/scene.rs)
-sets extinction to `0.08` inverse world units and scattering albedo to
-`[0.85, 0.9, 0.95]`. Its [main function](examples/src/bin/sp-fog/main.rs) shows the
+uses two small emitters, opaque companions and a glass sphere, with extinction
+`0.65` inverse world units and scattering albedo `[0.95; 3]`. Its [main function](examples/src/bin/sp-fog/main.rs) shows the
 complete application setup. The simpler [vacuum studio](examples/src/bin/sp/scene.rs)
-focuses on shadows and contact geometry.
+places two balls at opposite poles of the floor, with a small sun between them.
 
 Fog samples a physical free-flight distance before resolving a surface miss;
 that distance can span multiple spherical circuits. Independent transport tests

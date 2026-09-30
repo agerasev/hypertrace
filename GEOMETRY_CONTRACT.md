@@ -101,7 +101,7 @@ surface and volume events consume the finite bounce budget. Deterministic tests
 force samples beyond several circuits. Free-flight survival and scattering
 weights follow the analog estimator; attenuation is not applied twice.
 The standalone [spherical fog scene](examples/src/bin/sp-fog/scene.rs) uses
-extinction `0.08` and albedo `[0.85,0.9,0.95]`; the separate
+extinction `0.65` and albedo `[0.95; 3]`; the separate
 [spherical studio](examples/src/bin/sp/scene.rs) is vacuum. Each owns its
 `scene::<H>()` constructor and numerical settings. General heterogeneous media
 and anisotropic scattering remain follow-up work.

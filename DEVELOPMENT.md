@@ -110,5 +110,8 @@ revisions, options, adapter/driver, and hashes alongside the files.
   over that range. Curved sphere radii must yield a resolvable f32 section equation.
 - Large-scene camera-update cost needs a dedicated benchmark. Workgroup sizes and
   sample batching remain workload/device choices.
+- The scene-wide homogeneous medium also occupies refractive objects. Medium
+  boundaries are needed to exclude fog from glass. Small emitters and volumetric
+  caustics converge slowly with the current camera-path sampler.
 - Heterogeneous media, anisotropic scattering, spherical tilings, triangle
   geometry, acceleration structures, and importance sampling remain extensions.

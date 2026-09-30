@@ -1,27 +1,28 @@
-//! Two small lights with opaque companions and a glass sphere in spherical fog.
-//! There is no floor or ambient light. Small emitters leave most of the scene
-//! dark; scattered illumination and shadows need time to accumulate.
+//! One bright light surrounded by diffuse, reflective and refractive spheres.
+//! Euclidean scattering fog reveals the illumination and shadows; there is no
+//! floor, ambient light or emission from the fog itself.
 
-use ccgeom::{EmbeddedIsometry, Space3, Spherical3};
+use ccgeom::{EmbeddedIsometry, Flat3, Space3};
 use objects::{
     Mapped, Material, SceneImpl,
     background::ConstBg,
-    material::{Absorbing, Colored, Emissive, Lambertian, Refractive},
+    material::{Absorbing, Colored, Emissive, Lambertian, Refractive, Specular},
     object::Covered,
     shader::Medium,
     shape::GeodesicSphere,
     view::PointView,
 };
 
-type Map = EmbeddedIsometry<f64, 1>;
-type Sphere<M> = Mapped<Spherical3, Covered<Spherical3, GeodesicSphere, M>, Map>;
+type Map = EmbeddedIsometry<f64, 0>;
+type Sphere<M> = Mapped<Flat3, Covered<Flat3, GeodesicSphere, M>, Map>;
 pub type ExampleScene<const H: usize> = SceneImpl<
-    Spherical3,
-    Mapped<Spherical3, PointView<Spherical3>, Map>,
+    Flat3,
+    Mapped<Flat3, PointView<Flat3>, Map>,
     (
-        Vec<Sphere<Emissive<Absorbing>>>,
-        Vec<Sphere<Colored<Lambertian>>>,
-        Sphere<Refractive>,
+        Sphere<Emissive<Absorbing>>,
+        Sphere<Colored<Lambertian>>,
+        Sphere<Colored<Specular>>,
+        Sphere<Colored<Refractive>>,
     ),
     ConstBg,
     H,
@@ -31,56 +32,42 @@ pub fn camera() -> Map {
     Map::identity()
 }
 
-fn displacement(position: [f64; 3]) -> Map {
+fn sphere<M: Material<Flat3>>(position: [f64; 3], radius: f64, material: M) -> Sphere<M> {
     let distance = position.iter().map(|v| v * v).sum::<f64>().sqrt();
-    Space3::<f64, 1>::unit()
+    let map = Space3::<f64, 0>::unit()
         .translation(position.into(), distance)
-        .expect("finite example position")
-}
-
-fn sphere<M: Material<Spherical3>>(map: Map, radius: f64, material: M) -> Sphere<M> {
+        .expect("finite example position");
     Mapped::new(Covered::new(GeodesicSphere::new(radius), material), map)
 }
 
 pub fn scene<const H: usize>() -> ExampleScene<H> {
-    let mut lights = Vec::new();
-    let mut companions = Vec::new();
-    for (position, emission) in [
-        ([-0.65, 0.25, -1.8], [0.8, 0.7, 0.55]),
-        ([0.7, -0.15, -2.0], [0.2, 0.35, 0.6]),
-    ] {
-        let center = displacement(position);
-        lights.push(sphere(
-            center,
-            0.055,
-            Emissive::new(Absorbing, emission.into()),
-        ));
-        // Small opaque balls on the camera-facing side cast shadows into the
-        // fog. Place them in each light's own frame, preserving physical sizes.
-        for offset in [
-            [-0.13, 0.0, 0.22],
-            [0.13, 0.0, 0.22],
-            [0.0, -0.13, 0.22],
-            [0.0, 0.13, 0.22],
-        ] {
-            companions.push(sphere(
-                center.chain(displacement(offset)),
-                0.06,
-                Colored::new(Lambertian, [0.2; 3].into()),
-            ));
-        }
-    }
-    let glass = sphere(
-        displacement([0.32, -0.12, -1.25]),
-        0.18,
-        Refractive::new(1.4),
+    let light = sphere(
+        [0.0, 0.0, -2.65],
+        0.12,
+        Emissive::new(Absorbing, [24.0; 3].into()),
+    );
+    let red = sphere(
+        [-0.7, -0.1, -2.9],
+        0.28,
+        Colored::new(Lambertian, [0.85, 0.06, 0.025].into()),
+    );
+    let green = sphere(
+        [0.5, 0.6, -3.0],
+        0.28,
+        Colored::new(Specular, [0.12, 0.9, 0.2].into()),
+    );
+    // Slightly toward the camera so refracted light crosses visible fog.
+    let blue = sphere(
+        [0.45, -0.6, -2.5],
+        0.28,
+        Colored::new(Refractive::new(1.45), [0.35, 0.6, 0.98].into()),
     );
     let mut scene = SceneImpl::new(
-        Mapped::new(PointView::new(1.0), camera()),
-        (lights, companions, glass),
+        Mapped::new(PointView::new(0.45), camera()),
+        (light, red, green, blue),
         ConstBg::new([0.0; 3].into()),
     );
     // Extinction is per physical world unit; its reciprocal is the mean free flight.
-    scene.medium = Medium::homogeneous(0.65, [0.95; 3]);
+    scene.medium = Medium::homogeneous(0.35, [0.95; 3]);
     scene
 }

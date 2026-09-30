@@ -243,9 +243,11 @@ fn with_fog<G: Geometry>(mut definition: SceneDefinition<G>)
 ```
 
 The [eu-fog scene](../examples/src/bin/eu-fog/scene.rs) sets its own medium
-values alongside small emitters, opaque companions and a glass sphere, without
-a floor. Mean free flight is the reciprocal of extinction in physical world units. Run the `eu-fog` binary or select `--scene eu-fog` in a
-gallery tool. The [sp scene](../examples/src/bin/sp/scene.rs) selects vacuum.
+values alongside one bright source and red diffuse, green reflective, and blue
+refractive spheres in Euclidean space, without a floor. Mean free flight is the
+reciprocal of extinction in physical world units. Run the `eu-fog` binary or
+select `--scene eu-fog` in a gallery tool.
+The [sp scene](../examples/src/bin/sp/scene.rs) selects vacuum.
 Both use a configurable black miss background, with different object layouts.
 Independent transport tests cover unbounded misses and multiple spherical circuits;
 rendered color images do not report individual travelled distances or cycle counts.

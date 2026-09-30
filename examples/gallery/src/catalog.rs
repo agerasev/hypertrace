@@ -33,9 +33,9 @@ pub const EXAMPLES: &[Example] = &[
     },
     Example {
         id: "eu-fog",
-        title: "Spherical lights in fog",
+        title: "Euclidean light in fog",
         group: "Materials and lighting",
-        description: "Small warm and cool lights, opaque companions and a glass sphere in dark fog. No floor or ambient light; let scattering accumulate.",
+        description: "One bright light surrounded by red diffuse, green mirror and blue glass spheres in Euclidean fog. No floor or ambient light; let scattering accumulate.",
     },
 ];
 
@@ -55,7 +55,7 @@ pub mod factories {
     pub fn sp() -> Result<SceneDefinition<Spherical3>> {
         crate::sp::scene::<6>().definition()
     }
-    pub fn eu_fog() -> Result<SceneDefinition<Spherical3>> {
+    pub fn eu_fog() -> Result<SceneDefinition<Flat3>> {
         crate::eu_fog::scene::<12>().definition()
     }
 }

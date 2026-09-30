@@ -49,7 +49,7 @@ The `hypertrace-examples` package has no library target or gallery dependency;
 standalone examples use `objects`, `ccgeom`, and `renderer` directly.
 
 The gallery catalog includes Euclidean glass, hyperbolic tilings, a spherical
-shadow studio, and one floorless spherical fog scene. Use `--list-scenes`
+shadow studio, and one floorless Euclidean fog scene. Use `--list-scenes`
 in a gallery tool to see the choices. Start with `sp` to explore an off-center sun and
 diffuse, refractive, and glowing balls on a slightly transparent, mostly diffuse plane. The
 [example guide](examples/README.md) explains what to observe and how the builders work.
@@ -116,11 +116,12 @@ distance includes complete circuits even when the ray returns to the same point.
 The [geometry contract](GEOMETRY_CONTRACT.md) specifies units, transforms, tangent
 frames, and precision limits; [ABOUT.md](ABOUT.md) describes the implementation.
 
-The floorless spherical fog scene is available as `--scene eu-fog` and as the
+The floorless Euclidean fog scene is available as `--scene eu-fog` and as the
 standalone `eu-fog` binary. Its [scene construction](examples/src/bin/eu-fog/scene.rs)
-uses two small emitters, opaque companions and a glass sphere. Light intensity,
-extinction and scattering albedo are adjustable directly in that source. Its [main function](examples/src/bin/eu-fog/main.rs) shows the
-complete application setup. The simpler [vacuum studio](examples/src/bin/sp/scene.rs)
+uses one bright emitter surrounded by red diffuse, green reflective, and blue
+refractive spheres. Light intensity, extinction and scattering albedo are adjustable
+directly in that source. Its [main function](examples/src/bin/eu-fog/main.rs) shows
+the complete application setup. The [vacuum studio](examples/src/bin/sp/scene.rs)
 keeps two balls at opposite floor poles, with asymmetric sunlight, a nearby blue
 ball, and a glowing sphere intersecting the floor.
 

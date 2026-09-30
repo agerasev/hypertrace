@@ -39,7 +39,7 @@ scattering and indirect illumination need more samples to settle.
 | `eu` | Glass, diffuse surfaces, and a directional background in flat space. | 4 |
 | `hy` | Pentagonal plane tilings and tiled horospheres. | 3 |
 | `sp` | Asymmetric sunlight, diffuse and refractive balls, and a glowing sphere crossing the floor. | 6 |
-| `eu-fog` | Small lights, opaque companions and a glass sphere in dark, floorless fog. | 12 |
+| `eu-fog` | One light with red diffuse, green reflective and blue refractive spheres in Euclidean fog. | 12 |
 
 Surface and volume interactions both consume the path-event budget. Headless
 and benchmark tools accept `--bounces` to override the defaults.
@@ -56,13 +56,20 @@ and the beacon; turn around to find the clear ball.
 The floor material is 85% diffuse, 5% specular, and 10% transparent. Look for
 contact shadows, refracted light, and faint reflections. There is no ambient light.
 
-The separate `eu-fog` example has no plane. Two small distant lights are surrounded
-by opaque balls, with one larger glass sphere in front. Tune the emitters,
-extinction and scattering albedo directly in its `scene.rs`. With small emitters,
-look near the lights for scattered illumination and shadows. Begin with thousands
-of samples for these small emitters. Volumetric caustics converge slowly with the
+## Euclidean fog
+
+The [eu-fog example](src/bin/eu-fog/scene.rs) places one bright neutral emitter
+among three spheres: opaque red Lambertian, green specular, and blue refractive.
+There is no plane or ambient light. Look for the glow around the source, the red
+sphere's shadow, a green mirror highlight, and light refracted through the blue
+sphere into the fog. Tune the emitter, extinction and scattering albedo directly
+in `scene.rs`.
+
+Begin with thousands of samples. Volumetric caustics converge slowly with the
 current camera-path sampler, and the scene-wide medium also occupies the glass.
-Neither example adds environmental light or independently glowing fog.
+The fog scatters light from the emitter; it does not emit light itself.
+
+## Camera controls
 
 Left-drag to look, or press Tab to lock/unlock the mouse. Scroll to zoom, use
 WASD/arrows to move, Space/C for up/down,

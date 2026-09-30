@@ -41,6 +41,8 @@ field of view; `--yaw RADIANS` and `--pitch RADIANS` rotate from the example's
 initial camera. These camera settings are recorded in the JSON as well.
 Start with 256 samples and increase the count for fog and soft shadows;
 scattering and indirect illumination need more samples to settle.
+For expensive high-resolution captures, use `--batch 1` if the driver resets
+during a long GPU dispatch. Each batch completes before the next is submitted.
 
 | Example | What to observe | Default path events |
 | --- | --- | ---: |

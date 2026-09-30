@@ -15,6 +15,7 @@ fn main() -> Result<()> {
     let mut name = String::from("hyperbolic");
     let (mut width, mut height, mut samples, mut seed) = (320u32, 240u32, 64u32, 3735928559u32);
     let mut bounces = None;
+    let mut batch = 16u32;
     let mut fov = None;
     let (mut yaw, mut pitch) = (0.0_f64, 0.0_f64);
     let mut output = String::from("render");
@@ -26,7 +27,7 @@ fn main() -> Result<()> {
         }
         if arg == "--help" || arg == "-h" {
             println!(
-                "headless [--scene NAME] [--width 320] [--height 240] [--samples 64] [--seed 3735928559] [--bounces 1..64] [--fov SCALE] [--yaw RADIANS] [--pitch RADIANS] [--output PREFIX]\nCamera angles are local offsets from the example camera; fov is tan(vertical_angle/2).\nWrites PREFIX.{{rgba32f,ppm,json}}; Use --list-scenes to see examples. WGPU_BACKEND selects a native backend."
+                "headless [--scene NAME] [--width 320] [--height 240] [--samples 64] [--batch 16] [--seed 3735928559] [--bounces 1..64] [--fov SCALE] [--yaw RADIANS] [--pitch RADIANS] [--output PREFIX]\nCamera angles are local offsets from the example camera; fov is tan(vertical_angle/2).\nWrites PREFIX.{{rgba32f,ppm,json}}; Use --list-scenes to see examples. WGPU_BACKEND selects a native backend."
             );
             return Ok(());
         }
@@ -38,6 +39,7 @@ fn main() -> Result<()> {
             "--width" => width = value.parse()?,
             "--height" => height = value.parse()?,
             "--samples" => samples = value.parse()?,
+            "--batch" => batch = value.parse()?,
             "--seed" => seed = value.parse()?,
             "--bounces" => bounces = Some(value.parse()?),
             "--output" => output = value,
@@ -48,6 +50,7 @@ fn main() -> Result<()> {
         }
     }
     ensure!(samples > 0, "samples must be positive");
+    ensure!((1..=64).contains(&batch), "batch must be in 1..=64");
     ensure!(
         yaw.is_finite() && pitch.is_finite(),
         "camera angles must be finite"
@@ -56,6 +59,7 @@ fn main() -> Result<()> {
         width,
         height,
         samples,
+        batch,
         seed,
         bounces,
         fov,
@@ -72,6 +76,7 @@ struct Options {
     width: u32,
     height: u32,
     samples: u32,
+    batch: u32,
     seed: u32,
     bounces: Option<u32>,
     fov: Option<f32>,
@@ -89,6 +94,7 @@ fn run<G: Geometry>(
         width,
         height,
         samples,
+        batch,
         seed,
         bounces,
         fov,
@@ -123,17 +129,17 @@ fn run<G: Geometry>(
     let start = Instant::now();
     let mut remaining = samples;
     while remaining > 0 {
-        let batch = remaining.min(16);
-        renderer.set_samples_per_dispatch(batch)?;
+        let count = remaining.min(batch);
+        renderer.set_samples_per_dispatch(count)?;
         renderer.render();
-        remaining -= batch;
-        // Bound queued work for high-sample offline renders. Otherwise the
-        // final snapshot's completion timeout includes the entire image.
-        if (samples - remaining).is_multiple_of(128) {
-            gpu.device.poll(wgpu::PollType::Wait {
-                submission_index: None,
-                timeout: Some(Duration::from_secs(60)),
-            })?;
+        remaining -= count;
+        // Complete each batch before queuing more. --batch 1 also bounds a
+        // single dispatch on drivers with short GPU watchdog timeouts.
+        gpu.device.poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: Some(Duration::from_secs(60)),
+        })?;
+        if (samples - remaining) / 128 != (samples - remaining - count) / 128 {
             eprintln!("{name}: {}/{} samples", samples - remaining, samples);
         }
     }
@@ -159,7 +165,7 @@ fn run<G: Geometry>(
     std::fs::write(
         format!("{output}.json"),
         format!(
-            "{{\n  \"backend\": \"wgpu\",\n  \"adapter\": {:?},\n  \"scene\": {:?},\n  \"width\": {width},\n  \"height\": {height},\n  \"samples\": {samples},\n  \"seed\": {seed},\n  \"camera\": {{\"fov\": {fov}, \"yaw\": {yaw}, \"pitch\": {pitch}}},\n  \"bounces\": {bounces},\n  \"curvature_sign\": {curvature},\n  \"curvature_radius\": {radius},\n  \"medium\": {{\"extinction\": {extinction}, \"albedo\": [{red}, {green}, {blue}]}},\n  \"linear_format\": \"little-endian rgba32f, row-major, top row first\",\n  \"display_gamma\": 2.2\n}}\n",
+            "{{\n  \"backend\": \"wgpu\",\n  \"adapter\": {:?},\n  \"scene\": {:?},\n  \"width\": {width},\n  \"height\": {height},\n  \"samples\": {samples},\n  \"seed\": {seed},\n  \"batch\": {batch},\n  \"camera\": {{\"fov\": {fov}, \"yaw\": {yaw}, \"pitch\": {pitch}}},\n  \"bounces\": {bounces},\n  \"curvature_sign\": {curvature},\n  \"curvature_radius\": {radius},\n  \"medium\": {{\"extinction\": {extinction}, \"albedo\": [{red}, {green}, {blue}]}},\n  \"linear_format\": \"little-endian rgba32f, row-major, top row first\",\n  \"display_gamma\": 2.2\n}}\n",
             adapter.name, name
         ),
     )?;

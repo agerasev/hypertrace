@@ -204,6 +204,9 @@ history in commits, not new migration diaries.
   route. Embedded viewers start on request, report real initialization failures,
   link to native instructions, and pause when hidden or offscreen. Verify parent
   message origins and sources. A successful web build is not execution evidence.
+  Winit’s web event loop throws an exact control-flow sentinel during normal
+  startup; filter only that sentinel, preserving subsequent genuine errors.
+  Hash bootstrap assets through Trunk so fixes do not reuse stale cached code.
 - Theory should cover the implemented mechanics with concise prose, equations,
   diagrams, and primary references. Distinguish historical inspiration and general
   algorithms from current implementation choices and limitations.

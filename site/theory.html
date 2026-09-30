@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Geometry and rendering. Hypertrace, a path tracer for Euclidean, hyperbolic and spherical space.">
-<title>Geometry and rendering · Hypertrace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"></head>
+<title>Geometry and rendering · Hypertrace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=__SOURCE_COMMIT__"></head>
 <body><a class="skip" href="#content">Skip to content</a>
 <header class="wrap"><a class="brand" href="./">Hypertrace</a><nav aria-label="Main"><a href="./">Examples</a><a href="run.html">Run locally</a><a href="theory.html" aria-current="page">Theory</a><a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__">Source</a></nav></header>
 <main id="content" class="wrap"><article class="article">
@@ -23,7 +23,7 @@
 <div class="worked"><p>From P₀ = (1,0,0,0), V₀ = (0,1,0,0), travel R: hyperbolic P = (cosh 1,sinh 1,0,0); spherical P = (cos 1,sin 1,0,0). Flat travel 1 gives (1,1,0,0).</p></div>
 </section>
 <section id="isometries"><h2>2. Quaternion-pair isometries</h2>
-<p>Camera and object maps share one algebra. Let <var>a,b,c,d</var> be ordinary quaternions and ε a commuting scalar with ε² = K. Write g = a + εb as (a,b).</p>
+<p>Camera and object maps are orientation-preserving isometries in one algebra. Let <var>a,b,c,d</var> be ordinary quaternions and ε a commuting scalar with ε² = K. Write g = a + εb as (a,b).</p>
 <div class="equation">(a,b)(c,d) = (ac + Kbd, ad + bc)<br>|a|² + K|b|² = 1, &nbsp; a·b = 0<br>g⁻¹ = (ā,b̄), &nbsp; g† = (ā,−b̄)</div>
 <p>Embed P = (w,X) as q(P) = ((w,0),(0,X)). The point and tangent action is q ↦ gqg†. Quaternion conjugation is marked with a bar; g† is distinct from the inverse.</p>
 <div class="equation">translation(n,s) = (C<sub>K</sub>(s/2R), n S<sub>K</sub>(s/2R))<br>rotation(n,θ) = ((cos(θ/2), n sin(θ/2)), 0)</div>
@@ -91,6 +91,9 @@
 <p>Maintain RGB throughput β and accumulated radiance L. A sampled direction with density p updates β by f<sub>r</sub>|n·ω|/p; an emitter contributes βL<sub>e</sub>. See <a href="#ref-paths">PBRT’s path tracing chapter</a> for the general estimator.</p>
 <figure class="diagram"><svg viewBox="0 0 880 340" role="img" aria-labelledby="transport-title transport-desc"><title id="transport-title">One path step</title><desc id="transport-desc">Find the nearest surface and sample fog distance. Advance to the earlier event. Scatter at a volume or surface; a miss adds environment light. Repeat while the event budget remains.</desc><rect class="box" x="20" y="30" width="220" height="70"/><text x="38" y="59">Nearest surface distance</text><text x="38" y="82">Sample fog free flight</text><path class="line" d="M240 65 H298 M290 59 L298 65 L290 71"/><rect class="box" x="300" y="30" width="225" height="70"/><text x="320" y="59">Choose earlier event</text><text x="320" y="82">Advance P, V, travel</text><path class="line" d="M525 65 H580 V260 M580 80 H625 M580 170 H625 M580 260 H625"/><rect class="box" x="625" y="45" width="230" height="70"/><text x="643" y="74">Volume: β ← βω</text><text x="643" y="97">Sample new direction</text><rect class="box" x="625" y="135" width="230" height="70"/><text x="643" y="164">Surface: add emission</text><text x="643" y="187">Sample material</text><rect class="box" x="625" y="225" width="230" height="70"/><text x="643" y="254">Miss: add βL(environment)</text><text x="643" y="277">Stop</text><path class="line" d="M740 115 V124 H130 V106 M124 114 L130 106 L136 114 M625 185 H535 V310 H130 V124"/><text x="181" y="288">Continue until absorption or event budget</text></svg></figure>
 <p>A miss adds background radiance; a black background adds zero. Reaching the finite event budget returns emission collected so far. Both surface and volume events consume that budget.</p>
+<h3>Environment light</h3>
+<div class="equation">f = [clamp((1+d·a)/2, 0, 1)]<sup>α</sup><br>L<sub>environment</sub>(d) = c₁ + f(c₀−c₁)</div>
+<p>The Euclidean gradient uses world-space direction d, axis a, endpoint colors c₀,c₁, and exponent α &gt; 0. It keeps its orientation as the camera moves. Curved backgrounds are constant; equal endpoint colors also give a constant flat background.</p>
 <h3>Why curvature changes illumination</h3>
 <div class="equation">area of radius-r wavefront = 4π [R S<sub>K</sub>(r/R)]²<br>flat limit: &nbsp; 4πr²</div>
 <p>Hyperbolic ray bundles spread faster; spherical bundles refocus at antipodes. The sampler follows that geometry through its rays. It does not multiply transported radiance by an extra inverse-square factor.</p>

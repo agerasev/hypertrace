@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Euclidean space. Hypertrace, a path tracer for Euclidean, hyperbolic and spherical space.">
-<title>Euclidean space · Hypertrace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"><script type="module" src="example.js"></script></head>
+<title>Euclidean space · Hypertrace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=__SOURCE_COMMIT__"><script type="module" src="example.js?v=__SOURCE_COMMIT__"></script></head>
 <body><a class="skip" href="#content">Skip to content</a>
 <header class="wrap"><a class="brand" href="./">Hypertrace</a><nav aria-label="Main"><a href="./">Examples</a><a href="run.html">Run locally</a><a href="theory.html">Theory</a><a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__">Source</a></nav></header>
 <main id="content" class="wrap"><h1>Euclidean space</h1><p>A glass sphere, a diffuse cube, and a partly reflective square-tiled backdrop.</p>
@@ -9,7 +9,7 @@
 <section aria-labelledby="viewer-title"><h2 id="viewer-title">Browser viewer</h2>
 <div class="viewer" data-scene="euclidean">
 <img class="poster" src="previews/euclidean.webp" width="__EUCLIDEAN_WIDTH__" height="__EUCLIDEAN_HEIGHT__" alt="A yellow glass sphere and turquoise cube in front of a tiled reflective backdrop.">
-<div class="viewer-prompt"><button type="button" class="start-viewer">Start browser viewer</button><p class="viewer-status" role="status" aria-live="polite">Optional. Requires WebGPU; starts only when requested.</p><p><a href="run.html#euclidean">Native requirements and instructions</a></p></div></div>
+<div class="viewer-prompt"><button type="button" class="start-viewer">Start browser viewer</button><p class="viewer-status" role="status" aria-live="polite">Optional. Requires WebGPU; starts only when requested.</p><p><a href="run.html#euclidean">Native requirements and instructions</a></p><details class="viewer-diagnostics" hidden><summary>Technical details</summary><pre></pre></details></div></div>
 <noscript><p>The interactive viewer requires JavaScript. <a href="run.html#euclidean">Run this example locally</a>.</p></noscript>
 <p class="small">Drag to look; Tab locks the mouse. WASD moves; Space/C moves up/down; Q/E rolls. Scroll zooms; R resets. The viewer pauses when hidden or outside the page’s visible area. <a href="viewer/?scene=euclidean">Open viewer separately</a>.</p></section>
 <section><h2>What to observe</h2><p>Look through the glass sphere at the cube and backdrop, then compare the backdrop’s reflection with the direct view.</p><ul><li>Rays between interactions are ordinary straight lines. The apparent distortion inside the yellow sphere comes from refraction.</li><li>The backdrop combines diffuse and specular reflection. Its tiles use physical cell dimensions, shared with the horosphere patterns in the hyperbolic example.</li><li>The sphere and cube have the same approximate scale as objects in the curved examples, making camera movement comparable.</li></ul><p><a href="theory.html">Theory and equations</a> · <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/examples/src/bin/euclidean/scene.rs">Scene construction</a></p></section>

@@ -48,6 +48,7 @@ cargo test --workspace --doc
 cargo clippy --workspace --all-targets -- -D warnings
 python3 -m unittest discover -s tools -p 'test_*.py'
 node examples/gallery/web/controls.test.cjs
+node examples/gallery/web/bootstrap.test.cjs
 node site/example.test.cjs
 ```
 
@@ -102,7 +103,8 @@ revisions, options, adapter/driver, and hashes alongside the files.
 
 - Native validation has covered llvmpipe Vulkan and Intel Arc Vulkan. A headed
   browser run of the shared embedded renderer and additional GPU drivers remain
-  platform checks to complete.
+  platform checks to complete. Browser startup and the no-adapter fallback have
+  been checked; the available in-app browser exposed no WebGPU adapter.
 - Camera-relative f64 preparation improves nearby precision, but GPU tracing is
   f32. Later path-segment recentering and a wider hyperbolic numerical range remain
   open. Numerical termination preserves prior emission and adds no background;

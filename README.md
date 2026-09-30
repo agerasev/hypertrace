@@ -103,7 +103,8 @@ Trunk downloads a matching `wasm-bindgen` tool on the first build if needed.
 
 Whether a browser exposes WebGPU without flags depends on its platform and GPU
 support. Native validation has covered software Vulkan and Intel Arc Vulkan; a
-headed browser run of the shared renderer remains an outstanding platform check.
+successful headed browser render remains an outstanding platform check. The
+startup and no-adapter fallback have been checked in the in-app browser.
 See [DEVELOPMENT.md](DEVELOPMENT.md) for validation commands and limitations.
 
 To reproduce the high-quality previews and publish the gallery, video link,

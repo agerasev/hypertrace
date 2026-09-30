@@ -10,13 +10,21 @@ export function mountViewer(container) {
     const button = container.querySelector('.start-viewer');
     const status = container.querySelector('.viewer-status');
     const poster = container.querySelector('.poster');
+    const diagnostic = container.querySelector('.viewer-diagnostics');
     let frame;
     let timeout;
     let visible = true;
     function fail(message) {
         clearTimeout(timeout);
         container.dataset.state = 'error';
-        status.textContent = message;
+        const noAdapter = message.includes('webgpu found no adapters');
+        status.textContent = noAdapter
+            ? 'This browser exposes WebGPU but no compatible graphics adapter is available. Use the native instructions below.'
+            : message;
+        if (diagnostic) {
+            diagnostic.hidden = !noAdapter;
+            diagnostic.querySelector('pre').textContent = noAdapter ? message : '';
+        }
         frame?.remove();
         frame = undefined;
         poster.hidden = false;
@@ -35,6 +43,7 @@ export function mountViewer(container) {
     button.addEventListener('click', () => {
         if (frame) return;
         button.disabled = true;
+        if (diagnostic) diagnostic.hidden = true;
         status.textContent = 'Loading the renderer and requesting a WebGPU device…';
         container.dataset.state = 'loading';
         frame = document.createElement('iframe');
@@ -65,7 +74,7 @@ if (typeof document !== 'undefined') {
     document.querySelectorAll('.video-start').forEach(button => {
         button.addEventListener('click', () => {
             const frame = document.createElement('iframe');
-            frame.title = 'Original Hypertrace walkthrough (2020)';
+            frame.title = 'Original Hypertrace walkthrough';
             frame.src = 'https://www.youtube-nocookie.com/embed/LGWusRNcJ6A?autoplay=1';
             frame.allow = 'autoplay; fullscreen';
             frame.className = 'video-frame';

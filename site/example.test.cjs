@@ -16,7 +16,10 @@ function fixture(overrides = {}) {
     const document = new Element();
     const container = new Element();
     container.dataset.scene = 'fixture';
-    const elements = new Map(['.start-viewer', '.viewer-status', '.poster'].map(key => [key, new Element()]));
+    const elements = new Map(['.start-viewer', '.viewer-status', '.poster', '.viewer-diagnostics'].map(key => [key, new Element()]));
+    const diagnostic = elements.get('.viewer-diagnostics');
+    const detail = new Element();
+    diagnostic.querySelector = () => detail;
     container.querySelector = selector => elements.get(selector);
     document.querySelectorAll = () => [];
     document.createElement = () => {
@@ -37,7 +40,7 @@ function fixture(overrides = {}) {
     const context = vm.createContext(scope);
     vm.runInContext(readFileSync(`${__dirname}/example.js`, 'utf8').replace(/^export /gm, ''), context);
     context.mountViewer(container);
-    return { container, scope, context, document, window,
+    return { container, scope, context, document, window, diagnostic, detail,
         button: elements.get('.start-viewer'), status: elements.get('.viewer-status'),
         poster: elements.get('.poster'), offscreen: () => observer([{ isIntersecting: false }]),
         expire: () => timeout?.(),
@@ -96,4 +99,13 @@ test('hidden pages and offscreen embeds tell the renderer to pause', () => {
     f.offscreen();
     assert.equal(frame.messages.at(-1).data.hidden, true);
     assert.equal(frame.messages.at(-1).origin, f.scope.location.origin);
+});
+test('adapter failures show a readable reason and retain the diagnostic', () => {
+    const f = fixture(); f.button.dispatch('click');
+    f.message({ state: 'error', message: 'Failed to find adapter: webgpu found no adapters' });
+    assert.match(f.status.textContent, /no compatible graphics adapter/);
+    assert.match(f.detail.textContent, /webgpu found no adapters/);
+    assert.equal(f.diagnostic.hidden, false);
+    f.button.dispatch('click');
+    assert.equal(f.diagnostic.hidden, true);
 });

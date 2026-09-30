@@ -80,6 +80,7 @@ aspect ratio, and never upscale a source.
 python3 -m unittest discover -s tools -p 'test_*.py'
 node site/example.test.cjs
 node examples/gallery/web/controls.test.cjs
+node examples/gallery/web/bootstrap.test.cjs
 cargo clippy -p hypertrace-gallery --all-targets -- -D warnings
 cargo clippy -p hypertrace-gallery --target wasm32-unknown-unknown --features web --bin viewer -- -D warnings
 ```

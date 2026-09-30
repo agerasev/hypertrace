@@ -60,4 +60,16 @@ export function mountViewer(container) {
         new IntersectionObserver(entries => { visible = entries[0].isIntersecting; visibility(); }).observe(container);
     }
 }
-if (typeof document !== 'undefined') document.querySelectorAll('.viewer').forEach(mountViewer);
+if (typeof document !== 'undefined') {
+    document.querySelectorAll('.viewer').forEach(mountViewer);
+    document.querySelectorAll('.video-start').forEach(button => {
+        button.addEventListener('click', () => {
+            const frame = document.createElement('iframe');
+            frame.title = 'Original Hypertrace walkthrough (2020)';
+            frame.src = 'https://www.youtube-nocookie.com/embed/LGWusRNcJ6A?autoplay=1';
+            frame.allow = 'autoplay; fullscreen';
+            frame.className = 'video-frame';
+            button.replaceWith(frame);
+        });
+    });
+}

@@ -18,3 +18,5 @@ pre { max-width:100%; overflow:auto; background:var(--panel); padding:14px 18px;
 .equation { font-family:"STIX Two Math","Cambria Math",math; line-height:1.8; }
 @media(prefers-reduced-motion:reduce) { * { scroll-behavior:auto; } }
 @media(max-width:700px) { .diagram { overflow-x:auto; } .diagram svg { min-width:760px; } }
+
+.video-frame { display:block; width:100%; aspect-ratio:16/9; border:0; margin:16px 0; }

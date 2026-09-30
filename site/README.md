@@ -110,5 +110,5 @@ history before replacing the worktree contents with the built site.
 GitHub Pages uses **Deploy from a branch → gh-pages → / (root)**. The builder does
 not push or change hosting settings. Verify the deployed source revision and
 image hashes after publication. The site uses local styles, MathML, and SVG;
-external references and historical video are ordinary links, with no CDN scripts
-or fonts.
+references are ordinary links. The historical video loads a YouTube privacy-enhanced
+embed only after a click and also has a direct link. There are no CDN scripts or fonts.

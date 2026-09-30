@@ -94,6 +94,19 @@ fn horosphere_translation([x, y]: [f64; 2]) -> EmbeddedIsometry<f64, -1> {
 pub fn scene<const H: usize>() -> ExampleScene<H> {
     let view = Mapped::new(PointView::new(1.0), camera());
 
+    // In half-space coordinates the horospheres are z=1 and a radius-1/2
+    // sphere centered at (sqrt(2), 0, 1/2); the star plane is the unit hemisphere.
+    // A hyperbolic ball of radius r tangent below z=1 has chart center height
+    // exp(-r), Euclidean radius s=(1-exp(-2r))/2 and Euclidean center height 1-s.
+    // The other two tangencies give x=(1+s)/sqrt(2) and x*x+y*y=4s.
+    // Choose negative y to put the ball behind the horospheres from this camera.
+    let ball_radius = 0.36_f64;
+    let chart_radius = -(-2.0 * ball_radius).exp_m1() / 2.0;
+    let ball_x = (1.0 + chart_radius) / 2.0_f64.sqrt();
+    let ball_y = -(4.0 * chart_radius - ball_x * ball_x).sqrt();
+    let ball_map =
+        horosphere_translation([ball_x, ball_y]).chain(Hyperboloid3::shift_z(-ball_radius));
+
     let background = ConstBg::new(unpack_color(0xeeeeee));
     let border_material = make_material(
         unpack_color(0xe4e4e4),
@@ -155,16 +168,13 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         )],
         vec![Mapped::new(
             Tiled::new(
-                GeodesicSphere::new(0.36),
+                GeodesicSphere::new(ball_radius),
                 tiling::RegularSpherical::<3, 5>::new(0.025),
                 [0xfe7401, 0x35adae, 0xfed601]
                     .map(|color| make_material(unpack_color(color), 0.1, 0.0, None)),
                 border_material,
             ),
-            camera()
-                .chain(Hyperboloid3::shift_z(-1.0))
-                .chain(Hyperboloid3::shift_x(0.35))
-                .chain(Hyperboloid3::shift_y(-0.15)),
+            ball_map,
         )],
     );
 

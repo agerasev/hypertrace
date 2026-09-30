@@ -25,6 +25,7 @@ From the repository root:
 ```sh
 cargo run --release -p hypertrace-gallery --bin headless -- --list-scenes
 cargo run --release -p hypertrace-examples --bin sp
+cargo run --release -p hypertrace-examples --bin ball-tilings
 cargo run --release -p hypertrace-gallery --bin headless -- \
   --scene eu-fog --width 640 --height 480 --samples 256 --output /tmp/eu-fog
 ```
@@ -36,10 +37,11 @@ scattering and indirect illumination need more samples to settle.
 
 | Example | What to observe | Default path events |
 | --- | --- | ---: |
-| `eu` | A glass sphere with octahedral tiles and a square-tiled backdrop. | 4 |
-| `hy` | Pentagonal planes, square/hexagonal horospheres, and an icosahedrally tiled sphere. | 3 |
-| `sp` | Tetrahedral and cubic balls on a dodecahedrally tiled floor under asymmetric sunlight. | 6 |
+| `eu` | A glass sphere, diffuse cube and square-tiled backdrop. | 4 |
+| `hy` | Pentagonal planes, square/hexagonal horospheres, and a dodecahedrally tiled sphere. | 3 |
+| `sp` | Diffuse and refractive balls on a dodecahedrally tiled floor under asymmetric sunlight. | 6 |
 | `eu-fog` | One light with red diffuse, green reflective and blue refractive spheres in Euclidean fog. | 12 |
+| `ball-tilings` | All five Platonic tilings, eight lunes and two hemispheres on equal-sized matte balls. | 4 |
 
 Surface and volume interactions both consume the path-event budget. Headless
 and benchmark tools accept `--bounces` to override the defaults.
@@ -54,11 +56,42 @@ sphere supports the regular spherical families, and so does a spherical plane.
 See the [tiling API](../renderer/README.md#intrinsic-surface-tilings) for domains,
 units and custom extension traits.
 
-The examples collectively show all five Platonic patterns: octahedral in `eu`,
-icosahedral in `hy`, and tetrahedral, cubic and dodecahedral in `sp`. Edit the
-`RegularSpherical<P,Q>` parameters to compare other families; `P` counts face
-edges and `Q` counts faces meeting at a vertex. The fog example keeps its plain
-materials so their lighting remains easy to compare.
+The [ball-tilings construction](src/bin/ball-tilings/scene.rs) shows all five
+Platonic patterns together, plus the lune and dihedron families. Edit the
+`RegularSpherical<P,Q>` parameters to select a family; `P` counts face edges and
+`Q` counts faces meeting at a vertex. The fog example keeps its plain materials
+so their lighting remains easy to compare.
+
+## Ball tilings
+
+Run `cargo run --release -p hypertrace-examples --bin ball-tilings`, or select
+`--scene ball-tilings` in a gallery tool (`?scene=ball-tilings` in the browser).
+The [standalone application](src/bin/ball-tilings/main.rs) owns its renderer and
+frame loop, just like the other examples.
+
+From the initial camera, read each row left to right:
+
+| Row | Pattern | `{P,Q}` | Faces |
+| --- | --- | --- | ---: |
+| Top | Tetrahedral | `{3,3}` | 4 triangles |
+| Top | Cubic | `{4,3}` | 6 quadrilaterals |
+| Top | Octahedral | `{3,4}` | 8 triangles |
+| Bottom | Dodecahedral | `{5,3}` | 12 pentagons |
+| Bottom | Icosahedral | `{3,5}` | 20 triangles |
+| Bottom | Eight lunes (hosohedron) | `{2,8}` | 8 lunes |
+| Bottom | Dihedron | `{6,2}` | 2 hemispheres |
+
+All balls have radius 1, the same matte palette, and border half-width 0.025
+radians. A broad environment gradient illuminates them, so shadows and shiny
+reflections do not obscure the patterns. The tiles form spherical polygons on
+smooth balls in Euclidean space. The same patterns work on
+balls in hyperbolic and spherical space because selection uses the intrinsic
+surface directions.
+
+Move around to see the hidden faces and lune poles. The dihedron's six
+degree-two vertices subdivide its equator without adding face borders: it still
+has just two hemispherical tiles. The scene composes seven concrete pattern types
+in a tuple, using a local generic `ball::<P,Q>` helper with no runtime type erasure.
 
 ## Spherical shadows
 
@@ -69,10 +102,9 @@ casts long asymmetric shadows. The beacon is a quarter circuit from the sun's
 floor footprint, where direct sunlight is weakest; the antipodal point brightens
 again as spherical rays converge. The starting view shows the red and blue balls
 and the beacon; turn around to find the clear ball.
-The floor material is 85% diffuse, 5% specular, and 10% transparent. Look for
+The floor material is 90% diffuse, 5% specular, and 5% transparent. Look for
 contact shadows, refracted light, and faint reflections across the pentagonal floor
-tiles. The red sphere has triangular tetrahedral tiles and the blue sphere has
-cubic tiles. There is no ambient light.
+tiles. The red and blue spheres use plain materials. There is no ambient light.
 
 ## Euclidean fog
 
@@ -136,7 +168,7 @@ Use the example dependencies in [Cargo.toml](Cargo.toml) when creating a separat
 package: `objects`, `hypertrace-renderer`, `ccgeom`, `vecmat`, `wgame`, `wgpu`, and
 `anyhow`, plus `winit` for native cursor capture. Wgame owns the window; Hypertrace accepts caller-owned devices.
 
-All four scene binaries are native applications and accept `--help` and a
+All five scene binaries are native applications and accept `--help` and a
 bounded `--smoke` check. The separate gallery package enables its `viewer` feature
 by default; `cargo build -p hypertrace-gallery --no-default-features` builds its
 headless tools without Wgame. The optional `viewer`, `headless`, and

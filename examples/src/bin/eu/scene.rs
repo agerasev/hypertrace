@@ -1,14 +1,11 @@
-//! Square backdrop tiles and an octahedral tiling on a refractive sphere.
+//! A refractive sphere and a diffuse cube against a square-tiled backdrop.
 use ccgeom::{EmbeddedIsometry, Flat3, Geometry3};
 use objects::{
     Mapped, SceneImpl,
     background::GradBg,
     material::{Colored, Lambertian, Refractive, Specular},
     mixture,
-    object::{
-        Covered, Tiled,
-        tiling::{RegularSpherical, Square},
-    },
+    object::{Covered, Tiled, tiling::Square},
     shape::{Cube, Plane, Sphere},
     view::PointView,
 };

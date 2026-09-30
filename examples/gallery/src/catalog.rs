@@ -17,25 +17,31 @@ pub const EXAMPLES: &[Example] = &[
         id: "hy",
         title: "Hyperbolic tilings",
         group: "Materials and lighting",
-        description: "Pentagonal planes, square and hexagonal horospheres, and an icosahedrally tiled sphere in hyperbolic space.",
+        description: "Pentagonal planes, square and hexagonal horospheres, and a dodecahedrally tiled sphere in hyperbolic space.",
     },
     Example {
         id: "eu",
         title: "Euclidean glass",
         group: "Materials and lighting",
-        description: "An octahedrally tiled glass sphere, a diffuse cube and a square-tiled backdrop in flat space.",
+        description: "A glass sphere, a diffuse cube and a square-tiled backdrop in flat space.",
     },
     Example {
         id: "sp",
         title: "Spherical studio",
         group: "Materials and lighting",
-        description: "An off-center sun lights tetrahedral red and cubic blue balls on a dodecahedrally tiled floor. Explore the opposite pole and glowing landmark.",
+        description: "An off-center sun lights diffuse red and refractive blue balls on a dodecahedrally tiled floor. Explore the opposite pole and glowing landmark.",
     },
     Example {
         id: "eu-fog",
         title: "Euclidean light in fog",
         group: "Materials and lighting",
         description: "One bright light surrounded by red diffuse, green mirror and blue glass spheres in Euclidean fog. No floor or ambient light; let scattering accumulate.",
+    },
+    Example {
+        id: "ball-tilings",
+        title: "Ball tilings",
+        group: "Materials and lighting",
+        description: "Equal-sized matte balls. Top: tetrahedron, cube, octahedron. Bottom: dodecahedron, icosahedron, eight lunes, two hemispheres. Move around to see every face.",
     },
 ];
 
@@ -57,6 +63,9 @@ pub mod factories {
     }
     pub fn eu_fog() -> Result<SceneDefinition<Flat3>> {
         crate::eu_fog::scene::<12>().definition()
+    }
+    pub fn ball_tilings() -> Result<SceneDefinition<Flat3>> {
+        crate::ball_tilings::scene::<4>().definition()
     }
 }
 
@@ -84,6 +93,11 @@ macro_rules! with_example {
             "eu-fog" => {
                 let $metadata = *$crate::find("eu-fog").expect("catalogue entry");
                 let $factory = $crate::factories::eu_fog;
+                $body
+            }
+            "ball-tilings" => {
+                let $metadata = *$crate::find("ball-tilings").expect("catalogue entry");
+                let $factory = $crate::factories::ball_tilings;
                 $body
             }
             unknown => Err(anyhow::anyhow!(

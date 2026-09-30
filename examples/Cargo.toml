@@ -29,3 +29,7 @@ path = "src/bin/sp/main.rs"
 [[bin]]
 name = "eu-fog"
 path = "src/bin/eu-fog/main.rs"
+
+[[bin]]
+name = "ball-tilings"
+path = "src/bin/ball-tilings/main.rs"

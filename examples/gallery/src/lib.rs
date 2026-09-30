@@ -4,6 +4,8 @@
 //! This gallery imports their scene files to render the same content. Example
 //! binaries use the workspace libraries directly and never depend on this crate.
 
+#[path = "../../src/bin/ball-tilings/scene.rs"]
+pub mod ball_tilings;
 #[path = "../../src/bin/eu/scene.rs"]
 pub mod eu;
 #[path = "../../src/bin/eu-fog/scene.rs"]

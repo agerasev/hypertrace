@@ -36,7 +36,8 @@ cargo run --release -p hypertrace-gallery --bin headless -- \
   --scene eu --width 640 --height 480 --samples 64 --output /tmp/eu
 ```
 
-Each scene has its own binary: `eu`, `hy`, `sp`, and `eu-fog`. Each scene folder under
+Each scene has its own binary: `eu`, `hy`, `sp`, `eu-fog`, and `ball-tilings`.
+Each scene folder under
 [`examples/src/bin`](examples/src/bin) owns its `scene.rs` and `main.rs`: scene
 construction, renderer and presenter setup, and the Wgame event loop are visible
 in that example. Start with [the spherical studio](examples/src/bin/sp) to copy
@@ -49,8 +50,10 @@ The `hypertrace-examples` package has no library target or gallery dependency;
 standalone examples use `objects`, `ccgeom`, and `renderer` directly.
 
 The gallery catalog includes Euclidean glass, hyperbolic tilings, a spherical
-shadow studio, and one floorless Euclidean fog scene. Use `--list-scenes`
-in a gallery tool to see the choices. Start with `sp` to explore an off-center sun and
+shadow studio, one floorless Euclidean fog scene, and a showcase of seven ball
+tilings. Run `cargo run --release -p hypertrace-examples --bin ball-tilings` to
+see the five Platonic patterns, eight lunes and two hemispheres together.
+Use `--list-scenes` in a gallery tool to see the choices. Start with `sp` to explore an off-center sun and
 diffuse, refractive, and glowing balls on a slightly transparent, mostly diffuse plane. The
 [example guide](examples/README.md) explains what to observe and how the builders work.
 

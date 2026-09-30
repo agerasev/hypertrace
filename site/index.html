@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Explore Euclidean and hyperbolic space with Hypertrace: high-quality renders, interactive WebGPU scenes, and the mathematics behind them.">
+  <meta name="description" content="Explore geometry and light with Hypertrace: high-quality renders, scattering fog, interactive WebGPU scenes, and the mathematics behind them.">
   <meta name="theme-color" content="#10151e">
   <title>Hypertrace · Light in curved space</title>
   <link rel="icon" href="data:,">
@@ -14,22 +14,26 @@
   <main class="wrap">
     <section class="hero">
       <div class="eyebrow">Interactive path tracing</div>
-      <h1>Explore hyperbolic space.</h1>
-      <p class="lead">Follow light through a world with negative curvature, then return to familiar Euclidean geometry. Open a scene to move the camera and watch the image converge.</p>
+      <h1>Explore geometry and light.</h1>
+      <p class="lead">Follow light through curved space, compare familiar Euclidean geometry, and see how fog reveals illumination and shadows. Open a scene to move the camera and watch the image converge.</p>
     </section>
     <div class="gallery">
       <article class="card">
-        <a class="preview" href="previews/hy.png" aria-label="View the full-resolution hyperbolic render"><img src="previews/hy-small.webp" srcset="previews/hy-small.webp 640w, previews/hy.webp 1280w" sizes="(max-width: 740px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 37px), 577px" width="1280" height="960" alt="Red, turquoise and gold tilings on hyperbolic planes and horospheres, with bright borders." fetchpriority="high"></a>
-        <div class="card-body"><div class="eyebrow">Negative curvature</div><h2>Hyperbolic space</h2><p>Pentagonal and star tilings cover geodesic planes. Square and hexagonal patterns live on horospheres. Reflections follow the same curved geometry as the camera rays.</p><div class="meta">2560 × 1920 · 4096 samples per pixel · 3 bounces</div><div class="actions"><a class="button" href="viewer/?scene=hy">Explore the scene</a><a href="previews/hy.png">Full-resolution PNG</a><a href="previews/hy-small.webp">Small preview</a></div></div>
+        <a class="preview" href="previews/hy.png" aria-label="View the full-resolution hyperbolic render"><img src="previews/hy-small.webp" srcset="__HY_SRCSET__" sizes="(max-width: 740px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 37px), 577px" width="__HY_WIDTH__" height="__HY_HEIGHT__" alt="Red, turquoise and gold tilings on hyperbolic planes and horospheres, with bright borders." fetchpriority="high"></a>
+        <div class="card-body"><div class="eyebrow">Negative curvature</div><h2>Hyperbolic space</h2><p>Pentagonal and star tilings cover geodesic planes. Square and hexagonal patterns live on horospheres. Reflections follow the same curved geometry as the camera rays.</p><div class="meta">__HY_SETTINGS__</div><div class="actions"><a class="button" href="viewer/?scene=hy">Explore the scene</a><a href="previews/hy.png">Full-resolution PNG</a><a href="previews/hy-small.webp">Small preview</a><a href="https://github.com/agerasev/hypertrace/tree/__HY_SOURCE_COMMIT__">Image source</a></div></div>
       </article>
       <article class="card">
-        <a class="preview" href="previews/eu.png" aria-label="View the full-resolution Euclidean render"><img src="previews/eu-small.webp" srcset="previews/eu-small.webp 640w, previews/eu.webp 1280w" sizes="(max-width: 740px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 37px), 577px" width="1280" height="960" alt="A yellow refractive sphere above a turquoise cube, lit by an environment and reflected in a backdrop."></a>
-        <div class="card-body"><div class="eyebrow">Zero curvature</div><h2>Euclidean space</h2><p>A refractive sphere, a diffuse cube, and a partly reflective plane. This familiar scene provides a reference for how materials and light behave without spatial curvature.</p><div class="meta">2560 × 1920 · 4096 samples per pixel · 4 bounces</div><div class="actions"><a class="button" href="viewer/?scene=eu">Explore the scene</a><a href="previews/eu.png">Full-resolution PNG</a><a href="previews/eu-small.webp">Small preview</a></div></div>
+        <a class="preview" href="previews/eu.png" aria-label="View the full-resolution Euclidean render"><img src="previews/eu-small.webp" srcset="__EU_SRCSET__" sizes="(max-width: 740px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 37px), 577px" width="__EU_WIDTH__" height="__EU_HEIGHT__" alt="A yellow refractive sphere above a turquoise cube, lit by an environment and reflected in a backdrop."></a>
+        <div class="card-body"><div class="eyebrow">Zero curvature</div><h2>Euclidean space</h2><p>A refractive sphere, a diffuse cube, and a partly reflective plane. This familiar scene provides a reference for how materials and light behave without spatial curvature.</p><div class="meta">__EU_SETTINGS__</div><div class="actions"><a class="button" href="viewer/?scene=eu">Explore the scene</a><a href="previews/eu.png">Full-resolution PNG</a><a href="previews/eu-small.webp">Small preview</a><a href="https://github.com/agerasev/hypertrace/tree/__EU_SOURCE_COMMIT__">Image source</a></div></div>
+      </article>
+      <article class="card">
+        <a class="preview" href="previews/eu-fog.png" aria-label="View the original Euclidean fog render"><img src="previews/eu-fog-small.webp" srcset="__EU_FOG_SRCSET__" sizes="(max-width: 740px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 37px), 577px" width="__EU_FOG_WIDTH__" height="__EU_FOG_HEIGHT__" alt="A bright white light shines through dark fog between a red diffuse sphere, a green mirror sphere, and a blue glass sphere." loading="lazy"></a>
+        <div class="card-body"><div class="eyebrow">Light scattering</div><h2>Euclidean fog</h2><p>One bright light illuminates red diffuse, green reflective, and blue refractive spheres. Scattering fog reveals their shadows and the paths of reflected and refracted light, with no floor or ambient illumination.</p><div class="meta">__EU_FOG_SETTINGS__</div><div class="actions"><a class="button" href="viewer/?scene=eu-fog">Explore the scene</a><a href="previews/eu-fog.png">Original PNG</a><a href="previews/eu-fog-small.webp">Small preview</a><a href="https://github.com/agerasev/hypertrace/tree/__EU_FOG_SOURCE_COMMIT__">Image source</a></div></div>
       </article>
     </div>
-    <p class="note">The images above are offline renders and work in any browser. Interactive scenes require WebGPU and a keyboard and mouse. Drag to look, use WASD to move, and scroll to zoom. Choose a lower quality setting for smoother movement.</p>
+    <p class="note">The images above are offline renders and work in any browser. Each image links to the source revision used to render it; the interactive examples may have evolved since then. Interactive scenes require WebGPU and a keyboard and mouse. Drag to look or press Tab to lock the mouse, use WASD to move, and scroll to zoom. Choose a lower quality setting for smoother movement.</p>
     <section class="more" aria-label="Learn more">
-      <div><div class="eyebrow">Watch</div><h2>The original walkthrough</h2><p>A tour of Hypertrace from 2020 shows the project in motion. The current web renderer brings the Euclidean and hyperbolic examples into the browser.</p><a class="button secondary" href="https://www.youtube.com/watch?v=LGWusRNcJ6A">Watch the video ↗</a><p class="meta"><a href="https://agerasev.github.io/2020/03/12/hypertrace.html">Original article by Alexey Gerasev</a></p></div>
+      <div><div class="eyebrow">Watch</div><h2>The original walkthrough</h2><p>A tour of Hypertrace from 2020 shows the project in motion. The current web renderer brings Euclidean, hyperbolic, spherical, and fog examples into the browser.</p><a class="button secondary" href="https://www.youtube.com/watch?v=LGWusRNcJ6A">Watch the video ↗</a><p class="meta"><a href="https://agerasev.github.io/2020/03/12/hypertrace.html">Original article by Alexey Gerasev</a></p></div>
       <div><div class="eyebrow">Understand</div><h2>Why do light rays curve?</h2><p>Learn how embedded geometry and quaternion-pair isometries carry light through Euclidean, hyperbolic and spherical space. Explore tangent frames, spherical circuits, fog and the limits of floating-point precision.</p><a class="button secondary" href="theory.html">Read the theory</a></div>
     </section>
   </main>

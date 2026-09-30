@@ -174,3 +174,6 @@ history in commits, not new migration diaries.
   milestones when requested. Do not push or publish solely to complete local work.
 - Keep generated renders, build output and temporary validation logs outside
   source control. The repository currently ignores `Cargo.lock`.
+- Published previews retain their own render revision, dimensions, settings and
+  image hash. Updating the viewer must not relabel older images with new source
+  revisions; preserve an approved PNG verbatim and never upscale its derivatives.

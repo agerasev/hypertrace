@@ -28,12 +28,12 @@ pub type ExampleScene<const H: usize> = SceneImpl<
     Spherical3,
     Mapped<Spherical3, PointView<Spherical3>, Map>,
     (
-        TiledObject<GeodesicSphere, RegularSpherical<3, 3>, Colored<Lambertian>, 3>,
+        Object<GeodesicSphere, Colored<Lambertian>>,
         Object<GeodesicSphere, Refractive>,
         Object<GeodesicSphere, Emissive<Absorbing>>,
         TiledObject<Plane, RegularSpherical<5, 3>, Floor, 3>,
         Object<GeodesicSphere, Emissive<Absorbing>>,
-        TiledObject<GeodesicSphere, RegularSpherical<4, 3>, Colored<Refractive>, 3>,
+        Object<GeodesicSphere, Colored<Refractive>>,
     ),
     ConstBg,
     H,
@@ -71,19 +71,6 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         0.25,
         Colored::new(Lambertian, [0.8, 0.18, 0.08].into()),
     );
-    let diffuse = Mapped::new(
-        Tiled::new(
-            diffuse.inner.shape,
-            RegularSpherical::<3, 3>::new(0.025),
-            [
-                diffuse.inner.material,
-                Colored::new(Lambertian, [0.65, 0.08, 0.04].into()),
-                Colored::new(Lambertian, [0.95, 0.35, 0.15].into()),
-            ],
-            Colored::new(Lambertian, [0.12, 0.025, 0.01].into()),
-        ),
-        diffuse.map,
-    );
     let glass = resting_sphere(
         floor,
         [0.0, std::f64::consts::FRAC_PI_2],
@@ -105,9 +92,9 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
     );
     let floor_material = |color: [f32; 3]| {
         Floor::new(
-            (Colored::new(Lambertian, color.into()), 0.85).into(),
+            (Colored::new(Lambertian, color.into()), 0.9).into(),
             (Specular, 0.05).into(),
-            (Transparent, 0.10).into(),
+            (Transparent, 0.05).into(),
         )
     };
     let ground = Mapped::new(
@@ -143,19 +130,6 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         [0.65, -1.5],
         0.11,
         Colored::new(Refractive::new(1.08), [0.4, 0.65, 1.0].into()),
-    );
-    let blue = Mapped::new(
-        Tiled::new(
-            blue.inner.shape,
-            RegularSpherical::<4, 3>::new(0.02),
-            [
-                blue.inner.material,
-                Colored::new(Refractive::new(1.08), [0.25, 0.5, 0.9].into()),
-                Colored::new(Refractive::new(1.08), [0.55, 0.8, 1.0].into()),
-            ],
-            Colored::new(Refractive::new(1.08), [0.15, 0.3, 0.65].into()),
-        ),
-        blue.map,
     );
     SceneImpl::new(
         Mapped::new(PointView::new(1.5), camera()),

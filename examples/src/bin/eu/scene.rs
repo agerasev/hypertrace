@@ -29,7 +29,7 @@ pub type ExampleScene<const H: usize> = SceneImpl<
     Flat3,
     Mapped<Flat3, PointView<Flat3>, Map>,
     (
-        Vec<TiledObject<Sphere, RegularSpherical<3, 4>, 3>>,
+        Vec<Object<Sphere>>,
         Vec<Object<Cube>>,
         Vec<TiledObject<Plane, Square, 4>>,
     ),
@@ -57,13 +57,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
     let view = Mapped::new(PointView::new(1.0), camera());
     let objects = (
         vec![Mapped::new(
-            Tiled::new(
-                Sphere,
-                RegularSpherical::<3, 4>::new(0.025),
-                [[1.0, 0.9, 0.3], [0.45, 0.8, 1.0], [1.0, 0.45, 0.25]]
-                    .map(|color| material(color, 0.08, 0.1)),
-                material([0.08, 0.1, 0.12], 0.9, 0.1),
-            ),
+            Covered::new(Sphere, material([1.0, 0.9, 0.3], 0.08, 0.1)),
             Flat3::shift_y(1.0),
         )],
         vec![Mapped::new(
@@ -73,7 +67,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         vec![Mapped::new(
             Tiled::new(
                 Plane,
-                Square::new(0.5, 0.012),
+                Square::new(2.0, 0.05),
                 [
                     [0.85, 0.85, 0.85],
                     [0.48, 0.55, 0.65],
@@ -91,5 +85,5 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         [[1.0, 1.0, 1.0].into(), [0.0, 0.0, 0.0].into()],
         2.4,
     );
-    SceneImpl::<_, _, _, _, H>::new(view, objects, background)
+    SceneImpl::new(view, objects, background)
 }

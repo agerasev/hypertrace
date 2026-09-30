@@ -57,7 +57,7 @@ type Objects = (
     Vec<Object<Tiled<Horosphere, tiling::Square, MyMaterial, MyMaterial, 4>>>,
     Vec<Object<Tiled<Plane, tiling::Pentastar, MyMaterial, MyMaterial, 2>>>,
     Vec<Object<Tiled<Plane, tiling::Pentagonal, MyMaterial, MyMaterial, 2>>>,
-    Vec<Object<Tiled<GeodesicSphere, tiling::RegularSpherical<3, 5>, MyMaterial, MyMaterial, 3>>>,
+    Vec<Object<Tiled<GeodesicSphere, tiling::RegularSpherical<5, 3>, MyMaterial, MyMaterial, 3>>>,
 );
 
 pub type ExampleScene<const H: usize> = SceneImpl<
@@ -172,7 +172,7 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         vec![Mapped::new(
             Tiled::new(
                 GeodesicSphere::new(ball_radius),
-                tiling::RegularSpherical::<3, 5>::new(0.025),
+                tiling::RegularSpherical::<5, 3>::new(0.025),
                 [0xfe7401, 0x35adae, 0xfed601]
                     .map(|color| make_material(unpack_color(color), 0.1, 0.0, None)),
                 border_material,

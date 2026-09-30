@@ -1,0 +1,45 @@
+{
+  "backend": "wgpu",
+  "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+  "scene": "hyperbolic",
+  "width": 1600,
+  "height": 1200,
+  "samples": 4096,
+  "seed": 3735928559,
+  "batch": 4,
+  "camera": {
+    "fov": 0.7,
+    "yaw": 0,
+    "pitch": 0.42
+  },
+  "bounces": 3,
+  "curvature_sign": -1,
+  "curvature_radius": 1,
+  "medium": {
+    "extinction": 0,
+    "albedo": [
+      0,
+      0,
+      0
+    ]
+  },
+  "linear_format": "little-endian rgba32f, row-major, top row first",
+  "display_gamma": 2.2,
+  "source_commit": "a7337c8e6dc50f7f3ad000dab3ede98e17027e9b",
+  "capture": "hyperbolic-detail",
+  "png_sha256": "c0054e5ddc3dbc74034454101b87dcba292d0d71c364af2869f8e3c7d1af4d54",
+  "responsive": [
+    {
+      "file": "hyperbolic-detail-small.webp",
+      "width": 640,
+      "height": 480,
+      "sha256": "bd69d5ad2572bf69a824f2e82b517b4ade1e5d36f5801dee252b16ecee1fb3d4"
+    },
+    {
+      "file": "hyperbolic-detail.webp",
+      "width": 1280,
+      "height": 960,
+      "sha256": "40d28809bfec11b3e4dc598d190040218dcf6a6d06f2181b9455b08d14e85859"
+    }
+  ]
+}

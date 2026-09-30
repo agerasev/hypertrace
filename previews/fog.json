@@ -1,0 +1,44 @@
+{
+  "backend": "wgpu",
+  "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+  "scene": "fog",
+  "width": 2560,
+  "height": 1920,
+  "samples": 8192,
+  "seed": 3735928559,
+  "batch": 4,
+  "camera": {
+    "fov": 0.45,
+    "yaw": 0,
+    "pitch": 0
+  },
+  "bounces": 12,
+  "curvature_sign": 0,
+  "curvature_radius": 1,
+  "medium": {
+    "extinction": 0.35,
+    "albedo": [
+      0.95,
+      0.95,
+      0.95
+    ]
+  },
+  "linear_format": "little-endian rgba32f, row-major, top row first",
+  "display_gamma": 2.2,
+  "source_commit": "a7337c8e6dc50f7f3ad000dab3ede98e17027e9b",
+  "png_sha256": "c9b8871aac7c3b66d8397b8ecfd5b0eef371642dab94b966778fb3b745ca578b",
+  "responsive": [
+    {
+      "file": "fog-small.webp",
+      "width": 640,
+      "height": 480,
+      "sha256": "d344ad10fc8440984acf5d92c15d3075464c53156df2724bf58e97a8c0fd1312"
+    },
+    {
+      "file": "fog.webp",
+      "width": 1280,
+      "height": 960,
+      "sha256": "00fbef95b893830159d8b3a4d0d2691d05f73bd0b46110b60f9a8143387d57bb"
+    }
+  ]
+}

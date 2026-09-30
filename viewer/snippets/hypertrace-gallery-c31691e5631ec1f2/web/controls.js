@@ -10,6 +10,7 @@ const examples = new Map();
 const groups = new Map();
 let resetRequested = false;
 let isPaused = false;
+let hostPaused = false;
 let lastStats = "";
 let mouseLockChanged = false;
 let wantsMouseLock = false;
@@ -126,7 +127,7 @@ export function add_example(id, title, text, group) {
 }
 export function scene_name() { return scene.value; }
 export function resolution() { return Number(quality.value); }
-export function paused() { return isPaused; }
+export function paused() { return isPaused || !!document.hidden || hostPaused; }
 export function take_reset() {
     const requested = resetRequested;
     resetRequested = false;
@@ -137,7 +138,20 @@ export function toggle_pause() {
     pause.textContent = isPaused ? "Resume" : "Pause";
     pause.setAttribute("aria-pressed", String(isPaused));
 }
+function report(state, message) {
+    if (window.parent !== window) window.parent.postMessage({type: 'hypertrace-status', state, message}, location.origin);
+}
+window.addEventListener('message', event => {
+    if (event.origin !== location.origin || event.source !== window.parent || event.data?.type !== 'hypertrace-visibility') return;
+    hostPaused = event.data.hidden === true;
+    if (hostPaused) release_mouse();
+});
+export function set_ready() {
+    set_status('Ready · click the scene to explore', false);
+    report('ready', 'Ready');
+}
 export function set_status(message, error) {
+    report(error ? 'error' : 'loading', message);
     status.textContent = message;
     status.dataset.error = String(error);
     if (error) document.querySelectorAll("button, select").forEach(control => { control.disabled = true; });

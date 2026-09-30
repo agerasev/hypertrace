@@ -1,0 +1,44 @@
+{
+  "backend": "wgpu",
+  "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+  "scene": "spherical",
+  "width": 2560,
+  "height": 1920,
+  "samples": 4096,
+  "seed": 3735928559,
+  "batch": 4,
+  "camera": {
+    "fov": 1.5,
+    "yaw": 0,
+    "pitch": 0
+  },
+  "bounces": 6,
+  "curvature_sign": 1,
+  "curvature_radius": 1,
+  "medium": {
+    "extinction": 0,
+    "albedo": [
+      0,
+      0,
+      0
+    ]
+  },
+  "linear_format": "little-endian rgba32f, row-major, top row first",
+  "display_gamma": 2.2,
+  "source_commit": "a7337c8e6dc50f7f3ad000dab3ede98e17027e9b",
+  "png_sha256": "21e2eeb03ddb9a640c05286b3319b4a01a8253228c25712ef627a6843658402a",
+  "responsive": [
+    {
+      "file": "spherical-small.webp",
+      "width": 640,
+      "height": 480,
+      "sha256": "d99f3f9a5562533c7492af10d847bf6eb931a268bd3c4950abd29bd68f9afa93"
+    },
+    {
+      "file": "spherical.webp",
+      "width": 1280,
+      "height": 960,
+      "sha256": "e1ed0cc97f15b36a08cdb7a3b0eb19d643815f841a29df19efaecf24c06cfc7a"
+    }
+  ]
+}

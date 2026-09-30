@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10151e">
-  <title>Hypertrace · Explore curved space</title>
+  <title>Hypertrace viewer</title>
+  <script src="/hypertrace/viewer/bootstrap-8185f9eff3d05ab7.js" integrity="sha384-VQg+Fw/mhYQSvaE9YlSS81HC0x69VJxHdatkteXOufywULuOLVxJxAxHsW1iYL2p"></script>
   <link rel="icon" href="data:,">
   
 <script type="module">
-import init, * as bindings from '/hypertrace/viewer/viewer-4dbe1ff7abb96c45.js';
-const wasm = await init({ module_or_path: '/hypertrace/viewer/viewer-4dbe1ff7abb96c45_bg.wasm' });
+import init, * as bindings from '/hypertrace/viewer/viewer-5c5aaa5bca391d54.js';
+const wasm = await init({ module_or_path: '/hypertrace/viewer/viewer-5c5aaa5bca391d54_bg.wasm' });
 
 
 window.wasmBindings = bindings;
@@ -28,6 +29,7 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
     .title { margin-right: auto; }
     .title p { color: #9caec3; margin: 3px 0 0; font-size: 12px; }
     .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    a { color: #a2d9f2; }
     label { display: flex; align-items: center; gap: 6px; color: #acbdd0; }
     button, select { font: inherit; padding: 7px 10px; border: 1px solid #3a485c; border-radius: 6px; background: #1c2737; color: #e6edf5; }
     button { cursor: pointer; }
@@ -47,10 +49,10 @@ dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
     noscript { padding: 20px; }
     @media (max-width: 640px) { header { padding: 12px; gap: 10px; } footer, .example-description { padding: 10px 12px; } .controls { gap: 6px; } }
   </style>
-<link rel="modulepreload" href="/hypertrace/viewer/viewer-4dbe1ff7abb96c45.js" crossorigin="anonymous" integrity="sha384-+AnQPBPT///fhCPMpSpXKruDUTObyc7F0hxAx2wwxRUBYEGFHkH4fPyhfpk7PxFF"><link rel="modulepreload" href="/hypertrace/viewer/snippets/hypertrace-examples-a14a87a78d2b4706/web/controls.js" crossorigin="anonymous" integrity="sha384-xv6djTCE7rNIsJVkj4ZElo/XgFKKq1tw4hdeJSi6SsKf3R1noYlJcGH0Lm/U0CBh"><link rel="modulepreload" href="/hypertrace/viewer/snippets/hypertrace-gallery-c31691e5631ec1f2/web/controls.js" crossorigin="anonymous" integrity="sha384-2rnIxyoIl4B2vH7aiLOjVlG2QTUmAEG9eOHw+bz19+KvNWxk1bNm2LAldNVf0pyH"><link rel="preload" href="/hypertrace/viewer/viewer-4dbe1ff7abb96c45_bg.wasm" crossorigin="anonymous" integrity="sha384-0BEST0oFRLbUkFfJION8bayUkyyv4x7I3mvXlvmFFk7Cosh77DXiZN7XuN1RmGbm" as="fetch" type="application/wasm"></head>
+<link rel="modulepreload" href="/hypertrace/viewer/viewer-5c5aaa5bca391d54.js" crossorigin="anonymous" integrity="sha384-BDn3WV67j5Cb6Gz92XbZbHXMbrhDtVOEqPXxkeZToL36RtIt1dBM6ggXCGPFHleB"><link rel="modulepreload" href="/hypertrace/viewer/snippets/hypertrace-gallery-c31691e5631ec1f2/web/controls.js" crossorigin="anonymous" integrity="sha384-67wdtXt9qKSttEs7UtbGEfB7v4LR3BtGH5M+o4VBAIFCBi/tJXLUOOCH4k2CXLtq"><link rel="preload" href="/hypertrace/viewer/viewer-5c5aaa5bca391d54_bg.wasm" crossorigin="anonymous" integrity="sha384-LVujDugIGa6NpT1t4IA/jByX6LBekegXXT+EmOz43aqYdr6TIwE2AEoIiQAJnwz6" as="fetch" type="application/wasm"></head>
 <body>
   <header>
-    <div class="title"><h1>Hypertrace</h1><p>Light in Euclidean, hyperbolic &amp; spherical space</p></div>
+    <div class="title"><h1>Hypertrace</h1><p><a href="../run.html" target="_top">Build and run locally</a></p></div>
     <div class="controls" aria-label="Scene controls">
       <label>Example <select id="scene" aria-describedby="example-description" disabled><option value="">Loading examples…</option></select></label>
       <label>Quality <select id="resolution"><option value="640">Fast</option><option value="960" selected>Balanced</option><option value="1440">Sharp</option><option value="0">Full resolution</option></select></label>

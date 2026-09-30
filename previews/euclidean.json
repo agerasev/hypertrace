@@ -1,0 +1,39 @@
+{
+  "backend": "wgpu",
+  "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+  "scene": "euclidean",
+  "width": 2560,
+  "height": 1920,
+  "samples": 4096,
+  "seed": 3735928559,
+  "bounces": 4,
+  "curvature_sign": 0,
+  "curvature_radius": 1,
+  "medium": {
+    "extinction": 0,
+    "albedo": [
+      0,
+      0,
+      0
+    ]
+  },
+  "linear_format": "little-endian rgba32f, row-major, top row first",
+  "display_gamma": 2.2,
+  "source_commit": "4f1806078ecf515a42da772690e11b9f129d3135",
+  "camera": "example default",
+  "png_sha256": "3141b7f6c874f8531b419cdb7e36aada914b180ed5f95e367cecf07910736786",
+  "responsive": [
+    {
+      "file": "euclidean-small.webp",
+      "width": 640,
+      "height": 480,
+      "sha256": "69ae1d5e3ec9632dd056b17750157b054151ff300d10a64396eade6db88350cc"
+    },
+    {
+      "file": "euclidean.webp",
+      "width": 1280,
+      "height": 960,
+      "sha256": "7c2bb1d84fedfe896c33c97d6b12456ed011af081303f26749cc5727bfe7feb6"
+    }
+  ]
+}

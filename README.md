@@ -1,11 +1,13 @@
 # Hypertrace website
 
-Website and interactive viewer built from source commit [10651435cb511d68fdb1977bda261ca6af522f33](https://github.com/agerasev/hypertrace/tree/10651435cb511d68fdb1977bda261ca6af522f33).
+Website and interactive viewer built from source commit [ea37cfc5adb2a8d9e1dc325d02115f8dc7d468a3](https://github.com/agerasev/hypertrace/tree/ea37cfc5adb2a8d9e1dc325d02115f8dc7d468a3).
 
 - [Scene gallery](https://agerasev.github.io/hypertrace/)
-- [Hyperbolic viewer](https://agerasev.github.io/hypertrace/viewer/?scene=hy)
-- [Euclidean viewer](https://agerasev.github.io/hypertrace/viewer/?scene=eu)
-- [Fog viewer](https://agerasev.github.io/hypertrace/viewer/?scene=eu-fog)
+- [Hyperbolic viewer](https://agerasev.github.io/hypertrace/viewer/?scene=hyperbolic)
+- [Euclidean viewer](https://agerasev.github.io/hypertrace/viewer/?scene=euclidean)
+- [Spherical viewer](https://agerasev.github.io/hypertrace/viewer/?scene=spherical)
+- [Fog viewer](https://agerasev.github.io/hypertrace/viewer/?scene=fog)
+- [Build and run locally](https://agerasev.github.io/hypertrace/run.html)
 - [Theory](https://agerasev.github.io/hypertrace/theory.html)
 
 The `previews/` directory contains original-resolution PNGs, responsive WebP images,

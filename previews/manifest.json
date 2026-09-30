@@ -1,57 +1,347 @@
 {
-  "eu": {
+  "hyperbolic": {
     "backend": "wgpu",
     "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
-    "scene": "eu",
-    "width": 2560,
-    "height": 1920,
-    "samples": 4096,
-    "seed": 3735928559,
-    "bounces": 4,
-    "linear_format": "little-endian rgba32f, row-major, top row first",
-    "display_gamma": 2.2,
-    "png_sha256": "30ec0f5b19e5d09d5dc7d19789988787ac9b1cd264ddb96f9eb427d7a2d60c46",
-    "source_commit": "292dfc2103052d476412eea5a618a1b16f7e5939",
-    "responsive": [
-      {
-        "file": "eu-small.webp",
-        "width": 640,
-        "height": 480,
-        "sha256": "b54c11f92e0eda3ba01b70b8b4be2f475a1895830085445767337f047b0096c8"
-      },
-      {
-        "file": "eu.webp",
-        "width": 1280,
-        "height": 960,
-        "sha256": "68c0df5148f589efecfc7051bad0de46e0d8d61f2c521524de1ce148044e6bf0"
-      }
-    ]
-  },
-  "hy": {
-    "backend": "wgpu",
-    "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
-    "scene": "hy",
+    "scene": "hyperbolic",
     "width": 2560,
     "height": 1920,
     "samples": 4096,
     "seed": 3735928559,
     "bounces": 3,
+    "curvature_sign": -1,
+    "curvature_radius": 1,
+    "medium": {
+      "extinction": 0,
+      "albedo": [
+        0,
+        0,
+        0
+      ]
+    },
     "linear_format": "little-endian rgba32f, row-major, top row first",
     "display_gamma": 2.2,
-    "png_sha256": "0033056d6dd37e202c1200afb66f250f1f90375df7afcead09619febe60302a0",
-    "source_commit": "292dfc2103052d476412eea5a618a1b16f7e5939",
+    "source_commit": "4f1806078ecf515a42da772690e11b9f129d3135",
+    "camera": "example default",
+    "png_sha256": "38d5c0247fd0f7a450ca989a877e01f0903927ab7efcf5ec93ab4f460743ec05",
     "responsive": [
       {
-        "file": "hy-small.webp",
+        "file": "hyperbolic-small.webp",
         "width": 640,
         "height": 480,
-        "sha256": "4df52783eacf9ff62a21431f860d1131ea7a3652c349ae4e35d941c851c28185"
+        "sha256": "38229f57c6dd5883d89b36754dbd95a93369af101c0148c48633ee300a210e9d"
       },
       {
-        "file": "hy.webp",
+        "file": "hyperbolic.webp",
         "width": 1280,
         "height": 960,
-        "sha256": "b70c0237e246449bd2895083dcf70770a5b421e7075548f463d1edcd82a0f0b7"
+        "sha256": "bd9b3956e40ee254fa3b90047d77298ebbb6bca04a9fcc50afa001d0b9593734"
+      }
+    ]
+  },
+  "hyperbolic-detail": {
+    "backend": "wgpu",
+    "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+    "scene": "hyperbolic",
+    "width": 1600,
+    "height": 1200,
+    "samples": 4096,
+    "seed": 3735928559,
+    "batch": 4,
+    "camera": {
+      "fov": 0.7,
+      "yaw": 0,
+      "pitch": 0.42
+    },
+    "bounces": 3,
+    "curvature_sign": -1,
+    "curvature_radius": 1,
+    "medium": {
+      "extinction": 0,
+      "albedo": [
+        0,
+        0,
+        0
+      ]
+    },
+    "linear_format": "little-endian rgba32f, row-major, top row first",
+    "display_gamma": 2.2,
+    "source_commit": "a7337c8e6dc50f7f3ad000dab3ede98e17027e9b",
+    "capture": "hyperbolic-detail",
+    "png_sha256": "c0054e5ddc3dbc74034454101b87dcba292d0d71c364af2869f8e3c7d1af4d54",
+    "responsive": [
+      {
+        "file": "hyperbolic-detail-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "bd69d5ad2572bf69a824f2e82b517b4ade1e5d36f5801dee252b16ecee1fb3d4"
+      },
+      {
+        "file": "hyperbolic-detail.webp",
+        "width": 1280,
+        "height": 960,
+        "sha256": "40d28809bfec11b3e4dc598d190040218dcf6a6d06f2181b9455b08d14e85859"
+      }
+    ]
+  },
+  "euclidean": {
+    "backend": "wgpu",
+    "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+    "scene": "euclidean",
+    "width": 2560,
+    "height": 1920,
+    "samples": 4096,
+    "seed": 3735928559,
+    "bounces": 4,
+    "curvature_sign": 0,
+    "curvature_radius": 1,
+    "medium": {
+      "extinction": 0,
+      "albedo": [
+        0,
+        0,
+        0
+      ]
+    },
+    "linear_format": "little-endian rgba32f, row-major, top row first",
+    "display_gamma": 2.2,
+    "source_commit": "4f1806078ecf515a42da772690e11b9f129d3135",
+    "camera": "example default",
+    "png_sha256": "3141b7f6c874f8531b419cdb7e36aada914b180ed5f95e367cecf07910736786",
+    "responsive": [
+      {
+        "file": "euclidean-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "69ae1d5e3ec9632dd056b17750157b054151ff300d10a64396eade6db88350cc"
+      },
+      {
+        "file": "euclidean.webp",
+        "width": 1280,
+        "height": 960,
+        "sha256": "7c2bb1d84fedfe896c33c97d6b12456ed011af081303f26749cc5727bfe7feb6"
+      }
+    ]
+  },
+  "euclidean-detail": {
+    "backend": "wgpu",
+    "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+    "scene": "euclidean",
+    "width": 1600,
+    "height": 1200,
+    "samples": 4096,
+    "seed": 3735928559,
+    "batch": 4,
+    "camera": {
+      "fov": 0.72,
+      "yaw": 0,
+      "pitch": 0.24
+    },
+    "bounces": 4,
+    "curvature_sign": 0,
+    "curvature_radius": 1,
+    "medium": {
+      "extinction": 0,
+      "albedo": [
+        0,
+        0,
+        0
+      ]
+    },
+    "linear_format": "little-endian rgba32f, row-major, top row first",
+    "display_gamma": 2.2,
+    "source_commit": "a7337c8e6dc50f7f3ad000dab3ede98e17027e9b",
+    "capture": "euclidean-detail",
+    "png_sha256": "174c09b0942eb1198dac997cc9cdb1271f83a22ad7c581e2dff182f5e6792273",
+    "responsive": [
+      {
+        "file": "euclidean-detail-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "44b270be7da1f89e7c9f9beebb51eff465f2608d097f8944b42524a1ba8b43b2"
+      },
+      {
+        "file": "euclidean-detail.webp",
+        "width": 1280,
+        "height": 960,
+        "sha256": "1133fdd3fb16edafc6a9b371500bc9e50989df0a87b5ac4b64551c0b5a0e8159"
+      }
+    ]
+  },
+  "spherical": {
+    "backend": "wgpu",
+    "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+    "scene": "spherical",
+    "width": 2560,
+    "height": 1920,
+    "samples": 4096,
+    "seed": 3735928559,
+    "batch": 4,
+    "camera": {
+      "fov": 1.5,
+      "yaw": 0,
+      "pitch": 0
+    },
+    "bounces": 6,
+    "curvature_sign": 1,
+    "curvature_radius": 1,
+    "medium": {
+      "extinction": 0,
+      "albedo": [
+        0,
+        0,
+        0
+      ]
+    },
+    "linear_format": "little-endian rgba32f, row-major, top row first",
+    "display_gamma": 2.2,
+    "source_commit": "a7337c8e6dc50f7f3ad000dab3ede98e17027e9b",
+    "png_sha256": "21e2eeb03ddb9a640c05286b3319b4a01a8253228c25712ef627a6843658402a",
+    "responsive": [
+      {
+        "file": "spherical-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "d99f3f9a5562533c7492af10d847bf6eb931a268bd3c4950abd29bd68f9afa93"
+      },
+      {
+        "file": "spherical.webp",
+        "width": 1280,
+        "height": 960,
+        "sha256": "e1ed0cc97f15b36a08cdb7a3b0eb19d643815f841a29df19efaecf24c06cfc7a"
+      }
+    ]
+  },
+  "spherical-detail": {
+    "backend": "wgpu",
+    "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+    "scene": "spherical",
+    "width": 1600,
+    "height": 1200,
+    "samples": 4096,
+    "seed": 3735928559,
+    "batch": 4,
+    "camera": {
+      "fov": 0.6,
+      "yaw": 0.27,
+      "pitch": -0.7
+    },
+    "bounces": 6,
+    "curvature_sign": 1,
+    "curvature_radius": 1,
+    "medium": {
+      "extinction": 0,
+      "albedo": [
+        0,
+        0,
+        0
+      ]
+    },
+    "linear_format": "little-endian rgba32f, row-major, top row first",
+    "display_gamma": 2.2,
+    "source_commit": "a7337c8e6dc50f7f3ad000dab3ede98e17027e9b",
+    "capture": "spherical-detail",
+    "png_sha256": "38655204cd80d0c40bd5b11e99c529bd22b66104a21c10d6df7ab12a4775673e",
+    "responsive": [
+      {
+        "file": "spherical-detail-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "9b1eabbf8d01d299c5c3af6ffede8fb85c530d82e4a926b974c5c84c62341227"
+      },
+      {
+        "file": "spherical-detail.webp",
+        "width": 1280,
+        "height": 960,
+        "sha256": "1c8cff96eab331d67bcb2371197d14fb6ffb806adc0602b5796e2217f70da2e4"
+      }
+    ]
+  },
+  "fog": {
+    "backend": "wgpu",
+    "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+    "scene": "fog",
+    "width": 2560,
+    "height": 1920,
+    "samples": 8192,
+    "seed": 3735928559,
+    "batch": 4,
+    "camera": {
+      "fov": 0.45,
+      "yaw": 0,
+      "pitch": 0
+    },
+    "bounces": 12,
+    "curvature_sign": 0,
+    "curvature_radius": 1,
+    "medium": {
+      "extinction": 0.35,
+      "albedo": [
+        0.95,
+        0.95,
+        0.95
+      ]
+    },
+    "linear_format": "little-endian rgba32f, row-major, top row first",
+    "display_gamma": 2.2,
+    "source_commit": "a7337c8e6dc50f7f3ad000dab3ede98e17027e9b",
+    "png_sha256": "c9b8871aac7c3b66d8397b8ecfd5b0eef371642dab94b966778fb3b745ca578b",
+    "responsive": [
+      {
+        "file": "fog-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "d344ad10fc8440984acf5d92c15d3075464c53156df2724bf58e97a8c0fd1312"
+      },
+      {
+        "file": "fog.webp",
+        "width": 1280,
+        "height": 960,
+        "sha256": "00fbef95b893830159d8b3a4d0d2691d05f73bd0b46110b60f9a8143387d57bb"
+      }
+    ]
+  },
+  "fog-detail": {
+    "backend": "wgpu",
+    "adapter": "Intel(R) Arc(tm) Graphics (MTL)",
+    "scene": "fog",
+    "width": 1600,
+    "height": 1200,
+    "samples": 8192,
+    "seed": 3735928559,
+    "batch": 4,
+    "camera": {
+      "fov": 0.24,
+      "yaw": -0.06,
+      "pitch": -0.12
+    },
+    "bounces": 12,
+    "curvature_sign": 0,
+    "curvature_radius": 1,
+    "medium": {
+      "extinction": 0.35,
+      "albedo": [
+        0.95,
+        0.95,
+        0.95
+      ]
+    },
+    "linear_format": "little-endian rgba32f, row-major, top row first",
+    "display_gamma": 2.2,
+    "source_commit": "a7337c8e6dc50f7f3ad000dab3ede98e17027e9b",
+    "capture": "fog-detail",
+    "png_sha256": "c1f767a9a34098a3bbb171beeebb40ba91f23644284c8137b89a732166e9c260",
+    "responsive": [
+      {
+        "file": "fog-detail-small.webp",
+        "width": 640,
+        "height": 480,
+        "sha256": "6dfa5f4c084f2449b13a3547f040db746e71fb05be6b10b8a8088673458570a2"
+      },
+      {
+        "file": "fog-detail.webp",
+        "width": 1280,
+        "height": 960,
+        "sha256": "566becbab3f40dda777638178ef2fdb300935e2241d33b7a3c0ea550253822ac"
       }
     ]
   },

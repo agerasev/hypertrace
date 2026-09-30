@@ -36,6 +36,9 @@ cargo run --release -p hypertrace-gallery --bin headless -- \
 
 Headless output includes a PPM preview, linear RGBA floats, and JSON settings
 recording the curvature sign, radius, and medium alongside the render options.
+For repeatable detail views, `--fov SCALE` changes the tangent of half the vertical
+field of view; `--yaw RADIANS` and `--pitch RADIANS` rotate from the example's
+initial camera. These camera settings are recorded in the JSON as well.
 Start with 256 samples and increase the count for fog and soft shadows;
 scattering and indirect illumination need more samples to settle.
 

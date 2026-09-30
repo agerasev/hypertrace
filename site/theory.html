@@ -1,112 +1,151 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="The mathematics behind Hypertrace: a shared Euclidean, hyperbolic and spherical kernel, travelled distance, tangent frames, fog, and numerical precision.">
-  <meta name="theme-color" content="#10151e">
-  <title>The geometry behind Hypertrace</title>
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <header><div class="wrap"><a class="brand" href="./">Hypertrace</a><nav aria-label="Main"><a href="./">Scenes</a><a href="theory.html" aria-current="page">The geometry</a><a href="https://www.youtube.com/watch?v=LGWusRNcJ6A">Video</a><a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__">Source</a></nav></div></header>
-  <main class="wrap article">
-    <div class="hero"><div class="eyebrow">Theory &amp; implementation</div><h1>Tracing light through curved space.</h1><p class="lead">Hypertrace keeps the local rules of reflection and scattering, while changing the geometry that carries light between surfaces.</p><p>This guide develops the ideas in <a href="https://agerasev.github.io/2020/03/12/hypertrace.html">Alexey Gerasev’s original 2020 article</a> and connects them to the current WGPU implementation. <a href="https://www.youtube.com/watch?v=LGWusRNcJ6A">Watch the original walkthrough</a> for a moving view of the project.</p></div>
-    <aside class="toc" aria-label="Contents"><strong>In this guide</strong><ol><li><a href="#shared">One kernel, three curvatures</a></li><li><a href="#space">A hyperbolic coordinate chart</a></li><li><a href="#rays">What a straight ray means</a></li><li><a href="#maps">Isometries and camera motion</a></li><li><a href="#directions">Transporting directions</a></li><li><a href="#surfaces">Planes, horospheres, and tilings</a></li><li><a href="#light">Materials and path tracing</a></li><li><a href="#models">Coordinate conversions</a></li><li><a href="#precision">Precision and current limits</a></li></ol></aside>
-    <section id="shared"><h2>1. One kernel, three curvatures</h2>
-      <p>Hypertrace constructs and traces Euclidean, hyperbolic and spherical scenes through one embedded representation. Points have scalar-first coordinates <var>P = (w, x, y, z)</var>; write <var>X = (x, y, z)</var>. The curvature sign <var>K</var> is −1, 0 or +1, and curved scenes choose a physical radius <var>R &gt; 0</var>, giving sectional curvature <var>K/R²</var>. Euclidean scenes use <var>R = 1</var>.</p>
-      <div class="equation">B<sub>K</sub>(P,Q) = P<sub>w</sub>Q<sub>w</sub> + K X · Y</div>
-      <div class="table-scroll"><table><thead><tr><th>Space</th><th>Embedded points</th><th>C<sub>K</sub>(t)</th><th>S<sub>K</sub>(t)</th></tr></thead><tbody><tr><td>Hyperbolic H³</td><td>w² − ‖X‖² = 1, w &gt; 0</td><td>cosh t</td><td>sinh t</td></tr><tr><td>Euclidean E³</td><td>w = 1</td><td>1</td><td>t</td></tr><tr><td>Spherical S³</td><td>w² + ‖X‖² = 1</td><td>cos t</td><td>sin t</td></tr></tbody></table></div>
-      <p>A ray stores its point and an ambient tangent <var>V</var>. Curved unit tangents satisfy <var>B(P,V) = 0</var> and <var>B(V,V) = K</var>. In Euclidean space, <var>V<sub>w</sub> = 0</var> and its spatial part has unit length; the degenerate form at <var>K = 0</var> cannot define tangent lengths. With <var>t = s/R</var> in curved spaces and <var>t = s</var> in Euclidean space, advancement by physical distance <var>s</var> is:</p>
-      <div class="equation"><pre>P(t) = C<sub>K</sub>(t) P + S<sub>K</sub>(t) V
-V(t) = −K S<sub>K</sub>(t) P + C<sub>K</sub>(t) V</pre></div>
-      <p>Isometries use two ordinary scalar-first quaternions <var>a + e b</var>, with a commuting scalar <var>e² = K</var>. Their shared composition law is:</p>
-      <div class="equation">(a,b)(c,d) = (ac + Kbd, ad + bc)</div>
-      <p>This covers complex, dual and split quaternion pairs. The same linear action transports points and tangents. Scene construction, camera motion and rendering use these pairs throughout. The CPU geometry library checks isometry constraints; the GPU specializes the curvature sign while sharing advancement, frames and primitive solvers. Hyperbolic points lie on the hyperboloid. Half-space and ball charts provide useful ways to describe positions and surface patterns, with explicit conversions to and from embedded points.</p>
-      <h3>Distance continues when coordinates repeat</h3>
-      <p>On a sphere, <var>s</var> and <var>s + 2πRn</var> reach the same point and tangent, but they represent different optical paths. Every intersection therefore retains its actual forward physical distance. Queries use <var>[minimum, maximum)</var>; periodic roots are lifted into that interval, and only the immediate numerical self-hit is suppressed. Later crossings of the same surface remain valid.</p>
-      <p>A complete circuit can establish a deterministic surface miss in a static scene. It cannot rule out a fog interaction on a later circuit. Medium sampling keeps the full travel distance before periodic phase reduction is used to evaluate coordinates.</p>
-    </section>
-    <section id="space"><h2>2. A hyperbolic coordinate chart</h2>
-      <p>The <strong>upper half-space chart</strong> makes geodesics, horospheres and their surface patterns easy to visualize. This section uses normalized curvature −1 (radius one). A chart point has coordinates <var>p = (x, y, z)</var> with <var>z &gt; 0</var>. These coordinates describe positions; the metric determines physical distances:</p>
-      <div class="equation">ds<sup>2</sup> = (dx<sup>2</sup> + dy<sup>2</sup> + dz<sup>2</sup>) / z<sup>2</sup></div>
-      <p>A small coordinate displacement has hyperbolic length approximately its Euclidean length divided by <var>z</var>. Equal coordinate steps therefore cover more physical distance close to <var>z = 0</var>. The reference point is <var>o = (0, 0, 1)</var>.</p>
-      <p>The plane <var>z = 0</var>, together with the point at infinity, is the <strong>ideal boundary</strong>, also called the absolute. It is not a wall that a ray can hit after a finite travel distance. Along a vertical line, the distance is <var>|log(z₂ / z₁)|</var>, which diverges as either endpoint approaches the boundary while the other stays fixed.</p>
-      <div class="equation">d(p, q) = 2 asinh( ‖p − q‖ / (2 √(p<sub>z</sub> q<sub>z</sub>)) )</div>
-      <p>This distance formula is equivalent to the usual inverse-hyperbolic-cosine expression. It is better suited to nearby points because it avoids subtracting nearly equal quantities around <var>cosh(d) = 1</var>.</p>
-    </section>
-    <section id="rays"><h2>3. What a straight ray means</h2>
-      <p>Free light follows <strong>geodesics</strong>, the locally straight paths of the metric. In half-space coordinates they appear as vertical lines or circular arcs perpendicular to the boundary plane. Their coordinate curvature is not caused by a material bending the ray.</p>
-      <figure><svg viewBox="0 0 720 330" role="img" aria-labelledby="geodesic-title geodesic-desc"><title id="geodesic-title">Geodesics in a two-dimensional slice of hyperbolic half-space</title><desc id="geodesic-desc">A semicircular arc and a vertical line both meet the ideal boundary at right angles. Both are intrinsically straight geodesics.</desc><line x1="45" y1="270" x2="675" y2="270" stroke="#afc0d3" stroke-dasharray="6 6"/><path d="M90 270 A190 190 0 0 1 470 270" fill="none" stroke="#8de1d6" stroke-width="4"/><line x1="565" y1="270" x2="565" y2="55" stroke="#e8ad67" stroke-width="4"/><path d="M555 70 L565 55 L575 70" fill="none" stroke="#e8ad67" stroke-width="3"/><text x="185" y="48" fill="#edf3fa" font-size="18">Geodesic arc</text><text x="589" y="133" fill="#edf3fa" font-size="17">Vertical</text><text x="589" y="156" fill="#edf3fa" font-size="17">geodesic</text><text x="48" y="305" fill="#afc0d3" font-size="17">Ideal boundary · z = 0</text><text x="50" y="40" fill="#afc0d3" font-size="17">z &gt; 0</text></svg><figcaption>A two-dimensional slice through H³. The interactive viewer renders what an observer inside the space sees; it is not an external drawing of this coordinate model.</figcaption></figure>
-      <p>For example, two unit-speed paths starting at the reference point are:</p>
-      <div class="equation"><pre>Vertical:    γ(s) = (0, 0, eˢ)
-Horizontal:  γ(s) = (tanh s, 0, 1 / cosh s)</pre></div>
-      <p>The second begins in a horizontal direction but immediately curves in the coordinate picture. The tracing kernel evaluates embedded geodesics and orders hits by forward travel distance, without recovering that distance from endpoints. After a hit, the next ray uses the geodesic’s tangent <em>at the hit point</em>.</p>
-    </section>
-    <section id="maps"><h2>4. Isometries and camera motion</h2>
-      <p>An isometry moves positions and orientations while preserving distances and angles. In every curvature, a normalized quaternion pair <var>g = (a,b)</var> satisfies:</p>
-      <div class="equation">‖a‖² + K ‖b‖² = 1, &nbsp; a · b = 0</div>
-      <p>Encode an ambient vector <var>P = (w,X)</var> as the pair <var>q(P) = ((w,0),(0,X))</var>. Its transformed vector is the scalar part of the first quaternion and vector part of the second in:</p>
-      <div class="equation">g q(P) g†, &nbsp; g† = (conjugate(a), −conjugate(b))</div>
-      <p>This action is linear in <var>P</var>, so it also transports tangents. The inverse isometry is <var>(conjugate(a), conjugate(b))</var>. Pair multiplication composes maps: <code>outer.chain(inner)</code> applies <code>inner</code> first. Camera and object transforms use these same operations.</p>
-      <h3>Useful motions</h3>
-      <p>For a unit spatial axis <var>n</var>, translation by physical distance <var>L</var> uses <var>t = L/R</var> in curved spaces and <var>t = L</var> in Euclidean space. Rotation through angle <var>φ</var> has the same formula in all three:</p>
-      <div class="equation"><pre>Translation: a = (C<sub>K</sub>(t/2), 0),  b = (0, n S<sub>K</sub>(t/2))
-Rotation:    a = (cos(φ/2), n sin(φ/2)),  b = 0</pre></div>
-      <p>The translation carries the origin along its geodesic with initial direction <var>n</var>. In the hyperbolic half-space picture, the +z translation scales all chart coordinates by <var>eᵗ</var>, while +x follows the horizontal-starting geodesic above. A constant horizontal chart shift is also an isometry, but follows a horocycle. Components that need that placement construct the corresponding pair explicitly.</p>
-      <p>The CPU retains canonical transforms in <code>f64</code>. Before rendering, it composes each object with the inverse camera, checks the resulting pair, and uploads <code>f32</code> values. Camera movement updates one canonical transform and repeats this preparation, using the same representation for every geometry.</p>
-    </section>
-    <section id="directions"><h2>5. Transporting directions</h2>
-      <p>A direction belongs to the tangent space at a point. Transforming only the position leaves the ray inconsistent. An embedded isometry transports both point and tangent through its linear action, preserving their manifold, orthogonality and unit-speed constraints.</p>
-      <p>Materials express directions as ordinary three-component vectors <var>d</var> in an orthonormal tangent frame. At the embedded point <var>P = (w,X)</var>, the conversion to an ambient tangent is:</p>
-      <div class="equation"><pre>Euclidean:  V = (0, d)
-Hyperbolic: V = (X · d, d + X (X · d)/(w + 1))
-Spherical:  V = P × Quaternion(0, d)</pre></div>
-      <p>The last expression uses quaternion multiplication. It defines a spherical frame even at antipodes. The hyperbolic expression is the canonical origin-to-point boost. These frames let reflection, refraction and diffuse scattering share their three-dimensional dot products while the ray retains an embedded tangent and an independent physical travel distance.</p>
-      <p>A coordinate conversion has its own differential. If a component derives chart coordinates <var>c(P)</var>, the chart tangent is <var>Dc<sub>P</sub>[V]</var>. Its Euclidean coordinate length generally differs from its metric length. Explicit conversion methods preserve that scale; material directions continue to use orthonormal frames.</p>
-    </section>
-    <section id="surfaces"><h2>6. Planes, horospheres, and tilings</h2>
-      <p>The hyperbolic example contains two kinds of surfaces. Their spherical appearance in coordinates does not make them ordinary Euclidean spheres.</p>
-      <div class="table-scroll"><table><thead><tr><th>Surface</th><th>Half-space description</th><th>Intrinsic geometry</th></tr></thead><tbody><tr><td>Geodesic plane</td><td>A hemisphere centered on the boundary, or a vertical plane</td><td>Hyperbolic plane, curvature −1</td></tr><tr><td>Horosphere</td><td>A sphere tangent to the boundary, or a horizontal plane</td><td>Euclidean plane, curvature 0</td></tr></tbody></table></div>
-      <p>The canonical embedded hyperbolic primitives are <var>Z = 0</var> and <var>w − Z = 1</var>. In half-space coordinates these appear as the upper hemisphere <var>x² + y² + z² = 1</var> and the horosphere <var>z = 1</var>. Object isometries place copies throughout the scene. To intersect a mapped object, transform the embedded ray into its local frame, solve the canonical intersection, then transport the hit and tangent back.</p>
-      <p>Geodesic planes and physical-radius spheres have analytic solvers in all three spaces; a spherical plane is a great 2-sphere, and a spherical sphere requires <var>0 &lt; r &lt; πR</var>, subject to f32 representability checks. Isometries place shapes but do not resize curved spheres. Square and hexagonal patterns fit naturally on horospheres. The geodesic planes carry pentagonal and star patterns. Tiling components receive embedded positions and derive their pattern coordinates explicitly. The current pentagonal reduction uses a finite iteration depth, so the implementation does not promise an arbitrarily deep tessellation near the ideal boundary.</p>
-    </section>
-    <section id="light"><h2>7. Materials and path tracing</h2>
-      <p>Curvature changes ray propagation between interactions. At a surface, reflection and scattering are evaluated in its local tangent space. An orthonormal tangent frame lets the shader use ordinary three-dimensional dot products for angles in every geometry. Spherical frames use quaternion multiplication and remain defined at antipodes; hyperbolic frames use the canonical origin-to-point boost.</p>
-      <p>Each sample jitters a primary camera ray, finds the nearest hit, collects emission, chooses a material interaction, and continues with the new direction. A vacuum ray that misses samples the configured environment. In a medium, a surface miss first leaves an unbounded interval for a volume event; it does not immediately sample the environment. Repeated samples estimate the outgoing radiance; the GPU keeps a running sum and sample count.</p>
-      <div class="equation">L<sub>o</sub>(p, ω<sub>o</sub>) = L<sub>e</sub>(p, ω<sub>o</sub>) + ∫<sub>hemisphere</sub> f<sub>r</sub>(p, ω<sub>i</sub>, ω<sub>o</sub>) L<sub>i</sub>(p, ω<sub>i</sub>) |n · ω<sub>i</sub>| dω<sub>i</sub></div>
-      <p>This is the local reflection equation; transmissive materials also admit incoming directions on the other side of the surface. Hypertrace implements mixtures of diffuse, specular, transparent, and refractive interactions. The hyperbolic example uses straight-through transparency; the Euclidean sphere uses refraction.</p>
-      <p>The example scenes terminate paths after a fixed number of interactions: three in the hyperbolic scene, four in the Euclidean scene, and six in the spherical scene. Both surface and volume events consume this budget. The spherical example uses emissive objects and starts with a configurable black miss background. More samples reduce Monte Carlo noise, roughly as <var>1 / √N</var>, but do not remove the bias from that finite bounce limit. The gallery previews record their own sample counts, source revision, camera and bounce settings in the linked render manifest; they are not evidence that every newer renderer change has been published.</p>
-      <h3>Homogeneous fog</h3>
-      <p>A homogeneous medium has scalar extinction <var>σ<sub>t</sub></var> per world unit and RGB scattering albedo. Free flight is sampled as <var>s = −log(1 − u)/σ<sub>t</sub></var>, then compared with the nearest surface distance. A surviving volume event scatters isotropically and multiplies throughput by albedo. The analog estimator has already sampled survival; multiplying by <var>exp(−σ<sub>t</sub>s)</var> again would count attenuation twice.</p>
-      <p>For diagnostics, a fixed segment has transmittance <var>T(s) = exp(−σ<sub>t</sub>s)</var>. Two spherical segments can end with the same point and tangent but different <var>T</var> because one includes more complete circuits. <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/examples/src/bin/fog/scene.rs">The standalone <code>fog</code> scene</a> demonstrates Euclidean scattering around one bright light with red diffuse, green reflective and blue refractive spheres. Its scene source owns the medium settings; zero extinction selects vacuum and zero albedo gives pure absorption. Heterogeneous media and anisotropic scattering remain future work.</p>
-      <p>Samples are averaged in linear RGB. The preview then applies the renderer’s display transform, a gamma of 1/2.2, and clamps to the display range. Display conversion belongs after accumulation, not inside it.</p>
-    </section>
-    <section id="models"><h2>8. Coordinate conversions</h2>
-      <p>The Poincaré disk describes H². For this three-dimensional renderer, the corresponding bounded model is the <strong>Poincaré ball</strong>. It describes the same space, with different coordinates and the unit sphere as its ideal boundary.</p>
-      <p>One half-space-to-ball map taking <var>(0, 0, 1)</var> to the origin is:</p>
-      <div class="equation"><pre>A = x² + y² + (z + 1)²
-C(x, y, z) = (2x, 2y, x² + y² + z² − 1) / A
-
-ds² = 4 ‖db‖² / (1 − ‖b‖²)²</pre></div>
-      <p>The hyperboloid provides the embedded representation used throughout Hypertrace. Its points satisfy <var>w² − ‖X‖² = 1</var> with <var>w &gt; 0</var>. For a half-space point <var>h = (x,y,z)</var>, the conversion and its inverse are:</p>
-      <div class="equation"><pre>w = (‖h‖² + 1)/(2z),  X = (x/z, y/z, (‖h‖² − 1)/(2z))
-h = (X₁, X₂, 1)/(w − X₃)</pre></div>
-      <p>The Poincaré-ball coordinate is <var>b = X/(w + 1)</var>. Conversely, <var>w = (1 + ‖b‖²)/(1 − ‖b‖²)</var> and <var>X = 2b/(1 − ‖b‖²)</var>. These normalized coordinates are independent of <var>R</var>; physical lengths scale by <var>R</var>. The CPU geometry library exposes point conversions and their differentials explicitly. Applications can use them to construct embedded data, and surface components can derive the coordinates needed by their patterns.</p>
-      <p>Coordinate conversion leaves the represented point and geometry unchanged. The renderer stores embedded points, tangents and quaternion-pair maps throughout; choosing ball coordinates for a construction input does not select a different tracing kernel. Bounded ball coordinates approach their ideal boundary as distance grows, while hyperboloid coordinates grow exponentially. The Klein ball makes geodesics straight chords while losing conformality, so angle and material calculations need its metric.</p>
-    </section>
-    <section id="precision"><h2>9. Precision and current limits</h2>
-      <p>No coordinate model gives uniform floating-point precision at the absolute. The boundary is infinitely far away: half-space heights approach zero, ball radii approach one, and hyperboloid coordinates grow without bound. Bounded coordinates alone do not solve cancellation or loss of relative precision.</p>
-      <p>The current implementation:</p><ul><li>Composes canonical camera and object transforms in CPU <code>f64</code>, prepares objects relative to the camera, then uploads checked <code>f32</code> pairs to the GPU.</li><li>Shares embedded advancement, tangent frames and analytic section solvers while preserving necessary zero-curvature and periodic-root cases.</li><li>Rejects transforms and sphere parameters that cannot be represented reliably by the f32 kernel; curved sphere radii must not collapse cosine or hyperbolic cosine to an endpoint or overflow the section equation.</li><li>Uses the same generated WGSL for native WGPU and browser WebGPU rendering.</li></ul>
-      <p><strong>Camera-relative coordinates are implemented</strong> before upload; they keep nearby values moderate without mutating canonical scene data. Recentring later path segments remains future work. Runtime guards detect nonfinite states and invalid manifold/tangent residuals; an emergency hyperbolic step bound prevents exponential overflow. A numerical failure terminates the path, retaining prior emission and adding no environment light. This introduces explicit truncation bias and is not a shorter-distance substitute for the requested path.</p>
-      <p>Accumulated travel is stored as a high multiple of 1024 world units and a separate remainder. Individual block increments remain exact below 2³⁴ total world units, but this bookkeeping range is not a coordinate-accuracy guarantee. Each segment remains f32; phase reduction cannot recover distance bits already lost in a very large segment. Hyperbolic cancellation can become significant far earlier. The <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/GEOMETRY_CONTRACT.md">geometry contract</a> distinguishes the tested envelope, numerical guards, and distance representation.</p>
-      <p>The same generated code targets native WGPU and browser WebGPU. Native numerical tests and viewer smoke tests have been exercised, and the WASM build passes; a headed browser validation of the shared renderer remains outstanding.</p>
-      <p>Each example folder owns its <code>scene.rs</code> and <code>main.rs</code>, including renderer, presenter, and Wgame event-loop setup. The separate <code>hypertrace-gallery</code> package in <code>examples/gallery</code> imports those scenes through its <code>hypertrace_gallery</code> library for the gallery tools. The standalone example package has no library target or gallery dependency and uses the rendering libraries directly.</p>
-      <h3>Read the implementation</h3><ul><li><a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/renderer/src/shaders/embedded.wgsl">Shared isometries, tangent frames and section solvers</a> · <a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__/objects/src/shape/shaders">Component-owned shape shaders</a></li><li><a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/examples/src/bin/hyperbolic/scene.rs">Hyperbolic scene and materials</a> · <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/examples/src/bin/euclidean/scene.rs">Euclidean scene</a> · <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/examples/src/bin/spherical/scene.rs">Spherical studio</a> · <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/examples/src/bin/fog/scene.rs">Euclidean fog scene</a></li><li><a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/renderer/README.md">Renderer contracts and extension points</a></li></ul>
-      <div class="actions"><a class="button" href="viewer/?scene=hyperbolic">Explore hyperbolic space</a><a href="./">Back to the gallery</a></div>
-    </section>
-  </main>
-  <footer><div class="wrap"><span>Hypertrace · Alexey Gerasev</span><span><a href="https://agerasev.github.io/2020/03/12/hypertrace.html">Original article</a> · <a href="previews/manifest.json">Render settings</a></span></div></footer>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Geometry and rendering. Hypertrace, a path tracer for Euclidean, hyperbolic and spherical space.">
+<title>Geometry and rendering · Hypertrace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"></head>
+<body><a class="skip" href="#content">Skip to content</a>
+<header class="wrap"><a class="brand" href="./">Hypertrace</a><nav aria-label="Main"><a href="./">Examples</a><a href="run.html">Run locally</a><a href="theory.html" aria-current="page">Theory</a><a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__">Source</a></nav></header>
+<main id="content" class="wrap"><article class="article">
+<h1>Geometry and rendering</h1>
+<p>Equations use the current renderer’s conventions. <var>K</var> is a curvature sign; <var>R</var> is a physical curvature radius. Source links point to this website’s build.</p>
+<nav class="toc" aria-label="Contents"><strong>Contents</strong><ol>
+<li><a href="#spaces">Three spaces, one ray</a></li><li><a href="#isometries">Quaternion-pair isometries</a></li><li><a href="#charts">Charts and tangent frames</a></li><li><a href="#intersections">Surface intersections</a></li><li><a href="#circuits">Spherical circuits and distance</a></li><li><a href="#tilings">Intrinsic surface tilings</a></li><li><a href="#camera">Camera and sampling</a></li><li><a href="#transport">Light transport</a></li><li><a href="#materials">Surface materials</a></li><li><a href="#fog">Scattering fog</a></li><li><a href="#gpu">Scene compilation and GPU execution</a></li><li><a href="#precision">Precision and limits</a></li><li><a href="#references">References and origins</a></li>
+</ol></nav>
+<section id="spaces"><h2>1. Three spaces, one ray</h2>
+<p>A position is scalar-first <var>P</var> = (<var>w</var>, <var>X</var>) ∈ ℝ⁴. Curved coordinates are normalized by <var>R</var>; physical sectional curvature is <var>K</var>/<var>R</var>².</p>
+<div class="table-scroll"><table><thead><tr><th>Space</th><th>K</th><th>Point constraint</th><th>C<sub>K</sub>(t)</th><th>S<sub>K</sub>(t)</th></tr></thead><tbody>
+<tr><td>Hyperbolic</td><td>−1</td><td>w² − |X|² = 1, w &gt; 0</td><td>cosh t</td><td>sinh t</td></tr>
+<tr><td>Euclidean</td><td>0</td><td>w = 1; R = 1</td><td>1</td><td>t</td></tr>
+<tr><td>Spherical</td><td>+1</td><td>w² + |X|² = 1</td><td>cos t</td><td>sin t</td></tr></tbody></table></div>
+<div class="equation">B<sub>K</sub>((w,X),(z,Y)) = wz + K X·Y<br>C<sub>K</sub>² + K S<sub>K</sub>² = 1, &nbsp; C′<sub>K</sub> = −K S<sub>K</sub>, &nbsp; S′<sub>K</sub> = C<sub>K</sub></div>
+<p>Let <var>V</var> = d<var>P</var>/d<var>t</var>, with normalized travel <var>t</var> = <var>s</var>/<var>R</var>. In curved space, B(P,V) = 0 and B(V,V) = K; in flat space, V = (0,v), |v| = 1.</p>
+<div class="equation"><math display="block"><mtable columnalign="left"><mtr><mtd><mi>P</mi><mo>(</mo><mi>s</mi><mo>)</mo><mo>=</mo><msub><mi>C</mi><mi>K</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><msub><mi>P</mi><mn>0</mn></msub><mo>+</mo><msub><mi>S</mi><mi>K</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><msub><mi>V</mi><mn>0</mn></msub></mtd></mtr><mtr><mtd><mi>V</mi><mo>(</mo><mi>s</mi><mo>)</mo><mo>=</mo><mo>−</mo><mi>K</mi><msub><mi>S</mi><mi>K</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><msub><mi>P</mi><mn>0</mn></msub><mo>+</mo><msub><mi>C</mi><mi>K</mi></msub><mo>(</mo><mi>t</mi><mo>)</mo><msub><mi>V</mi><mn>0</mn></msub></mtd></mtr></mtable></math></div>
+<p>This advances position and direction analytically. No integration steps are needed between events. Curvature-dependent trigonometric functions also appear in <a href="#ref-curvature">Herranz &amp; Ballesteros</a>; the exact conventions above are fixed by the <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/GEOMETRY_CONTRACT.md">geometry contract</a>.</p>
+<div class="worked"><p>From P₀ = (1,0,0,0), V₀ = (0,1,0,0), travel R: hyperbolic P = (cosh 1,sinh 1,0,0); spherical P = (cos 1,sin 1,0,0). Flat travel 1 gives (1,1,0,0).</p></div>
+</section>
+<section id="isometries"><h2>2. Quaternion-pair isometries</h2>
+<p>Camera and object maps share one algebra. Let <var>a,b,c,d</var> be ordinary quaternions and ε a commuting scalar with ε² = K. Write g = a + εb as (a,b).</p>
+<div class="equation">(a,b)(c,d) = (ac + Kbd, ad + bc)<br>|a|² + K|b|² = 1, &nbsp; a·b = 0<br>g⁻¹ = (ā,b̄), &nbsp; g† = (ā,−b̄)</div>
+<p>Embed P = (w,X) as q(P) = ((w,0),(0,X)). The point and tangent action is q ↦ gqg†. Quaternion conjugation is marked with a bar; g† is distinct from the inverse.</p>
+<div class="equation">translation(n,s) = (C<sub>K</sub>(s/2R), n S<sub>K</sub>(s/2R))<br>rotation(n,θ) = ((cos(θ/2), n sin(θ/2)), 0)</div>
+<p>Here n is a unit pure quaternion in the translation expression. Composition is outer × inner; g and −g act identically. This framework is described by <a href="#ref-quaternions">Arizmendi &amp; Pérez-de la Rosa</a>.</p>
+<p>With camera pose C and object pose O, the CPU prepares C⁻¹O in f64 before checked f32 upload. Rays start at the canonical origin; canonical world maps stay unchanged during camera motion.</p>
+</section>
+<section id="charts"><h2>3. Charts and tangent frames</h2>
+<p>The hyperboloid is used for tracing. Poincaré ball and upper-half-space coordinates remain useful local charts, especially for tilings.</p>
+<div class="equation">b = X/(w+1), &nbsp; |b| &lt; 1<br>h = (X<sub>x</sub>, X<sub>y</sub>, 1)/(w−X<sub>z</sub>), &nbsp; h<sub>z</sub> &gt; 0<br>P(h) = ((|h|²+1)/(2h<sub>z</sub>), h<sub>x</sub>/h<sub>z</sub>, h<sub>y</sub>/h<sub>z</sub>, (|h|²−1)/(2h<sub>z</sub>))</div>
+<div class="equation">ds² = 4R² |db|²/(1−|b|²)² = R² |dh|²/h<sub>z</sub>²</div>
+<p>Changing chart does not change geometry. A unit coordinate offset in half-space has a different physical size at different heights.</p>
+<p>Materials operate in a 3D orthonormal tangent frame. A local unit direction d becomes:</p>
+<div class="table-scroll"><table><thead><tr><th>Space</th><th>F<sub>P</sub>(d)</th></tr></thead><tbody>
+<tr><td>Euclidean</td><td>(0,d)</td></tr><tr><td>Hyperbolic</td><td>(X·d, d + X(X·d)/(w+1))</td></tr><tr><td>Spherical</td><td>P ⊗ (0,d), interpreting P as a unit quaternion</td></tr></tbody></table></div>
+<p>The spherical frame is defined at antipodes too. Reflection, refraction, and diffuse sampling use local Euclidean dot products; the outgoing tangent is then transported back into the tracing frame.</p>
+</section>
+<section id="intersections"><h2>4. Surface intersections</h2>
+<p>Transform the ray into each object’s local frame, solve its surface equation, and select the least valid forward distance. Built-in curved surfaces reduce to one section equation:</p>
+<div class="equation">a C<sub>K</sub>(t) + b S<sub>K</sub>(t) = c, &nbsp; s = Rt</div>
+<div class="table-scroll"><table><thead><tr><th>Local surface</th><th>Equation</th></tr></thead><tbody>
+<tr><td>Geodesic plane</td><td>z = 0</td></tr><tr><td>Curved sphere, radius r</td><td>w = C<sub>K</sub>(r/R)</td></tr><tr><td>Hyperbolic horosphere</td><td>w − z = 1</td></tr><tr><td>Euclidean sphere</td><td>|X|² = r²; solve the usual quadratic</td></tr><tr><td>Euclidean cube</td><td>Intersect six bounded plane faces</td></tr></tbody></table></div>
+<div class="equation">K = 0: &nbsp; t = (c−a)/b<br>K = −1: &nbsp; (a+b)u² − 2cu + (a−b) = 0, &nbsp; u = eᵗ &gt; 0<br>K = +1: &nbsp; t = φ ± arccos(c/A) + 2πn,<br>&emsp;A = √(a²+b²), &nbsp; φ = atan2(b,a)</div>
+<p>The implementation handles degeneracies and stable root evaluation. Roots belong to [minimum, maximum); a coplanar ray has no isolated plane crossing. A tangent sphere contact may be a valid root.</p>
+<p>The previous leaf gets a small positive minimum distance to suppress immediate self-hits. Its later intersections remain eligible. A numerical failure is a separate result from a miss and stops the path without adding environment light.</p>
+<p><a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/renderer/src/shaders/embedded.wgsl">Geometry kernel</a> · <a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__/objects/src/shape">Surface implementations</a></p>
+</section>
+<section id="circuits"><h2>5. Spherical circuits and distance</h2>
+<div class="equation">P(s + 2πR) = P(s), &nbsp; V(s + 2πR) = V(s)<br>s<sub>event</sub> = R(φ + 2πn), &nbsp; n = ceil((s<sub>min</sub>/R − φ)/(2π))</div>
+<p>Here φ is a candidate phase modulo 2π. Choose n so the lifted candidate lies in the query interval. Coordinates can repeat; travelled distance cannot be reduced modulo a circuit.</p>
+<figure class="diagram"><svg viewBox="0 0 880 245" role="img" aria-labelledby="circuits-title circuits-desc"><title id="circuits-title">Periodic position and nonperiodic travel</title><desc id="circuits-desc">One great circle on the left. On the right, the same phase is marked after zero, one, and two full circuits along a forward travel axis.</desc>
+<circle class="line" cx="120" cy="110" r="76"/><path class="accent" d="M196 110 A76 76 0 1 0 120 186"/><path class="accent" d="M110 178 L120 186 L108 193"/><circle class="dot" cx="196" cy="110" r="5"/><text x="72" y="218">great circle</text>
+<path class="line" d="M280 110 H840 M830 104 L840 110 L830 116"/>
+<path class="line" d="M320 102 V118 M500 102 V118 M680 102 V118"/>
+<text x="312" y="143">0</text><text x="481" y="143">2πR</text><text x="661" y="143">4πR</text>
+<circle class="dot" cx="360" cy="110" r="5"/><circle class="dot" cx="540" cy="110" r="5"/><circle class="dot" cx="720" cy="110" r="5"/>
+<text x="342" y="81">Rφ</text><text x="492" y="81">Rφ + 2πR</text><text x="672" y="81">Rφ + 4πR</text><text x="350" y="194">same position and tangent; different travel</text>
+</svg><figcaption>A great circle is a ray’s trajectory in S³; the drawing is a 2D schematic.</figcaption></figure>
+<div class="worked"><p>At R = 1, a flight of 4π + 0.2 ends at phase 0.2. For extinction σ<sub>t</sub> = 0.1, survival is e<sup>−0.1(4π+0.2)</sup> ≈ 0.279, not e<sup>−0.02</sup> ≈ 0.980.</p></div>
+<p>Opaque surfaces intercept the first eligible crossing. Longer flights arise on unobstructed paths or through repeated transmission and scattering events.</p>
+</section>
+<section id="tilings"><h2>6. Intrinsic surface tilings</h2>
+<p>Surface curvature determines the pattern’s domain, independently of the surrounding space.</p>
+<div class="table-scroll"><table><thead><tr><th>Surface</th><th>Intrinsic domain</th><th>Patterns</th></tr></thead><tbody>
+<tr><td>Euclidean plane; hyperbolic horosphere</td><td>Flat plane</td><td>Square, hexagonal</td></tr><tr><td>Hyperbolic geodesic plane</td><td>Hyperbolic plane</td><td>Pentagons, pentagonal stars</td></tr><tr><td>Round ball in any space; spherical geodesic plane</td><td>Round 2-sphere</td><td>Five Platonic families, lunes, dihedra</td></tr></tbody></table></div>
+<figure class="diagram"><svg viewBox="0 0 880 120" role="img" aria-labelledby="tiling-title"><title id="tiling-title">Tiling evaluation pipeline</title><rect class="box" x="12" y="25" width="180" height="64"/><rect class="box" x="242" y="25" width="180" height="64"/><rect class="box" x="472" y="25" width="180" height="64"/><rect class="box" x="702" y="25" width="164" height="64"/><path class="line" d="M193 57 H236 M228 51 L236 57 L228 63 M423 57 H466 M458 51 L466 57 L458 63 M653 57 H696 M688 51 L696 57 L688 63"/><text x="32" y="63">local hit position</text><text x="263" y="63">surface chart</text><text x="492" y="63">tile / border ID</text><text x="721" y="63">child material</text></svg></figure>
+<p>A ball of geodesic radius r has intrinsic sphere radius a = R S<sub>K</sub>(r/R), or a = r in flat space. Its chart is the unit spatial direction X/|X|. The spherical plane uses its unit (w,x,y) coordinates.</p>
+<div class="equation">regular {p,q}: &nbsp; 1/p + 1/q &gt; 1/2<br>pF = 2E, &nbsp; qV = 2E, &nbsp; V−E+F = 2<br>F = 4q/(2p+2q−pq)</div>
+<div class="table-scroll"><table><thead><tr><th>Family</th><th>{p,q}</th><th>Faces</th></tr></thead><tbody><tr><td>Tetrahedral</td><td>{3,3}</td><td>4</td></tr><tr><td>Cubic</td><td>{4,3}</td><td>6</td></tr><tr><td>Octahedral</td><td>{3,4}</td><td>8</td></tr><tr><td>Dodecahedral</td><td>{5,3}</td><td>12</td></tr><tr><td>Icosahedral</td><td>{3,5}</td><td>20</td></tr></tbody></table></div>
+<h3>Pattern evaluation</h3>
+<div class="equation">square chart: &nbsp; g = (x,y)/cell, &nbsp; tile = floor(g)<br>distance to nearest grid edge = cell · min(fract(g), 1−fract(g))</div>
+<p>For squares, compare either coordinate’s edge distance with the border half-width. Hexagons use three linear edge forms in lattice coordinates; the shader scales the threshold by their gradient magnitude, 4/(3·cell), to keep the border width physical.</p>
+<p>Hyperbolic pentagons fold the hit into a reference cell using embedded isometries. Half-space coordinates classify its sides. For side normal e and boundary offset l, the border test is e·h<sub>xy</sub> &gt; l − width·h<sub>z</sub>; star patterns add internal side tests and parity changes. The height factor accounts for the chart’s local metric scale.</p>
+<p>Regular spherical tiles are Voronoi regions of face-center directions: select the largest dot product. Great-circle bisectors define their borders. Lunes use meridians; dihedra add an equatorial division.</p>
+<p>Flat cell sizes and border half-widths are physical lengths; hyperbolic pentagon widths are curvature-normalized; spherical border widths are angles in radians. Map the whole object to carry its material chart; mapping only its shape keeps the outer material frame.</p>
+<p><a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__/objects/src/object/tiling">Spherical selectors</a> · <a href="run.html#other-examples">Run the ball-tilings example</a></p>
+</section>
+<section id="camera"><h2>7. Camera and sampling</h2>
+<p>A pinhole camera looks along local −z. For pixel (i,j), image W×H, independent uniform offsets ξ<sub>x</sub>,ξ<sub>y</sub> ∈ [0,1):</p>
+<div class="equation">x = (2(i+ξ<sub>x</sub>)−W)/H, &nbsp; y = (H−2(j+ξ<sub>y</sub>))/H<br>d = normalize(x, y, −1/f), &nbsp; vertical FOV = 2 arctan f<br>P₀ = (1,0,0,0), &nbsp; V₀ = (0,d)</div>
+<p>Pixel jitter performs stochastic antialiasing. Each pixel keeps its own pseudorandom state across dispatches. Translation uses physical distances and the scene radius; camera movement resets accumulated samples.</p>
+</section>
+<section id="transport"><h2>8. Light transport</h2>
+<p>Paths start at the camera and follow geodesics between events. At a surface, the rendering equation is evaluated in its local tangent frame:</p>
+<div class="equation"><math display="block"><msub><mi>L</mi><mi>o</mi></msub><mo>=</mo><msub><mi>L</mi><mi>e</mi></msub><mo>+</mo><msub><mo>∫</mo><mi>Ω</mi></msub><msub><mi>f</mi><mi>r</mi></msub><mo>(</mo><msub><mi>ω</mi><mi>i</mi></msub><mo>,</mo><msub><mi>ω</mi><mi>o</mi></msub><mo>)</mo><msub><mi>L</mi><mi>i</mi></msub><mo>(</mo><msub><mi>ω</mi><mi>i</mi></msub><mo>)</mo><mo>|</mo><mi>n</mi><mo>·</mo><msub><mi>ω</mi><mi>i</mi></msub><mo>|</mo><mspace width="0.2em"/><mi mathvariant="normal">d</mi><msub><mi>ω</mi><mi>i</mi></msub></math></div>
+<p>Maintain RGB throughput β and accumulated radiance L. A sampled direction with density p updates β by f<sub>r</sub>|n·ω|/p; an emitter contributes βL<sub>e</sub>. See <a href="#ref-paths">PBRT’s path tracing chapter</a> for the general estimator.</p>
+<figure class="diagram"><svg viewBox="0 0 880 340" role="img" aria-labelledby="transport-title transport-desc"><title id="transport-title">One path step</title><desc id="transport-desc">Find the nearest surface and sample fog distance. Advance to the earlier event. Scatter at a volume or surface; a miss adds environment light. Repeat while the event budget remains.</desc><rect class="box" x="20" y="30" width="220" height="70"/><text x="38" y="59">Nearest surface distance</text><text x="38" y="82">Sample fog free flight</text><path class="line" d="M240 65 H298 M290 59 L298 65 L290 71"/><rect class="box" x="300" y="30" width="225" height="70"/><text x="320" y="59">Choose earlier event</text><text x="320" y="82">Advance P, V, travel</text><path class="line" d="M525 65 H580 V260 M580 80 H625 M580 170 H625 M580 260 H625"/><rect class="box" x="625" y="45" width="230" height="70"/><text x="643" y="74">Volume: β ← βω</text><text x="643" y="97">Sample new direction</text><rect class="box" x="625" y="135" width="230" height="70"/><text x="643" y="164">Surface: add emission</text><text x="643" y="187">Sample material</text><rect class="box" x="625" y="225" width="230" height="70"/><text x="643" y="254">Miss: add βL(environment)</text><text x="643" y="277">Stop</text><path class="line" d="M740 115 V124 H130 V106 M124 114 L130 106 L136 114 M625 185 H535 V310 H130 V124"/><text x="181" y="288">Continue until absorption or event budget</text></svg></figure>
+<p>A miss adds background radiance; a black background adds zero. Reaching the finite event budget returns emission collected so far. Both surface and volume events consume that budget.</p>
+<h3>Why curvature changes illumination</h3>
+<div class="equation">area of radius-r wavefront = 4π [R S<sub>K</sub>(r/R)]²<br>flat limit: &nbsp; 4πr²</div>
+<p>Hyperbolic ray bundles spread faster; spherical bundles refocus at antipodes. The sampler follows that geometry through its rays. It does not multiply transported radiance by an extra inverse-square factor.</p>
+<p>The current integrator samples camera paths only: no explicit light sampling, multiple importance sampling, bidirectional paths, or Russian roulette. Small emitters and caustics therefore converge slowly.</p>
+</section>
+<section id="materials"><h2>9. Surface materials</h2>
+<div class="table-scroll"><table><thead><tr><th>Component</th><th>Update</th></tr></thead><tbody>
+<tr><td>Lambertian, reflectance ρ</td><td>f<sub>r</sub> = ρ/π; cosine density p = cosθ/π; β ← βρ</td></tr>
+<tr><td>Specular</td><td>d′ = d − 2(d·n)n</td></tr><tr><td>Transparent</td><td>Continue along the same tangent</td></tr><tr><td>Absorbing</td><td>Terminate the path</td></tr><tr><td>Colored wrapper</td><td>β ← β ⊙ color</td></tr><tr><td>Emissive wrapper</td><td>L ← L + β ⊙ emission; then evaluate child</td></tr><tr><td>Mixture</td><td>Choose child i with probability w<sub>i</sub>/Σw</td></tr></tbody></table></div>
+<p>For refraction, orient unit n against incoming unit d, let c = −d·n and η = n<sub>in</sub>/n<sub>out</sub>:</p>
+<div class="equation">k = 1 − η²(1−c²)<br>d′ = ηd + (ηc − √k)n &nbsp; when k &gt; 0<br>k ≤ 0: total internal reflection</div>
+<p>The shader uses a small numerical band near k = 0. Its glass model applies Snell refraction or total internal reflection, without Fresnel probabilities, an η² radiance correction, or a stack of nested media. Colored glass tints each interface interaction.</p>
+<p>Wrappers execute in nesting order. Emission outside a color wrapper is added before that color; emission inside is affected by it. Mixtures retain their own random draws; their weights describe the material mixture itself.</p>
+<p><a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__/objects/src/material">Material implementations</a></p>
+</section>
+<section id="fog"><h2>10. Scattering fog</h2>
+<p>The scene-wide homogeneous medium has extinction σ<sub>t</sub> ≥ 0 (inverse physical length) and RGB scattering albedo ω ∈ [0,1]³.</p>
+<div class="equation">σ<sub>s</sub> = ωσ<sub>t</sub>, &nbsp; σ<sub>a</sub> = (1−ω)σ<sub>t</sub><br>T(s) = exp(−σ<sub>t</sub>s), &nbsp; p(s) = σ<sub>t</sub> exp(−σ<sub>t</sub>s)</div>
+<div class="equation"><math display="block"><msub><mi>s</mi><mi>fog</mi></msub><mo>=</mo><mo>−</mo><mfrac><mrow><mi>ln</mi><mo>(</mo><mn>1</mn><mo>−</mo><mi>u</mi><mo>)</mo></mrow><msub><mi>σ</mi><mi>t</mi></msub></mfrac><mo>,</mo><mspace width="1em"/><mn>0</mn><mo>&lt;</mo><mi>u</mi><mo>&lt;</mo><mn>1</mn></math></div>
+<p>If s<sub>fog</sub> &lt; s<sub>surface</sub>, advance to the volume event, multiply β by ω, and sample a uniform unit-sphere direction. The isotropic phase function and direction density are both 1/(4π), so their ratio is one.</p>
+<div class="equation">Pr(no volume event before s) = exp(−σ<sub>t</sub>s) = T(s)</div>
+<p>Survival is already represented by the sampled free flight. Multiplying by T again would count attenuation twice. A surface miss gives an unbounded medium interval, including in spherical space.</p>
+<div class="worked"><p>σ<sub>t</sub> = 0: vacuum. ω = 0: pure absorption. ω &gt; 0 with a nearby emitter: scattered glow. No emitters and a black background: black, regardless of fog density.</p></div>
+<p>There is no fog emission. The current medium is homogeneous, isotropic, and also present inside glass; per-object medium boundaries are not implemented. <a href="#ref-volume">PBRT’s volume integrators</a> cover more general media and sampling methods.</p>
+<p><a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/renderer/src/shaders/transport.wgsl">Free-flight and distance code</a> · <a href="fog.html">Fog example</a></p>
+</section>
+<section id="gpu"><h2>11. Scene compilation and GPU execution</h2>
+<pre><code>Typed Rust components (geometry G preserved)
+  → validate every instance and encode parameter words
+  → link component-owned shader dependencies
+  → compile WGSL pipeline + upload scene buffers
+  → 8 × 8 compute workgroups: sample paths per pixel
+  → accumulate linear RGB and sample count
+  → divide by count, apply display gamma, present</code></pre>
+<p>Shapes and materials provide their own shader modules and parameter encoders. The compiler deduplicates shader structure; values and vector lengths stay data. A new component follows the same extension path as the built-ins. GPU dispatch IDs are compiled data.</p>
+<p>At each event the renderer currently scans the scene’s objects; there is no spatial acceleration structure. Camera-relative maps, material records, parameter words, pixel sums, and random states live in GPU buffers.</p>
+<div class="equation">L̄<sub>N</sub> = (1/N) Σ<sub>i=1…N</sub> L<sub>i</sub><br>display = clamp(max(0,L̄<sub>N</sub>)<sup>1/2.2</sup>, 0, 1)<br>Monte Carlo error ∝ 1/√N &nbsp; (finite-variance regime)</div>
+<p>Linear samples are averaged before display conversion. There is no denoiser or tone mapper. Four times as many samples roughly halves sampling noise, while camera movement discards the previous view’s accumulation.</p>
+<p><a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/scene/src/compiler.rs">Scene compiler</a> · <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/renderer/src/shaders/trace.wgsl">Path tracer</a> · <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/renderer/tests/extensions.rs">Downstream extension example</a></p>
+</section>
+<section id="precision"><h2>12. Precision and limits</h2>
+<ul><li><strong>f64 construction, f32 tracing.</strong> Camera-relative composition improves nearby precision. Very large hyperbolic coordinates still lose accuracy through cancellation.</li>
+<li><strong>Forward travel.</strong> Distance uses 1024-unit blocks plus a remainder. Exact block increments below 2³⁴ world units do not imply accurate geometry over that range.</li>
+<li><strong>Resolved roots.</strong> Tangency classification uses a coefficient-scaled error band. Tiny spheres or unresolved tile coordinates are rejected or terminate the sample.</li>
+<li><strong>Finite paths.</strong> Event-budget and numerical termination introduce bias. More samples reduce noise, not that bias.</li>
+<li><strong>Finite storage.</strong> Headless renders must fit device storage-binding limits. Windowed viewers can reduce render resolution and scale presentation.</li></ul>
+<p>The <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/GEOMETRY_CONTRACT.md">geometry contract</a> records numerical envelopes and invariants; <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/DEVELOPMENT.md">development notes</a> list validation procedures and outstanding limitations.</p>
+</section>
+<section id="references"><h2>13. References and origins</h2>
+<ol><li id="ref-game"><strong>Mrrl (2013).</strong> <a href="https://habr.com/ru/articles/168421/">Жизнь на плоскости Лобачевского — Game of Life on the Lobachevsky plane</a> (Russian). The original game and geometry article that inspired Hypertrace.</li>
+<li id="ref-original"><strong>Alexey Gerasev (2020).</strong> <a href="https://agerasev.github.io/2020/03/12/hypertrace.html">Hypertrace: the original project article</a>. Historical half-space formulation and <a href="https://www.youtube.com/watch?v=LGWusRNcJ6A">video</a>; the current implementation uses the unified representation above.</li>
+<li id="ref-quaternions"><strong>Gerardo Arizmendi &amp; Marco Antonio Pérez-de la Rosa (2019).</strong> <a href="https://arxiv.org/abs/1906.11370">Some extensions of quaternions and symmetries of simply connected space forms</a>. Unified algebraic treatment of isometries using extensions of quaternions.</li>
+<li id="ref-curvature"><strong>Francisco José Herranz &amp; Ángel Ballesteros (2006).</strong> <a href="https://www.maths.tcd.ie/EMIS/journals/SIGMA/2006/Paper010/sigma06-010.pdf">Superintegrability on Three-Dimensional Riemannian and Relativistic Spaces of Constant Curvature</a>, SIGMA 2, 010. Curvature-dependent trigonometric functions and ambient coordinates; not a rendering paper.</li>
+<li id="ref-paths"><strong>Matt Pharr, Wenzel Jakob &amp; Greg Humphreys (2023).</strong> <a href="https://pbr-book.org/4ed/Light_Transport_I_Surface_Reflection/Path_Tracing">Physically Based Rendering, 4th edition: Path Tracing</a>. Surface transport and Monte Carlo path estimators.</li>
+<li id="ref-volume"><strong>Pharr, Jakob &amp; Humphreys (2023).</strong> <a href="https://pbr-book.org/4ed/Light_Transport_II_Volume_Rendering/Volume_Scattering_Integrators">Physically Based Rendering: Volume Scattering Integrators</a>. Free-flight sampling and participating media.</li>
+<li><strong>Implementation references.</strong> <a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__">Hypertrace source at the published revision</a>, <a href="https://docs.rs/ccgeom/0.1.1/ccgeom/">ccgeom 0.1.1</a>, and <a href="https://docs.rs/vecmat/0.7.9/vecmat/">vecmat 0.7.9</a>. Equations on this page describe these implementation conventions; cited works use their own notation.</li></ol>
+</section></article></main>
+<footer class="wrap">Hypertrace · Alexey Gerasev · <a href="theory.html#references">References</a> · <a href="previews/manifest.json">Render settings</a></footer></body></html>

@@ -4,7 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#10151e">
-  <title>Hypertrace · Explore curved space</title>
+  <title>Hypertrace viewer</title>
+  <link data-trunk rel="copy-file" href="bootstrap.js">
+  <script src="bootstrap.js"></script>
   <link rel="icon" href="data:,">
   <link data-trunk rel="rust" href="../Cargo.toml" data-bin="viewer" data-wasm-opt="0">
   <style>
@@ -17,6 +19,7 @@
     .title { margin-right: auto; }
     .title p { color: #9caec3; margin: 3px 0 0; font-size: 12px; }
     .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    a { color: #a2d9f2; }
     label { display: flex; align-items: center; gap: 6px; color: #acbdd0; }
     button, select { font: inherit; padding: 7px 10px; border: 1px solid #3a485c; border-radius: 6px; background: #1c2737; color: #e6edf5; }
     button { cursor: pointer; }
@@ -39,7 +42,7 @@
 </head>
 <body>
   <header>
-    <div class="title"><h1>Hypertrace</h1><p>Light in Euclidean, hyperbolic &amp; spherical space</p></div>
+    <div class="title"><h1>Hypertrace</h1><p><a href="../run.html" target="_top">Build and run locally</a></p></div>
     <div class="controls" aria-label="Scene controls">
       <label>Example <select id="scene" aria-describedby="example-description" disabled><option value="">Loading examples…</option></select></label>
       <label>Quality <select id="resolution"><option value="640">Fast</option><option value="960" selected>Balanced</option><option value="1440">Sharp</option><option value="0">Full resolution</option></select></label>

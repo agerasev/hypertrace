@@ -176,7 +176,7 @@ async fn render_loop<G: Geometry>(
     #[cfg(target_arch = "wasm32")]
     let mut samples = 0u64;
     #[cfg(target_arch = "wasm32")]
-    web::set_status("Ready · click the scene to explore", false);
+    web::set_ready();
     while let Some(mut frame) = window.next_frame().await? {
         let now = Instant::now();
         // Integrate elapsed time, bounding a stalled/minimized window's first
@@ -273,7 +273,7 @@ async fn render_loop<G: Geometry>(
             #[cfg(target_arch = "wasm32")]
             {
                 samples = 0;
-                web::set_status("Ready · click the scene to explore", false);
+                web::set_ready();
             }
         }
         let key = |letter| input.key_down(Key::Character(letter));
@@ -321,7 +321,7 @@ async fn render_loop<G: Geometry>(
                     {
                         samples = 0;
                         if motion_blocked {
-                            web::set_status("Ready · click the scene to explore", false);
+                            web::set_ready();
                         }
                     }
                     motion_blocked = false;

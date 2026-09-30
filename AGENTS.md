@@ -200,3 +200,13 @@ history in commits, not new migration diaries.
 - Published previews retain their own render revision, dimensions, settings and
   image hash. Updating the viewer must not relabel older images with new source
   revisions; preserve an approved PNG verbatim and never upscale its derivatives.
+- Keep the website factual, with native build/run instructions as the primary
+  route. Embedded viewers start on request, report real initialization failures,
+  link to native instructions, and pause when hidden or offscreen. Verify parent
+  message origins and sources. A successful web build is not execution evidence.
+- Theory should cover the implemented mechanics with concise prose, equations,
+  diagrams, and primary references. Distinguish historical inspiration and general
+  algorithms from current implementation choices and limitations.
+- Long GPU captures need bounded dispatches as well as bounded queue depth.
+  Record batch and camera settings for reproduction. Do not remove build caches
+  or replace executables still used by an active capture pipeline.

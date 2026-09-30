@@ -48,6 +48,7 @@ cargo test --workspace --doc
 cargo clippy --workspace --all-targets -- -D warnings
 python3 -m unittest discover -s tools -p 'test_*.py'
 node examples/gallery/web/controls.test.cjs
+node site/example.test.cjs
 ```
 
 GPU tests are ignored by ordinary Cargo test runs. They fail if no suitable

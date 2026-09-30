@@ -12,6 +12,7 @@ extern "C" {
     pub fn take_reset() -> bool;
     pub fn paused() -> bool;
     pub fn toggle_pause();
+    pub fn set_ready();
     pub fn set_status(message: &str, error: bool);
     pub fn set_stats(width: u32, height: u32, samples: f64);
 }

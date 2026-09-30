@@ -5,7 +5,8 @@ const vm = require('node:vm');
 
 function fixture() {
     class Element {
-        constructor() { this.listeners = new Map(); this.textContent = ''; }
+        constructor() { this.listeners = new Map(); this.textContent = ''; this.dataset = {}; }
+        setAttribute() {}
         addEventListener(name, callback) {
             const listeners = this.listeners.get(name) ?? [];
             listeners.push(callback);
@@ -30,7 +31,9 @@ function fixture() {
         if (!elements.has(id)) elements.set(id, new Element());
         return elements.get(id);
     };
+    document.querySelectorAll = () => [];
     const window = new Element();
+    window.parent = { messages: [], postMessage(data, origin) { this.messages.push({ data, origin }); } };
     const canvas = document.querySelector('#canvas');
     let requests = 0;
     canvas.requestPointerLock = () => { requests++; };
@@ -38,7 +41,7 @@ function fixture() {
         document.pointerLockElement = null;
         document.dispatch('pointerlockchange');
     };
-    const context = vm.createContext({ document, window, URLSearchParams, location: { search: '' } });
+    const context = vm.createContext({ document, window, URLSearchParams, location: { search: '', origin: 'https://example.test' } });
     const source = readFileSync(`${__dirname}/controls.js`, 'utf8').replace(/^export /gm, '');
     vm.runInContext(source, context);
     return {
@@ -125,4 +128,34 @@ test('Shift-Tab keeps keyboard navigation available; hidden pages release captur
     f.document.hidden = true;
     f.document.dispatch('visibilitychange');
     assert.equal(f.context.mouse_locked(), false);
+});
+
+
+test('only the embedding parent can pause the renderer; hidden documents stay paused', () => {
+    const f = fixture();
+    const event = { origin: 'https://example.test', source: f.window.parent,
+        data: { type: 'hypertrace-visibility', hidden: true } };
+    assert.equal(f.context.paused(), false);
+    f.window.dispatch('message', { ...event, origin: 'https://untrusted.test' });
+    f.window.dispatch('message', { ...event, source: {} });
+    assert.equal(f.context.paused(), false);
+    f.tab(); f.grant();
+    f.window.dispatch('message', event);
+    assert.equal(f.context.paused(), true);
+    assert.equal(f.context.mouse_locked(), false);
+    f.window.dispatch('message', { ...event, data: { ...event.data, hidden: false } });
+    assert.equal(f.context.paused(), false);
+    f.document.hidden = true;
+    assert.equal(f.context.paused(), true);
+});
+
+test('ready and failure states propagate to the embedding page', () => {
+    const f = fixture();
+    f.context.set_ready();
+    assert.equal(f.window.parent.messages.at(-1).data.state, 'ready');
+    f.context.set_status('No compatible adapter', true);
+    const message = f.window.parent.messages.at(-1);
+    assert.equal(message.data.state, 'error');
+    assert.equal(message.data.message, 'No compatible adapter');
+    assert.equal(message.origin, 'https://example.test');
 });

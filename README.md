@@ -10,7 +10,8 @@ camera movement and GPU tracing all use embedded points and quaternion-pair
 isometries. Hyperbolic points lie on the hyperboloid; half-space and Poincaré-ball
 coordinates are explicit charts for construction and surface patterns.
 
-[Scene gallery and web demos](https://agerasev.github.io/hypertrace/) ·
+[Examples and screenshots](https://agerasev.github.io/hypertrace/) ·
+[Build and run locally](https://agerasev.github.io/hypertrace/run.html) ·
 [Theory](https://agerasev.github.io/hypertrace/theory.html) ·
 [Original video](https://www.youtube.com/watch?v=LGWusRNcJ6A)
 

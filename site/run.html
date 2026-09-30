@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Run locally. Hypertrace, a path tracer for Euclidean, hyperbolic and spherical space.">
+<title>Run locally · Hypertrace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"></head>
+<body><a class="skip" href="#content">Skip to content</a>
+<header class="wrap"><a class="brand" href="./">Hypertrace</a><nav aria-label="Main"><a href="./">Examples</a><a href="run.html" aria-current="page">Run locally</a><a href="theory.html">Theory</a><a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__">Source</a></nav></header>
+<main id="content" class="wrap"><article class="article">
+<h1>Build and run locally</h1>
+<p>The native examples are the main way to explore Hypertrace. Each is a standalone Rust application with its own scene and event loop.</p>
+<section id="requirements"><h2>Requirements</h2>
+<ul><li>Git and the current stable Rust toolchain, including Cargo. Install Rust with <a href="https://rustup.rs/">rustup</a>.</li>
+<li>A native compiler and linker: Visual Studio C++ build tools on Windows, Xcode command-line tools on macOS, or your Linux distribution’s C/C++ development tools and <code>pkg-config</code>. See the <a href="https://rust-lang.github.io/rustup/installation/other.html">Rust installation guide</a>.</li>
+<li>A GPU and driver exposing compute shaders and storage buffers through Vulkan, Metal, or DirectX 12. Native windows use X11 or Wayland on Linux. Software Vulkan can render but may be much slower.</li>
+<li>Network access for the first Cargo build. External libraries, including <code>vecmat</code>, <code>ccgeom</code>, and <code>wgame</code>, come from crates.io; no sibling repositories are required.</li></ul>
+<p>Native validation has covered Intel Arc Vulkan and Mesa’s llvmpipe software Vulkan. Other drivers and operating systems may need platform-specific setup.</p></section>
+<section id="build"><h2>Get the source</h2>
+<pre><code>git clone https://github.com/agerasev/hypertrace.git
+cd hypertrace
+# Use the exact source revision published with this website:
+git fetch origin gh-pages
+git checkout __SOURCE_COMMIT__</code></pre>
+<p>The first run compiles the application. Use <code>--release</code> for interactive rendering.</p></section>
+<section id="hyperbolic"><h2>Hyperbolic space</h2><pre><code>cargo run --release -p hypertrace-examples --bin hyperbolic</code></pre><p><a href="hyperbolic.html">Scene, screenshots, and observations</a></p></section>
+<section id="euclidean"><h2>Euclidean space</h2><pre><code>cargo run --release -p hypertrace-examples --bin euclidean</code></pre><p><a href="euclidean.html">Scene, screenshots, and observations</a></p></section>
+<section id="spherical"><h2>Spherical space</h2><pre><code>cargo run --release -p hypertrace-examples --bin spherical</code></pre><p><a href="spherical.html">Scene, screenshots, and observations</a></p></section>
+<section id="fog"><h2>Euclidean fog</h2><pre><code>cargo run --release -p hypertrace-examples --bin fog</code></pre><p><a href="fog.html">Scene, screenshots, and observations</a></p></section>
+<section id="controls"><h2>Controls</h2><div class="table-scroll"><table><thead><tr><th>Input</th><th>Action</th></tr></thead><tbody>
+<tr><td>WASD / arrow keys</td><td>Move forward, backward, and sideways</td></tr><tr><td>Space / C</td><td>Move up / down</td></tr><tr><td>Left-drag</td><td>Look around</td></tr><tr><td>Tab</td><td>Lock or release the mouse</td></tr><tr><td>Q / E</td><td>Roll</td></tr><tr><td>Scroll</td><td>Change field of view</td></tr><tr><td>R</td><td>Reset camera</td></tr><tr><td>Escape</td><td>Close the native example</td></tr>
+</tbody></table></div><p>Stop moving to let samples accumulate. Fog, small lights, and caustics need more samples than directly lit surfaces. Changing the camera resets accumulation.</p></section>
+<section id="other-examples"><h2>Other examples and scene editing</h2><pre><code>cargo run --release -p hypertrace-examples --bin ball-tilings
+cargo run --release -p hypertrace-gallery --bin viewer -- --list-scenes</code></pre>
+<p>Edit <code>examples/src/bin/&lt;name&gt;/scene.rs</code> to change objects and materials; <code>main.rs</code> shows renderer initialization and camera input. <a href="https://github.com/agerasev/hypertrace/blob/__SOURCE_COMMIT__/examples/README.md">The example guide</a> describes all demonstrations and how to create your own.</p></section>
+<section id="headless"><h2>Render a still image</h2>
+<pre><code>cargo run --release -p hypertrace-gallery --bin headless -- \
+  --scene spherical --width 2560 --height 1920 --samples 4096 --batch 1 \
+  --seed 3735928559 --output spherical</code></pre>
+<p>This writes <code>spherical.ppm</code>, linear <code>spherical.rgba32f</code>, and <code>spherical.json</code>. For a detail view, add <code>--fov 0.6 --yaw 0.2 --pitch 0.1</code>. Angles are local offsets in radians; <code>fov</code> is tan(vertical field of view / 2). Camera settings are included in the JSON.</p>
+<p>Gallery images link to their exact settings and source revision. Earlier captures can differ from the current scene. To reproduce one, check out its recorded revision and use its recorded scene ID, dimensions, sample count, seed, event budget, and camera settings.</p></section>
+<section id="troubleshooting"><h2>If rendering does not start</h2><ul>
+<li><strong>No suitable adapter:</strong> update the graphics driver and check that a compute-capable device is exposed. For native troubleshooting, select an available WGPU backend, for example <code>WGPU_BACKEND=vulkan cargo run --release -p hypertrace-examples --bin spherical</code> on Linux.</li>
+<li><strong>Driver resets during a long capture:</strong> use <code>--batch 1</code> to reduce individual dispatch duration.</li>
+<li><strong>Requested image exceeds storage limits:</strong> reduce headless width and height. Windowed viewers fit the render resolution to the device and scale the result for display.</li>
+<li><strong>Mouse capture denied:</strong> left-drag remains available; release capture in another application and retry Tab.</li>
+<li><strong>Browser viewer unavailable:</strong> each example reports its startup failure and links here. WebGPU requires a secure context and a supporting browser/driver configuration. Native running uses the commands above; no browser, Trunk, or WebAssembly installation is needed.</li></ul></section>
+</article></main>
+<footer class="wrap">Hypertrace · Alexey Gerasev · <a href="theory.html#references">References</a> · <a href="previews/manifest.json">Render settings</a></footer></body></html>

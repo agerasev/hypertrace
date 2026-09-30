@@ -1,42 +1,8 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Explore geometry and light with Hypertrace: high-quality renders, scattering fog, interactive WebGPU scenes, and the mathematics behind them.">
-  <meta name="theme-color" content="#10151e">
-  <title>Hypertrace · Light in curved space</title>
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <header><div class="wrap"><a class="brand" href="./">Hypertrace</a><nav aria-label="Main"><a href="./" aria-current="page">Scenes</a><a href="theory.html">The geometry</a><a href="https://www.youtube.com/watch?v=LGWusRNcJ6A">Video</a><a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__">Source</a></nav></div></header>
-  <main class="wrap">
-    <section class="hero">
-      <div class="eyebrow">Interactive path tracing</div>
-      <h1>Explore geometry and light.</h1>
-      <p class="lead">Follow light through curved space, compare familiar Euclidean geometry, and see how fog reveals illumination and shadows. Open a scene to move the camera and watch the image converge.</p>
-    </section>
-    <div class="gallery">
-      <article class="card">
-        <a class="preview" href="previews/hyperbolic.png" aria-label="View the full-resolution hyperbolic render"><img src="previews/hyperbolic-small.webp" srcset="__HYPERBOLIC_SRCSET__" sizes="(max-width: 740px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 37px), 577px" width="__HYPERBOLIC_WIDTH__" height="__HYPERBOLIC_HEIGHT__" alt="Red, turquoise and gold tilings on hyperbolic planes and horospheres, with bright borders." fetchpriority="high"></a>
-        <div class="card-body"><div class="eyebrow">Negative curvature</div><h2>Hyperbolic space</h2><p>Pentagonal and star tilings cover geodesic planes. Square and hexagonal patterns live on horospheres. Reflections follow the same curved geometry as the camera rays.</p><div class="meta">__HYPERBOLIC_SETTINGS__</div><div class="actions"><a class="button" href="viewer/?scene=hyperbolic">Explore the scene</a><a href="previews/hyperbolic.png">Full-resolution PNG</a><a href="previews/hyperbolic-small.webp">Small preview</a><a href="https://github.com/agerasev/hypertrace/tree/__HYPERBOLIC_SOURCE_COMMIT__">Image source</a></div></div>
-      </article>
-      <article class="card">
-        <a class="preview" href="previews/euclidean.png" aria-label="View the full-resolution Euclidean render"><img src="previews/euclidean-small.webp" srcset="__EUCLIDEAN_SRCSET__" sizes="(max-width: 740px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 37px), 577px" width="__EUCLIDEAN_WIDTH__" height="__EUCLIDEAN_HEIGHT__" alt="A yellow refractive sphere above a turquoise cube, lit by an environment and reflected in a backdrop."></a>
-        <div class="card-body"><div class="eyebrow">Zero curvature</div><h2>Euclidean space</h2><p>A refractive sphere, a diffuse cube, and a partly reflective plane. This familiar scene provides a reference for how materials and light behave without spatial curvature.</p><div class="meta">__EUCLIDEAN_SETTINGS__</div><div class="actions"><a class="button" href="viewer/?scene=euclidean">Explore the scene</a><a href="previews/euclidean.png">Full-resolution PNG</a><a href="previews/euclidean-small.webp">Small preview</a><a href="https://github.com/agerasev/hypertrace/tree/__EUCLIDEAN_SOURCE_COMMIT__">Image source</a></div></div>
-      </article>
-      <article class="card">
-        <a class="preview" href="previews/fog.png" aria-label="View the original Euclidean fog render"><img src="previews/fog-small.webp" srcset="__FOG_SRCSET__" sizes="(max-width: 740px) calc(100vw - 32px), (max-width: 1228px) calc(50vw - 37px), 577px" width="__FOG_WIDTH__" height="__FOG_HEIGHT__" alt="A bright white light shines through dark fog between a red diffuse sphere, a green mirror sphere, and a blue glass sphere." loading="lazy"></a>
-        <div class="card-body"><div class="eyebrow">Light scattering</div><h2>Euclidean fog</h2><p>One bright light illuminates red diffuse, green reflective, and blue refractive spheres. Scattering fog reveals their shadows and the paths of reflected and refracted light, with no floor or ambient illumination.</p><div class="meta">__FOG_SETTINGS__</div><div class="actions"><a class="button" href="viewer/?scene=fog">Explore the scene</a><a href="previews/fog.png">Original PNG</a><a href="previews/fog-small.webp">Small preview</a><a href="https://github.com/agerasev/hypertrace/tree/__FOG_SOURCE_COMMIT__">Image source</a></div></div>
-      </article>
-    </div>
-    <p class="note">The images above are offline renders and work in any browser. Each image links to the source revision used to render it; the interactive examples may have evolved since then. Interactive scenes require WebGPU and a keyboard and mouse. Drag to look or press Tab to lock the mouse, use WASD to move, and scroll to zoom. Choose a lower quality setting for smoother movement.</p>
-    <section class="more" aria-label="Learn more">
-      <div><div class="eyebrow">Watch</div><h2>The original walkthrough</h2><p>A tour of Hypertrace from 2020 shows the project in motion. The current web renderer brings Euclidean, hyperbolic, spherical, and fog examples into the browser.</p><a class="button secondary" href="https://www.youtube.com/watch?v=LGWusRNcJ6A">Watch the video ↗</a><p class="meta"><a href="https://agerasev.github.io/2020/03/12/hypertrace.html">Original article by Alexey Gerasev</a></p></div>
-      <div><div class="eyebrow">Understand</div><h2>Why do light rays curve?</h2><p>Learn how embedded geometry and quaternion-pair isometries carry light through Euclidean, hyperbolic and spherical space. Explore tangent frames, spherical circuits, fog and the limits of floating-point precision.</p><a class="button secondary" href="theory.html">Read the theory</a></div>
-    </section>
-  </main>
-  <footer><div class="wrap"><span>Hypertrace · Alexey Gerasev</span><span><a href="https://github.com/agerasev/hypertrace">Project on GitHub</a> · <a href="previews/manifest.json">Render settings</a></span></div></footer>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Examples. Hypertrace, a path tracer for Euclidean, hyperbolic and spherical space.">
+<title>Examples · Hypertrace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css"></head>
+<body><a class="skip" href="#content">Skip to content</a>
+<header class="wrap"><a class="brand" href="./">Hypertrace</a><nav aria-label="Main"><a href="./" aria-current="page">Examples</a><a href="run.html">Run locally</a><a href="theory.html">Theory</a><a href="https://github.com/agerasev/hypertrace/tree/__SOURCE_COMMIT__">Source</a></nav></header>
+<main id="content" class="wrap"><h1>Hypertrace</h1><p>A path tracer for Euclidean, hyperbolic, and spherical space.</p><p><a href="run.html">Build and run locally</a> · <a href="theory.html">Rendering theory</a></p><div class="gallery landing"><article><a href="hyperbolic.html"><img src="previews/hyperbolic-small.webp" srcset="__HYPERBOLIC_SRCSET__" sizes="(max-width: 700px) calc(100vw - 32px), 560px" width="__HYPERBOLIC_WIDTH__" height="__HYPERBOLIC_HEIGHT__" alt="Pentagonal and star-patterned planes, square and hexagonal horospheres, and a tiled ball in hyperbolic space." fetchpriority="high"></a><h2><a href="hyperbolic.html">Hyperbolic space</a></h2><p>Geodesic planes, flat horospheres, and a round ball with different intrinsic tilings.</p></article><article><a href="euclidean.html"><img src="previews/euclidean-small.webp" srcset="__EUCLIDEAN_SRCSET__" sizes="(max-width: 700px) calc(100vw - 32px), 560px" width="__EUCLIDEAN_WIDTH__" height="__EUCLIDEAN_HEIGHT__" alt="A yellow glass sphere and turquoise cube in front of a tiled reflective backdrop." loading="lazy"></a><h2><a href="euclidean.html">Euclidean space</a></h2><p>A glass sphere, a diffuse cube, and a partly reflective square-tiled backdrop.</p></article><article><a href="spherical.html"><img src="previews/spherical-small.webp" srcset="__SPHERICAL_SRCSET__" sizes="(max-width: 700px) calc(100vw - 32px), 560px" width="__SPHERICAL_WIDTH__" height="__SPHERICAL_HEIGHT__" alt="A blue glass ball beside an orange diffuse ball, a bright off-center sun, and a green glowing sphere above a pentagon-tiled floor." loading="lazy"></a><h2><a href="spherical.html">Spherical space</a></h2><p>An off-center sun, diffuse and refractive balls, and a glowing landmark on a spherical floor.</p></article><article><a href="fog.html"><img src="previews/fog-small.webp" srcset="__FOG_SRCSET__" sizes="(max-width: 700px) calc(100vw - 32px), 560px" width="__FOG_WIDTH__" height="__FOG_HEIGHT__" alt="A white emitter lights fog around red diffuse, green reflective and blue refractive spheres against darkness." loading="lazy"></a><h2><a href="fog.html">Euclidean fog</a></h2><p>One emitter and three balls: red diffuse, green mirror, and blue glass, surrounded by scattering fog.</p></article></div></main>
+<footer class="wrap">Hypertrace · Alexey Gerasev · <a href="theory.html#references">References</a> · <a href="previews/manifest.json">Render settings</a></footer></body></html>

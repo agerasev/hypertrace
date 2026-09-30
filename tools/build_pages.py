@@ -3,15 +3,19 @@
 import argparse
 import hashlib
 import html
+from html.parser import HTMLParser
 import json
 import os
 from pathlib import Path
 import re
 import shutil
 import subprocess
+from urllib.parse import unquote, urlsplit
 
 
-SCENES = ("euclidean", "hyperbolic", "fog")
+SCENES = ("hyperbolic", "euclidean", "spherical", "fog")
+CAPTURES = {capture: scene for scene in SCENES for capture in (scene, f"{scene}-detail")}
+CAPTURES["eu-fog"] = "eu-fog"  # Historical, approved capture; keep its original scene ID.
 
 
 def run(*args, **kwargs):
@@ -22,9 +26,10 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def load_render(renders, scene, root, convert):
+def load_render(renders, capture, root, convert, expected_scene=None):
     """Require explicit image provenance, independently of the viewer's revision."""
-    settings = json.loads((renders / f"{scene}.json").read_text())
+    scene = expected_scene or capture
+    settings = json.loads((renders / f"{capture}.json").read_text())
     if settings.get("scene") != scene:
         raise ValueError(f"{scene}: metadata identifies a different scene")
     for key in ("width", "height", "samples", "bounces"):
@@ -38,24 +43,28 @@ def load_render(renders, scene, root, convert):
         raise ValueError(f"{scene}: source_commit must identify the exact render source revision")
     subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"],
                    cwd=root, check=True, capture_output=True)
-    image = renders / f"{scene}.png"
+    image = renders / f"{capture}.png"
     if image.is_file():
         if settings.get("png_sha256") not in (None, sha256(image)):
             raise ValueError(f"{scene}: PNG does not match its recorded hash")
     else:
-        image = renders / f"{scene}.ppm"
+        image = renders / f"{capture}.ppm"
         if not image.is_file():
             raise ValueError(f"{scene}: missing PNG or PPM")
     dimensions = subprocess.check_output(
         [convert, str(image), "-format", "%w %h", "info:"], text=True).split()
     if dimensions != [str(settings["width"]), str(settings["height"])]:
         raise ValueError(f"{scene}: image dimensions do not match its metadata")
+    if capture != scene:
+        settings["capture"] = capture
     return image, settings
 
 
 def encode_preview(image, settings, previews, convert):
     """Preserve approved PNGs byte for byte; derive WebP sizes without upscaling."""
-    scene = settings["scene"]
+    scene = settings.get("capture", settings["scene"])
+    if not re.fullmatch(r"[a-z0-9-]+", scene):
+        raise ValueError("capture name must be a simple filename stem")
     png = previews / f"{scene}.png"
     if image.suffix == ".png":
         shutil.copy2(image, png)
@@ -93,7 +102,7 @@ def template_values(settings, commit):
             f"__{prefix}_HEIGHT__": str(render["height"]),
             f"__{prefix}_SETTINGS__": (
                 f"{render['width']} × {render['height']} · {render['samples']} samples per pixel"
-                f" · {render['bounces']} bounces"),
+                f" · {render['bounces']} path events"),
             f"__{prefix}_SOURCE_COMMIT__": render["source_commit"],
         })
     return values
@@ -107,10 +116,52 @@ def render_template(source, values):
     return source
 
 
+class PageLinks(HTMLParser):
+    def __init__(self, source):
+        super().__init__()
+        self.ids = set()
+        self.links = []
+        self.feed(source)
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if "id" in attrs:
+            if attrs["id"] in self.ids:
+                raise ValueError(f"duplicate HTML id: {attrs['id']}")
+            self.ids.add(attrs["id"])
+        self.links.extend(attrs[key] for key in ("href", "src") if attrs.get(key))
+        if "srcset" in attrs:
+            self.links.extend(entry.strip().split()[0] for entry in attrs["srcset"].split(","))
+
+
+def validate_links(output, public_url):
+    """Check publication-local files and fragments, including Trunk's URL prefix."""
+    pages = {path: PageLinks(path.read_text()) for path in output.rglob("*.html")}
+    for source, page in pages.items():
+        for link in page.links:
+            url = urlsplit(link)
+            if url.scheme or url.netloc:
+                continue
+            path = unquote(url.path)
+            if path.startswith("/"):
+                if not path.startswith(public_url):
+                    raise ValueError(f"{source.name}: local URL outside publication: {link}")
+                target = output / path[len(public_url):]
+            else:
+                target = source.parent / path if path else source
+            target = target.resolve()
+            if target.is_dir():
+                target /= "index.html"
+            if not target.is_relative_to(output.resolve()) or not target.is_file():
+                raise ValueError(f"{source.name}: missing local target: {link}")
+            if url.fragment and target in pages and unquote(url.fragment) not in pages[target].ids:
+                raise ValueError(f"{source.name}: missing fragment: {link}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("renders", type=Path,
-                        help="directory with euclidean, hyperbolic and fog PNG/PPM and JSON metadata")
+                        help="directory with four overview/detail captures and the archived eu-fog PNG/JSON")
     parser.add_argument("--output", type=Path, default=Path("build/pages"))
     parser.add_argument("--public-url", default="/hypertrace/")
     args = parser.parse_args()
@@ -125,7 +176,8 @@ def main():
     if not convert:
         parser.error("ImageMagick is required to encode the previews")
     try:
-        inputs = {scene: load_render(renders, scene, root, convert) for scene in SCENES}
+        inputs = {capture: load_render(renders, capture, root, convert, scene)
+                  for capture, scene in CAPTURES.items()}
     except (ValueError, OSError, subprocess.CalledProcessError) as error:
         parser.error(str(error))
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
@@ -141,7 +193,7 @@ def main():
                 for scene, (image, metadata) in inputs.items()}
     values = template_values(settings, commit)
     for source in (root / "site").iterdir():
-        if source.suffix in (".html", ".css"):
+        if source.suffix in (".html", ".css", ".js"):
             (output / source.name).write_text(render_template(source.read_text(), values))
     (previews / "manifest.json").write_text(json.dumps(settings, indent=2) + "\n")
     (output / ".nojekyll").touch()
@@ -154,7 +206,9 @@ Website and interactive viewer built from source commit [{commit}](https://githu
 - [Scene gallery](https://agerasev.github.io{args.public_url})
 - [Hyperbolic viewer](https://agerasev.github.io{args.public_url}viewer/?scene=hyperbolic)
 - [Euclidean viewer](https://agerasev.github.io{args.public_url}viewer/?scene=euclidean)
+- [Spherical viewer](https://agerasev.github.io{args.public_url}viewer/?scene=spherical)
 - [Fog viewer](https://agerasev.github.io{args.public_url}viewer/?scene=fog)
+- [Build and run locally](https://agerasev.github.io{args.public_url}run.html)
 - [Theory](https://agerasev.github.io{args.public_url}theory.html)
 
 The `previews/` directory contains original-resolution PNGs, responsive WebP images,
@@ -169,7 +223,8 @@ To reproduce an image, use its `source_commit` and render settings from `preview
 Configure GitHub Pages to **Deploy from a branch**, **gh-pages**, **/ (root)**.
 The `.nojekyll` file makes this a static deployment; no build service is needed.
 """)
-    print(f"Built {output} from {commit}")
+    validate_links(output, args.public_url)
+    print(f"Built and checked {output} from {commit}")
 
 
 if __name__ == "__main__":

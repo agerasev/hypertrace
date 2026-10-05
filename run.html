@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Run locally. Hypertrace, a path tracer for Euclidean, hyperbolic and spherical space.">
-<title>Run locally · Hypertrace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=ea37cfc5adb2a8d9e1dc325d02115f8dc7d468a3"></head>
+<title>Run locally · Hypertrace</title><link rel="icon" href="data:,"><link rel="stylesheet" href="style.css?v=d2e08cc248ccc2e616f3f0a1c1ce9d304885f202"></head>
 <body><a class="skip" href="#content">Skip to content</a>
-<header class="wrap"><a class="brand" href="./">Hypertrace</a><nav aria-label="Main"><a href="./">Examples</a><a href="run.html" aria-current="page">Run locally</a><a href="theory.html">Theory</a><a href="https://github.com/agerasev/hypertrace/tree/ea37cfc5adb2a8d9e1dc325d02115f8dc7d468a3">Source</a></nav></header>
+<header class="wrap"><a class="brand" href="./">Hypertrace</a><nav aria-label="Main"><a href="./">Examples</a><a href="run.html" aria-current="page">Run locally</a><a href="theory.html">Theory</a><a href="https://github.com/agerasev/hypertrace/tree/d2e08cc248ccc2e616f3f0a1c1ce9d304885f202">Source</a></nav></header>
 <main id="content" class="wrap"><article class="article">
 <h1>Build and run locally</h1>
 <p>The native examples are the main way to explore Hypertrace. Each is a standalone Rust application with its own scene and event loop.</p>
@@ -18,7 +18,7 @@
 cd hypertrace
 # Use the exact source revision published with this website:
 git fetch origin gh-pages
-git checkout ea37cfc5adb2a8d9e1dc325d02115f8dc7d468a3</code></pre>
+git checkout d2e08cc248ccc2e616f3f0a1c1ce9d304885f202</code></pre>
 <p>The first run compiles the application. Use <code>--release</code> for interactive rendering.</p></section>
 <section id="hyperbolic"><h2>Hyperbolic space</h2><pre><code>cargo run --release -p hypertrace-examples --bin hyperbolic</code></pre><p><a href="hyperbolic.html">Scene, screenshots, and observations</a></p></section>
 <section id="euclidean"><h2>Euclidean space</h2><pre><code>cargo run --release -p hypertrace-examples --bin euclidean</code></pre><p><a href="euclidean.html">Scene, screenshots, and observations</a></p></section>
@@ -29,7 +29,7 @@ git checkout ea37cfc5adb2a8d9e1dc325d02115f8dc7d468a3</code></pre>
 </tbody></table></div><p>Stop moving to let samples accumulate. Fog, small lights, and caustics need more samples than directly lit surfaces. Changing the camera resets accumulation.</p></section>
 <section id="other-examples"><h2>Other examples and scene editing</h2><pre><code>cargo run --release -p hypertrace-examples --bin ball-tilings
 cargo run --release -p hypertrace-gallery --bin viewer -- --list-scenes</code></pre>
-<p>Edit <code>examples/src/bin/&lt;name&gt;/scene.rs</code> to change objects and materials; <code>main.rs</code> shows renderer initialization and camera input. <a href="https://github.com/agerasev/hypertrace/blob/ea37cfc5adb2a8d9e1dc325d02115f8dc7d468a3/examples/README.md">The example guide</a> describes all demonstrations and how to create your own.</p></section>
+<p>Edit <code>examples/src/bin/&lt;name&gt;/scene.rs</code> to change objects and materials; <code>main.rs</code> shows renderer initialization and camera input. <a href="https://github.com/agerasev/hypertrace/blob/d2e08cc248ccc2e616f3f0a1c1ce9d304885f202/examples/README.md">The example guide</a> describes all demonstrations and how to create your own.</p></section>
 <section id="headless"><h2>Render a still image</h2>
 <pre><code>cargo run --release -p hypertrace-gallery --bin headless -- \
   --scene spherical --width 2560 --height 1920 --samples 4096 --batch 1 \

@@ -23,3 +23,12 @@ pre { max-width:100%; overflow:auto; background:var(--panel); padding:14px 18px;
 
 .viewer-diagnostics { margin-top:12px; font-size:13px; } .viewer-diagnostics pre { white-space:pre-wrap; overflow-wrap:anywhere; background:#151d29; }
 .viewer[data-state=error] .viewer-prompt { position:relative; }
+
+/* Geometry drawings keep their labels legible, including in single-column views. */
+.diagram .grid { stroke:var(--line); fill:none; stroke-width:1; }
+.diagram .secondary { stroke:#a35425; fill:none; stroke-width:3; }
+@media(prefers-color-scheme:dark) { .diagram .secondary { stroke:#e8a775; } }
+.geometry-models { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin:22px 0; }
+.geometry-models .diagram { margin:0; }
+.diagram.model svg { min-width:0; }
+@media(max-width:700px) { .geometry-models { grid-template-columns:1fr; } .geometry-models .diagram { width:100%; max-width:440px; margin-inline:auto; } }

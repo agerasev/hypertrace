@@ -1,6 +1,6 @@
 # Hypertrace website
 
-Website and interactive viewer built from source commit [ea37cfc5adb2a8d9e1dc325d02115f8dc7d468a3](https://github.com/agerasev/hypertrace/tree/ea37cfc5adb2a8d9e1dc325d02115f8dc7d468a3).
+Website and interactive viewer built from source commit [d2e08cc248ccc2e616f3f0a1c1ce9d304885f202](https://github.com/agerasev/hypertrace/tree/d2e08cc248ccc2e616f3f0a1c1ce9d304885f202).
 
 - [Scene gallery](https://agerasev.github.io/hypertrace/)
 - [Hyperbolic viewer](https://agerasev.github.io/hypertrace/viewer/?scene=hyperbolic)

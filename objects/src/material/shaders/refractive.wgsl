@@ -7,3 +7,9 @@ let x=(a*a-1)*(ratio*ratio)+1;
 if x>EPS {(*sample).direction=direction*ratio+(sign(a)*sqrt(x)-a*ratio)*ctx.normal;}
 else {(*sample).direction=direction-2*a*ctx.normal;}
 }
+fn {{self}}_evaluate(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>,outgoing:vec3<f32>)->MaterialEvaluation {
+    return MaterialEvaluation(vec3<f32>(0),0,1u);
+}
+fn {{self}}_emission(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>)->MaterialEmission {
+    return MaterialEmission(vec3<f32>(0),1u);
+}

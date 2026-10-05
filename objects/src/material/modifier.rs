@@ -42,9 +42,23 @@ fn modifier_schema<G: Geometry, const EMISSION: bool>(
             "(*sample).attenuation*=load_vec3(base);",
         )
     };
-    let source = format!(
+    let mut source = format!(
         "fn {{{{self}}}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {{\n{statement}\n{{{{dep0}}}}(base+3u,ctx,sample,rng);\n}}\n"
     );
+    let evaluation = if EMISSION {
+        ""
+    } else {
+        "result.value*=load_vec3(base);"
+    };
+    let emission = if EMISSION {
+        "result.value+=load_vec3(base);"
+    } else {
+        "result.value*=load_vec3(base);"
+    };
+    source.push_str(&format!(
+        "fn {{{{self}}}}_evaluate(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>,outgoing:vec3<f32>)->MaterialEvaluation {{\nvar result={{{{dep0}}}}_evaluate(base+3u,ctx,incoming,outgoing);{evaluation}return result;\n}}\n\
+         fn {{{{self}}}}_emission(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>)->MaterialEmission {{\nvar result={{{{dep0}}}}_emission(base+3u,ctx,incoming);{emission}return result;\n}}\n"
+    ));
     let mut module = MaterialModule::new(
         key,
         source,

@@ -191,7 +191,14 @@ fn embedded_custom_leaves_use_spherical_positions_and_tangent_frames() {
             sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {
             (*sample).emission=vec3<f32>(ctx.position.x,dot(ctx.normal,ctx.normal),dot(ctx.normal,(*sample).direction));
             (*sample).alive=0u;
-        }"#, Some(0)),vec![]).unwrap();
+        }
+fn {{self}}_evaluate(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>,outgoing:vec3<f32>)->MaterialEvaluation {
+    return MaterialEvaluation(vec3<f32>(0),0,1u);
+}
+fn {{self}}_emission(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>)->MaterialEmission {
+    return MaterialEmission(vec3<f32>(ctx.position.x,dot(ctx.normal,ctx.normal),dot(ctx.normal,incoming)),1u);
+}
+"#, Some(0)),vec![]).unwrap();
     let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
     let scene = definition(vec![EncodedObject::<Spherical3> {
         map: Transform::identity(),

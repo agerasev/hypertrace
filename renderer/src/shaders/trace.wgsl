@@ -6,7 +6,12 @@ struct GeoSceneHit { hit: GeoHit, object_index: u32, identity: u32 }
 struct GeoMaterialContext { position: vec4<f32>, normal: vec3<f32> }
 struct MaterialSample {
     direction: vec3<f32>, attenuation: vec3<f32>, emission: vec3<f32>, alive: u32,
+    // Delta events have no density with respect to solid angle.
+    delta: u32,
 }
+// value is the BSDF times the absolute receiving cosine; pdf is per steradian.
+struct MaterialEvaluation { value: vec3<f32>, pdf: f32, valid: u32 }
+struct MaterialEmission { value: vec3<f32>, valid: u32 }
 
 @group(0) @binding(0) var<uniform> params: Params;
 @group(0) @binding(1) var<storage,read> objects: array<Object>;
@@ -69,7 +74,7 @@ fn geo_background(ray: GeoRay) -> vec3<f32> {
 }
 fn sample_path(pixel: vec2<u32>, state: ptr<function,u32>) -> vec3<f32> {
     var path = GeoPath(geo_primary_ray(pixel,state),0,0);
-    var sample = MaterialSample(path.ray.tangent.yzw,vec3<f32>(1),vec3<f32>(0),1u);
+    var sample = MaterialSample(path.ray.tangent.yzw,vec3<f32>(1),vec3<f32>(0),1u,1u);
     var previous = 0xffffffffu;
     var previous_identity = 0xffffffffu;
     for (var bounce=0u; bounce<params.options.y; bounce+=1u) {
@@ -108,6 +113,7 @@ fn sample_path(pixel: vec2<u32>, state: ptr<function,u32>) -> vec3<f32> {
         let material = materials[object.info.y];
         sample.direction = normalize(geo_to_local(hit.position,hit.tangent));
         let normal = normalize(geo_to_local(hit.position,hit.normal));
+        sample.delta = 1u;
         ht_material_dispatch(material.data.x,material.data.y,
             GeoMaterialContext(hit.position,normal),&sample,state);
         if sample.alive == 0u { break; }

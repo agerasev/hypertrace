@@ -354,6 +354,14 @@ fn {{self}}(base:u32,ctx:GeoMaterialContext,
     (*sample).emission += (*sample).attenuation*load_vec3(base);
     (*sample).alive = 0u;
 }
+fn {{self}}_evaluate(base:u32,ctx:GeoMaterialContext,
+                    incoming:vec3<f32>,outgoing:vec3<f32>)->MaterialEvaluation {
+    return MaterialEvaluation(vec3<f32>(0),0,1u);
+}
+fn {{self}}_emission(base:u32,ctx:GeoMaterialContext,
+                    incoming:vec3<f32>)->MaterialEmission {
+    return MaterialEmission(load_vec3(base),1u);
+}
 "#, Some(3));
         module.validate_words = |_, _, words| {
             anyhow::ensure!(words.iter().all(|&word| {
@@ -382,6 +390,18 @@ Material positions are object-local embedded `vec4<f32>` values, scalar first.
 `GeoMaterialContext.normal` and `MaterialSample.direction` are `vec3<f32>`
 values in a local orthonormal tangent frame. `MaterialSample` also contains path
 throughput (`attenuation`), accumulated emission and an `alive` flag.
+Every material supplies `_evaluate` and `_emission` queries in its own namespace.
+`incoming` points along the arriving ray; `outgoing` points along the departing
+ray. `MaterialEvaluation(value, pdf, valid)` returns the continuous BSDF times
+the absolute receiving cosine, its sampling density per steradian, and a validity
+flag. `MaterialEmission(value, valid)` returns emitted radiance per unit input
+throughput. Invalid queries return `valid=0`, distinct from valid zero scattering.
+Perfect reflection/transmission has zero continuous value and PDF. The sampler's
+`delta` flag starts at one; continuous scattering sets it to zero. Mixture queries
+sum child values and densities with their portions (including absorption in the
+missing portion), while sampling retains independent draws at every nesting level.
+Emission queries preserve wrapper order: coloring outside emission colors it;
+emission outside coloring does not. Queries do not consume random draws.
 `uniform_random(rng)` advances the common random generator. Parameter helpers
 `load_u32`, `load_f32`, `load_vec3`, and `load_vec4` read the word arena.
 

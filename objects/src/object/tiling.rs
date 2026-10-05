@@ -280,6 +280,30 @@ pub fn tiled_schema<G: Geometry>(
         )?;
     }
     source.push_str("default: {(*sample).alive=0u;}\n}\n}\n");
+    for (suffix, arguments, call, result, failure) in [
+        (
+            "evaluate",
+            ",outgoing:vec3<f32>",
+            ",outgoing",
+            "MaterialEvaluation",
+            "MaterialEvaluation(vec3<f32>(0),0,0u)",
+        ),
+        (
+            "emission",
+            "",
+            "",
+            "MaterialEmission",
+            "MaterialEmission(vec3<f32>(0),0u)",
+        ),
+    ] {
+        writeln!(source, "fn {{{{self}}}}_{suffix}(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>{arguments})->{result} {{let index={{{{dep0}}}}(ctx.position,load_f32(base),load_f32(base+1u),{count}u);switch index {{")?;
+        for index in 0..children.len() - 1 {
+            let slot = 2 + index;
+            let dependency = index + 1;
+            writeln!(source, "case {index}u: {{return {{{{dep{dependency}}}}}_{suffix}(base+load_u32(base+{slot}u),ctx,incoming{call});}}")?;
+        }
+        writeln!(source, "default: {{return {failure};}}}}}}")?;
+    }
     let mut module =
         MaterialModule::new("hypertrace.material.tiled.offsets", source, parameter_words);
     module.dependencies = children;

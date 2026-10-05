@@ -143,6 +143,35 @@ impl<G: Geometry> Linker<G> {
             }
         }
         source.push_str("default: {(*sample).alive=0u;}\n}}\n");
+        for (suffix, arguments, call, result, fallback) in [
+            (
+                "evaluate",
+                "incoming:vec3<f32>,outgoing:vec3<f32>",
+                "incoming,outgoing",
+                "MaterialEvaluation",
+                "MaterialEvaluation(vec3<f32>(0),0,0u)",
+            ),
+            (
+                "emission",
+                "incoming:vec3<f32>",
+                "incoming",
+                "MaterialEmission",
+                "MaterialEmission(vec3<f32>(0),0u)",
+            ),
+        ] {
+            writeln!(
+                source,
+                "fn ht_material_{suffix}(kind:u32,base:u32,ctx:GeoMaterialContext,{arguments})->{result} {{switch kind {{"
+            )?;
+            for key in &self.materials {
+                let id = ids[key];
+                writeln!(
+                    source,
+                    "case {id}u: {{return ht_module_{id}_{suffix}(base,ctx,{call});}}"
+                )?;
+            }
+            writeln!(source, "default: {{return {fallback};}}\n}}}}")?;
+        }
         Ok((source, ids))
     }
 }
@@ -301,7 +330,14 @@ mod tests {
     }
     fn material<G: Geometry>() -> MaterialValue<G> {
         MaterialValue::new(MaterialModule::new("test.material",
-            "fn {{self}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {(*sample).alive=0u;}", Some(1)), vec![0]).unwrap()
+            "fn {{self}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) {(*sample).alive=0u;}
+fn {{self}}_evaluate(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>,outgoing:vec3<f32>)->MaterialEvaluation {
+    return MaterialEvaluation(vec3<f32>(0),0,1u);
+}
+fn {{self}}_emission(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>)->MaterialEmission {
+    return MaterialEmission(vec3<f32>(0),1u);
+}
+", Some(1)), vec![0]).unwrap()
     }
     fn scene<G: Geometry>() -> SceneDefinition<G> {
         SceneDefinition {

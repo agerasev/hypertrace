@@ -27,6 +27,35 @@ pub fn mixture_schema<G: Geometry>(children: Vec<MaterialModule<G>>) -> Result<M
         writeln!(source,"choice-=load_f32(base+{index}u);\nif choice<0 {{ {{{{dep{index}}}}}(base+load_u32(base+{slot}u),ctx,sample,rng);return;}}")?;
     }
     source.push_str("(*sample).alive=0u;\n}\n");
+    // Evaluation marginalizes the mixture, while sampling above retains each
+    // nested component's independent random draw and stochastic attenuation.
+    for (suffix, arguments, call, result, zero) in [
+        (
+            "evaluate",
+            ",outgoing:vec3<f32>",
+            ",outgoing",
+            "MaterialEvaluation",
+            "MaterialEvaluation(vec3<f32>(0),0,1u)",
+        ),
+        (
+            "emission",
+            "",
+            "",
+            "MaterialEmission",
+            "MaterialEmission(vec3<f32>(0),1u)",
+        ),
+    ] {
+        writeln!(source, "fn {{{{self}}}}_{suffix}(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>{arguments})->{result} {{var result={zero};")?;
+        for index in 0..count {
+            let slot = count + index;
+            writeln!(source, "{{let weight=load_f32(base+{index}u);if weight>0 {{let child={{{{dep{index}}}}}_{suffix}(base+load_u32(base+{slot}u),ctx,incoming{call});result.value+=weight*child.value;result.valid&=child.valid;")?;
+            if suffix == "evaluate" {
+                source.push_str("result.pdf+=weight*child.pdf;\n");
+            }
+            source.push_str("}}\n");
+        }
+        source.push_str("return result;}\n");
+    }
     let mut module = MaterialModule::new(
         "hypertrace.material.mixture.offsets",
         source,

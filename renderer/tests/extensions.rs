@@ -76,6 +76,13 @@ fn {{self}}(base:u32,context:GeoMaterialContext,
     (*sample).emission += (*sample).attenuation*load_vec3(base);
     (*sample).alive = 0u;
 }
+
+fn {{self}}_evaluate(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>,outgoing:vec3<f32>)->MaterialEvaluation {
+    return MaterialEvaluation(vec3<f32>(0),0,1u);
+}
+fn {{self}}_emission(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>)->MaterialEmission {
+    return MaterialEmission(load_vec3(base),1u);
+}
 "#,
             Some(3),
         );

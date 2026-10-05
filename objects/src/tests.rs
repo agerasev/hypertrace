@@ -243,7 +243,15 @@ fn tiling_components_validate_parameters_and_children() -> Result<()> {
 fn variable_material<G: Geometry>(values: &[f32]) -> Result<MaterialValue<G>> {
     let mut module = MaterialModule::new(
         "tests.variable-material",
-        "fn {{self}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) { for(var i=0u;i<load_u32(base);i+=1u) { (*sample).emission+=vec3<f32>(load_f32(base+1u+i)); } (*sample).alive=0u; }",
+        "fn {{self}}(base:u32,ctx:GeoMaterialContext,sample:ptr<function,MaterialSample>,rng:ptr<function,u32>) { for(var i=0u;i<load_u32(base);i+=1u) { (*sample).emission+=vec3<f32>(load_f32(base+1u+i)); } (*sample).alive=0u; }
+fn {{self}}_evaluate(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>,outgoing:vec3<f32>)->MaterialEvaluation {
+    return MaterialEvaluation(vec3<f32>(0),0,1u);
+}
+fn {{self}}_emission(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>)->MaterialEmission {
+var emission=vec3<f32>(0); for(var i=0u;i<load_u32(base);i+=1u) {emission+=vec3<f32>(load_f32(base+1u+i));}
+return MaterialEmission(emission,1u);
+}
+",
         None,
     );
     module.validate_words = |_, _, words| {

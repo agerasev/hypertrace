@@ -577,5 +577,5 @@ GPUs do not isolate renderer changes.
    validation of the shared-kernel changes remains outstanding; build success
    alone does not establish browser rendering correctness.
 5. Finite surface/volume bounce limits introduce truncation bias. Heterogeneous
-   media, anisotropic phase functions and new importance sampling remain separate
-   extensions.
+   media, anisotropic phase functions, environment importance sampling and adaptive
+   light selection remain separate extensions.

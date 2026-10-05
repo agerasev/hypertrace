@@ -221,3 +221,67 @@ fn off_axis_volume_lighting_matches_independent_single_scattering_integral() {
     scene.objects[0].material = material::absorbing();
     assert_eq!(render(&gpu, &scene, 64), vec![0.0; 128]);
 }
+
+#[test]
+#[ignore = "requires a native WGPU compute adapter"]
+fn light_selection_and_partial_proposals_preserve_total_radiance() {
+    let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
+    let mut scene = definition::<0>();
+    for (index, x) in [(1, -0.4f64), (2, 0.4)] {
+        if index == 2 {
+            scene.objects.push(scene.objects[1].clone());
+        }
+        let map = Transform::from_isometry(
+            Space3::<f64, 0>::unit()
+                .translation([x, 0.0, 0.8].into(), x.hypot(0.8))
+                .unwrap(),
+        )
+        .unwrap();
+        scene.objects[index].map = map;
+        scene.objects[index].sampling.as_mut().unwrap().map = map;
+        scene.objects[index].material = material::absorbing().emissive([index as f32; 3]).unwrap();
+    }
+    let d = 0.4f32.hypot(0.8);
+    let expected = 3.0 * (0.8 / d) * (0.08 / d).powi(2);
+    let result = mean(&render(&gpu, &scene, 1024));
+    assert!(
+        (result - expected).abs() < 0.02 * expected,
+        "multiple emitters {result} vs {expected}"
+    );
+    // Mark only part of one source's angular support. The other source and
+    // uncovered directions must keep full ordinary emission contributions.
+    scene.objects[2].sampling = None;
+    scene.objects[1].sampling.as_mut().unwrap().words[0] = 0.04f32.to_bits();
+    let result = mean(&render(&gpu, &scene, 1024));
+    assert!(
+        (result - expected).abs() < 0.08 * expected,
+        "partial proposal {result} vs {expected}"
+    );
+    // Overlapping loose bounds propose directions hitting the other emitter.
+    // Such connections are zero for the chosen source, not extra copies of it.
+    let mut second = scene.objects[1].sampling.clone().unwrap();
+    second.map = scene.objects[2].map;
+    scene.objects[2].sampling = Some(second);
+    for object in &mut scene.objects[1..] {
+        object.sampling.as_mut().unwrap().words[0] = 2.0f32.to_bits();
+    }
+    let result = mean(&render(&gpu, &scene, 1024));
+    assert!(
+        (result - expected).abs() < 0.08 * expected,
+        "overlapping proposals {result} vs {expected}"
+    );
+}
+
+#[test]
+#[ignore = "requires a native WGPU compute adapter"]
+fn invalid_light_proposal_keeps_prior_emission_and_adds_no_environment() {
+    let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
+    let mut scene = definition::<0>();
+    scene.background = Background::constant([99.0; 3]);
+    scene.objects[0].material = material::lambertian().emissive([2.0; 3]).unwrap();
+    scene.objects[1].sampling=Some(LightValue::new(LightModule::new("tests.failed-proposal",r#"
+fn {{self}}_sample(base:u32,position:vec4<f32>,rng:ptr<function,u32>)->LightSample {return LightSample(vec4<f32>(0),0,0u);}
+fn {{self}}_pdf(base:u32,ray:GeoRay)->LightPdf {return LightPdf(0,0u);}
+"#,Some(0)),vec![]).unwrap());
+    assert_eq!(render(&gpu, &scene, 1), vec![2.0; 128]);
+}

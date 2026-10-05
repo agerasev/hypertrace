@@ -124,8 +124,11 @@ sphere's shadow, a green mirror highlight, and light refracted through the blue
 sphere into the fog. Tune the emitter, extinction and scattering albedo directly
 in `scene.rs`.
 
-Begin with thousands of samples. Volumetric caustics converge slowly with the
-current camera-path sampler, and the scene-wide medium also occupies the glass.
+The fog emitter and both spherical-scene emitters use `Sampled` with a physical
+`SphereBound`. One explicit light sample per eligible surface or volume event is
+combined with ordinary continuation using MIS. Their radiance and geometry are
+unchanged. Direct illumination settles much faster, while volumetric caustics
+still need many samples and the scene-wide medium also occupies the glass.
 The fog scatters light from the emitter; it does not emit light itself.
 
 ## Camera controls

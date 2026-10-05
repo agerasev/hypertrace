@@ -6,8 +6,9 @@ use ccgeom::{EmbeddedIsometry, Flat3, Space3};
 use objects::{
     Mapped, Material, SceneImpl,
     background::ConstBg,
+    light::SphereBound,
     material::{Absorbing, Colored, Emissive, Lambertian, Refractive, Specular},
-    object::Covered,
+    object::{Covered, Sampled},
     shader::Medium,
     shape::GeodesicSphere,
     view::PointView,
@@ -15,11 +16,13 @@ use objects::{
 
 type Map = EmbeddedIsometry<f64, 0>;
 type Sphere<M> = Mapped<Flat3, Covered<Flat3, GeodesicSphere, M>, Map>;
+type Light =
+    Mapped<Flat3, Sampled<Covered<Flat3, GeodesicSphere, Emissive<Absorbing>>, SphereBound>, Map>;
 pub type ExampleScene<const H: usize> = SceneImpl<
     Flat3,
     Mapped<Flat3, PointView<Flat3>, Map>,
     (
-        Sphere<Emissive<Absorbing>>,
+        Light,
         Sphere<Colored<Lambertian>>,
         Sphere<Colored<Specular>>,
         Sphere<Colored<Refractive>>,
@@ -46,6 +49,8 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         0.12,
         Emissive::new(Absorbing, [24.0; 3].into()),
     );
+    // The wrapper sits inside the map so its bound follows the emitter.
+    let light = Mapped::new(Sampled::new(light.inner, SphereBound::new(0.12)), light.map);
     let red = sphere(
         [-0.7, -0.1, -2.9],
         0.28,

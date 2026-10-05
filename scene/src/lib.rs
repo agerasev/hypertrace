@@ -272,7 +272,7 @@ impl<G: Geometry> MaterialValue<G> {
     }
 }
 
-/// A flattened instance produced by statically typed object composition.
+/// A directional proposal and its canonical coordinate frame.
 #[derive(Clone, Debug)]
 pub struct LightValue<G: Geometry> {
     pub schema: LightModule<G>,

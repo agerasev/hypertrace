@@ -6,9 +6,10 @@ use ccgeom::{EmbeddedIsometry, Geometry3, Space3, Spherical3};
 use objects::{
     Mapped, Material, SceneImpl,
     background::ConstBg,
+    light::SphereBound,
     material::{Absorbing, Colored, Emissive, Lambertian, Refractive, Specular, Transparent},
     mixture,
-    object::{Covered, Tiled, tiling::RegularSpherical},
+    object::{Covered, Sampled, Tiled, tiling::RegularSpherical},
     shape::{GeodesicSphere, Plane},
     view::PointView,
 };
@@ -23,6 +24,11 @@ mixture! {
 
 type Map = EmbeddedIsometry<f64, 1>;
 type Object<S, M> = Mapped<Spherical3, Covered<Spherical3, S, M>, Map>;
+type Light = Mapped<
+    Spherical3,
+    Sampled<Covered<Spherical3, GeodesicSphere, Emissive<Absorbing>>, SphereBound>,
+    Map,
+>;
 type TiledObject<S, P, M, const N: usize> = Mapped<Spherical3, Tiled<S, P, M, M, N>, Map>;
 pub type ExampleScene<const H: usize> = SceneImpl<
     Spherical3,
@@ -30,9 +36,9 @@ pub type ExampleScene<const H: usize> = SceneImpl<
     (
         Object<GeodesicSphere, Colored<Lambertian>>,
         Object<GeodesicSphere, Refractive>,
-        Object<GeodesicSphere, Emissive<Absorbing>>,
+        Light,
         TiledObject<Plane, RegularSpherical<5, 3>, Floor, 3>,
-        Object<GeodesicSphere, Emissive<Absorbing>>,
+        Light,
         Object<GeodesicSphere, Colored<Refractive>>,
     ),
     ConstBg,
@@ -78,9 +84,12 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
         Refractive::new(1.4),
     );
     let sun = Mapped::new(
-        Covered::new(
-            GeodesicSphere::new(0.2),
-            Emissive::new(Absorbing, [5.5, 4.95, 4.0].into()),
+        Sampled::new(
+            Covered::new(
+                GeodesicSphere::new(0.2),
+                Emissive::new(Absorbing, [5.5, 4.95, 4.0].into()),
+            ),
+            SphereBound::new(0.2),
         ),
         floor
             .chain(
@@ -110,9 +119,12 @@ pub fn scene<const H: usize>() -> ExampleScene<H> {
     // footprint; its antipode is bright again because spherical rays converge.
     // Place this opaque emitter in that dark band, partly below the floor.
     let beacon = Mapped::new(
-        Covered::new(
-            GeodesicSphere::new(0.16),
-            Emissive::new(Absorbing, [0.25, 0.9, 0.5].into()),
+        Sampled::new(
+            Covered::new(
+                GeodesicSphere::new(0.16),
+                Emissive::new(Absorbing, [0.25, 0.9, 0.5].into()),
+            ),
+            SphereBound::new(0.16),
         ),
         floor
             .chain(

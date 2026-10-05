@@ -1,6 +1,9 @@
 //! Component-owned directional proposals for explicitly sampled emitters.
 use crate::shader::{Geometry, LightModule, LightValue, Result};
 
+#[cfg(test)]
+mod tests;
+
 /// Propose a direction and evaluate its density in the same local tangent frame.
 ///
 /// A sampler retains geometry through compilation, just like a shape:

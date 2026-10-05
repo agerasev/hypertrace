@@ -246,6 +246,14 @@ mod tests {
         Embedded3<f64, K>: Geometry<Map = ccgeom::EmbeddedIsometry<f64, K>>,
     {
         let mut definition = fixture::<K>();
+        use objects::light::{LightSampler, SphereBound};
+        for object in &mut definition.objects {
+            let mut sampling =
+                <SphereBound as LightSampler<Embedded3<f64, K>>>::encode(&SphereBound::new(0.25))
+                    .unwrap();
+            sampling.map = object.map;
+            object.sampling = Some(sampling);
+        }
         let global = Transform::<Embedded3<f64, K>>::identity()
             .move_local([distance, 0.0, 0.0], [0.0; 3], 1.0)
             .unwrap();
@@ -254,6 +262,8 @@ mod tests {
         definition.view.map = global.chain(&definition.view.map).unwrap();
         for object in &mut definition.objects {
             object.map = global.chain(&object.map).unwrap();
+            let sampling = object.sampling.as_mut().unwrap();
+            sampling.map = global.chain(&sampling.map).unwrap();
         }
         let shifted = Scene::from_definition(&definition).unwrap();
         let original_records =
@@ -265,11 +275,21 @@ mod tests {
                 .map0
                 .into_iter()
                 .chain(actual.map1)
-                .zip(expected.map0.into_iter().chain(expected.map1))
+                .chain(actual.sampling_map0)
+                .chain(actual.sampling_map1)
+                .zip(
+                    expected
+                        .map0
+                        .into_iter()
+                        .chain(expected.map1)
+                        .chain(expected.sampling_map0)
+                        .chain(expected.sampling_map1),
+                )
             {
                 assert!((a - b).abs() < 2e-4, "relative component {a} != {b}");
             }
             assert_eq!(actual.info, expected.info);
+            assert_eq!(actual.sampling, expected.sampling);
         }
         assert_eq!(
             bytemuck::cast_slice::<scene_ir::GpuObject, u8>(shifted.objects()),

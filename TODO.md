@@ -47,7 +47,8 @@ for the validation workflow and outstanding platform checks.
 
 ## Algorithms
 
-+ [ ] Importance sampling
++ [x] Surface and volume emitter importance sampling with MIS
++ [ ] Environment importance sampling and adaptive light selection
 + [x] Shared constant-curvature ray and isometry kernel
 + [x] Unwrapped hit distances and multi-circuit medium events
 + [x] Camera-relative object preparation in CPU f64

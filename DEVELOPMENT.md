@@ -114,7 +114,9 @@ revisions, options, adapter/driver, and hashes alongside the files.
 - Large-scene camera-update cost needs a dedicated benchmark. Workgroup sizes and
   sample batching remain workload/device choices.
 - The scene-wide homogeneous medium also occupies refractive objects. Medium
-  boundaries are needed to exclude fog from glass. Small emitters and volumetric
-  caustics converge slowly with the current camera-path sampler.
+  boundaries are needed to exclude fog from glass. Explicit surface and volume
+  light sampling reduces small-emitter noise; specular and volumetric caustics
+  still converge slowly with camera-path continuation.
 - Heterogeneous media, anisotropic scattering, triangle
-  geometry, acceleration structures, and importance sampling remain extensions.
+  geometry, acceleration structures, environment importance sampling, and adaptive
+  light selection remain extensions.

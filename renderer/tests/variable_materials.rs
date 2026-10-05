@@ -94,6 +94,7 @@ fn definition(
         radius: 1.0,
         medium: Medium::vacuum(),
         objects: vec![EncodedObject {
+            sampling: None,
             map: Transform::identity(),
             shape: shape::plane(),
             material,

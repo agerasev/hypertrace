@@ -22,6 +22,7 @@ impl<G: Geometry, S: Shape<G>, M: Material<G>> Covered<G, S, M> {
 impl<G: Geometry, S: Shape<G>, M: Material<G>> Object<G> for Covered<G, S, M> {
     fn shader_modules() -> crate::shader::Result<crate::shader::Modules<G>> {
         Ok(crate::shader::Modules {
+            lights: vec![],
             shapes: vec![S::shader()?],
             materials: vec![M::shader()?],
             libraries: vec![],
@@ -34,6 +35,7 @@ impl<G: Geometry, S: Shape<G>, M: Material<G>> Object<G> for Covered<G, S, M> {
         output: &mut Vec<crate::shader::EncodedObject<G>>,
     ) -> crate::shader::Result<()> {
         output.push(crate::shader::EncodedObject {
+            sampling: None,
             map: outer,
             shape: self.shape.encode()?,
             material: self.material.encode()?,

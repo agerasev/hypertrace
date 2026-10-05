@@ -7,5 +7,7 @@ struct Params {
 struct Object {
     map0: vec4<f32>, map1: vec4<f32>,
     info: vec4<u32>,
+    sampling_map0: vec4<f32>, sampling_map1: vec4<f32>,
+    sampling: vec4<u32>,
 }
 struct MaterialRecord { data: vec4<u32> }

@@ -17,6 +17,7 @@ fn definition(shape: ShapeValue<Flat3>, material: MaterialValue<Flat3>) -> Scene
         radius: 1.0,
         medium: Default::default(),
         objects: vec![EncodedObject {
+            sampling: None,
             map: Transform::identity(),
             shape,
             material,

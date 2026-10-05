@@ -1,6 +1,7 @@
 use crate::shader::Geometry;
 mod covered;
 mod mapped;
+mod sampled;
 mod tiled;
 pub mod tiling;
 mod tuple;
@@ -18,5 +19,6 @@ pub trait Object<G: Geometry>: Sized {
 }
 
 pub use covered::Covered;
+pub use sampled::Sampled;
 pub use tiled::Tiled;
 pub use tiling::Tiling;

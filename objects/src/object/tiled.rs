@@ -34,6 +34,7 @@ where
 {
     fn shader_modules() -> Result<Modules<G>> {
         Ok(Modules {
+            lights: vec![],
             shapes: vec![S::shader()?],
             materials: vec![tiling::tiled_schema(
                 tiling::selector::<G, S, P>()?,
@@ -50,6 +51,7 @@ where
     ) -> Result<()> {
         let (cell, width) = self.pattern.parameters();
         output.push(EncodedObject {
+            sampling: None,
             map: outer,
             shape: self.shape.encode()?,
             material: tiling::tiled(

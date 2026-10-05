@@ -13,6 +13,7 @@ fn scene_shader_source<G: Geometry>(scene: &Scene<G>) -> String {
         include_str!("shaders/transport.wgsl"),
         include_str!("shaders/abi.wgsl"),
         include_str!("shaders/trace.wgsl"),
+        include_str!("shaders/lighting.wgsl"),
         include_str!("shaders/tracing_common.wgsl"),
         &scene.compiled.source,
     ]

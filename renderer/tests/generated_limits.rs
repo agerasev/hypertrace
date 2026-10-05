@@ -31,6 +31,7 @@ fn scene_update_exceeding_allocation_limit_preserves_previous_renderer() {
         medium: Default::default(),
         objects: vec![],
         modules: Modules {
+            lights: vec![],
             materials: vec![objects::material::Absorbing::shader().unwrap()],
             shapes: vec![<objects::shape::Plane as objects::Shape<Flat3>>::shader().unwrap()],
             libraries: vec![],
@@ -50,10 +51,11 @@ fn scene_update_exceeding_allocation_limit_preserves_previous_renderer() {
     let revision = renderer.pipeline_revision();
     let source = renderer.shader_source().to_owned();
 
-    // Six 48-byte records exceed allocation size while remaining well below
+    // Six 96-byte records exceed allocation size while remaining well below
     // the device's independent storage-binding limit. The schema is unchanged.
     definition.objects = vec![
         EncodedObject {
+            sampling: None,
             map: Transform::identity(),
             shape: <objects::shape::Plane as objects::Shape<ccgeom::Flat3>>::encode(
                 &objects::shape::Plane

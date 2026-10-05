@@ -6,6 +6,7 @@ use crate::{
 impl<G: Geometry> Object<G> for () {
     fn shader_modules() -> Result<Modules<G>> {
         Ok(Modules {
+            lights: vec![],
             shapes: vec![],
             materials: vec![],
             libraries: vec![],
@@ -21,12 +22,10 @@ macro_rules! tuple {
     ($( $type:ident : $index:tt ),+) => {
         impl<G: Geometry, $( $type: Object<G> ),+> Object<G> for ($( $type, )+) {
             fn shader_modules() -> Result<Modules<G>> {
-                let mut modules = Modules { shapes: vec![], materials: vec![], libraries: vec![] };
+                let mut modules = Modules { lights: vec![], shapes: vec![], materials: vec![], libraries: vec![] };
                 $(
                     let child = $type::shader_modules()?;
-                    modules.shapes.extend(child.shapes);
-                    modules.materials.extend(child.materials);
-                    modules.libraries.extend(child.libraries);
+                    modules.extend(child);
                 )+
                 Ok(modules)
             }

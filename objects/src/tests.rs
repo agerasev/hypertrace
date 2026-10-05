@@ -21,6 +21,7 @@ fn definition<G: Geometry>(
         radius,
         medium: Medium::vacuum(),
         objects: vec![EncodedObject {
+            sampling: None,
             map: Transform::identity(),
             shape,
             material,

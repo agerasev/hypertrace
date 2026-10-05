@@ -18,6 +18,7 @@ where
     for (distance, y) in [(0.8, 0.45), (1.6, 0.0), (2.5, -0.45)] {
         for x in [-0.65, 0.0, 0.65] {
             objects.push(EncodedObject {
+                sampling: None,
                 map: Transform::from_isometry(
                     space.translation([x, y, -1.0].into(), distance).unwrap(),
                 )?,

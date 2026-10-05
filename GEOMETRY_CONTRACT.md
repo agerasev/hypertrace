@@ -109,6 +109,22 @@ and object-local material coordinates retain their original frames.
 
 **Events and lighting**
 
+Explicit light proposals sample directions on the local unit tangent sphere.
+Their PDFs are per steradian and include both spherical geodesic orientations
+when a bounding sphere produces two cones. Near either pole, or inside the bound
+or its antipodal ball, the spherical proposal uses the full direction sphere.
+Sampler maps follow the same canonical f64, camera-relative f32 contract as object
+maps. Visibility still uses the nearest actual surface and its full forward
+physical distance, including long spherical arcs.
+
+Direct light connections and continuous material/phase sampling use power-heuristic
+MIS. Only overlapping emission is weighted; subsequent scattering throughput is
+unchanged. Primary and delta-event emission retain full weight. Connections require
+budget for their destination event. A connection explicitly evaluates medium
+transmittance; the ordinary path still samples free-flight survival and never
+multiplies this attenuation a second time. Invalid proposal, PDF, material query or
+connection states stop the path with emission already accumulated.
+
 The integrator chooses between the nearest surface and a sampled medium event.
 A surface miss gives an unbounded medium interval, including in spherical
 space. A medium event after multiple circuits retains its full physical

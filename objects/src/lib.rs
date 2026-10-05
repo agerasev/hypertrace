@@ -11,6 +11,7 @@ pub mod view;
 pub use background::Background;
 pub use mapped::Mapped;
 pub use material::Material;
+pub mod light;
 pub use object::Object;
 pub use scene::{Scene, SceneImpl};
 pub use shape::Shape;

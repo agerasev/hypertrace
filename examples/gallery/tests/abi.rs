@@ -120,6 +120,9 @@ fn production_storage_records_and_word_arena_layout() {
             map0: [n + 0.1, n + 0.2, n + 0.3, n + 0.4],
             map1: [n + 0.5, n + 0.6, n + 0.7, n + 0.8],
             info: [u + 1, u + 2, u + 3, u + 4],
+            sampling_map0: [n + 1.1, n + 1.2, n + 1.3, n + 1.4],
+            sampling_map1: [n + 1.5, n + 1.6, n + 1.7, n + 1.8],
+            sampling: [u + 5, u + 6, u + 7, u + 8],
         }
     });
     let materials = [
@@ -133,7 +136,14 @@ fn production_storage_records_and_word_arena_layout() {
     let words = [41u32, 42, 43, 44];
     let mut expected = Vec::new();
     for object in objects {
-        expected.extend([object.map0, object.map1, object.info.map(|x| x as f32)]);
+        expected.extend([
+            object.map0,
+            object.map1,
+            object.info.map(|x| x as f32),
+            object.sampling_map0,
+            object.sampling_map1,
+            object.sampling.map(|x| x as f32),
+        ]);
     }
     expected.extend(materials.map(|material| material.data.map(|x| x as f32)));
     expected.push(words.map(|x| x as f32));
@@ -148,11 +158,14 @@ fn production_storage_records_and_word_arena_layout() {
 @compute @workgroup_size(1)
 fn probe_abi() {
     for (var i=0u;i<2u;i+=1u) {
-        output[3*i]=objects[i].map0; output[1+3*i]=objects[i].map1;
-        output[2+3*i]=vec4<f32>(objects[i].info);
-        output[6+i]=vec4<f32>(materials[i].data);
+        output[6*i]=objects[i].map0; output[1+6*i]=objects[i].map1;
+        output[2+6*i]=vec4<f32>(objects[i].info);
+        output[3+6*i]=objects[i].sampling_map0;
+        output[4+6*i]=objects[i].sampling_map1;
+        output[5+6*i]=vec4<f32>(objects[i].sampling);
+        output[12+i]=vec4<f32>(materials[i].data);
     }
-    output[8]=vec4<f32>(f32(words[0]),f32(words[1]),f32(words[2]),f32(words[3]));
+    output[14]=vec4<f32>(f32(words[0]),f32(words[1]),f32(words[2]),f32(words[3]));
 }
 "#
     );

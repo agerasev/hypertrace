@@ -23,6 +23,7 @@ fn planes(count: usize) -> SceneDefinition<Flat3> {
         radius: 1.0,
         medium: Default::default(),
         objects: vec![EncodedObject {
+            sampling: None,
             map: Transform::identity(),
             shape,
             material: objects::material::Emissive::new(

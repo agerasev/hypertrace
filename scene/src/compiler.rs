@@ -17,6 +17,10 @@ pub struct GpuObject {
     pub map1: [f32; 4],
     /// Shape function, material record, shape word offset, reserved.
     pub info: [u32; 4],
+    pub sampling_map0: [f32; 4],
+    pub sampling_map1: [f32; 4],
+    /// Light sampler function (u32::MAX if absent), word offset, reserved, reserved.
+    pub sampling: [u32; 4],
 }
 
 #[repr(C)]
@@ -32,6 +36,8 @@ pub struct CompiledScene<G: Geometry> {
     pub radius: f32,
     /// Canonical f64 isometries; GPU rows are prepared relative to the camera.
     pub transforms: Vec<Transform<G>>,
+    pub sampling_transforms: Vec<Transform<G>>,
+    pub light_count: u32,
     pub objects: Vec<GpuObject>,
     pub materials: Vec<MaterialRecord>,
     pub words: Vec<u32>,
@@ -46,6 +52,7 @@ struct Linker<G: Geometry> {
     visiting: BTreeSet<String>,
     shapes: BTreeSet<String>,
     materials: BTreeSet<String>,
+    lights: BTreeSet<String>,
 }
 impl<G: Geometry> Linker<G> {
     fn collect(&mut self, module: &SourceModule<G>, context: GeometryContext<G>) -> Result<()> {
@@ -86,6 +93,10 @@ impl<G: Geometry> Linker<G> {
         self.shapes.insert(object.shape.schema.key.clone());
         self.collect(&object.material.schema.dependency(), context)?;
         self.materials.insert(object.material.schema.key.clone());
+        if let Some(sampling) = &object.sampling {
+            self.collect(&sampling.schema.dependency(), context)?;
+            self.lights.insert(sampling.schema.key.clone());
+        }
         Ok(())
     }
     fn link(&self) -> Result<(String, BTreeMap<String, u32>)> {
@@ -172,6 +183,29 @@ impl<G: Geometry> Linker<G> {
             }
             writeln!(source, "default: {{return {fallback};}}\n}}}}")?;
         }
+        for (suffix, arguments, call, result, fallback) in [
+            (
+                "sample",
+                "position:vec4<f32>,rng:ptr<function,u32>",
+                "position,rng",
+                "LightSample",
+                "LightSample(vec4<f32>(0),0,0u)",
+            ),
+            ("pdf", "ray:GeoRay", "ray", "LightPdf", "LightPdf(0,0u)"),
+        ] {
+            writeln!(
+                source,
+                "fn ht_light_{suffix}(kind:u32,base:u32,{arguments})->{result} {{switch kind {{"
+            )?;
+            for key in &self.lights {
+                let id = ids[key];
+                writeln!(
+                    source,
+                    "case {id}u: {{return ht_module_{id}_{suffix}(base,{call});}}"
+                )?;
+            }
+            writeln!(source, "default: {{return {fallback};}}\n}}}}")?;
+        }
         Ok((source, ids))
     }
 }
@@ -185,6 +219,7 @@ pub fn compile<G: Geometry>(scene: &SceneDefinition<G>) -> Result<CompiledScene<
         visiting: BTreeSet::new(),
         shapes: BTreeSet::new(),
         materials: BTreeSet::new(),
+        lights: BTreeSet::new(),
     };
     for module in &scene.modules.shapes {
         linker.collect(&module.dependency(), context)?;
@@ -197,6 +232,10 @@ pub fn compile<G: Geometry>(scene: &SceneDefinition<G>) -> Result<CompiledScene<
     for module in &scene.modules.libraries {
         linker.collect(&module.dependency(), context)?;
     }
+    for module in &scene.modules.lights {
+        linker.collect(&module.dependency(), context)?;
+        linker.lights.insert(module.key.clone());
+    }
     for object in &scene.objects {
         linker.object(object, context)?;
     }
@@ -207,6 +246,8 @@ pub fn compile<G: Geometry>(scene: &SceneDefinition<G>) -> Result<CompiledScene<
         result: CompiledScene {
             radius,
             transforms: vec![],
+            sampling_transforms: vec![],
+            light_count: 0,
             objects: vec![],
             materials: vec![],
             words: vec![],
@@ -217,7 +258,12 @@ pub fn compile<G: Geometry>(scene: &SceneDefinition<G>) -> Result<CompiledScene<
         compiler.object(object)?;
     }
     let inverse_camera = scene.view.map.inverse()?;
-    for map in &compiler.result.transforms {
+    for map in compiler
+        .result
+        .transforms
+        .iter()
+        .chain(&compiler.result.sampling_transforms)
+    {
         inverse_camera
             .chain(map)?
             .rows()
@@ -286,7 +332,27 @@ impl<G: Geometry> Compiler<G> {
     }
     fn object(&mut self, object: &EncodedObject<G>) -> Result<()> {
         let material = self.material(&object.material)?;
-        self.push_object(&object.shape, object.map, material)
+        let (sampling, map) = if let Some(sampling) = &object.sampling {
+            sampling.schema.validate(self.context, &sampling.words)?;
+            sampling.map.components()?;
+            let base = self.words(&sampling.words)?;
+            self.result.light_count = self
+                .result
+                .light_count
+                .checked_add(1)
+                .context("too many lights")?;
+            ([self.ids[&sampling.schema.key], base, 0, 0], sampling.map)
+        } else {
+            ([u32::MAX, 0, 0, 0], object.map)
+        };
+        self.push_object(&object.shape, object.map, material)?;
+        self.result.sampling_transforms.push(map);
+        self.result
+            .objects
+            .last_mut()
+            .expect("object appended")
+            .sampling = sampling;
+        Ok(())
     }
     fn push_object(
         &mut self,
@@ -314,6 +380,9 @@ impl<G: Geometry> Compiler<G> {
             map0,
             map1,
             info: [self.ids[&shape.schema.key], material, base, 0],
+            sampling_map0: map0,
+            sampling_map1: map1,
+            sampling: [u32::MAX, 0, 0, 0],
         });
         Ok(())
     }
@@ -350,6 +419,7 @@ fn {{self}}_emission(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>)->Materi
             radius: 1.0,
             medium: Default::default(),
             objects: vec![EncodedObject {
+                sampling: None,
                 map: Transform::identity(),
                 shape: shape(),
                 material: material(),
@@ -359,7 +429,7 @@ fn {{self}}_emission(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>)->Materi
     }
     #[test]
     fn storage_records_have_exact_word_layout() {
-        assert_eq!(std::mem::size_of::<GpuObject>(), 48);
+        assert_eq!(std::mem::size_of::<GpuObject>(), 96);
         assert_eq!(std::mem::size_of::<MaterialRecord>(), 16);
         assert_eq!(std::mem::offset_of!(GpuObject, info), 32);
     }

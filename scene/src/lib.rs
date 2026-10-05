@@ -36,14 +36,20 @@ pub struct ShapeRole;
 #[derive(Clone, Copy, Debug)]
 pub struct MaterialRole;
 #[derive(Clone, Copy, Debug)]
+pub struct LightRole;
+#[derive(Clone, Copy, Debug)]
 pub struct LibraryRole;
 impl role::Sealed for ShapeRole {}
 impl role::Sealed for MaterialRole {}
+impl role::Sealed for LightRole {}
 impl role::Sealed for LibraryRole {}
 impl ShaderRole for ShapeRole {
     const MINIMUM_WORDS: usize = 1;
 }
 impl ShaderRole for MaterialRole {
+    const MINIMUM_WORDS: usize = 0;
+}
+impl ShaderRole for LightRole {
     const MINIMUM_WORDS: usize = 0;
 }
 impl ShaderRole for LibraryRole {
@@ -151,6 +157,7 @@ pub struct ShaderModule<G: Geometry, R: ShaderRole> {
 }
 pub type ShapeModule<G> = ShaderModule<G, ShapeRole>;
 pub type MaterialModule<G> = ShaderModule<G, MaterialRole>;
+pub type LightModule<G> = ShaderModule<G, LightRole>;
 pub type LibraryModule<G> = ShaderModule<G, LibraryRole>;
 impl<G: Geometry, R: ShaderRole> ShaderModule<G, R> {
     pub fn new(
@@ -220,6 +227,7 @@ impl<G: Geometry, R: ShaderRole> ShaderModule<G, R> {
 pub struct Modules<G: Geometry> {
     pub shapes: Vec<ShapeModule<G>>,
     pub materials: Vec<MaterialModule<G>>,
+    pub lights: Vec<LightModule<G>>,
     pub libraries: Vec<LibraryModule<G>>,
 }
 impl<G: Geometry> Default for Modules<G> {
@@ -227,6 +235,7 @@ impl<G: Geometry> Default for Modules<G> {
         Self {
             shapes: vec![],
             materials: vec![],
+            lights: vec![],
             libraries: vec![],
         }
     }
@@ -235,6 +244,7 @@ impl<G: Geometry> Modules<G> {
     pub fn extend(&mut self, other: Self) {
         self.shapes.extend(other.shapes);
         self.materials.extend(other.materials);
+        self.lights.extend(other.lights);
         self.libraries.extend(other.libraries);
     }
 }
@@ -264,10 +274,30 @@ impl<G: Geometry> MaterialValue<G> {
 
 /// A flattened instance produced by statically typed object composition.
 #[derive(Clone, Debug)]
+pub struct LightValue<G: Geometry> {
+    pub schema: LightModule<G>,
+    pub words: Vec<u32>,
+    /// Sampler frame, composed in f64 before camera-relative upload.
+    pub map: Transform<G>,
+}
+impl<G: Geometry> LightValue<G> {
+    pub fn new(schema: LightModule<G>, words: Vec<u32>) -> Result<Self> {
+        schema.validate_length(&words)?;
+        Ok(Self {
+            schema,
+            words,
+            map: Transform::identity(),
+        })
+    }
+}
+
+/// A flattened instance produced by statically typed object composition.
+#[derive(Clone, Debug)]
 pub struct EncodedObject<G: Geometry> {
     pub map: Transform<G>,
     pub shape: ShapeValue<G>,
     pub material: MaterialValue<G>,
+    pub sampling: Option<LightValue<G>>,
 }
 #[derive(Clone, Debug)]
 pub struct View<G: Geometry> {

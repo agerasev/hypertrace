@@ -388,8 +388,9 @@ and `objects::material::{absorbing, colored, emissive, mixture}`, for example.
 
 Material positions are object-local embedded `vec4<f32>` values, scalar first.
 `GeoMaterialContext.normal` and `MaterialSample.direction` are `vec3<f32>`
-values in a local orthonormal tangent frame. `MaterialSample` also contains path
-throughput (`attenuation`), accumulated emission and an `alive` flag.
+values in a local orthonormal tangent frame. Each `MaterialSample` starts with
+unit `attenuation`, zero `emission`, `alive=1`, and `delta=1`. Its results describe
+one event; the integrator applies the incoming path throughput separately.
 Every material supplies `_evaluate` and `_emission` queries in its own namespace.
 `incoming` points along the arriving ray; `outgoing` points along the departing
 ray. `MaterialEvaluation(value, pdf, valid)` returns the continuous BSDF times
@@ -404,6 +405,51 @@ Emission queries preserve wrapper order: coloring outside emission colors it;
 emission outside coloring does not. Queries do not consume random draws.
 `uniform_random(rng)` advances the common random generator. Parameter helpers
 `load_u32`, `load_f32`, `load_vec3`, and `load_vec4` read the word arena.
+
+### Direct light sampling
+
+Explicitly mark an emitter with `objects::object::Sampled` and a component that
+implements `objects::light::LightSampler<G>`. For an origin-centered emitter,
+`Sampled::new(Covered::new(shape, material), SphereBound::new(radius))` uses a
+geodesic bounding sphere with a physical radius. Place `Mapped` outside this
+wrapper to move the emitter and proposal together. Nested object maps inside the
+wrapper move the geometry within the proposal frame. A group shares the bound,
+but each flattened object is selected separately; nested sampling wrappers are
+rejected. Unmarked emission and backgrounds still use ordinary path sampling.
+
+At each surface or isotropic volume event with budget for another interaction,
+the integrator selects one marked object uniformly and samples its directions.
+Visibility is tested against the actual scene; a bound miss or intervening surface
+contributes zero. Transparent and refractive surfaces are events, so connections
+do not pass through them; ordinary continuation handles those paths. A power
+heuristic combines the connection with the continuous material/phase sampler.
+Only emission at the next hit is MIS-weighted; subsequent throughput, camera
+emission and emission after delta events retain their normal treatment.
+
+`SphereBound` samples a uniform cone in Euclidean/hyperbolic space and both
+opposite cones in spherical space. Inside the bound, inside its spherical
+antipodal ball, and for spherical radii at least `pi*R/2`, it samples the full
+direction sphere. Extremely narrow cones are conservatively widened to keep f32
+directions resolvable. The PDF always describes the actual proposal. A loose or
+even incomplete bound affects efficiency; the material sampler retains uncovered
+directions with full weight. Light connections use their full forward physical
+distance for medium transmittance, without adding attenuation again to the analog
+continuation. Light sampling improves direct scattering, not specular caustics.
+
+Downstream samplers use a typed `LightModule<G>` with these entry points:
+
+```wgsl
+fn {{self}}_sample(base:u32,position:vec4<f32>,rng:ptr<function,u32>)->LightSample;
+fn {{self}}_pdf(base:u32,ray:GeoRay)->LightPdf;
+```
+
+`LightSample(tangent, pdf, valid)` returns a unit ambient tangent at `position`
+and density per local steradian. `LightPdf(value, valid)` evaluates the same
+distribution, including zero outside its support. Both use the sampler's own
+isometry frame; `valid=0` is a numerical failure, never a miss. Emission intensity
+and the probability of selecting the object are not part of this component PDF.
+The compiler links samplers like shapes and materials, preserving dependencies
+of empty collections. Sampler payloads, maps and light counts remain buffer data.
 
 Shape entry points have this signature:
 

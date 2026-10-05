@@ -100,13 +100,21 @@ impl<G: Geometry> Scene<G> {
         let mut objects = self.compiled.objects.clone();
         let inverse = camera.transform().inverse()?;
         anyhow::ensure!(
-            objects.len() == self.compiled.transforms.len(),
+            objects.len() == self.compiled.transforms.len()
+                && objects.len() == self.compiled.sampling_transforms.len(),
             "compiled object/transform count differs"
         );
-        for (object, map) in objects.iter_mut().zip(&self.compiled.transforms) {
+        for ((object, map), sampling_map) in objects
+            .iter_mut()
+            .zip(&self.compiled.transforms)
+            .zip(&self.compiled.sampling_transforms)
+        {
             let rows = inverse.chain(map)?.rows()?;
             object.map0 = rows[0];
             object.map1 = rows[1];
+            let sampling_rows = inverse.chain(sampling_map)?.rows()?;
+            object.sampling_map0 = sampling_rows[0];
+            object.sampling_map1 = sampling_rows[1];
         }
         Ok(objects)
     }
@@ -176,7 +184,7 @@ impl Params {
             background1: pad(c1),
             background_axis: pad(axis),
             info: [size.0, size.1, 0, scene.objects().len() as u32],
-            options: [samples, scene.bounces, 0, 0],
+            options: [samples, scene.bounces, scene.compiled.light_count, 0],
             misc: [scene.fov, scene.radius, power, 0.0],
             medium: scene.medium.gpu_row(),
         }

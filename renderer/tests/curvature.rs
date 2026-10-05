@@ -80,6 +80,7 @@ fn vacuum_case<G: Geometry>(gpu: &Gpu) {
 fn transparent_spherical_surface_is_encountered_again_after_each_circuit() {
     let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
     let object = EncodedObject::<Spherical3> {
+        sampling: None,
         map: Transform::identity(),
         shape: shape::geodesic_sphere(0.7).unwrap(),
         material: material::transparent()
@@ -107,6 +108,7 @@ fn absorbing_fog_matches_physical_surface_transmittance_for_every_curvature() {
 
 fn absorbing_case<G: Geometry>(gpu: &Gpu) {
     let mut scene = definition::<G>(vec![EncodedObject {
+        sampling: None,
         map: Transform::identity(),
         shape: shape::geodesic_sphere(0.8).unwrap(),
         material: material::absorbing().emissive([1.0; 3]).unwrap(),
@@ -147,6 +149,7 @@ fn fog_scatters_off_axis_light_and_stays_black_without_emitters() {
 
 fn scattering_case<G: Geometry>(gpu: &Gpu) {
     let mut scene = definition::<G>(vec![EncodedObject {
+        sampling: None,
         map: Transform::identity()
             .move_local([0.9, 0.0, 0.0], [0.0; 3], 1.0)
             .unwrap(),
@@ -201,6 +204,7 @@ fn {{self}}_emission(base:u32,ctx:GeoMaterialContext,incoming:vec3<f32>)->Materi
 "#, Some(0)),vec![]).unwrap();
     let gpu = futures::executor::block_on(Gpu::headless()).unwrap();
     let scene = definition(vec![EncodedObject::<Spherical3> {
+        sampling: None,
         map: Transform::identity(),
         shape,
         material,
@@ -231,6 +235,7 @@ fn numerical_failure_preserves_prior_emission_without_evaluating_background() {
     let shape = shape.mapped(Transform::<Spherical3>::identity()).unwrap();
     let shape = shape::vector(shape.schema.clone(), vec![shape]).unwrap();
     let scene = definition::<Spherical3>(vec![EncodedObject {
+        sampling: None,
         map: Transform::identity(),
         shape,
         material: material::transparent()

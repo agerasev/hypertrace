@@ -7,8 +7,10 @@ the optional viewer under `/hypertrace/viewer/`.
 
 Keep the site factual. Native applications are the main route. Browser instances
 start only on request, pause while hidden/offscreen, and report actual startup
-failures beside a link to native instructions. Theory uses concise prose with
-equations, diagrams, implementation links, and relevant primary references.
+failures beside a link to native instructions. Theory explains intrinsic geometry
+before its coordinate models, with defined symbols, diagrams, and primary
+references. Explain the geometric meaning of each
+formula; keep general rendering tutorials and implementation details out of it.
 
 Requirements: native and web prerequisites in the root README, Python 3, and
 ImageMagick (`magick` or `convert`).

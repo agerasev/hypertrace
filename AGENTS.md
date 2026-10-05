@@ -207,9 +207,14 @@ history in commits, not new migration diaries.
   Winit’s web event loop throws an exact control-flow sentinel during normal
   startup; filter only that sentinel, preserving subsequent genuine errors.
   Hash bootstrap assets through Trunk so fixes do not reuse stale cached code.
-- Theory should cover the implemented mechanics with concise prose, equations,
-  diagrams, and primary references. Distinguish historical inspiration and general
-  algorithms from current implementation choices and limitations.
+- Website theory explains intrinsic Euclidean, hyperbolic, and spherical geometry
+  before its coordinate models and transformations. Keep generic ray-tracing
+  tutorials and implementation descriptions out of it. Explain ideas with enough
+  prose to connect them; define every formula symbol, coordinate convention, and
+  unit beside its use. Add drawings wherever they clarify a geometric property
+  or representation. Distinguish intrinsic straight geodesics from their curved
+  coordinate images, and intrinsic dimension from embedding dimension. Use primary
+  references and distinguish historical inspiration from current conventions.
 - Long GPU captures need bounded dispatches as well as bounded queue depth.
   Record batch and camera settings for reproduction. Do not remove build caches
   or replace executables still used by an active capture pipeline.

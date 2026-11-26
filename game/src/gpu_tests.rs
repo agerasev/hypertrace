@@ -264,6 +264,32 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     let total = f64::from(red(&leaf_front) + red(&leaf_back));
     assert!((total - (gap - moon_height).cosh().recip().powi(2)).abs() < 0.006);
 
+    // Tilt the vertex normals of a flat receiver. Their spatial components
+    // interpolate to (0.5,1,0) on the axis; the analytic disk is above its
+    // shading horizon, so irradiance scales with the inclination cosine.
+    let tilted = Objects {
+        meshes: vec![Object {
+            shape: world::mesh_with_normals(
+                &library,
+                &[[-0.2, 0.0, 0.8], [0.2, 0.0, 0.8], [0.0, 0.0, 1.2]]
+                    .map(|point| (point, [1.0; 3])),
+                &[0, 1, 2],
+                |[w, x, _, _]| Vec3::new((0.5 + 2.0 * x / w) as f32, 1.0, 0.0),
+            )?,
+            pose: Pose::identity(),
+            material: Material::Diffuse(Vec3::ONE),
+        }],
+        ..Objects::default()
+    };
+    check_center(
+        &render(&tilted, above(Pose::identity(), 0.2)?, &light)?,
+        gap.cosh().recip().powi(2) / 1.25_f64.sqrt(),
+    );
+    check_center(
+        &render(&tilted, above(Pose::identity(), -0.2)?, &light)?,
+        0.0,
+    );
+
     // Tilt the light to put its disc centre on the receiver's horizon.
     // Integrating the visible half-disc gives (a - sin(a)*cos(a))/pi.
     let grazing_sun = Pose::identity().move_local([gap, 0.0, 0.0], [0.0, 0.0, FRAC_PI_2], 1.0)?;

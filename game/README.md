@@ -1,9 +1,8 @@
 # Hypergame
 
 Hypergame is a native first-person triangle rasterizer for hyperbolic space.
-Its Earth, Sun, and Moon are three disjoint geodesic planes, as in the original
-[`hearth` example](https://github.com/agerasev/hypertrace/blob/20565c3ad9f441358e6a148b98416978133a85d7/main/examples/hearth.rs). The opening view looks across green vegetation toward the Sun
-and Moon. The sky is black.
+Its Earth and Sun are disjoint geodesic planes inspired by the original
+[`hearth` example](https://github.com/agerasev/hypertrace/blob/20565c3ad9f441358e6a148b98416978133a85d7/main/examples/hearth.rs). A finite triangulated horosphere forms the Moon. The opening view looks across green vegetation toward the Sun and Moon. The sky is black.
 
 From the Hypertrace workspace root, run
 
@@ -55,15 +54,21 @@ hue when mapped to the display. The model omits cast shadows.
 
 ## Shapes and materials
 
-Each `Object<S>` has a shape, a hyperbolic pose, and a material. Earth, Sun,
-and Moon use the `InfinitePlane` shape. Trees and grass use indexed Wgame
-polygons. Either shape can have a diffuse, translucent, or emissive material.
+Each `Object<S>` has a shape, a hyperbolic pose, and a material. Earth and
+Sun use the `InfinitePlane` shape. The Moon, trees, and grass use indexed
+Wgame polygons. Either shape can have a diffuse, translucent, or emissive material.
 The material tint multiplies the vertex colors. [Scene construction](src/world.rs)
 
 Mesh vertices use object-local Poincaré half-space coordinates `(u, v, h)`,
 with horizontal coordinates `u, v` and positive height `h`. The local origin
 sits at `(0, 0, 1)`. Three indices define a face in the geodesic plane through
 its vertices. One uploaded mesh can be drawn at many poses.
+
+The lunar mesh samples chart height `h=1`. Its interpolated tangent normals
+give the surface continuous shading, while geodesic triangles form the limb.
+In this chart Earth is a hemisphere below the Moon. Every above-ground observer
+below the lunar gap sees a first-hit disk contained in the mesh, including
+during a jump. [Moon geometry](src/world/moon.rs)
 
 The first Wgame render pass draws complete planes using a shared pair of
 triangles. The plane shader clips each pair to its open Klein disk, giving

@@ -21,11 +21,18 @@ fn diffuse_cap(mu: f32, s: f32, c: f32) -> f32 {
 fn illuminate(input: VaryingData, albedo: vec3<f32>) -> vec3<f32> {
     let k = input.local_klein;
     // The fragment's visible face points toward the eye; screen Y grows down.
-    let n = cross(dpdy(k), dpdx(k));
+    let face = cross(dpdy(k), dpdx(k));
     let rho2 = 1.0 - dot(k,k);
     if input.material.x > 0.5 { return albedo; }
     if rho2 <= 0.0 { return vec3<f32>(0.0); }
 
+    // Orient the interpolated vertex normal to the visible side of the triangle.
+    var n = face;
+    let interpolated = input.smooth_normal;
+    if dot(interpolated,interpolated) > 0.0 {
+        let alignment = dot(face,interpolated) - dot(face,k)*dot(interpolated,k);
+        n = select(-interpolated, interpolated, alignment >= 0.0);
+    }
     // (n,n·k) is a Lorentz normal to this geodesic triangle. Normalize it
     // in its object frame, where finite meshes and nearby plane patches live.
     let nw = dot(n,k);

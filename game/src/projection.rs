@@ -39,6 +39,7 @@ struct Instance {
 #[derive(Attribute)]
 struct Varyings {
     local_klein: Vec3,
+    smooth_normal: Vec3,
     sun_plane: Vec4,
     material: Vec2,
 }
@@ -112,6 +113,11 @@ pub(crate) fn shader(library: &Library, sun: &Sun, ambient: AmbientLight) -> Res
             let local = model_matrix * vertex.position;
             output.position = view_matrix * place_vertex(instance.real, instance.imag, local);
             output.local_klein = local.xyz;
+            // Spatial Lorentz normals are also Klein tangent-plane covectors.
+            let a = model_matrix[0].xyz;
+            let b = model_matrix[1].xyz;
+            let c = model_matrix[2].xyz;
+            output.smooth_normal = mat3x3<f32>(cross(b,c), cross(c,a), cross(a,b)) * vertex.normal;
             output.sun_plane = instance.sun_plane;
             output.material = instance.material;
         "
@@ -141,7 +147,7 @@ pub(crate) fn shader(library: &Library, sun: &Sun, ambient: AmbientLight) -> Res
 fn plane_quad(library: &Library) -> Polygon {
     let shapes = library.shapes();
     let vertices = [(-1.0, -1.0), (-1.0, 1.0), (1.0, 1.0), (1.0, -1.0)]
-        .map(|(x, z)| Vertex::new(Vec4::new(x, 0.0, z, 1.0), Vec3::Z));
+        .map(|(x, z)| Vertex::new(Vec4::new(x, 0.0, z, 1.0), Vec3::Z).with_normal(Vec3::ZERO));
     shapes.mesh(Mesh::from_arrays(
         shapes.state(),
         &vertices,

@@ -12,6 +12,7 @@ use crate::projection::Pose;
 
 mod ecology;
 mod ground_cells;
+mod moon;
 mod plants;
 
 use ecology::{Daylight, Species};
@@ -64,6 +65,7 @@ pub struct AmbientLight {
 
 pub struct World {
     objects: Objects,
+    fixed_meshes: Vec<Object<Polygon>>,
     center: Option<Cell>,
     cell_meshes: BTreeMap<Cell, Range<usize>>,
     plants: Plants,
@@ -77,6 +79,17 @@ pub fn mesh(
     library: &Library,
     vertices: &[([f64; 3], [f32; 3])],
     indices: &[u32],
+) -> Result<Polygon> {
+    mesh_with_normals(library, vertices, indices, |_| Vec3::ZERO)
+}
+
+/// A nonzero vertex normal is the spatial part of its embedded tangent normal
+/// in the local frame. Zero selects the geometric face normal for flat shading.
+pub(super) fn mesh_with_normals(
+    library: &Library,
+    vertices: &[([f64; 3], [f32; 3])],
+    indices: &[u32],
+    normal_at: impl Fn([f64; 4]) -> Vec3,
 ) -> Result<Polygon> {
     ensure!(
         !indices.is_empty() && indices.len().is_multiple_of(3),
@@ -105,7 +118,11 @@ pub fn mesh(
                 1.0,
             );
             ensure!(rgb.into_iter().all(f32::is_finite), "invalid vertex color");
-            Ok(Vertex::new(xyzw, Vec3::Z).with_color(Vec3::from_array(rgb).extend(1.0)))
+            let normal = normal_at(p.into());
+            ensure!(normal.is_finite(), "invalid vertex normal");
+            Ok(Vertex::new(xyzw, Vec3::Z)
+                .with_color(Vec3::from_array(rgb).extend(1.0))
+                .with_normal(normal))
         })
         .collect::<Result<Vec<_>>>()?;
     let shapes = library.shapes();
@@ -142,6 +159,7 @@ impl World {
         let center = Cell::at(eye)?;
         if self.center != Some(center) {
             let mut meshes = Vec::with_capacity(self.objects.meshes.len());
+            meshes.extend_from_slice(&self.fixed_meshes);
             let mut cell_meshes = BTreeMap::new();
             for cell in center.neighborhood()? {
                 let start = meshes.len();
@@ -202,19 +220,13 @@ pub fn world(library: &Library) -> Result<World> {
             pose: sun.pose,
             material: Material::Emissive(Vec3::from_array(sun.radiance)),
         },
-        Object {
-            shape: InfinitePlane,
-            pose: Pose::from_isometry(
-                Hyperboloid3::shift_x(-1.0).chain(Hyperboloid3::shift_y(2.0)),
-            )?,
-            material: Material::Diffuse(Vec3::new(0.76, 0.76, 0.74)),
-        },
     ];
     Ok(World {
         objects: Objects {
             planes,
             ..Objects::default()
         },
+        fixed_meshes: vec![moon::moon(library)?],
         center: None,
         cell_meshes: BTreeMap::new(),
         plants: Plants::new(library)?,

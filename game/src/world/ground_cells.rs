@@ -23,13 +23,7 @@ fn column_index(column: f64) -> Result<i64> {
     Ok(column.floor() as i64)
 }
 
-pub(super) struct Location {
-    pub cell: Cell,
-    column: f64,
-    band_fraction: f64,
-}
-
-impl Location {
+impl Cell {
     /// The cell under the eye. A normal displacement (eye height or jump) and
     /// any change of view direction leave the perpendicular ground foot fixed.
     pub fn at(eye: Pose) -> Result<Self> {
@@ -51,45 +45,10 @@ impl Location {
         let log_h = h.ln();
         let band = (log_h / LOG_HEIGHT).floor() as i32;
         // x is u/h. Work with the height ratio to avoid forming a large absolute u.
-        let column = x * (log_h - f64::from(band) * LOG_HEIGHT).exp() / WIDTH;
-        Ok(Self {
-            cell: Cell {
-                band,
-                column: column_index(column)?,
-            },
-            column,
-            band_fraction: log_h / LOG_HEIGHT - f64::from(band),
-        })
+        let column = column_index(x * (log_h - f64::from(band) * LOG_HEIGHT).exp() / WIDTH)?;
+        Ok(Self { band, column })
     }
 
-    /// Bilinear interpolation between grid nodes. The upper band's columns
-    /// have different chart widths, so determine their indices independently.
-    pub fn neighbors(&self) -> Result<[(Cell, f64); 4]> {
-        let row = |band, column: f64, weight| -> Result<_> {
-            let left = column_index(column)?;
-            let fraction = column - left as f64;
-            Ok([
-                (Cell { band, column: left }, weight * (1.0 - fraction)),
-                (
-                    Cell {
-                        band,
-                        column: left + 1,
-                    },
-                    weight * fraction,
-                ),
-            ])
-        };
-        let [a, b] = row(self.cell.band, self.column, 1.0 - self.band_fraction)?;
-        let [c, d] = row(
-            self.cell.band + 1,
-            self.column * (-LOG_HEIGHT).exp(),
-            self.band_fraction,
-        )?;
-        Ok([a, b, c, d])
-    }
-}
-
-impl Cell {
     /// All cells within VIEW_RADIUS of any point in this cell, plus a margin.
     /// The result is independent of where the observer stands inside the cell.
     pub fn neighborhood(self) -> Result<Vec<Self>> {
@@ -158,7 +117,7 @@ mod tests {
     fn cell_lookup_resolves_distant_positive_height() -> Result<()> {
         let space = Space3::<f64, -1>::unit();
         let eye = Pose::from_isometry(space.translation([0.0, 0.0, 1.0].into(), 20.0).unwrap())?;
-        let cell = Location::at(eye)?.cell;
+        let cell = Cell::at(eye)?;
         assert_eq!(cell.band, (20.0 / LOG_HEIGHT).floor() as i32);
         assert_eq!(cell.column, 0);
         Ok(())
@@ -187,9 +146,9 @@ mod tests {
                 let chart = space.point_to_half_space(point.into());
                 assert!((chart[0] / (WIDTH * low) - cell.column as f64 - across).abs() < 1e-9);
                 assert!(((1.0 - low / chart[2]) / (-(-LOG_HEIGHT).exp_m1()) - area).abs() < 1e-9);
-                assert_eq!(Location::at(root)?.cell, cell);
+                assert_eq!(Cell::at(root)?, cell);
                 let eye = root.move_local([0.0, 0.2, 0.0], [0.2, 1.3, 0.0], 1.0)?;
-                assert_eq!(Location::at(eye)?.cell, cell);
+                assert_eq!(Cell::at(eye)?, cell);
             }
         }
         Ok(())
@@ -219,7 +178,7 @@ mod tests {
                         let step = Pose::from_isometry(
                             space.translation(axis.into(), VIEW_RADIUS).unwrap(),
                         )?;
-                        let end = Location::at(start.chain(&step)?)?.cell;
+                        let end = Cell::at(start.chain(&step)?)?;
                         assert!(cells.binary_search(&end).is_ok(), "{cell:?} -> {end:?}");
                     }
                 }

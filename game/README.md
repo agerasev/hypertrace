@@ -55,11 +55,12 @@ at the surface. A dim ambient floor keeps the ground visible at night. Emissive
 materials specify their own linear RGB radiance. Overbright colors retain their
 hue when mapped to the display. The model omits cast shadows.
 
-Stars are distant emissive geodesic planes. Walking changes the apparent
-direction and angular size of each plane. Four overlapping, seeded catalogues
-fade stars in and out to maintain their angular density as the observer moves.
-The stars keep their world positions, so returning to a viewpoint restores
-its constellation. [Star field](src/world/stars.rs)
+Stars are distant emissive geodesic planes. The renderer draws the entire
+fixed catalogue together. Walking toward a star's nearest point on Earth
+makes its disk grow, and walking away shrinks it until it covers less than a
+pixel. Its emitted radiance stays constant. The nearest points are scattered
+uniformly by ground area within a finite disk around noon, so the sky looking
+outward beyond that region grows sparse. [Star field](src/world/stars.rs)
 
 ## Scattered daylight
 

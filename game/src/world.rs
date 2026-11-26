@@ -17,9 +17,8 @@ mod plants;
 mod stars;
 
 use ecology::{Daylight, Species};
-use ground_cells::{Cell, Location};
+use ground_cells::Cell;
 use plants::Plants;
-use stars::Stars;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Material {
@@ -70,8 +69,6 @@ pub struct World {
     objects: Objects,
     fixed_meshes: Vec<Object<Polygon>>,
     center: Option<Cell>,
-    fixed_plane_count: usize,
-    stars: Stars,
     cell_meshes: BTreeMap<Cell, Range<usize>>,
     plants: Plants,
     daylight: Daylight,
@@ -161,8 +158,7 @@ impl Samples {
 impl World {
     /// Rebuild the local patch only when the observer enters a new ground cell.
     pub fn objects_near(&mut self, eye: Pose) -> Result<&Objects> {
-        let location = Location::at(eye)?;
-        let center = location.cell;
+        let center = Cell::at(eye)?;
         if self.center != Some(center) {
             let mut meshes = Vec::with_capacity(self.objects.meshes.len());
             meshes.extend_from_slice(&self.fixed_meshes);
@@ -180,9 +176,6 @@ impl World {
             self.cell_meshes = cell_meshes;
             self.center = Some(center);
         }
-        self.objects.planes.truncate(self.fixed_plane_count);
-        self.stars
-            .append_visible(location.neighbors()?, &mut self.objects.planes)?;
         Ok(&self.objects)
     }
 
@@ -218,7 +211,7 @@ pub fn world(library: &Library) -> Result<World> {
         radiance: [100.0, 96.0, 82.0],
     };
     let earth = Pose::identity();
-    let planes = vec![
+    let mut planes = vec![
         Object {
             shape: InfinitePlane,
             pose: earth,
@@ -230,9 +223,8 @@ pub fn world(library: &Library) -> Result<World> {
             material: Material::Emissive(Vec3::from_array(sun.radiance)),
         },
     ];
+    planes.extend(stars::catalogue()?);
     Ok(World {
-        fixed_plane_count: planes.len(),
-        stars: Stars::default(),
         atmosphere: Atmosphere {
             ground: earth,
             height: 0.45,

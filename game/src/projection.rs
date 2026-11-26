@@ -4,22 +4,26 @@ use ccgeom::{Hyperboloid3, Space3};
 use hypertrace_scene::Transform;
 use wgame::{
     Library,
-    gfx::Scene,
-    glam::{Mat4, Vec3, Vec4, camera::rh::proj::directx},
+    gfx::{BakedScene, Camera, Scene, Target},
+    glam::{Mat4, Vec2, Vec3, Vec4, camera::rh::proj::directx},
     shader::Attribute,
     shapes::{
-        material::{MaterialBinding, MeshShader},
-        shader::ShaderConfig,
+        Mesh, Polygon,
+        material::{MaterialBinding, MaterialMesh, MeshShader},
+        prelude::ShapeFill,
+        shader::{ShaderConfig, Vertex},
     },
 };
 use wgpu::util::DeviceExt;
 
-use crate::world::{Material, Object, Sun};
+use crate::world::{Material, Objects, Sun};
 
 pub(crate) type Pose = Transform<Hyperboloid3>;
 
 pub(crate) struct Shader {
     mesh: MeshShader<Instance>,
+    plane: MeshShader<Instance>,
+    plane_quad: Polygon,
     light: MaterialBinding,
     sun_pose: Pose,
 }
@@ -29,14 +33,14 @@ struct Instance {
     real: Vec4,
     imag: Vec4,
     sun_plane: Vec4,
-    surface: Vec3, // (emissive, infinite plane, diffuse transmission fraction)
+    material: Vec2, // (emissive, diffuse transmission fraction)
 }
 
 #[derive(Attribute)]
 struct Varyings {
     local_klein: Vec3,
     sun_plane: Vec4,
-    surface: Vec3,
+    material: Vec2,
 }
 
 /// Physical distance along the optical axis to the near clipping plane, in curvature radii.
@@ -93,27 +97,44 @@ pub(crate) fn shader(library: &Library, sun: &Sun) -> Result<Shader> {
     } else {
         "encode_srgb(linear)"
     };
-    let mesh = MeshShader::new(
-        library.shapes().state(),
-        ShaderConfig {
-            module_source: concat!(include_str!("projection.wgsl"), "\n", include_str!("lighting.wgsl")).into(),
-            varying: Varyings::bindings(),
-            vertex_source: "
-                output.position = view_matrix * place_vertex(instance.real, instance.imag, vertex.position);
-                output.local_klein = vertex.position.xyz;
-                output.sun_plane = instance.sun_plane;
-                output.surface = instance.surface;
-            ".into(),
-            fragment_color_source: format!("let linear = illuminate(input, color.rgb); color = vec4<f32>({display}, color.a);"),
-            ..Default::default()
-        },
-        &[layout],
-    )?;
+    let mut config = ShaderConfig {
+        module_source: concat!(include_str!("projection.wgsl"), "\n", include_str!("lighting.wgsl")).into(),
+        varying: Varyings::bindings(),
+        vertex_source: "
+            output.position = view_matrix * place_vertex(instance.real, instance.imag, vertex.position);
+            output.local_klein = vertex.position.xyz;
+            output.sun_plane = instance.sun_plane;
+            output.material = instance.material;
+        ".into(),
+        fragment_color_source: format!("let linear = illuminate(input, color.rgb); color = vec4<f32>({display}, color.a);"),
+        ..Default::default()
+    };
+    let layouts = [layout];
+    let shapes = library.shapes().state();
+    let mesh = MeshShader::new(shapes, config.clone(), &layouts)?;
+    // The two triangles cover a square. Only its open unit disk is in the plane.
+    config
+        .fragment_color_source
+        .push_str("\nif dot(input.local_klein, input.local_klein) >= 1.0 { discard; }");
+    let plane = MeshShader::new(shapes, config, &layouts)?;
     Ok(Shader {
         mesh,
+        plane,
+        plane_quad: plane_quad(library),
         light: MaterialBinding::Uniforms(uniforms),
         sun_pose: sun.pose,
     })
+}
+
+fn plane_quad(library: &Library) -> Polygon {
+    let shapes = library.shapes();
+    let vertices = [(-1.0, -1.0), (-1.0, 1.0), (1.0, 1.0), (1.0, -1.0)]
+        .map(|(x, z)| Vertex::new(Vec4::new(x, 0.0, z, 1.0), Vec3::Z));
+    shapes.mesh(Mesh::from_arrays(
+        shapes.state(),
+        &vertices,
+        Some(&[0, 1, 2, 0, 2, 3]),
+    ))
 }
 
 fn projective_pair(map: Pose) -> Result<[Vec4; 2]> {
@@ -147,30 +168,28 @@ fn plane_foot(relative: Pose) -> Result<Pose> {
     )
 }
 
-pub(crate) fn prepare(objects: &[Object], camera: Pose, shader: &Shader) -> Result<Scene> {
-    let view = camera.inverse()?;
-    let mut scene = Scene::default();
-    for object in objects {
-        let (emission, transmission) = match object.material {
-            Material::Diffuse => (0.0, 0.0),
-            Material::Translucent { transmission } => {
+impl Shader {
+    fn shaded_mesh(
+        &self,
+        polygon: &Polygon,
+        pipeline: &MeshShader<Instance>,
+        relative: Pose,
+        sun_in_object: Pose,
+        material: Material,
+    ) -> Result<MaterialMesh<Instance>> {
+        let color = material.color();
+        ensure!(color.is_finite(), "invalid material color");
+        let (emission, transmission) = match material {
+            Material::Diffuse(_) => (0.0, 0.0),
+            Material::Translucent { transmission, .. } => {
                 ensure!(
                     (0.0..=1.0).contains(&transmission),
                     "invalid transmission fraction"
                 );
                 (0.0, transmission)
             }
-            Material::Emissive => (1.0, 0.0),
+            Material::Emissive(_) => (1.0, 0.0),
         };
-        let mut relative = view.chain(&object.pose)?;
-        let mut sun_in_object = object.pose.inverse()?.chain(&shader.sun_pose)?;
-        if object.infinite_plane {
-            // Reparameterizing inside the plane leaves its physical surface
-            // invariant. Keep the light and drawing transforms in that same frame.
-            let foot = plane_foot(relative)?;
-            relative = relative.chain(&foot)?;
-            sun_in_object = foot.inverse()?.chain(&sun_in_object)?;
-        }
         let [w, x, y, z] = sun_in_object.apply_vector([0.0, 0.0, 1.0, 0.0]);
         let sun_plane = Vec4::new(x as f32, y as f32, z as f32, w as f32);
         ensure!(
@@ -182,14 +201,58 @@ pub(crate) fn prepare(objects: &[Object], camera: Pose, shader: &Shader) -> Resu
             real,
             imag,
             sun_plane,
-            surface: Vec3::new(emission, f32::from(object.infinite_plane), transmission),
+            material: Vec2::new(emission, transmission),
         };
-        let material = shader
-            .mesh
-            .material(vec![shader.light.clone()], attributes)?;
-        scene.add(&object.mesh.with_material(&material));
+        let material = pipeline.material(vec![self.light.clone()], attributes)?;
+        Ok(polygon.fill_color(color).with_material(&material))
     }
-    Ok(scene)
+}
+
+pub(crate) struct Drawing {
+    planes: BakedScene,
+    meshes: BakedScene,
+}
+
+impl Drawing {
+    pub(crate) fn draw(&self, target: &mut impl Target, camera: &Camera) {
+        // Both passes use the target's depth buffer so a plane can occlude a mesh.
+        target.render(camera, &self.planes);
+        target.render(camera, &self.meshes);
+    }
+}
+
+pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Result<Drawing> {
+    let view = camera.inverse()?;
+    let mut planes = Scene::default();
+    for plane in &objects.planes {
+        let relative = view.chain(&plane.pose)?;
+        // Recenter the plane's drawing and lighting frames at the foot of the eye.
+        let foot = plane_foot(relative)?;
+        let sun_in_plane = plane.pose.inverse()?.chain(&shader.sun_pose)?;
+        let mesh = shader.shaded_mesh(
+            &shader.plane_quad,
+            &shader.plane,
+            relative.chain(&foot)?,
+            foot.inverse()?.chain(&sun_in_plane)?,
+            plane.material,
+        )?;
+        planes.add(&mesh);
+    }
+    let mut meshes = Scene::default();
+    for object in &objects.meshes {
+        let mesh = shader.shaded_mesh(
+            &object.shape,
+            &shader.mesh,
+            view.chain(&object.pose)?,
+            object.pose.inverse()?.chain(&shader.sun_pose)?,
+            object.material,
+        )?;
+        meshes.add(&mesh);
+    }
+    Ok(Drawing {
+        planes: planes.bake(),
+        meshes: meshes.bake(),
+    })
 }
 
 #[cfg(test)]

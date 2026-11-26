@@ -84,7 +84,7 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
     let shader = projection::shader(&library, &world.sun)?;
     let start = Walker::new(world::spawn_frame()?, 0.14)?;
     let mut walker = start;
-    let mut drawing = projection::prepare(&world.objects, walker.eye_pose()?, &shader)?.bake();
+    let mut drawing = projection::prepare(&world.objects, walker.eye_pose()?, &shader)?;
     let mut fov = INITIAL_FOV;
     let raw = window.raw();
     let mut capture = MouseCapture {
@@ -180,9 +180,11 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
             } else if !next.step(strafe, forward, yaw, pitch, jump, dt)? {
                 return Ok(None);
             }
-            Ok(Some(
-                projection::prepare(&world.objects, next.eye_pose()?, &shader)?.bake(),
-            ))
+            Ok(Some(projection::prepare(
+                &world.objects,
+                next.eye_pose()?,
+                &shader,
+            )?))
         })();
         match update {
             Ok(drawing_update) => {
@@ -211,7 +213,7 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
             camera = Camera::new(&graphics, projection::camera_matrix(size, fov));
         }
         frame.clear(color::BLACK);
-        frame.render(&camera, &drawing);
+        drawing.draw(&mut frame, &camera);
         frame.present();
 
         if smoke {

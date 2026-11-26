@@ -4,26 +4,42 @@ use anyhow::{Context, Result, ensure};
 use ccgeom::{Geometry3, Hyperboloid3, Space3};
 use wgame::{
     Library,
-    gfx::types::color,
     glam::{Vec3, Vec4},
-    prelude::*,
-    shapes::{Mesh, PolygonFill, shader::Vertex},
+    shapes::{Mesh, Polygon, shader::Vertex},
 };
 
 use crate::projection::Pose;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Material {
-    Diffuse,
-    Translucent { transmission: f32 },
-    Emissive,
+    Diffuse(Vec3),
+    Translucent { color: Vec3, transmission: f32 },
+    Emissive(Vec3),
 }
 
-pub struct Object {
-    pub mesh: PolygonFill,
+impl Material {
+    pub fn color(&self) -> Vec3 {
+        match *self {
+            Self::Diffuse(color) | Self::Translucent { color, .. } | Self::Emissive(color) => color,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Object<S> {
+    pub shape: S,
     pub pose: Pose,
     pub material: Material,
-    pub infinite_plane: bool,
+}
+
+/// The complete geodesic plane through the local origin with normal +Y.
+#[derive(Clone, Copy)]
+pub struct InfinitePlane;
+
+#[derive(Default)]
+pub struct Objects {
+    pub meshes: Vec<Object<Polygon>>,
+    pub planes: Vec<Object<InfinitePlane>>,
 }
 
 pub struct Sun {
@@ -32,7 +48,7 @@ pub struct Sun {
 }
 
 pub struct World {
-    pub objects: Vec<Object>,
+    pub objects: Objects,
     pub sun: Sun,
 }
 
@@ -41,7 +57,7 @@ pub fn mesh(
     library: &Library,
     vertices: &[([f64; 3], [f32; 3])],
     indices: &[u32],
-) -> Result<PolygonFill> {
+) -> Result<Polygon> {
     ensure!(
         !indices.is_empty() && indices.len().is_multiple_of(3),
         "expected triangles"
@@ -73,24 +89,7 @@ pub fn mesh(
         })
         .collect::<Result<Vec<_>>>()?;
     let shapes = library.shapes();
-    Ok(shapes
-        .mesh(Mesh::from_arrays(shapes.state(), &vertices, Some(indices)))
-        .fill_color(color::WHITE))
-}
-
-/// A geodesic plane is the open disk x²+z²<1 in its local Klein chart.
-/// Two triangles cover the disk. The plane material clips the ideal boundary.
-pub fn plane(library: &Library) -> PolygonFill {
-    let shapes = library.shapes();
-    let vertices = [(-1.0, -1.0), (-1.0, 1.0), (1.0, 1.0), (1.0, -1.0)]
-        .map(|(x, z)| Vertex::new(Vec4::new(x, 0.0, z, 1.0), Vec3::Z));
-    shapes
-        .mesh(Mesh::from_arrays(
-            shapes.state(),
-            &vertices,
-            Some(&[0, 1, 2, 0, 2, 3]),
-        ))
-        .fill_color(color::WHITE)
+    Ok(shapes.mesh(Mesh::from_arrays(shapes.state(), &vertices, Some(indices))))
 }
 
 #[derive(Default)]
@@ -147,12 +146,12 @@ impl Plant {
         }
     }
 
-    fn upload(&self, library: &Library) -> Result<PolygonFill> {
+    fn upload(&self, library: &Library) -> Result<Polygon> {
         mesh(library, &self.vertices, &self.indices)
     }
 }
 
-fn tree(library: &Library, height: f64, conifer: bool) -> Result<PolygonFill> {
+fn tree(library: &Library, height: f64, conifer: bool) -> Result<Polygon> {
     let mut plant = Plant::default();
     plant.tapered_rings(
         height,
@@ -177,7 +176,7 @@ fn tree(library: &Library, height: f64, conifer: bool) -> Result<PolygonFill> {
     plant.upload(library)
 }
 
-fn grass(library: &Library) -> Result<PolygonFill> {
+fn grass(library: &Library) -> Result<Polygon> {
     let mut plant = Plant::default();
     for blade in 0..9 {
         let angle = TAU * f64::from(blade) / 9.0;
@@ -205,7 +204,7 @@ pub fn spawn_frame() -> Result<Pose> {
     Pose::from_isometry(Hyperboloid3::shift_z(1.3))
 }
 
-fn vegetation(library: &Library, objects: &mut Vec<Object>) -> Result<()> {
+fn vegetation(library: &Library) -> Result<Vec<Object<Polygon>>> {
     let trees = [
         tree(library, 0.16, false)?,
         tree(library, 0.22, true)?,
@@ -213,6 +212,7 @@ fn vegetation(library: &Library, objects: &mut Vec<Object>) -> Result<()> {
         tree(library, 0.15, true)?,
     ];
     let grass = grass(library)?;
+    let mut meshes = Vec::new();
     let mut seed = 191813u32;
     let mut sample = || {
         seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
@@ -235,7 +235,7 @@ fn vegetation(library: &Library, objects: &mut Vec<Object>) -> Result<()> {
         let root = site.chain(Hyperboloid3::rotate_y(TAU * sample()));
         let pose = Pose::from_isometry(root)?;
         let [_, x, _, z] = pose.apply_vector([1.0, 0.0, 0.0, 0.0]);
-        let (mesh, material) = if i < 200 {
+        let (shape, material) = if i < 200 {
             // Leave a winding meadow among the groves, including the spawn point.
             if (x - 0.045 * (2.0 * z).sin()).abs() < 0.07
                 || (4.0 * x + z).sin() + (2.5 * z - x).cos() < -0.40
@@ -243,48 +243,54 @@ fn vegetation(library: &Library, objects: &mut Vec<Object>) -> Result<()> {
                 continue;
             }
             let index = (sample() * trees.len() as f64) as usize;
-            (trees[index].clone(), Material::Diffuse)
+            (trees[index].clone(), Material::Diffuse(Vec3::ONE))
         } else {
-            (grass.clone(), Material::Translucent { transmission: 0.22 })
+            (
+                grass.clone(),
+                Material::Translucent {
+                    color: Vec3::ONE,
+                    transmission: 0.22,
+                },
+            )
         };
-        objects.push(Object {
-            mesh,
+        meshes.push(Object {
+            shape,
             pose,
             material,
-            infinite_plane: false,
         });
     }
-    Ok(())
+    Ok(meshes)
 }
 
 pub fn world(library: &Library) -> Result<World> {
-    let sheet = plane(library);
     let sun = Sun {
         pose: Pose::from_isometry(Hyperboloid3::shift_y(3.0))?,
         radiance: [100.0, 94.0, 72.0],
     };
-    let mut objects = vec![
+    let planes = vec![
         Object {
-            mesh: sheet.multiply_color(Vec3::new(0.23, 0.48, 0.10)),
+            shape: InfinitePlane,
             pose: Pose::identity(),
-            material: Material::Diffuse,
-            infinite_plane: true,
+            material: Material::Diffuse(Vec3::new(0.23, 0.48, 0.10)),
         },
         Object {
-            mesh: sheet.clone(),
+            shape: InfinitePlane,
             pose: sun.pose,
-            material: Material::Emissive,
-            infinite_plane: true,
+            material: Material::Emissive(Vec3::ONE),
         },
         Object {
-            mesh: sheet.multiply_color(Vec3::new(0.76, 0.76, 0.74)),
+            shape: InfinitePlane,
             pose: Pose::from_isometry(
                 Hyperboloid3::shift_x(-1.0).chain(Hyperboloid3::shift_y(2.0)),
             )?,
-            material: Material::Diffuse,
-            infinite_plane: true,
+            material: Material::Diffuse(Vec3::new(0.76, 0.76, 0.74)),
         },
     ];
-    vegetation(library, &mut objects)?;
-    Ok(World { objects, sun })
+    Ok(World {
+        objects: Objects {
+            planes,
+            meshes: vegetation(library)?,
+        },
+        sun,
+    })
 }

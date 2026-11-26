@@ -18,8 +18,7 @@ fn illuminate(input: VaryingData, albedo: vec3<f32>) -> vec3<f32> {
     // The fragment's visible face points toward the eye; screen Y grows down.
     let n = cross(dpdy(k), dpdx(k));
     let rho2 = 1.0 - dot(k,k);
-    if input.surface.y > 0.5 && rho2 <= 0.0 { discard; }
-    if input.surface.x > 0.5 { return albedo * sun_radiance.rgb; }
+    if input.material.x > 0.5 { return albedo * sun_radiance.rgb; }
     if rho2 <= 0.0 { return vec3<f32>(0.0); }
 
     // (n,n·k) is a Lorentz normal to this geodesic triangle. Normalize it
@@ -42,7 +41,7 @@ fn illuminate(input: VaryingData, albedo: vec3<f32>) -> vec3<f32> {
     // The signed cosine integral is mu*s². Subtracting it from the
     // front integral gives the light incident on the back of a thin leaf.
     let back = max(0.0, front - mu*s*s);
-    return albedo * sun_radiance.rgb * mix(front, back, input.surface.z);
+    return albedo * sun_radiance.rgb * mix(front, back, input.material.y);
 }
 
 fn encode_srgb(linear: vec3<f32>) -> vec3<f32> {

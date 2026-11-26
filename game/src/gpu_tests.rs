@@ -1,6 +1,6 @@
 use crate::{
-    projection::{self, Pose},
-    world::{self, Material, Object, Sun},
+    projection::{self, Drawing, Pose},
+    world::{self, InfinitePlane, Material, Object, Objects, Sun},
 };
 use anyhow::Result;
 use futures::executor::block_on;
@@ -8,9 +8,10 @@ use std::f64::consts::{FRAC_PI_2, PI};
 use wgame::{
     Library,
     gfx::{
-        Camera, Graphics, Scene, Target,
+        Camera, Graphics, Target,
         types::{Color, color},
     },
+    glam::Vec3,
     half::f16,
     image::{Image, ImageRead},
     rgb::Rgba,
@@ -31,10 +32,10 @@ fn headless_library() -> Result<Library> {
 fn snapshot(
     target: &mut RenderTexture,
     camera: &Camera,
-    scene: &Scene,
+    drawing: &Drawing,
 ) -> Result<Image<Rgba<f16>>> {
     target.clear(color::BLACK);
-    target.render(camera, &scene.bake());
+    drawing.draw(target, camera);
     let submission = target.submit();
     target.state().device().poll(wgpu::PollType::Wait {
         submission_index: Some(submission),
@@ -82,20 +83,21 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
         let frame = identity.move_local([world_offset, 0.0, 0.0], [0.0; 3], 1.0)?;
         // Draw the red foreground first so a painter's-order renderer would
         // incorrectly show the blue background triangle at the red probe.
-        let objects = [
-            Object {
-                material: Material::Emissive,
-                infinite_plane: false,
-                mesh: near.clone(),
-                pose: frame.move_local([0.0, 0.0, -2_f64.ln()], [0.0; 3], 1.0)?,
-            },
-            Object {
-                material: Material::Emissive,
-                infinite_plane: false,
-                mesh: far.clone(),
-                pose: frame.move_local([0.0, 0.0, -3_f64.ln()], [0.0; 3], 1.0)?,
-            },
-        ];
+        let mut objects = Objects {
+            meshes: vec![
+                Object {
+                    shape: near.clone(),
+                    material: Material::Emissive(Vec3::ONE),
+                    pose: frame.move_local([0.0, 0.0, -2_f64.ln()], [0.0; 3], 1.0)?,
+                },
+                Object {
+                    shape: far.clone(),
+                    material: Material::Emissive(Vec3::ONE),
+                    pose: frame.move_local([0.0, 0.0, -3_f64.ln()], [0.0; 3], 1.0)?,
+                },
+            ],
+            ..Objects::default()
+        };
 
         // With tan(half-FOV)=1, screen x is 32*(1+X/-Z). Moving the
         // camera by d replaces X with cosh(d)*X-sinh(d)*W. The chosen
@@ -113,8 +115,8 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
             ),
         ] {
             let camera = frame.move_local([dx, 0.0, 0.0], [0.0, 0.0, roll], 1.0)?;
-            let scene = projection::prepare(&objects, camera, &shader)?;
-            let image = snapshot(&mut target, &projection_camera, &scene)?;
+            let drawing = projection::prepare(&objects, camera, &shader)?;
+            let image = snapshot(&mut target, &projection_camera, &drawing)?;
             for ((x, y), expected) in [
                 (red, color::RED),
                 (blue, color::BLUE),
@@ -126,6 +128,23 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
                     "pixel ({x}, {y}) with world offset {world_offset}, camera shift {dx}, roll {roll}"
                 );
             }
+        }
+
+        // The triangle faces cross the optical axis at about 0.65 and 0.75
+        // curvature radii. The intermediate plane must occlude only the far face.
+        objects.planes.push(Object {
+            shape: InfinitePlane,
+            pose: frame.move_local([0.0, 0.0, -0.7], [FRAC_PI_2, 0.0, 0.0], 1.0)?,
+            material: Material::Emissive(Vec3::Y),
+        });
+        let drawing = projection::prepare(&objects, frame, &shader)?;
+        let image = snapshot(&mut target, &projection_camera, &drawing)?;
+        for (y, expected) in [(32, color::RED), (12, color::GREEN)] {
+            assert_eq!(
+                image.data()[y * size.0 as usize + 32],
+                expected.to_rgba_f16(),
+                "plane between triangles at pixel (32, {y}) with world offset {world_offset}"
+            );
         }
     }
     Ok(())
@@ -143,17 +162,19 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         .texturing()
         .render_texture(size, Default::default())?;
     let camera = Camera::new(library.state(), projection::camera_matrix(size, 1.0));
-    let mut render = |object: &Object, eye, light: &projection::Shader| {
-        let scene = projection::prepare(std::slice::from_ref(object), eye, light)?;
-        snapshot(&mut target, &camera, &scene)
+    let mut render = |objects: &Objects, eye, light: &projection::Shader| {
+        let drawing = projection::prepare(objects, eye, light)?;
+        snapshot(&mut target, &camera, &drawing)
     };
-    let plane = world::plane(&library);
-    let earth = Object {
-        mesh: plane.clone(),
-        pose: Pose::identity(),
-        material: Material::Diffuse,
-        infinite_plane: true,
+    let plane = |pose, material| Objects {
+        planes: vec![Object {
+            shape: InfinitePlane,
+            pose,
+            material,
+        }],
+        ..Objects::default()
     };
+    let earth = plane(Pose::identity(), Material::Diffuse(Vec3::ONE));
     let above = |foot: Pose, height: f64| {
         foot.move_local(
             [0.0, height, 0.0],
@@ -176,7 +197,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     let gap = 1.1_f64;
     for translation in [0.0, 12.0] {
         // Translate the light and observer along an infinite receiver. Its stored
-        // mesh origin stays fixed, even when the bright spot is 12 radii away.
+        // pose stays fixed, even when the bright spot is 12 radii away.
         let center = Pose::identity().move_local([translation, 0.0, 0.0], [0.0; 3], 1.0)?;
         let sun = center.move_local([0.0, gap, 0.0], [0.0; 3], 1.0)?;
         let light = illuminated(sun, [1.0; 3])?;
@@ -194,26 +215,33 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     let sun = Pose::identity().move_local([0.0, gap, 0.0], [0.0; 3], 1.0)?;
     let light = illuminated(sun, [1.0; 3])?;
     let moon_height = 0.35;
-    let moon = Object {
-        mesh: plane.clone(),
-        pose: Pose::identity().move_local([0.0, moon_height, 0.0], [0.0; 3], 1.0)?,
-        material: Material::Diffuse,
-        infinite_plane: true,
-    };
+    let moon_pose = Pose::identity().move_local([0.0, moon_height, 0.0], [0.0; 3], 1.0)?;
+    let moon = plane(moon_pose, Material::Diffuse(Vec3::ONE));
     check_center(
-        &render(&moon, above(moon.pose, 0.2)?, &light)?,
+        &render(&moon, above(moon_pose, 0.2)?, &light)?,
         (gap - moon_height).cosh().recip().powi(2),
     );
-    check_center(&render(&moon, above(moon.pose, -0.2)?, &light)?, 0.0);
+    check_center(&render(&moon, above(moon_pose, -0.2)?, &light)?, 0.0);
 
-    // A thin leaf divides the same incident radiance between its two sides.
-    let leaf = Object {
-        mesh: plane.clone(),
-        material: Material::Translucent { transmission: 0.25 },
-        ..moon
+    // A finite triangle on the same plane divides the incident radiance between its two sides.
+    let leaf = Objects {
+        meshes: vec![Object {
+            shape: world::mesh(
+                &library,
+                &[[-0.2, 0.0, 0.8], [0.2, 0.0, 0.8], [0.0, 0.0, 1.2]]
+                    .map(|point| (point, [1.0; 3])),
+                &[0, 1, 2],
+            )?,
+            pose: moon_pose,
+            material: Material::Translucent {
+                color: Vec3::ONE,
+                transmission: 0.25,
+            },
+        }],
+        ..Objects::default()
     };
-    let leaf_front = render(&leaf, above(leaf.pose, 0.2)?, &light)?;
-    let leaf_back = render(&leaf, above(leaf.pose, -0.2)?, &light)?;
+    let leaf_front = render(&leaf, above(moon_pose, 0.2)?, &light)?;
+    let leaf_back = render(&leaf, above(moon_pose, -0.2)?, &light)?;
     let red = |frame: &Image<Rgba<f16>>| frame.data()[CENTER * WIDTH + CENTER].r.to_f32();
     assert!(red(&leaf_back) > 0.0 && red(&leaf_back) < red(&leaf_front));
     let total = f64::from(red(&leaf_front) + red(&leaf_back));
@@ -225,16 +253,11 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     let grazing = illuminated(grazing_sun, [1.0; 3])?;
     let a = gap.tanh().acos();
     check_center(
-        &render(&earth, above(earth.pose, 0.2)?, &grazing)?,
+        &render(&earth, above(Pose::identity(), 0.2)?, &grazing)?,
         (a - a.sin() * a.cos()) / PI,
     );
 
-    let emitter = Object {
-        mesh: plane,
-        pose: sun,
-        material: Material::Emissive,
-        infinite_plane: true,
-    };
+    let emitter = plane(sun, Material::Emissive(Vec3::ONE));
     let looking_up = Pose::identity().move_local([0.0; 3], [FRAC_PI_2, 0.0, 0.0], 1.0)?;
     let frame = render(&emitter, looking_up, &light)?;
     // At this distance the disc's image radius is 32.5/sinh(gap) pixels.
@@ -249,7 +272,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     );
 
     let extinguished = illuminated(sun, [0.0; 3])?;
-    for (object, eye) in [(&moon, above(moon.pose, 0.2)?), (&emitter, looking_up)] {
+    for (object, eye) in [(&moon, above(moon_pose, 0.2)?), (&emitter, looking_up)] {
         assert!(
             render(object, eye, &extinguished)?
                 .data()

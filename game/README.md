@@ -40,18 +40,23 @@ the receiving face's horizon. Thin grass blades also transmit some direct
 light, so a backlit blade still shows its green color. The model
 includes direct diffuse light. It omits cast shadows and indirect light.
 
-## Building a mesh
+## Shapes and materials
 
-Each object has an indexed triangle mesh and a hyperbolic pose. The
-[scene construction](src/world.rs) takes object-local Poincaré half-space
-coordinates `(u, v, h)`, with horizontal coordinates `u, v` and positive
-height `h`. The local origin sits at `(0, 0, 1)`. Three indices define a
-face in the geodesic plane through its vertices. The same uploaded mesh can
-be drawn at many poses.
+Each `Object<S>` has a shape, a hyperbolic pose, and a material. Earth, Sun,
+and Moon use the `InfinitePlane` shape. Trees and grass use indexed Wgame
+polygons. Either shape can have a diffuse, translucent, or emissive material.
+The material tint multiplies the vertex colors. [Scene construction](src/world.rs)
 
-Each complete plane uses two triangles covering its Klein disk. The fragment
-shader clips the disk at the ideal boundary, giving the planes a continuous
-horizon as the viewer moves.
+Mesh vertices use object-local Poincaré half-space coordinates `(u, v, h)`,
+with horizontal coordinates `u, v` and positive height `h`. The local origin
+sits at `(0, 0, 1)`. Three indices define a face in the geodesic plane through
+its vertices. One uploaded mesh can be drawn at many poses.
+
+The first Wgame render pass draws complete planes using a shared pair of
+triangles. The plane shader clips each pair to its open Klein disk, giving
+the plane a continuous horizon as the viewer moves. The second pass draws
+finite meshes using the same depth buffer, so the nearer surface is visible
+where a mesh overlaps a plane.
 
 ## How the camera works
 
@@ -87,7 +92,8 @@ WGPU_BACKEND=vulkan cargo test -p hypergame -- --ignored --test-threads=1 --noca
 cargo run -p hypergame -- --smoke
 ```
 
-GPU checks read back projected triangles and exercise illumination independently
-of the demo layout. CPU tests cover walking speed, horizon alignment, and jump
+GPU checks read back projected triangles, check occlusion between meshes and
+planes, and exercise illumination independently of the demo layout.
+CPU tests cover walking speed, horizon alignment, and jump
 height and landing. The windowed smoke check exercises walking, looking,
 jumping, landing, reset, resize, and presentation.

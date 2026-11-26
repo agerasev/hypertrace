@@ -1,4 +1,4 @@
-use std::f64::consts::{FRAC_PI_2, TAU};
+use std::f64::consts::TAU;
 
 use anyhow::{Context, Result, ensure};
 use ccgeom::{Geometry3, Hyperboloid3, Space3};
@@ -12,9 +12,28 @@ use wgame::{
 
 use crate::projection::Pose;
 
+#[derive(Clone, Copy, Debug)]
+pub enum Material {
+    Diffuse,
+    Translucent { transmission: f32 },
+    Emissive,
+}
+
 pub struct Object {
     pub mesh: PolygonFill,
     pub pose: Pose,
+    pub material: Material,
+    pub infinite_plane: bool,
+}
+
+pub struct Sun {
+    pub pose: Pose,
+    pub radiance: [f32; 3],
+}
+
+pub struct World {
+    pub objects: Vec<Object>,
+    pub sun: Sun,
 }
 
 /// Upload a static indexed mesh. Each vertex is (local upper-half-space point, RGB).
@@ -59,78 +78,207 @@ pub fn mesh(
         .fill_color(color::WHITE))
 }
 
-// The unit hemisphere is a geodesic plane through the local origin (0,0,1).
-// Dilating all three half-space coordinates moves the plane along the viewing axis.
-fn cross_section(x: f64, y: f64, displacement: f64) -> [f64; 3] {
-    [x, y, (1.0 - x * x - y * y).sqrt()].map(|v| v * displacement.exp())
+/// A geodesic plane is the open disk x²+z²<1 in its local Klein chart.
+/// Two triangles cover the disk. The plane material clips the ideal boundary.
+pub fn plane(library: &Library) -> PolygonFill {
+    let shapes = library.shapes();
+    let vertices = [(-1.0, -1.0), (-1.0, 1.0), (1.0, 1.0), (1.0, -1.0)]
+        .map(|(x, z)| Vertex::new(Vec4::new(x, 0.0, z, 1.0), Vec3::Z));
+    shapes
+        .mesh(Mesh::from_arrays(
+            shapes.state(),
+            &vertices,
+            Some(&[0, 1, 2, 0, 2, 3]),
+        ))
+        .fill_color(color::WHITE)
 }
 
-fn gate(library: &Library) -> Result<PolygonFill> {
-    let mut vertices = Vec::new();
-    let mut indices = Vec::new();
-    const SIDES: u32 = 8;
-    for side in 0..SIDES {
-        let angle = TAU * f64::from(side) / f64::from(SIDES) + TAU / 16.0;
-        let (sin, cos) = angle.sin_cos();
-        for (radius, depth, shade) in [
-            (0.62, 0.04, 1.0),
-            (0.54, 0.04, 0.82),
-            (0.54, -0.04, 0.34),
-            (0.62, -0.04, 0.58),
-        ] {
-            vertices.push((cross_section(radius * cos, radius * sin, depth), [shade; 3]));
-        }
-        for edge in 0..4 {
-            let a = 4 * side;
-            let b = 4 * ((side + 1) % SIDES);
-            let next = (edge + 1) % 4;
-            indices.extend([a + edge, b + edge, b + next, a + edge, b + next, a + next]);
-        }
+#[derive(Default)]
+struct Plant {
+    vertices: Vec<([f64; 3], [f32; 3])>,
+    indices: Vec<u32>,
+}
+
+impl Plant {
+    // The root is (0,0,1) in local half-space. +y grows away from
+    // the geodesic ground plane and z is an offset in chart height.
+    fn vertex(&mut self, [x, y, z]: [f64; 3], rgb: [f32; 3]) -> u32 {
+        let index = self.vertices.len() as u32;
+        self.vertices.push(([x, y, 1.0 + z], rgb));
+        index
     }
-    mesh(library, &vertices, &indices)
-}
 
-const SPACING: f64 = 0.82;
-
-fn walkway(library: &Library) -> Result<PolygonFill> {
-    let mut vertices = Vec::new();
-    let mut indices = Vec::new();
-    // Three panels and two edge strips provide parallax when walking through the gates.
-    let edges = [-0.40, -0.37, -0.13, 0.13, 0.37, 0.40];
-    let shades = [0.68, 0.25, 0.32, 0.25, 0.68];
-    for (stripe, ends) in edges.windows(2).enumerate() {
-        let base = vertices.len() as u32;
-        for depth in [SPACING * 0.49, -SPACING * 0.49] {
-            for &x in ends {
-                vertices.push((cross_section(x, -0.47, depth), [shades[stripe]; 3]));
+    // Stack polygonal rings, close the base, then taper to a single tip.
+    fn tapered_rings(
+        &mut self,
+        height: f64,
+        sides: u32,
+        rings: &[(f64, f64)],
+        tip: f64,
+        color: [f32; 3],
+    ) {
+        let base = self.vertices.len() as u32;
+        for (ring, &(level, radius)) in rings.iter().enumerate() {
+            for side in 0..sides {
+                let angle = TAU * f64::from(side) / f64::from(sides);
+                let (sin, cos) = angle.sin_cos();
+                let i = self.vertex(
+                    [radius * height * cos, level * height, radius * height * sin],
+                    color,
+                );
+                if ring > 0 {
+                    let next = base + ring as u32 * sides + (side + 1) % sides;
+                    self.indices
+                        .extend([i - sides, i, next - sides, next - sides, i, next]);
+                }
             }
         }
-        indices.extend([base, base + 1, base + 2, base + 2, base + 1, base + 3]);
+        let top = self.vertex([0.0, height * tip, 0.0], color);
+        for side in 0..sides {
+            self.indices
+                .extend([top - sides + side, top, top - sides + (side + 1) % sides]);
+        }
+        for side in 1..sides - 1 {
+            self.indices.extend([base, base + side, base + side + 1]);
+        }
     }
-    mesh(library, &vertices, &indices)
+
+    fn upload(&self, library: &Library) -> Result<PolygonFill> {
+        mesh(library, &self.vertices, &self.indices)
+    }
 }
 
-pub fn objects(library: &Library) -> Result<Vec<Object>> {
-    let gate = gate(library)?;
-    let walkway = walkway(library)?.multiply_color(Vec3::new(0.43, 0.62, 0.72));
-    let colors = [
-        Vec3::new(0.20, 0.80, 0.80),
-        Vec3::new(1.0, 0.64, 0.24),
-        Vec3::new(0.60, 0.48, 0.90),
+fn tree(library: &Library, height: f64, conifer: bool) -> Result<PolygonFill> {
+    let mut plant = Plant::default();
+    plant.tapered_rings(
+        height,
+        5,
+        &[(0.0, 0.048), (0.50, 0.033)],
+        0.56,
+        [0.29, 0.14, 0.055],
+    );
+    if conifer {
+        plant.tapered_rings(height, 7, &[(0.24, 0.29)], 0.73, [0.07, 0.32, 0.14]);
+        plant.tapered_rings(height, 7, &[(0.44, 0.23)], 0.88, [0.095, 0.39, 0.15]);
+        plant.tapered_rings(height, 7, &[(0.64, 0.16)], 1.0, [0.15, 0.47, 0.18]);
+    } else {
+        plant.tapered_rings(
+            height,
+            7,
+            &[(0.34, 0.14), (0.47, 0.30), (0.71, 0.34), (0.89, 0.21)],
+            1.0,
+            [0.28, 0.51, 0.10],
+        );
+    }
+    plant.upload(library)
+}
+
+fn grass(library: &Library) -> Result<PolygonFill> {
+    let mut plant = Plant::default();
+    for blade in 0..9 {
+        let angle = TAU * f64::from(blade) / 9.0;
+        let (sin, cos) = angle.sin_cos();
+        let height = 0.016 + 0.003 * f64::from(blade * 5 % 7);
+        // The blade bends outward near its tip, where it catches sunlight
+        // even when the nearly vertical lower face is in shade.
+        let mut strip = |radius: f64, width: f64, y, tint| {
+            [-width, width].map(|offset| {
+                plant.vertex(
+                    [radius * cos - offset * sin, y, radius * sin + offset * cos],
+                    tint,
+                )
+            })
+        };
+        let [a, b] = strip(0.007, 0.0045, 0.0, [0.18, 0.39, 0.06]);
+        let [c, d] = strip(0.018, 0.0035, height * 0.80, [0.28, 0.53, 0.09]);
+        let tip = plant.vertex([0.037 * cos, height, 0.037 * sin], [0.35, 0.61, 0.13]);
+        plant.indices.extend([a, b, c, b, d, c, c, d, tip]);
+    }
+    plant.upload(library)
+}
+
+pub fn initial_camera() -> Result<Pose> {
+    Pose::from_isometry(
+        Hyperboloid3::shift_z(1.3)
+            .chain(Hyperboloid3::shift_y(0.075))
+            .chain(Hyperboloid3::rotate_x(0.14)),
+    )
+}
+
+fn vegetation(library: &Library, objects: &mut Vec<Object>) -> Result<()> {
+    let trees = [
+        tree(library, 0.16, false)?,
+        tree(library, 0.22, true)?,
+        tree(library, 0.25, false)?,
+        tree(library, 0.15, true)?,
     ];
-    let mut objects = Vec::new();
-    for station in -2_i32..8 {
-        let distance = 1.10 + f64::from(station) * SPACING;
-        let center = Hyperboloid3::shift_z(-distance);
-        let turn = f64::from(station.rem_euclid(3)) * FRAC_PI_2 / 8.0;
+    let grass = grass(library)?;
+    let mut seed = 191813u32;
+    let mut sample = || {
+        seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+        f64::from(seed) / (f64::from(u32::MAX) + 1.0)
+    };
+
+    // Hyperbolic disk area is proportional to cosh(r)-1. Plants occupy
+    // the first two curvature radii around the permanent subsolar point.
+    for i in 0..570 {
+        let radius = (1.0 + sample() * (2.0_f64.cosh() - 1.0)).acosh();
+        let azimuth = TAU * sample();
+        let root = Hyperboloid3::rotate_y(azimuth)
+            .chain(Hyperboloid3::shift_z(radius))
+            .chain(Hyperboloid3::rotate_y(TAU * sample()));
+        let pose = Pose::from_isometry(root)?;
+        let [_, x, _, z] = pose.apply_vector([1.0, 0.0, 0.0, 0.0]);
+        let (mesh, material) = if i < 200 {
+            // Leave a winding meadow among the groves, including the spawn point.
+            if (x - 0.18 * (2.0 * z).sin()).abs() < 0.28
+                || (4.0 * x + z).sin() + (2.5 * z - x).cos() < -0.40
+            {
+                continue;
+            }
+            let index = (sample() * trees.len() as f64) as usize;
+            (trees[index].clone(), Material::Diffuse)
+        } else {
+            (grass.clone(), Material::Translucent { transmission: 0.22 })
+        };
         objects.push(Object {
-            pose: Pose::from_isometry(center.chain(Hyperboloid3::rotate_z(turn)))?,
-            mesh: gate.multiply_color(colors[station.rem_euclid(3) as usize]),
-        });
-        objects.push(Object {
-            pose: Pose::from_isometry(Hyperboloid3::shift_z(-distance - SPACING / 2.0))?,
-            mesh: walkway.clone(),
+            mesh,
+            pose,
+            material,
+            infinite_plane: false,
         });
     }
-    Ok(objects)
+    Ok(())
+}
+
+pub fn world(library: &Library) -> Result<World> {
+    let sheet = plane(library);
+    let sun = Sun {
+        pose: Pose::from_isometry(Hyperboloid3::shift_y(3.0))?,
+        radiance: [100.0, 94.0, 72.0],
+    };
+    let mut objects = vec![
+        Object {
+            mesh: sheet.multiply_color(Vec3::new(0.23, 0.48, 0.10)),
+            pose: Pose::identity(),
+            material: Material::Diffuse,
+            infinite_plane: true,
+        },
+        Object {
+            mesh: sheet.clone(),
+            pose: sun.pose,
+            material: Material::Emissive,
+            infinite_plane: true,
+        },
+        Object {
+            mesh: sheet.multiply_color(Vec3::new(0.76, 0.76, 0.74)),
+            pose: Pose::from_isometry(
+                Hyperboloid3::shift_x(-1.0).chain(Hyperboloid3::shift_y(2.0)),
+            )?,
+            material: Material::Diffuse,
+            infinite_plane: true,
+        },
+    ];
+    vegetation(library, &mut objects)?;
+    Ok(World { objects, sun })
 }

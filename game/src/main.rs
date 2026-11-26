@@ -4,8 +4,7 @@ use wgame::{
     Library, Window, WindowConfig,
     app::time::Instant,
     canvas::{Button, CanvasInput, Event, Key},
-    gfx::{Camera, Target},
-    rgb::Rgb,
+    gfx::{Camera, Target, types::color},
 };
 use winit::window::CursorGrabMode;
 
@@ -74,10 +73,11 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
     let graphics = window.graphics().clone();
     eprintln!("Adapter: {:?}", graphics.adapter().get_info());
     let library = Library::new(&graphics);
-    let objects = world::objects(&library)?;
-    let shader = projection::shader(&library)?;
-    let mut pose = projection::Pose::identity();
-    let mut drawing = projection::prepare(&objects, pose, &shader)?.bake();
+    let world = world::world(&library)?;
+    let shader = projection::shader(&library, &world.sun)?;
+    let initial_pose = world::initial_camera()?;
+    let mut pose = initial_pose;
+    let mut drawing = projection::prepare(&world.objects, pose, &shader)?.bake();
     let mut fov = INITIAL_FOV;
     let raw = window.raw();
     let mut capture = MouseCapture {
@@ -149,11 +149,13 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
         reset |= smoke && smoke_frames == 5;
         if reset || translation != [0.0; 3] || rotation != [0.0; 3] {
             let next = if reset {
-                Ok(projection::Pose::identity())
+                Ok(initial_pose)
             } else {
                 pose.move_local(translation, rotation, RADIUS)
             };
-            match next.and_then(|next| Ok((next, projection::prepare(&objects, next, &shader)?))) {
+            match next
+                .and_then(|next| Ok((next, projection::prepare(&world.objects, next, &shader)?)))
+            {
                 Ok((next, scene)) => {
                     pose = next;
                     drawing = scene.bake();
@@ -180,7 +182,7 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
             fov = next_fov;
             camera = Camera::new(&graphics, projection::camera_matrix(size, fov));
         }
-        frame.clear(Rgb::new(0.015_f32, 0.024, 0.041));
+        frame.clear(color::BLACK);
         frame.render(&camera, &drawing);
         frame.present();
 

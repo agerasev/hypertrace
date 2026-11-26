@@ -1,23 +1,42 @@
 //! First-person projection for unit-curvature hyperbolic triangle meshes.
-use anyhow::Result;
-use ccgeom::Hyperboloid3;
+use anyhow::{Context, Result, ensure};
+use ccgeom::{Hyperboloid3, Space3};
 use hypertrace_scene::Transform;
 use wgame::{
     Library,
     gfx::Scene,
-    glam::{Mat4, Vec4, camera::rh::proj::directx},
-    shapes::{material::MeshShader, shader::ShaderConfig},
+    glam::{Mat4, Vec3, Vec4, camera::rh::proj::directx},
+    shader::Attribute,
+    shapes::{
+        material::{MaterialBinding, MeshShader},
+        shader::ShaderConfig,
+    },
 };
+use wgpu::util::DeviceExt;
 
-use crate::world::Object;
+use crate::world::{Material, Object, Sun};
 
 pub(crate) type Pose = Transform<Hyperboloid3>;
-pub(crate) type Shader = MeshShader<RelativeMap>;
 
-#[derive(Clone, wgame::shader::Attribute)]
-pub(crate) struct RelativeMap {
+pub(crate) struct Shader {
+    mesh: MeshShader<Instance>,
+    light: MaterialBinding,
+    sun_pose: Pose,
+}
+
+#[derive(Clone, Attribute)]
+struct Instance {
     real: Vec4,
     imag: Vec4,
+    sun_plane: Vec4,
+    surface: Vec3, // (emissive, infinite plane, diffuse transmission fraction)
+}
+
+#[derive(Attribute)]
+struct Varyings {
+    local_klein: Vec3,
+    sun_plane: Vec4,
+    surface: Vec3,
 }
 
 /// Physical distance along the optical axis to the near clipping plane, in curvature radii.
@@ -35,20 +54,70 @@ pub(crate) fn camera_matrix((width, height): (u32, u32), tan_half_fov: f64) -> M
     )
 }
 
-pub(crate) fn shader(library: &Library) -> Result<Shader> {
-    MeshShader::new(
+pub(crate) fn shader(library: &Library, sun: &Sun) -> Result<Shader> {
+    ensure!(
+        sun.radiance.iter().all(|x| x.is_finite() && *x >= 0.0),
+        "invalid Sun radiance"
+    );
+    let state = library.state();
+    let device = state.device();
+    let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("Sun radiance"),
+        entries: &[wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: wgpu::BufferSize::new(16),
+            },
+            count: None,
+        }],
+    });
+    let [r, g, b] = sun.radiance;
+    let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Sun radiance"),
+        contents: bytemuck::cast_slice(&[r, g, b, 0.0]),
+        usage: wgpu::BufferUsages::UNIFORM,
+    });
+    let uniforms = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("Sun radiance"),
+        layout: &layout,
+        entries: &[wgpu::BindGroupEntry {
+            binding: 0,
+            resource: buffer.as_entire_binding(),
+        }],
+    });
+    let display = if state.format().is_srgb() {
+        "linear"
+    } else {
+        "encode_srgb(linear)"
+    };
+    let mesh = MeshShader::new(
         library.shapes().state(),
         ShaderConfig {
-            module_source: include_str!("projection.wgsl").into(),
-            vertex_source: "output.position = view_matrix * place_vertex(instance.real, instance.imag, vertex.position);".into(),
+            module_source: concat!(include_str!("projection.wgsl"), "\n", include_str!("lighting.wgsl")).into(),
+            varying: Varyings::bindings(),
+            vertex_source: "
+                output.position = view_matrix * place_vertex(instance.real, instance.imag, vertex.position);
+                output.local_klein = vertex.position.xyz;
+                output.sun_plane = instance.sun_plane;
+                output.surface = instance.surface;
+            ".into(),
+            fragment_color_source: format!("let linear = illuminate(input, color.rgb); color = vec4<f32>({display}, color.a);"),
             ..Default::default()
         },
-        &[],
-    )
+        &[layout],
+    )?;
+    Ok(Shader {
+        mesh,
+        light: MaterialBinding::Uniforms(uniforms),
+        sun_pose: sun.pose,
+    })
 }
 
-fn relative_map(view: Pose, object: Pose) -> Result<RelativeMap> {
-    let rows = view.chain(&object)?.components()?;
+fn projective_pair(map: Pose) -> Result<[Vec4; 2]> {
+    let rows = map.components()?;
     // The sandwich is quadratic in the pair. A common scale on its two
     // quaternions only changes the homogeneous weight of the resulting point.
     // Scaling in f64 before upload keeps the products bounded for distant poses.
@@ -58,15 +127,66 @@ fn relative_map(view: Pose, object: Pose) -> Result<RelativeMap> {
         .copied()
         .map(f64::abs)
         .fold(0.0, f64::max);
-    let [real, imag] = rows.map(|row| Vec4::from_array(row.map(|v| (v / scale) as f32)));
-    Ok(RelativeMap { real, imag })
+    Ok(rows.map(|row| Vec4::from_array(row.map(|v| (v / scale) as f32))))
+}
+
+/// In-plane translation to the perpendicular foot of the eye. Its local
+/// spatial coordinates are (X,0,Z)/sqrt(1+Y²) for an embedded eye (W,X,Y,Z).
+fn plane_foot(relative: Pose) -> Result<Pose> {
+    let [_, x, y, z] = relative.inverse()?.apply_vector([1.0, 0.0, 0.0, 0.0]);
+    let radial = x.hypot(z);
+    if radial == 0.0 {
+        return Ok(Pose::identity());
+    }
+    let distance = (radial / y.hypot(1.0)).asinh();
+    let axis = [x / radial, 0.0, z / radial];
+    Pose::from_isometry(
+        Space3::<f64, -1>::unit()
+            .translation(axis.into(), distance)
+            .context("invalid plane footprint")?,
+    )
 }
 
 pub(crate) fn prepare(objects: &[Object], camera: Pose, shader: &Shader) -> Result<Scene> {
     let view = camera.inverse()?;
     let mut scene = Scene::default();
     for object in objects {
-        let material = shader.material(vec![], relative_map(view, object.pose)?)?;
+        let (emission, transmission) = match object.material {
+            Material::Diffuse => (0.0, 0.0),
+            Material::Translucent { transmission } => {
+                ensure!(
+                    (0.0..=1.0).contains(&transmission),
+                    "invalid transmission fraction"
+                );
+                (0.0, transmission)
+            }
+            Material::Emissive => (1.0, 0.0),
+        };
+        let mut relative = view.chain(&object.pose)?;
+        let mut sun_in_object = object.pose.inverse()?.chain(&shader.sun_pose)?;
+        if object.infinite_plane {
+            // Reparameterizing inside the plane leaves its physical surface
+            // invariant. Keep the light and drawing transforms in that same frame.
+            let foot = plane_foot(relative)?;
+            relative = relative.chain(&foot)?;
+            sun_in_object = foot.inverse()?.chain(&sun_in_object)?;
+        }
+        let [w, x, y, z] = sun_in_object.apply_vector([0.0, 0.0, 1.0, 0.0]);
+        let sun_plane = Vec4::new(x as f32, y as f32, z as f32, w as f32);
+        ensure!(
+            sun_plane.is_finite(),
+            "Sun plane exceeds shader coordinate range"
+        );
+        let [real, imag] = projective_pair(relative)?;
+        let attributes = Instance {
+            real,
+            imag,
+            sun_plane,
+            surface: Vec3::new(emission, f32::from(object.infinite_plane), transmission),
+        };
+        let material = shader
+            .mesh
+            .material(vec![shader.light.clone()], attributes)?;
         scene.add(&object.mesh.with_material(&material));
     }
     Ok(scene)
@@ -81,24 +201,21 @@ mod tests {
     fn upload_removes_large_shared_world_motion_before_rounding() -> Result<()> {
         let camera = Pose::from_isometry(Hyperboloid3::shift_y(12.0))?;
         let offset = Pose::identity().move_local([0.15, 0.04, -0.7], [0.2, 0.1, -0.3], 1.0)?;
-        let relative = relative_map(camera.inverse()?, camera.chain(&offset)?)?;
-        let local = relative_map(Pose::identity(), offset)?;
-        assert!(relative.real.abs_diff_eq(local.real, 1e-6));
-        assert!(relative.imag.abs_diff_eq(local.imag, 1e-6));
+        let relative = projective_pair(camera.inverse()?.chain(&camera.chain(&offset)?)?)?;
+        let local = projective_pair(offset)?;
+        assert!(relative[0].abs_diff_eq(local[0], 1e-6));
+        assert!(relative[1].abs_diff_eq(local[1], 1e-6));
         Ok(())
     }
 
     #[test]
     fn distant_boost_stays_bounded_and_projects_toward_the_ideal_point() -> Result<()> {
         let distance: f64 = 14.0;
-        let map = relative_map(
-            Pose::identity(),
-            Pose::from_isometry(Hyperboloid3::shift_z(-distance))?,
-        )?;
+        let [real, imag] = projective_pair(Pose::from_isometry(Hyperboloid3::shift_z(-distance))?)?;
         // A pure Z boost has a scalar real quaternion and a single imaginary
         // imag component. Its point action on the origin gives (W,0,0,Z).
-        let a = map.real.x;
-        let b = map.imag.w;
+        let a = real.x;
+        let b = imag.w;
         let point = Vec4::new(0.0, 0.0, 2.0 * a * b, a * a + b * b);
         assert_eq!(a, 1.0);
         assert!(b.abs() <= 1.0);

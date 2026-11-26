@@ -1,38 +1,43 @@
 use std::f64::consts::TAU;
 
 use anyhow::Result;
-use wgame::{Library, glam::Vec3, prelude::Transformable, shapes::Polygon};
+use wgame::{Library, prelude::Transformable, shapes::Polygon};
+
+use crate::config::vegetation::{Deciduous, Grass, Pine, Vegetation};
 
 use super::{Material, ecology::Species, mesh};
 
 pub(super) struct Plants {
-    deciduous: Polygon,
-    pine: Polygon,
-    grass: Polygon,
+    deciduous: (Polygon, Material),
+    pine: (Polygon, Material),
+    grass: (Polygon, Material),
 }
 
 impl Plants {
-    pub(super) fn new(library: &Library) -> Result<Self> {
+    pub(super) fn new(library: &Library, settings: &Vegetation) -> Result<Self> {
         Ok(Self {
-            deciduous: tree(library, 0.25, false)?,
-            pine: tree(library, 0.22, true)?,
-            grass: grass(library)?,
+            deciduous: (
+                deciduous(library, &settings.deciduous)?,
+                settings.deciduous.material.build()?,
+            ),
+            pine: (
+                pine(library, &settings.pine)?,
+                settings.pine.material.build()?,
+            ),
+            grass: (
+                grass(library, &settings.grass)?,
+                settings.grass.material.build()?,
+            ),
         })
     }
 
     pub(super) fn grown(&self, species: Species, growth: f64) -> (Polygon, Material) {
         let (shape, material) = match species {
-            Species::Deciduous => (&self.deciduous, Material::Diffuse(Vec3::ONE)),
-            Species::Pine => (&self.pine, Material::Diffuse(Vec3::ONE)),
-            Species::Grass => (
-                &self.grass,
-                Material::Translucent {
-                    color: Vec3::ONE,
-                    transmission: 0.22,
-                },
-            ),
+            Species::Deciduous => &self.deciduous,
+            Species::Pine => &self.pine,
+            Species::Grass => &self.grass,
         };
-        (shape.scale(growth as f32), material)
+        (shape.scale(growth as f32), *material)
     }
 }
 
@@ -46,12 +51,8 @@ impl Plant {
     // The root is (0,0,1) in local half-space. +y grows away from
     // the geodesic ground plane and z is an offset in chart height.
     fn vertex(&mut self, [x, y, z]: [f64; 3], rgb: [f32; 3]) -> u32 {
-        const PLANT_SCALE: f64 = 0.25;
         let index = self.vertices.len() as u32;
-        self.vertices.push((
-            [x * PLANT_SCALE, y * PLANT_SCALE, 1.0 + z * PLANT_SCALE],
-            rgb,
-        ));
+        self.vertices.push(([x, y, 1.0 + z], rgb));
         index
     }
 
@@ -95,37 +96,39 @@ impl Plant {
     }
 }
 
-fn tree(library: &Library, height: f64, conifer: bool) -> Result<Polygon> {
+fn trunk(height: f64, bark: [f32; 3]) -> Plant {
     let mut plant = Plant::default();
+    plant.tapered_rings(height, 5, &[(0.0, 0.048), (0.50, 0.033)], 0.56, bark);
+    plant
+}
+
+fn deciduous(library: &Library, tree: &Deciduous) -> Result<Polygon> {
+    let mut plant = trunk(tree.height, tree.bark);
     plant.tapered_rings(
-        height,
-        5,
-        &[(0.0, 0.048), (0.50, 0.033)],
-        0.56,
-        [0.29, 0.14, 0.055],
+        tree.height,
+        7,
+        &[(0.34, 0.14), (0.47, 0.30), (0.71, 0.34), (0.89, 0.21)],
+        1.0,
+        tree.foliage,
     );
-    if conifer {
-        plant.tapered_rings(height, 7, &[(0.24, 0.29)], 0.73, [0.07, 0.32, 0.14]);
-        plant.tapered_rings(height, 7, &[(0.44, 0.23)], 0.88, [0.095, 0.39, 0.15]);
-        plant.tapered_rings(height, 7, &[(0.64, 0.16)], 1.0, [0.15, 0.47, 0.18]);
-    } else {
-        plant.tapered_rings(
-            height,
-            7,
-            &[(0.34, 0.14), (0.47, 0.30), (0.71, 0.34), (0.89, 0.21)],
-            1.0,
-            [0.28, 0.51, 0.10],
-        );
-    }
     plant.upload(library)
 }
 
-fn grass(library: &Library) -> Result<Polygon> {
+fn pine(library: &Library, tree: &Pine) -> Result<Polygon> {
+    let mut plant = trunk(tree.height, tree.bark);
+    plant.tapered_rings(tree.height, 7, &[(0.24, 0.29)], 0.73, tree.foliage[0]);
+    plant.tapered_rings(tree.height, 7, &[(0.44, 0.23)], 0.88, tree.foliage[1]);
+    plant.tapered_rings(tree.height, 7, &[(0.64, 0.16)], 1.0, tree.foliage[2]);
+    plant.upload(library)
+}
+
+fn grass(library: &Library, tuft: &Grass) -> Result<Polygon> {
     let mut plant = Plant::default();
-    for blade in 0..9 {
-        let angle = TAU * f64::from(blade) / 9.0;
+    let [low, high] = tuft.blade_height;
+    for blade in 0..u32::from(tuft.blades) {
+        let angle = TAU * f64::from(blade) / f64::from(tuft.blades);
         let (sin, cos) = angle.sin_cos();
-        let height = 0.016 + 0.003 * f64::from(blade * 5 % 7);
+        let height = low + (high - low) * f64::from(blade * 5 % 7) / 6.0;
         // The blade bends outward near its tip, where it catches sunlight
         // even when the nearly vertical lower face is in shade.
         let mut strip = |radius: f64, width: f64, y, tint| {
@@ -136,9 +139,22 @@ fn grass(library: &Library) -> Result<Polygon> {
                 )
             })
         };
-        let [a, b] = strip(0.007, 0.0045, 0.0, [0.18, 0.39, 0.06]);
-        let [c, d] = strip(0.018, 0.0035, height * 0.80, [0.28, 0.53, 0.09]);
-        let tip = plant.vertex([0.037 * cos, height, 0.037 * sin], [0.35, 0.61, 0.13]);
+        let [a, b] = strip(
+            tuft.spread_radius * (7.0 / 37.0),
+            0.5 * tuft.blade_width,
+            0.0,
+            tuft.colors[0],
+        );
+        let [c, d] = strip(
+            tuft.spread_radius * (18.0 / 37.0),
+            tuft.blade_width * (3.5 / 9.0),
+            height * 0.80,
+            tuft.colors[1],
+        );
+        let tip = plant.vertex(
+            [tuft.spread_radius * cos, height, tuft.spread_radius * sin],
+            tuft.colors[2],
+        );
         plant.indices.extend([a, b, c, b, d, c, c, d, tip]);
     }
     plant.upload(library)

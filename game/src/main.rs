@@ -1,5 +1,7 @@
 //! First-person navigation through a world of hyperbolic triangle meshes.
-use anyhow::{Result, bail, ensure};
+use std::path::PathBuf;
+
+use anyhow::{Context, Result, bail, ensure};
 use wgame::{
     Library, Window, WindowConfig,
     app::time::Instant,
@@ -9,15 +11,15 @@ use wgame::{
 use winit::window::CursorGrabMode;
 
 mod atmosphere;
+mod config;
 #[cfg(test)]
 mod gpu_tests;
 mod projection;
 mod walker;
 mod world;
 
+use config::{Config, observer::View};
 use walker::Walker;
-
-const INITIAL_FOV: f64 = 0.66; // Tangent of half the vertical field of view.
 
 struct MouseCapture<'a> {
     window: &'a wgame::app::RawWindow,
@@ -50,7 +52,12 @@ impl Drop for MouseCapture<'_> {
     }
 }
 
-fn motion(input: &CanvasInput, size: (u32, u32), look: bool) -> ([f64; 2], [f64; 2]) {
+fn motion(
+    input: &CanvasInput,
+    size: (u32, u32),
+    look: bool,
+    sensitivity: f64,
+) -> ([f64; 2], [f64; 2]) {
     if !input.focused {
         return ([0.0; 2], [0.0; 2]);
     }
@@ -68,8 +75,8 @@ fn motion(input: &CanvasInput, size: (u32, u32), look: bool) -> ([f64; 2], [f64;
     ];
     let angles = if look {
         [
-            -2.0 * f64::from(input.relative_motion.x) / f64::from(size.0),
-            -2.0 * f64::from(input.relative_motion.y) / f64::from(size.1),
+            -sensitivity * f64::from(input.relative_motion.x) / f64::from(size.0),
+            -sensitivity * f64::from(input.relative_motion.y) / f64::from(size.1),
         ]
     } else {
         [0.0; 2]
@@ -77,20 +84,24 @@ fn motion(input: &CanvasInput, size: (u32, u32), look: bool) -> ([f64; 2], [f64;
     (axes, angles)
 }
 
-async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
+async fn run(mut window: Window<'_>, config: Config, smoke: bool) -> Result<()> {
     let graphics = window.graphics().clone();
     eprintln!("Adapter: {:?}", graphics.adapter().get_info());
     let library = Library::new(&graphics);
-    let mut world = world::world(&library)?;
+    let mut world = world::world(&library, &config)?;
     let shader = projection::shader(&library, &world.sun, world.ambient, Some(world.atmosphere))?;
-    let start = Walker::new(world::spawn_frame()?, 0.14)?;
+    let start = Walker::new(config.observer)?;
     let mut walker = start;
     let mut prepare = |walker: &Walker| {
         let eye = walker.eye_pose()?;
         projection::prepare(world.objects_near(eye)?, eye, &shader)
     };
     let mut drawing = prepare(&walker)?;
-    let mut fov = INITIAL_FOV;
+    let view = config.view;
+    let initial_fov = View::tan_half_fov(view.fov_degrees);
+    let min_fov = View::tan_half_fov(view.min_fov_degrees);
+    let max_fov = View::tan_half_fov(view.max_fov_degrees);
+    let mut fov = initial_fov;
     let raw = window.raw();
     let mut capture = MouseCapture {
         window: raw,
@@ -98,7 +109,10 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
     };
     let initial_size = raw.inner_size();
     let mut size = (initial_size.width.max(1), initial_size.height.max(1));
-    let mut camera = Camera::new(&graphics, projection::camera_matrix(size, fov));
+    let mut camera = Camera::new(
+        &graphics,
+        projection::camera_matrix(size, fov, view.near_distance),
+    );
     let mut previous = Instant::now();
     let mut blocked = false;
     let mut smoke_frames = 0;
@@ -108,9 +122,14 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
     while let Some(mut frame) = window.next_frame().await? {
         let now = Instant::now();
         let dt = if smoke {
-            0.05
+            // Exercise a whole ballistic flight in the fixed smoke frame budget.
+            if smoke_frames >= 2 {
+                config.observer.flight_time() / 8.0
+            } else {
+                0.05
+            }
         } else {
-            (now - previous).as_secs_f64().min(0.1)
+            (now - previous).as_secs_f64().min(view.max_frame_seconds)
         };
         previous = now;
         let frame_size = frame.size();
@@ -168,15 +187,16 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
             }
         }
         let look = !suppress_look && (capture.active || input.button_down(Button::Primary));
-        let ([mut strafe, mut forward], [mut yaw, mut pitch]) = motion(input, frame_size, look);
+        let ([mut strafe, mut forward], [mut yaw, mut pitch]) =
+            motion(input, frame_size, look, view.look_sensitivity);
         jump &= input.focused;
-        if smoke && smoke_frames == 2 {
+        if smoke && smoke_frames == 1 {
             strafe = 1.0;
             forward = 1.0;
             yaw = 0.12;
             pitch = -0.15;
-            jump = true;
         }
+        jump |= smoke && smoke_frames == 2;
         reset |= smoke && smoke_frames == 15;
         let mut next = walker;
         let update = (|| -> Result<_> {
@@ -204,14 +224,17 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
             }
         }
         let next_fov = if reset {
-            INITIAL_FOV
+            initial_fov
         } else {
-            (fov * (-0.002 * scroll).exp()).clamp(0.08, 4.0)
+            (fov * (-view.zoom_sensitivity * scroll).exp()).clamp(min_fov, max_fov)
         };
         if frame_size != size || next_fov != fov {
             size = frame_size;
             fov = next_fov;
-            camera = Camera::new(&graphics, projection::camera_matrix(size, fov));
+            camera = Camera::new(
+                &graphics,
+                projection::camera_matrix(size, fov, view.near_distance),
+            );
         }
         frame.clear(color::BLACK);
         drawing.draw(&mut frame, &camera);
@@ -222,8 +245,8 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
             smoke_jumped |= walker.is_airborne();
             if smoke_frames == 15 {
                 ensure!(
-                    smoke_jumped && !walker.is_airborne(),
-                    "jump did not complete before reset"
+                    smoke_jumped == (config.observer.jump_height > 0.0) && !walker.is_airborne(),
+                    "unexpected jump state before reset"
                 );
             }
             if smoke_frames == 3 {
@@ -233,7 +256,7 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
             if smoke_frames == 16 {
                 ensure!(smoke_resized, "window resize was not observed");
                 eprintln!(
-                    "Rendered 16 frames with walking, looking, jumping, landing, reset and resize."
+                    "Rendered 16 frames with walking, looking, jump input, reset and resize."
                 );
                 return Ok(());
             }
@@ -245,25 +268,38 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
 
 fn main() -> Result<()> {
     let mut smoke = false;
-    for argument in std::env::args().skip(1) {
-        match argument.as_str() {
-            "--smoke" => smoke = true,
-            "--help" | "-h" => {
+    let mut path = None;
+    let mut args = std::env::args_os().skip(1);
+    while let Some(argument) = args.next() {
+        match argument.to_str() {
+            Some("--config") => {
+                ensure!(path.is_none(), "--config was provided more than once");
+                path = Some(PathBuf::from(
+                    args.next().context("--config requires a TOML file path")?,
+                ));
+            }
+            Some("--smoke") => smoke = true,
+            Some("--help" | "-h") => {
                 println!(
-                    "hypergame [--smoke]\nWASD/arrows to walk, Space to jump, left-drag to look.\nTab toggles mouse capture, scroll changes field of view, R resets, Esc closes."
+                    "hypergame --config PATH [--smoke]\nWASD/arrows to walk, Space to jump, left-drag to look.\nTab toggles mouse capture, scroll changes field of view, R resets, Esc closes."
                 );
                 return Ok(());
             }
-            _ => bail!("unknown option {argument}; use --help"),
+            _ => bail!("unknown option {argument:?}; use --help"),
         }
     }
-    let config = WindowConfig::default().title("Hypergame").size(if smoke {
+    let path = path.context("missing required --config PATH; use --help")?;
+    let config = Config::load(&path)?;
+    let window_config = WindowConfig::default().title("Hypergame").size(if smoke {
         (320, 240)
     } else {
-        (960, 720)
+        config.view.window_size.into()
     });
     wgame::app::entry(async move || {
-        wgame::within_window(config, async move |window| run(window, smoke).await).await
+        wgame::within_window(window_config, async move |window| {
+            run(window, config, smoke).await
+        })
+        .await
     });
     Ok(())
 }

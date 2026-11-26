@@ -8,7 +8,11 @@ use wgame::{
     shapes::{Mesh, Polygon, shader::Vertex},
 };
 
-use crate::{atmosphere::Atmosphere, projection::Pose};
+use crate::{
+    atmosphere::Atmosphere,
+    config::{Config, vegetation::Vegetation},
+    projection::Pose,
+};
 
 mod ecology;
 mod ground_cells;
@@ -58,10 +62,12 @@ pub struct Sun {
 }
 
 /// Diffuse fill on a white receiver, in linear RGB.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct AmbientLight {
     pub night: [f32; 3],
     pub day: [f32; 3],
+    pub response_factor: f32,
+    pub response_exponent: f32,
 }
 
 pub struct World {
@@ -71,6 +77,7 @@ pub struct World {
     center: Option<Cell>,
     cell_meshes: BTreeMap<Cell, Range<usize>>,
     plants: Plants,
+    vegetation: Vegetation,
     daylight: Daylight,
     pub sun: Sun,
     pub ambient: AmbientLight,
@@ -131,17 +138,13 @@ pub(super) fn mesh_with_normals(
     Ok(shapes.mesh(Mesh::from_arrays(shapes.state(), &vertices, Some(indices))))
 }
 
-pub fn spawn_frame() -> Result<Pose> {
-    Pose::from_isometry(Hyperboloid3::shift_z(1.3))
-}
-
 // SplitMix64. The cell address fixes each sample stream independently of visit order.
 struct Samples(u64);
 
 impl Samples {
-    fn for_cell(cell: Cell) -> Self {
+    fn for_cell(cell: Cell, seed: u64) -> Self {
         Self(
-            (cell.band as u64).wrapping_mul(0x8cb92ba72f3d8dd7)
+            seed ^ (cell.band as u64).wrapping_mul(0x8cb92ba72f3d8dd7)
                 ^ (cell.column as u64).wrapping_mul(0xd6e8feb86659fd93),
         )
     }
@@ -158,12 +161,12 @@ impl Samples {
 impl World {
     /// Rebuild the local patch only when the observer enters a new ground cell.
     pub fn objects_near(&mut self, eye: Pose) -> Result<&Objects> {
-        let center = Cell::at(eye)?;
+        let center = Cell::at(eye, &self.vegetation.grid)?;
         if self.center != Some(center) {
             let mut meshes = Vec::with_capacity(self.objects.meshes.len());
             meshes.extend_from_slice(&self.fixed_meshes);
             let mut cell_meshes = BTreeMap::new();
-            for cell in center.neighborhood()? {
+            for cell in center.neighborhood(&self.vegetation.grid)? {
                 let start = meshes.len();
                 if let Some(range) = self.cell_meshes.get(&cell) {
                     meshes.extend_from_slice(&self.objects.meshes[range.clone()]);
@@ -180,20 +183,23 @@ impl World {
     }
 
     fn plant_cell(&self, cell: Cell, meshes: &mut Vec<Object<Polygon>>) -> Result<()> {
-        let mut samples = Samples::for_cell(cell);
+        let vegetation = &self.vegetation;
+        let mut samples = Samples::for_cell(cell, vegetation.seed);
+        let [min_maturity, max_maturity] = vegetation.maturity;
         // Equal numbers of independent sites per species per unit of intrinsic area.
-        for _ in 0..8 {
+        for _ in 0..vegetation.sites_per_species {
             for species in [Species::Deciduous, Species::Pine, Species::Grass] {
-                let root = cell.root(samples.next(), samples.next())?;
+                let root = cell.root(samples.next(), samples.next(), &vegetation.grid)?;
                 let occupied = samples.next();
-                let maturity = 0.65 + 0.35 * samples.next();
+                let maturity = min_maturity + (max_maturity - min_maturity) * samples.next();
                 let yaw = TAU * samples.next();
                 let light = self.daylight.at(root.apply_vector([1.0, 0.0, 0.0, 0.0]));
-                if occupied >= species.density(light) {
+                if occupied >= species.density(light, vegetation) {
                     continue;
                 }
-                let (shape, material) =
-                    self.plants.grown(species, maturity * species.growth(light));
+                let (shape, material) = self
+                    .plants
+                    .grown(species, maturity * species.growth(light, vegetation));
                 meshes.push(Object {
                     shape,
                     pose: root.chain(&Pose::from_isometry(Hyperboloid3::rotate_y(yaw))?)?,
@@ -205,17 +211,17 @@ impl World {
     }
 }
 
-pub fn world(library: &Library) -> Result<World> {
+pub fn world(library: &Library, config: &Config) -> Result<World> {
     let sun = Sun {
-        pose: Pose::from_isometry(Hyperboloid3::shift_y(3.0))?,
-        radiance: [100.0, 96.0, 82.0],
+        pose: Pose::from_isometry(Hyperboloid3::shift_y(config.sun.distance))?,
+        radiance: config.sun.emission.rgb()?,
     };
     let earth = Pose::identity();
     let mut planes = vec![
         Object {
             shape: InfinitePlane,
             pose: earth,
-            material: Material::Diffuse(Vec3::new(0.23, 0.48, 0.10)),
+            material: config.earth.material.build()?,
         },
         Object {
             shape: InfinitePlane,
@@ -223,26 +229,29 @@ pub fn world(library: &Library) -> Result<World> {
             material: Material::Emissive(Vec3::from_array(sun.radiance)),
         },
     ];
-    planes.extend(stars::catalogue()?);
+    crate::projection::check_plane_capacity(
+        library,
+        planes.len() as u64 + u64::from(config.stars.count),
+    )?;
+    planes.extend(stars::catalogue(&config.stars)?);
     Ok(World {
         atmosphere: Atmosphere {
             ground: earth,
-            height: 0.45,
-            scattering: [0.70, 1.41, 3.08],
+            height: config.atmosphere.height,
+            background: config.atmosphere.background,
+            scattering: config.atmosphere.scattering.rgb()?,
         },
         objects: Objects {
             planes,
             ..Objects::default()
         },
-        fixed_meshes: vec![moon::moon(library)?],
+        fixed_meshes: vec![moon::moon(library, &config.moon)?],
         center: None,
         cell_meshes: BTreeMap::new(),
-        plants: Plants::new(library)?,
+        plants: Plants::new(library, &config.vegetation)?,
+        vegetation: config.vegetation.clone(),
         daylight: Daylight::new(earth, &sun)?,
         sun,
-        ambient: AmbientLight {
-            night: [0.004, 0.005, 0.007],
-            day: [0.13, 0.14, 0.15],
-        },
+        ambient: config.ambient.build()?,
     })
 }

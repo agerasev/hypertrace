@@ -10,24 +10,50 @@ its blue color, and stars show through the dark sky at night.
 From the Hypertrace workspace root, run
 
 ```sh
-cargo run --release -p hypergame
+cargo run --release -p hypergame -- --config game/hearth.toml
 ```
 
 Walk with WASD or the arrow keys. Left-drag to look, or press Tab to capture
 the mouse. The horizon stays level as you turn and look up or down. Press
 Space to jump, scroll to change the field of view, R to reset, and Escape to close.
 
-The observer stands `0.01875R` above Earth and walks at `0.1R` per second,
-where `R` is the curvature radius. Forward and sideways steps follow the ground
+In the supplied world, the observer stands `0.01875R` above Earth and walks at
+`0.1R` per second, where `R` is the curvature radius. Forward and sideways steps follow the ground
 even when looking straight up toward the Sun. A jump gives the observer an
 upward impulse along the ground normal. Under constant gravity, the observer
 rises about a quarter of their standing eye height and lands after 0.58 seconds.
 You can keep walking and turning during the jump.
 
+## Configuring a world
+
+Pass a TOML file with `--config` on every launch. Copy [hearth.toml](hearth.toml)
+to make another world. Each setting is required, and the game reports missing or
+unknown fields at startup. Colors are linear RGB. Distances and speeds use
+curvature radii and seconds.
+
+| Section | Settings |
+| --- | --- |
+| `earth`, `sun`, `moon` | Earth material, perpendicular Sun distance and emission, Moon ground location, perpendicular gap, tessellation and material |
+| `ambient` | Night and day fill colors and intensities, response factor and exponent |
+| `atmosphere` | Air layer thickness, scattering color and intensity, background sky radiance |
+| `stars` | Number of planes, seed, ground footprint radius, range of gaps above Earth, color and brightness distributions |
+| `vegetation` | Placement seed, sites per species per cell, maturity, grid, species occupancy and growth, shapes, vertex colors and materials |
+| `observer`, `view` | Spawn, yaw and pitch, eye height, walk speed, jump height, gravity, window size, field of view, near clip, mouse sensitivity and frame time limit |
+
+The Sun's perpendicular meets Earth at the world origin. Moon and observer
+ground offsets start there and follow local X then local Z. Heights are measured
+along the normal at the resulting foot. Keep the lunar gap above the highest
+jumping eye so the edge of the finite Moon stays hidden. Set `jump_height = 0`
+to disable jumping, or set the star count to zero for an empty catalogue.
+
+Materials accept `kind = "diffuse"` with a color, `"translucent"` with a color
+and transmission fraction, or `"emissive"` with a color and intensity. Each
+plant's material tint multiplies its bark, foliage or blade colors.
+
 ## Permanent day and night
 
-The common perpendicular from Earth to the Sun is three curvature radii long.
-Its foot on Earth has permanent noon. Travel along Earth away from that point
+The supplied world separates Earth and Sun by three curvature radii along their
+common perpendicular. Its foot on Earth has permanent noon. Travel along Earth away from that point
 and the Sun occupies less of the sky and approaches the horizon. Sunlight fades
 continuously into night. The Moon is gray and diffuse. Its visible brightness
 comes from the same Sun that lights the ground and the plants.
@@ -49,9 +75,11 @@ perpendicular distance to the Sun is `d` and the curvature radius is `R`,
 the disk's angular radius `a` satisfies `sin(a) = 1/cosh(d/R)`.
 The shader integrates the incoming light over the part of this disk above
 the receiving face's horizon. Thin grass blades also transmit some direct
-light, so a backlit blade still shows its green color. Direct sunlight is slightly yellow. Diffuse surfaces also receive a cool,
-nearly white ambient term that grows with the apparent area of the solar disk
-at the surface. A dim ambient floor keeps the ground visible at night. Emissive
+light, so a backlit blade still shows its green color. Direct sunlight is slightly
+yellow in the supplied world. The shader interpolates between the night and day
+ambient radiances with weight `clamp(factor × peak × sin²(a), 0, 1)^exponent`,
+where `peak` is the largest RGB component of the Sun's emitted radiance. This
+gives cool, nearly white fill in daylight and a dim floor at night. Emissive
 materials specify their own linear RGB radiance. Overbright colors retain their
 hue when mapped to the display. The model omits cast shadows.
 
@@ -132,7 +160,7 @@ nearby mesh origin.
 ```sh
 cargo test -p hypergame
 WGPU_BACKEND=vulkan cargo test -p hypergame -- --ignored --test-threads=1 --nocapture
-cargo run -p hypergame -- --smoke
+cargo run -p hypergame -- --config game/hearth.toml --smoke
 ```
 
 GPU checks read back projected triangles, check occlusion between meshes and

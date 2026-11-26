@@ -1,6 +1,9 @@
 //! Camera-relative data shared by the sky and every opaque surface.
 use anyhow::{Result, ensure};
-use wgame::{glam::Vec4, shapes::material::MaterialBinding};
+use wgame::{
+    glam::{Vec3, Vec4},
+    shapes::material::MaterialBinding,
+};
 use wgpu::util::DeviceExt;
 
 use crate::{projection::Pose, world::Sun};
@@ -11,6 +14,7 @@ pub(crate) struct Atmosphere {
     /// Altitude and RGB scattering coefficients in curvature-radius units.
     pub(crate) height: f64,
     pub(crate) scattering: [f32; 3],
+    pub(crate) background: [f32; 3],
 }
 
 pub(crate) struct AirBindings {
@@ -71,8 +75,8 @@ impl AirBindings {
         })
     }
 
-    pub(crate) fn enabled(&self) -> bool {
-        self.atmosphere.is_some()
+    pub(crate) fn sky_background(&self) -> Option<Vec3> {
+        self.atmosphere.map(|air| Vec3::from_array(air.background))
     }
 
     pub(crate) fn frame(&self, view: Pose) -> Result<MaterialBinding> {

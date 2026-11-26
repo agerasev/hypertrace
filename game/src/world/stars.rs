@@ -6,25 +6,30 @@ use ccgeom::{Geometry3, Hyperboloid3};
 use wgame::glam::Vec3;
 
 use super::{InfinitePlane, Material, Object, Pose, Samples};
+use crate::config::stars::StarField;
 
-pub(super) fn catalogue() -> Result<Vec<Object<InfinitePlane>>> {
-    let mut samples = Samples(0x33cd_831e_6010_9289);
-    let ground_radius = 5.0_f64;
-    (0..1536)
+pub(super) fn catalogue(settings: &StarField) -> Result<Vec<Object<InfinitePlane>>> {
+    let mut samples = Samples(settings.seed);
+    let disk_scale = (0.5 * settings.ground_radius).sinh();
+    let [near, far] = settings.gap;
+    let cool = Vec3::from_array(settings.cool_color);
+    let warm = Vec3::from_array(settings.warm_color);
+    let [dim, bright] = settings.intensity;
+    (0..settings.count)
         .map(|_| {
             // Place the foot of the common perpendicular uniformly by area on
-            // Earth. A disk of radius r has area 2π(cosh(r)−1) in unit curvature.
-            let radius = (1.0 + samples.next() * (ground_radius.cosh() - 1.0)).acosh();
+            // Earth. A disk of radius r has area 4π sinh²(r/2) in unit curvature.
+            let radius = 2.0 * (samples.next().sqrt() * disk_scale).asinh();
             let azimuth = TAU * samples.next();
-            let gap = 4.9 + samples.next();
+            let gap = near + (far - near) * samples.next();
             let pose = Pose::from_isometry(
                 Hyperboloid3::rotate_y(azimuth)
                     .chain(Hyperboloid3::shift_z(radius))
                     .chain(Hyperboloid3::shift_y(gap)),
             )?;
-            let color =
-                Vec3::new(0.72, 0.83, 1.0).lerp(Vec3::new(1.0, 0.87, 0.67), samples.next() as f32);
-            let intensity = 0.005 + 0.12 * (samples.next() as f32).powi(3);
+            let color = cool.lerp(warm, samples.next() as f32);
+            let intensity =
+                dim + (bright - dim) * (samples.next() as f32).powf(settings.intensity_exponent);
             Ok(Object {
                 shape: InfinitePlane,
                 pose,
@@ -40,16 +45,28 @@ mod tests {
 
     #[test]
     fn fixed_catalogue_reproduces_distant_earth_disjoint_planes() -> Result<()> {
-        let first = catalogue()?;
-        let second = catalogue()?;
+        let settings = StarField {
+            count: 32,
+            seed: 11,
+            ground_radius: 4.0,
+            gap: [3.0, 6.0],
+            cool_color: [0.4, 0.7, 1.0],
+            warm_color: [1.0, 0.9, 0.5],
+            intensity: [0.01, 0.1],
+            intensity_exponent: 1.5,
+        };
+        let first = catalogue(&settings)?;
+        let second = catalogue(&settings)?;
+        assert_eq!(first.len(), settings.count as usize);
         for (star, same) in first.iter().zip(second) {
             assert_eq!(star.pose.components()?, same.pose.components()?);
             assert_eq!(star.material.color(), same.material.color());
 
             let [w, x, y, z] = star.pose.apply_vector([0.0, 0.0, 1.0, 0.0]);
             // The two unit spacelike plane normals have inner product cosh(gap).
-            assert!(y > 1.0);
+            assert!((settings.gap[0]..settings.gap[1]).contains(&y.acosh()));
             let sinh_gap = ((y - 1.0) * (y + 1.0)).sqrt();
+            assert!((w / sinh_gap).acosh() <= settings.ground_radius);
             // The projection of the star normal onto Earth is proportional to
             // the foot. Walk halfway there along the geodesic from noon.
             let half_w = ((1.0 + w / sinh_gap) * 0.5).sqrt();

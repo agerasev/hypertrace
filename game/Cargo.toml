@@ -9,6 +9,8 @@ anyhow = "1"
 bytemuck = "1"
 ccgeom = "0.1.1"
 hypertrace-scene = { path = "../scene" }
+serde = { version = "1", features = ["derive"] }
+toml = "1"
 wgame = { version = "0.1.0", default-features = false, features = ["desktop", "shapes"] }
 wgpu = { version = "30.0.1", default-features = false, features = ["std"] }
 winit = { version = "0.30.13", default-features = false, features = ["rwh_06"] }

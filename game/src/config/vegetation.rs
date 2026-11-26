@@ -1,0 +1,162 @@
+use anyhow::{Context, Result, ensure};
+use serde::Deserialize;
+
+use super::{MaterialConfig, validate_rgb};
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Vegetation {
+    pub seed: u64,
+    pub sites_per_species: u32,
+    pub maturity: [f64; 2],
+    pub grid: GroundGrid,
+    pub deciduous: Deciduous,
+    pub pine: Pine,
+    pub grass: Grass,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct GroundGrid {
+    pub view_radius: f64,
+    pub log_height: f64,
+    pub width: f64,
+    pub max_patch_sites: u32,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct LightResponse {
+    pub light_range: [f64; 2],
+    pub occupancy: [f64; 2],
+    pub minimum_size: f64,
+    pub half_saturation: f64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Deciduous {
+    pub height: f64,
+    pub bark: [f32; 3],
+    pub foliage: [f32; 3],
+    pub material: MaterialConfig,
+    pub ecology: LightResponse,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Pine {
+    pub height: f64,
+    pub bark: [f32; 3],
+    pub foliage: [[f32; 3]; 3],
+    pub material: MaterialConfig,
+    pub ecology: LightResponse,
+    pub daylight_range: [f64; 2],
+    pub daylight_suppression: f64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct Grass {
+    pub blades: u16,
+    pub blade_height: [f64; 2],
+    pub blade_width: f64,
+    pub spread_radius: f64,
+    pub colors: [[f32; 3]; 3],
+    pub material: MaterialConfig,
+    pub ecology: LightResponse,
+}
+
+fn positive(value: f64) -> bool {
+    value.is_finite() && value > 0.0
+}
+
+fn fraction(value: f64) -> bool {
+    (0.0..=1.0).contains(&value)
+}
+
+fn light_interval([low, high]: [f64; 2]) -> bool {
+    fraction(low) && fraction(high) && low < high
+}
+
+impl LightResponse {
+    fn validate(self) -> Result<()> {
+        ensure!(
+            light_interval(self.light_range),
+            "light_range must increase within [0, 1]"
+        );
+        ensure!(
+            self.occupancy.into_iter().all(fraction),
+            "occupancy endpoints must be probabilities"
+        );
+        ensure!(
+            fraction(self.minimum_size),
+            "minimum_size must be in [0, 1]"
+        );
+        ensure!(
+            positive(self.half_saturation),
+            "half_saturation must be finite and positive"
+        );
+        Ok(())
+    }
+}
+
+impl Vegetation {
+    pub(crate) fn validate(&self) -> Result<()> {
+        self.grid.validate(self.sites_per_species).context("grid")?;
+        let [min, max] = self.maturity;
+        ensure!(
+            fraction(min) && fraction(max) && min <= max,
+            "maturity must be an ordered interval in [0, 1]"
+        );
+        for (name, value) in [
+            ("deciduous.height", self.deciduous.height),
+            ("pine.height", self.pine.height),
+            ("grass.blade_width", self.grass.blade_width),
+            ("grass.spread_radius", self.grass.spread_radius),
+        ] {
+            ensure!(positive(value), "{name} must be finite and positive");
+        }
+
+        for (name, material, ecology) in [
+            (
+                "deciduous",
+                &self.deciduous.material,
+                self.deciduous.ecology,
+            ),
+            ("pine", &self.pine.material, self.pine.ecology),
+            ("grass", &self.grass.material, self.grass.ecology),
+        ] {
+            material
+                .build()
+                .with_context(|| format!("{name}.material"))?;
+            ecology
+                .validate()
+                .with_context(|| format!("{name}.ecology"))?;
+        }
+        validate_rgb(self.deciduous.bark).context("deciduous.bark")?;
+        validate_rgb(self.deciduous.foliage).context("deciduous.foliage")?;
+        validate_rgb(self.pine.bark).context("pine.bark")?;
+        for color in self.pine.foliage {
+            validate_rgb(color).context("pine.foliage")?;
+        }
+        ensure!(
+            light_interval(self.pine.daylight_range),
+            "pine.daylight_range must increase within [0, 1]"
+        );
+        ensure!(
+            fraction(self.pine.daylight_suppression),
+            "pine.daylight_suppression must be in [0, 1]"
+        );
+        let [short, tall] = self.grass.blade_height;
+        ensure!(
+            positive(short) && positive(tall) && short <= tall,
+            "grass.blade_height must be an ordered positive finite interval"
+        );
+        ensure!(self.grass.blades > 0, "grass.blades must be positive");
+        for color in self.grass.colors {
+            validate_rgb(color).context("grass.colors")?;
+        }
+        Ok(())
+    }
+}

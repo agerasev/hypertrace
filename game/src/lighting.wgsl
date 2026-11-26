@@ -1,7 +1,7 @@
 struct Lighting {
     sun: vec4<f32>,
-    night: vec4<f32>,
-    day: vec4<f32>,
+    night: vec4<f32>, // RGB radiance, ambient response factor
+    day: vec4<f32>,   // RGB radiance, ambient response exponent
 }
 @group(2) @binding(0) var<uniform> lighting: Lighting;
 
@@ -55,7 +55,8 @@ fn illuminate(input: VaryingData, albedo: vec3<f32>) -> vec3<f32> {
     let back = max(0.0, front - mu*s*s);
     // The projected solar disk area (in units of pi) drives the local diffuse fill.
     let sun_peak = max(lighting.sun.r, max(lighting.sun.g, lighting.sun.b));
-    let fill = mix(lighting.night.rgb, lighting.day.rgb, min(sun_peak * s*s, 1.0));
+    let daylight = min((sun_peak * s*s) * lighting.night.w, 1.0);
+    let fill = mix(lighting.night.rgb, lighting.day.rgb, pow(daylight, lighting.day.w));
     return albedo * (fill + lighting.sun.rgb * mix(front, back, input.material.y));
 }
 

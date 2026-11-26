@@ -1,6 +1,10 @@
 use anyhow::{Result, ensure};
 
-use crate::{projection::Pose, world::Sun};
+use crate::{
+    config::vegetation::{LightResponse, Vegetation},
+    projection::Pose,
+    world::Sun,
+};
 
 /// Direct light on the upper face of Earth, as a fraction of permanent noon.
 pub struct Daylight {
@@ -50,31 +54,44 @@ fn smoothstep(low: f64, high: f64, value: f64) -> f64 {
     t * t * (3.0 - 2.0 * t)
 }
 
+impl LightResponse {
+    fn occupancy(self, light: f64) -> f64 {
+        let [dark, bright] = self.occupancy;
+        let [start, end] = self.light_range;
+        dark + (bright - dark) * smoothstep(start, end, light)
+    }
+
+    /// Saturating size response normalized to one at noon.
+    fn growth(self, light: f64) -> f64 {
+        let light = light.clamp(0.0, 1.0);
+        let vigor = light * (1.0 + self.half_saturation) / (light + self.half_saturation);
+        self.minimum_size + (1.0 - self.minimum_size) * vigor
+    }
+}
+
 impl Species {
-    /// Occupancy probability at one candidate site for this species.
-    pub fn density(self, light: f64) -> f64 {
-        let day = smoothstep(0.055, 0.42, light);
+    fn ecology(self, settings: &Vegetation) -> LightResponse {
         match self {
-            Self::Deciduous => 0.40 * day,
-            Self::Pine => {
-                let twilight = smoothstep(0.003, 0.10, light);
-                (0.0003 + (0.30 - 0.0003) * twilight) * (1.0 - 0.55 * day)
-            }
-            Self::Grass => 0.006 + (0.78 - 0.006) * smoothstep(0.001, 0.19, light),
+            Self::Deciduous => settings.deciduous.ecology,
+            Self::Pine => settings.pine.ecology,
+            Self::Grass => settings.grass.ecology,
         }
     }
 
+    /// Occupancy probability at one candidate site for this species.
+    pub fn density(self, light: f64, settings: &Vegetation) -> f64 {
+        let occupancy = self.ecology(settings).occupancy(light);
+        if let Self::Pine = self {
+            let [start, end] = settings.pine.daylight_range;
+            return occupancy
+                * (1.0 - settings.pine.daylight_suppression * smoothstep(start, end, light));
+        }
+        occupancy
+    }
+
     /// Maximum local size as a fraction of the full-grown plant at noon.
-    pub fn growth(self, light: f64) -> f64 {
-        let (minimum, half_saturation) = match self {
-            Self::Deciduous => (0.35, 0.24),
-            Self::Pine => (0.22, 0.10),
-            Self::Grass => (0.25, 0.06),
-        };
-        // Saturating response normalized to one at noon.
-        let light = light.clamp(0.0, 1.0);
-        let vigor = light * (1.0 + half_saturation) / (light + half_saturation);
-        minimum + (1.0 - minimum) * vigor
+    pub fn growth(self, light: f64, settings: &Vegetation) -> f64 {
+        self.ecology(settings).growth(light)
     }
 }
 
@@ -111,19 +128,18 @@ mod tests {
     }
 
     #[test]
-    fn shade_favors_conifers_then_sparse_dwarf_growth() {
-        use Species::*;
-        assert!(Deciduous.density(1.0) > Pine.density(1.0));
-        assert!(Pine.density(0.1) > Deciduous.density(0.1));
-        assert_eq!(Deciduous.density(0.0), 0.0);
-        assert!(Pine.density(0.0) > 0.0 && Grass.density(0.0) > Pine.density(0.0));
-        assert!(Grass.density(0.0) < Grass.density(0.1));
-        for species in [Deciduous, Pine, Grass] {
-            let night = species.growth(0.0);
-            let twilight = species.growth(0.1);
-            let day = species.growth(1.0);
-            assert!(0.0 < night && night < twilight && twilight < day);
-            assert!((day - 1.0).abs() < 1e-12);
-        }
+    fn custom_light_response_matches_its_limits_and_smooth_midpoint() {
+        let response = LightResponse {
+            light_range: [0.25, 0.75],
+            occupancy: [0.125, 0.875],
+            minimum_size: 0.25,
+            half_saturation: 0.5,
+        };
+        assert_eq!(response.occupancy(0.0), 0.125);
+        assert_eq!(response.occupancy(0.5), 0.5);
+        assert_eq!(response.occupancy(1.0), 0.875);
+        assert_eq!(response.growth(0.0), 0.25);
+        assert_eq!(response.growth(0.5), 0.8125);
+        assert_eq!(response.growth(1.0), 1.0);
     }
 }

@@ -19,6 +19,13 @@ use wgame::{
     texture::RenderTexture,
 };
 
+const NO_AMBIENT: AmbientLight = AmbientLight {
+    night: [0.0; 3],
+    day: [0.0; 3],
+    response_factor: 1.0,
+    response_exponent: 1.0,
+};
+
 fn headless_library() -> Result<Library> {
     let instance =
         wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle_from_env());
@@ -53,14 +60,15 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
     let mut target = library
         .texturing()
         .render_texture(size, Default::default())?;
-    let projection_camera = Camera::new(library.state(), projection::camera_matrix(size, 1.0));
+    let projection_camera =
+        Camera::new(library.state(), projection::camera_matrix(size, 1.0, 0.005));
     let shader = projection::shader(
         &library,
         &Sun {
             pose: Pose::identity(),
             radiance: [1.0; 3],
         },
-        AmbientLight::default(),
+        NO_AMBIENT,
         None,
     )?;
 
@@ -177,7 +185,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     let mut target = library
         .texturing()
         .render_texture(size, Default::default())?;
-    let camera = Camera::new(library.state(), projection::camera_matrix(size, 1.0));
+    let camera = Camera::new(library.state(), projection::camera_matrix(size, 1.0, 0.005));
     let mut render = |objects: &Objects, eye, light: &projection::Shader| {
         let drawing = projection::prepare(objects, eye, light)?;
         snapshot(&mut target, &camera, &drawing)
@@ -198,14 +206,8 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
             1.0,
         )
     };
-    let illuminated = |pose, radiance| {
-        projection::shader(
-            &library,
-            &Sun { pose, radiance },
-            AmbientLight::default(),
-            None,
-        )
-    };
+    let illuminated =
+        |pose, radiance| projection::shader(&library, &Sun { pose, radiance }, NO_AMBIENT, None);
     let check_center = |image: &Image<Rgba<f16>>, expected: f64| {
         let p = image.data()[CENTER * WIDTH + CENTER];
         for value in [p.r, p.g, p.b] {
@@ -328,6 +330,8 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     let fill = AmbientLight {
         night: [0.005; 3],
         day: [0.15; 3],
+        response_factor: 1.5,
+        response_exponent: 2.0,
     };
     let with_fill = projection::shader(
         &library,
@@ -340,7 +344,10 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     )?;
     for radius in [0.0_f64, 1.8, 6.0] {
         let foot = Pose::identity().move_local([radius, 0.0, 0.0], [0.0; 3], 1.0)?;
-        let expected = 0.005 + 0.145 / (1.0 + (gap.sinh() * radius.cosh()).powi(2));
+        let weight = (1.5 / (1.0 + (gap.sinh() * radius.cosh()).powi(2)))
+            .min(1.0)
+            .powi(2);
+        let expected = 0.005 + 0.145 * weight;
         check_center(&render(&earth, above(foot, -0.2)?, &with_fill)?, expected);
     }
     Ok(())
@@ -355,7 +362,7 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
     let mut target = library
         .texturing()
         .render_texture(size, Default::default())?;
-    let camera = Camera::new(library.state(), projection::camera_matrix(size, 1.0));
+    let camera = Camera::new(library.state(), projection::camera_matrix(size, 1.0, 0.005));
     let gap = 1.3_f64;
     let sun = Sun {
         pose: Pose::identity().move_local([0.0, gap, 0.0], [0.0; 3], 1.0)?,
@@ -364,9 +371,10 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
     let air = Atmosphere {
         ground: Pose::identity(),
         height: 0.65,
+        background: [0.012; 3],
         scattering: [0.5, 0.85, 1.20],
     };
-    let shader = projection::shader(&library, &sun, AmbientLight::default(), Some(air))?;
+    let shader = projection::shader(&library, &sun, NO_AMBIENT, Some(air))?;
     let height = 0.05_f64;
     let horizon_pitch = -height.tanh().asin();
     let mean = |p: [f64; 4]| -gap.sinh() * p[0] + gap.cosh() * p[2];
@@ -415,7 +423,7 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
             });
             0.08
         } else {
-            0.0
+            f64::from(air.background[0])
         };
         let drawing = projection::prepare(&objects, eye, &shader)?;
         let image = snapshot(&mut target, &camera, &drawing)?;

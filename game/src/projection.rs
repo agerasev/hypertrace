@@ -41,6 +41,18 @@ struct Instance {
     material: Vec2, // (emissive, diffuse transmission fraction)
 }
 
+pub(crate) fn check_plane_capacity(library: &Library, count: u64) -> Result<()> {
+    // Earth, Sun and stars share one instanced drawing and one vertex buffer.
+    let stride = wgame::shapes::shader::InstanceData::<Instance>::bindings().size();
+    let capacity =
+        (library.state().device().limits().max_buffer_size / stride).min(u32::MAX.into());
+    ensure!(
+        count <= capacity,
+        "{count} planes exceed the device's {capacity}-plane capacity"
+    );
+    Ok(())
+}
+
 #[derive(Attribute)]
 struct Varyings {
     eye_point: Vec4,
@@ -50,10 +62,11 @@ struct Varyings {
     material: Vec2,
 }
 
-/// Physical distance along the optical axis to the near clipping plane, in curvature radii.
-const NEAR_DISTANCE: f64 = 0.005;
-
-pub(crate) fn camera_matrix((width, height): (u32, u32), tan_half_fov: f64) -> Mat4 {
+pub(crate) fn camera_matrix(
+    (width, height): (u32, u32),
+    tan_half_fov: f64,
+    near_distance: f64,
+) -> Mat4 {
     // For embedded (W,X,Y,Z), (X,Y,Z,W) is the homogeneous Klein point.
     // Its screen direction is (X,Y)/-Z. Along a ray, Klein radius = tanh(d).
     // An infinite far plane leaves the whole unit Klein ball in range, including
@@ -61,7 +74,7 @@ pub(crate) fn camera_matrix((width, height): (u32, u32), tan_half_fov: f64) -> M
     directx::perspective_infinite(
         (2.0 * tan_half_fov.atan()) as f32,
         width as f32 / height as f32,
-        NEAR_DISTANCE.tanh() as f32,
+        near_distance.tanh() as f32,
     )
 }
 
@@ -93,7 +106,15 @@ pub(crate) fn shader(
             count: None,
         }],
     });
-    let colors = [sun.radiance, ambient.night, ambient.day].map(|[r, g, b]| [r, g, b, 0.0]);
+    let colors = [
+        Vec3::from_array(sun.radiance).extend(0.0).to_array(),
+        Vec3::from_array(ambient.night)
+            .extend(ambient.response_factor)
+            .to_array(),
+        Vec3::from_array(ambient.day)
+            .extend(ambient.response_exponent)
+            .to_array(),
+    ];
     let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Surface lighting"),
         contents: bytemuck::cast_slice(&colors),
@@ -151,7 +172,7 @@ pub(crate) fn shader(
             output.eye_point = vec4<f32>(ndc.x/view_matrix[0][0], ndc.y/view_matrix[1][1], -1.0, 0.0);
         ".into(),
         fragment_color_source: format!(
-            "let linear = display_linear(air_glow(input.eye_point.xyz, 0.0)); color = vec4<f32>({display}, 1.0);"
+            "let linear = display_linear(color.rgb + air_glow(input.eye_point.xyz, 0.0)); color = vec4<f32>({display}, 1.0);"
         ),
         ..config.clone()
     };
@@ -276,7 +297,7 @@ impl Drawing {
 pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Result<Drawing> {
     let view = camera.inverse()?;
     let air = shader.air.frame(view)?;
-    let sky = if shader.air.enabled() {
+    let sky = if let Some(background) = shader.air.sky_background() {
         let material = shader
             .sky
             .material(vec![shader.light.clone(), air.clone()], ())?;
@@ -284,7 +305,7 @@ pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Resul
         sky.add(
             &shader
                 .plane_quad
-                .fill_color(Vec3::ONE)
+                .fill_color(background)
                 .with_material(&material)
                 .depth(DepthMode::Overlay),
         );
@@ -355,19 +376,20 @@ mod tests {
         assert_eq!(a, 1.0);
         assert!(b.abs() <= 1.0);
         assert!((point.z / point.w + distance.tanh() as f32).abs() < 1e-6);
-        let clip = camera_matrix((640, 480), 1.0) * point;
+        let clip = camera_matrix((640, 480), 1.0, 0.01) * point;
         assert!(clip.z > 0.0 && clip.z < clip.w);
         Ok(())
     }
 
     #[test]
     fn pinhole_matches_intrinsic_angles_and_depth_orders_forward_rays() {
-        let projection = camera_matrix((800, 400), 0.5);
+        let near_distance = 0.02;
+        let projection = camera_matrix((800, 400), 0.5, near_distance);
         // Unit-speed origin rays have P(d) = (cosh(d), sinh(d) * unit_direction).
         let forward = |d: f64| projection * Vec4::new(0.0, 0.0, -d.sinh() as f32, d.cosh() as f32);
         assert!(forward(-0.5).w < 0.0);
-        assert!(forward(NEAR_DISTANCE / 2.0).z < 0.0);
-        assert!(forward(NEAR_DISTANCE).z.abs() < 1e-7);
+        assert!(forward(near_distance / 2.0).z < 0.0);
+        assert!(forward(near_distance).z.abs() < 1e-7);
         let mut previous_depth = 0.0;
         for distance in [0.1_f64, 1.0, 3.0, 7.0] {
             let clip = forward(distance);

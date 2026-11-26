@@ -11,9 +11,11 @@ use winit::window::CursorGrabMode;
 #[cfg(test)]
 mod gpu_tests;
 mod projection;
+mod walker;
 mod world;
 
-const RADIUS: f64 = 1.0;
+use walker::Walker;
+
 const INITIAL_FOV: f64 = 0.66; // Tangent of half the vertical field of view.
 
 struct MouseCapture<'a> {
@@ -47,26 +49,31 @@ impl Drop for MouseCapture<'_> {
     }
 }
 
-fn motion(input: &CanvasInput, size: (u32, u32), dt: f64, look: bool) -> ([f64; 3], [f64; 3]) {
+fn motion(input: &CanvasInput, size: (u32, u32), look: bool) -> ([f64; 2], [f64; 2]) {
+    if !input.focused {
+        return ([0.0; 2], [0.0; 2]);
+    }
     let held = |c| input.key_down(Key::Character(c));
-    let axis = |positive, negative| (f64::from(positive) - f64::from(negative)) * dt;
-    let translation = [
+    let axis = |positive, negative| f64::from(positive) - f64::from(negative);
+    let axes = [
         axis(
             held('d') || input.key_down(Key::ArrowRight),
             held('a') || input.key_down(Key::ArrowLeft),
         ),
-        axis(input.key_down(Key::Space), held('c')),
         axis(
-            held('s') || input.key_down(Key::ArrowDown),
             held('w') || input.key_down(Key::ArrowUp),
+            held('s') || input.key_down(Key::ArrowDown),
         ),
     ];
-    let mut rotation = [0.0, 0.0, axis(held('q'), held('e'))];
-    if look && input.focused {
-        rotation[0] = -2.0 * f64::from(input.relative_motion.y) / f64::from(size.1);
-        rotation[1] = -2.0 * f64::from(input.relative_motion.x) / f64::from(size.0);
-    }
-    (translation, rotation)
+    let angles = if look {
+        [
+            -2.0 * f64::from(input.relative_motion.x) / f64::from(size.0),
+            -2.0 * f64::from(input.relative_motion.y) / f64::from(size.1),
+        ]
+    } else {
+        [0.0; 2]
+    };
+    (axes, angles)
 }
 
 async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
@@ -75,9 +82,9 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
     let library = Library::new(&graphics);
     let world = world::world(&library)?;
     let shader = projection::shader(&library, &world.sun)?;
-    let initial_pose = world::initial_camera()?;
-    let mut pose = initial_pose;
-    let mut drawing = projection::prepare(&world.objects, pose, &shader)?.bake();
+    let start = Walker::new(world::spawn_frame()?, 0.14)?;
+    let mut walker = start;
+    let mut drawing = projection::prepare(&world.objects, walker.eye_pose()?, &shader)?.bake();
     let mut fov = INITIAL_FOV;
     let raw = window.raw();
     let mut capture = MouseCapture {
@@ -91,10 +98,15 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
     let mut blocked = false;
     let mut smoke_frames = 0;
     let mut smoke_resized = false;
+    let mut smoke_jumped = false;
 
     while let Some(mut frame) = window.next_frame().await? {
         let now = Instant::now();
-        let dt = (now - previous).as_secs_f64().min(0.1);
+        let dt = if smoke {
+            0.05
+        } else {
+            (now - previous).as_secs_f64().min(0.1)
+        };
         previous = now;
         let frame_size = frame.size();
         if frame_size.0 == 0 || frame_size.1 == 0 {
@@ -104,6 +116,7 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
         let input = frame.input();
         let mut suppress_look = false;
         let mut reset = false;
+        let mut jump = false;
         let mut scroll = 0.0;
         for event in &input.events {
             match event {
@@ -122,6 +135,11 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
                     repeat: false,
                 } => reset = true,
                 Event::Key {
+                    key: Key::Space,
+                    pressed: true,
+                    repeat: false,
+                } => jump = true,
+                Event::Key {
                     key: Key::Tab,
                     pressed: true,
                     repeat: false,
@@ -134,42 +152,52 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
                 Event::Focused(false) => {
                     capture.set(false)?;
                     suppress_look = true;
+                    jump = false;
                 }
-                Event::Cancelled => suppress_look = true,
+                Event::Cancelled => {
+                    suppress_look = true;
+                    jump = false;
+                }
                 Event::Scroll(delta) => scroll += f64::from(delta.y),
                 _ => {}
             }
         }
         let look = !suppress_look && (capture.active || input.button_down(Button::Primary));
-        let (mut translation, mut rotation) = motion(input, frame_size, dt, look);
+        let ([mut strafe, mut forward], [mut yaw, mut pitch]) = motion(input, frame_size, look);
+        jump &= input.focused;
         if smoke && smoke_frames == 2 {
-            translation[0] += 0.15;
-            rotation[1] += 0.12;
+            strafe = 1.0;
+            forward = 1.0;
+            yaw = 0.12;
+            pitch = -0.15;
+            jump = true;
         }
-        reset |= smoke && smoke_frames == 5;
-        if reset || translation != [0.0; 3] || rotation != [0.0; 3] {
-            let next = if reset {
-                Ok(initial_pose)
-            } else {
-                pose.move_local(translation, rotation, RADIUS)
-            };
-            match next
-                .and_then(|next| Ok((next, projection::prepare(&world.objects, next, &shader)?)))
-            {
-                Ok((next, scene)) => {
-                    pose = next;
-                    drawing = scene.bake();
+        reset |= smoke && smoke_frames == 15;
+        let mut next = walker;
+        let update = (|| -> Result<_> {
+            if reset {
+                next = start;
+            } else if !next.step(strafe, forward, yaw, pitch, jump, dt)? {
+                return Ok(None);
+            }
+            Ok(Some(
+                projection::prepare(&world.objects, next.eye_pose()?, &shader)?.bake(),
+            ))
+        })();
+        match update {
+            Ok(drawing_update) => {
+                walker = next;
+                if let Some(scene) = drawing_update {
+                    drawing = scene;
                     blocked = false;
                 }
-                Err(error) if smoke => return Err(error),
-                Err(error) => {
-                    if !blocked {
-                        eprintln!(
-                            "Camera movement stopped: {error:#}. Move back or press R to reset."
-                        );
-                    }
-                    blocked = true;
+            }
+            Err(error) if smoke => return Err(error),
+            Err(error) => {
+                if !blocked {
+                    eprintln!("Camera movement stopped: {error:#}. Move back or press R to reset.");
                 }
+                blocked = true;
             }
         }
         let next_fov = if reset {
@@ -188,13 +216,22 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
 
         if smoke {
             smoke_frames += 1;
+            smoke_jumped |= walker.is_airborne();
+            if smoke_frames == 15 {
+                ensure!(
+                    smoke_jumped && !walker.is_airborne(),
+                    "jump did not complete before reset"
+                );
+            }
             if smoke_frames == 3 {
                 let _ = raw.request_inner_size(wgame::app::Size::new(480, 270));
             }
             smoke_resized |= size == (480, 270);
             if smoke_frames == 16 {
                 ensure!(smoke_resized, "window resize was not observed");
-                eprintln!("Rendered 16 frames with camera movement, reset and resize.");
+                eprintln!(
+                    "Rendered 16 frames with walking, looking, jumping, landing, reset and resize."
+                );
                 return Ok(());
             }
         }
@@ -210,7 +247,7 @@ fn main() -> Result<()> {
             "--smoke" => smoke = true,
             "--help" | "-h" => {
                 println!(
-                    "hypergame [--smoke]\nWASD/arrows to move, Space/C for up/down, Q/E to roll, left-drag to look.\nTab toggles mouse capture, scroll changes field of view, R resets, Esc closes."
+                    "hypergame [--smoke]\nWASD/arrows to walk, Space to jump, left-drag to look.\nTab toggles mouse capture, scroll changes field of view, R resets, Esc closes."
                 );
                 return Ok(());
             }

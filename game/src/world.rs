@@ -103,8 +103,12 @@ impl Plant {
     // The root is (0,0,1) in local half-space. +y grows away from
     // the geodesic ground plane and z is an offset in chart height.
     fn vertex(&mut self, [x, y, z]: [f64; 3], rgb: [f32; 3]) -> u32 {
+        const PLANT_SCALE: f64 = 0.25;
         let index = self.vertices.len() as u32;
-        self.vertices.push(([x, y, 1.0 + z], rgb));
+        self.vertices.push((
+            [x * PLANT_SCALE, y * PLANT_SCALE, 1.0 + z * PLANT_SCALE],
+            rgb,
+        ));
         index
     }
 
@@ -197,12 +201,8 @@ fn grass(library: &Library) -> Result<PolygonFill> {
     plant.upload(library)
 }
 
-pub fn initial_camera() -> Result<Pose> {
-    Pose::from_isometry(
-        Hyperboloid3::shift_z(1.3)
-            .chain(Hyperboloid3::shift_y(0.075))
-            .chain(Hyperboloid3::rotate_x(0.14)),
-    )
+pub fn spawn_frame() -> Result<Pose> {
+    Pose::from_isometry(Hyperboloid3::shift_z(1.3))
 }
 
 fn vegetation(library: &Library, objects: &mut Vec<Object>) -> Result<()> {
@@ -219,19 +219,25 @@ fn vegetation(library: &Library, objects: &mut Vec<Object>) -> Result<()> {
         f64::from(seed) / (f64::from(u32::MAX) + 1.0)
     };
 
-    // Hyperbolic disk area is proportional to cosh(r)-1. Plants occupy
-    // the first two curvature radii around the permanent subsolar point.
+    // Scatter across the daylight disk and put denser groves on the walk
+    // from the starting meadow to the subsolar point.
     for i in 0..570 {
-        let radius = (1.0 + sample() * (2.0_f64.cosh() - 1.0)).acosh();
-        let azimuth = TAU * sample();
-        let root = Hyperboloid3::rotate_y(azimuth)
-            .chain(Hyperboloid3::shift_z(radius))
-            .chain(Hyperboloid3::rotate_y(TAU * sample()));
+        let site = if i % 2 == 0 {
+            let along = 2.0 * sample() - 0.3;
+            let across = 0.64 * (sample() - 0.5);
+            Hyperboloid3::shift_z(along).chain(Hyperboloid3::shift_x(across))
+        } else {
+            // Hyperbolic disk area is proportional to cosh(r)-1.
+            let radius = (1.0 + sample() * (2.0_f64.cosh() - 1.0)).acosh();
+            let azimuth = TAU * sample();
+            Hyperboloid3::rotate_y(azimuth).chain(Hyperboloid3::shift_z(radius))
+        };
+        let root = site.chain(Hyperboloid3::rotate_y(TAU * sample()));
         let pose = Pose::from_isometry(root)?;
         let [_, x, _, z] = pose.apply_vector([1.0, 0.0, 0.0, 0.0]);
         let (mesh, material) = if i < 200 {
             // Leave a winding meadow among the groves, including the spawn point.
-            if (x - 0.18 * (2.0 * z).sin()).abs() < 0.28
+            if (x - 0.045 * (2.0 * z).sin()).abs() < 0.07
                 || (4.0 * x + z).sin() + (2.5 * z - x).cos() < -0.40
             {
                 continue;

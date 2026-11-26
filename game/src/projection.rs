@@ -40,7 +40,7 @@ struct Varyings {
 }
 
 /// Physical distance along the optical axis to the near clipping plane, in curvature radii.
-const NEAR_DISTANCE: f64 = 0.02;
+const NEAR_DISTANCE: f64 = 0.005;
 
 pub(crate) fn camera_matrix((width, height): (u32, u32), tan_half_fov: f64) -> Mat4 {
     // For embedded (W,X,Y,Z), (X,Y,Z,W) is the homogeneous Klein point.

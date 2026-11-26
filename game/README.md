@@ -11,9 +11,16 @@ From the Hypertrace workspace root, run
 cargo run --release -p hypergame
 ```
 
-Move with WASD or the arrow keys, rise with Space, descend with C, and roll
-with Q/E. Left-drag to look around or press Tab to capture the mouse. Scroll
-to change the field of view, press R to reset, and press Escape to close.
+Walk with WASD or the arrow keys. Left-drag to look, or press Tab to capture
+the mouse. The horizon stays level as you turn and look up or down. Press
+Space to jump, scroll to change the field of view, R to reset, and Escape to close.
+
+The observer stands `0.01875R` above Earth and walks at `0.1R` per second,
+where `R` is the curvature radius. Forward and sideways steps follow the ground
+even when looking straight up toward the Sun. A jump gives the observer an
+upward impulse along the ground normal. Under constant gravity, the observer
+rises about a quarter of their standing eye height and lands after 0.58 seconds.
+You can keep walking and turning during the jump.
 
 ## Permanent day and night
 
@@ -81,5 +88,6 @@ cargo run -p hypergame -- --smoke
 ```
 
 GPU checks read back projected triangles and exercise illumination independently
-of the demo layout. The windowed smoke check exercises movement, reset, resize,
-and presentation.
+of the demo layout. CPU tests cover walking speed, horizon alignment, and jump
+height and landing. The windowed smoke check exercises walking, looking,
+jumping, landing, reset, resize, and presentation.

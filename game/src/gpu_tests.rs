@@ -61,6 +61,7 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
             radiance: [1.0; 3],
         },
         AmbientLight::default(),
+        None,
     )?;
 
     // At local chart height 1, all three corners have the same horizontal
@@ -198,7 +199,12 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         )
     };
     let illuminated = |pose, radiance| {
-        projection::shader(&library, &Sun { pose, radiance }, AmbientLight::default())
+        projection::shader(
+            &library,
+            &Sun { pose, radiance },
+            AmbientLight::default(),
+            None,
+        )
     };
     let check_center = |image: &Image<Rgba<f16>>, expected: f64| {
         let p = image.data()[CENTER * WIDTH + CENTER];
@@ -330,11 +336,99 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
             radiance: [1.0; 3],
         },
         fill,
+        None,
     )?;
     for radius in [0.0_f64, 1.8, 6.0] {
         let foot = Pose::identity().move_local([radius, 0.0, 0.0], [0.0; 3], 1.0)?;
         let expected = 0.005 + 0.145 / (1.0 + (gap.sinh() * radius.cosh()).powi(2));
         check_center(&render(&earth, above(foot, -0.2)?, &with_fill)?, expected);
+    }
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a graphics adapter"]
+fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<()> {
+    use crate::atmosphere::Atmosphere;
+    let library = headless_library()?;
+    let size = (65, 65);
+    let mut target = library
+        .texturing()
+        .render_texture(size, Default::default())?;
+    let camera = Camera::new(library.state(), projection::camera_matrix(size, 1.0));
+    let gap = 1.3_f64;
+    let sun = Sun {
+        pose: Pose::identity().move_local([0.0, gap, 0.0], [0.0; 3], 1.0)?,
+        radiance: [1.0; 3],
+    };
+    let air = Atmosphere {
+        ground: Pose::identity(),
+        height: 0.65,
+        scattering: [0.5, 0.85, 1.20],
+    };
+    let shader = projection::shader(&library, &sun, AmbientLight::default(), Some(air))?;
+    let height = 0.05_f64;
+    let horizon_pitch = -height.tanh().asin();
+    let mean = |p: [f64; 4]| -gap.sinh() * p[0] + gap.cosh() * p[2];
+    // Use direct numerical quadrature of the finite solar disk's Rayleigh phase
+    // moment at each position. This reference never solves a layer intersection.
+    let reference = |eye: Pose, limit: f64| {
+        let start = eye.apply_vector([1.0, 0.0, 0.0, 0.0]);
+        let forward = eye.apply_vector([0.0, 0.0, 0.0, -1.0]);
+        let step = limit / 16384.0;
+        let (a, b) = (mean(start), mean(forward));
+        let mut sum = 0.0;
+        for i in 0..16384 {
+            let distance = (i as f64 + 0.5) * step;
+            let (s, c) = (distance.sinh(), distance.cosh());
+            let altitude = start[2] * c + forward[2] * s;
+            if !(0.0..=air.height.sinh()).contains(&altitude) {
+                continue;
+            }
+            let q = a * c + b * s;
+            let cosh_d = q.hypot(1.0);
+            let cap_cos = q.abs() / cosh_d;
+            let mu = (a * s + b * c) / cosh_d;
+            let moment = cap_cos * (1.0 - cap_cos.powi(2)) * (3.0 * mu * mu - 1.0) / 16.0;
+            sum += step * (0.5 * (1.0 - cap_cos) + moment);
+        }
+        sum
+    };
+    for (label, ground_offset, eye_height, pitch, hit) in [
+        ("noon zenith", 0.0, height, FRAC_PI_2, None),
+        ("night zenith", 4.0, height, FRAC_PI_2, None),
+        ("ideal ground horizon", 0.0, height, horizon_pitch, None),
+        ("dayward horizon", 1.8, height, horizon_pitch, None),
+        ("outside outward", 0.0, 1.0, FRAC_PI_2, None),
+        ("outside inward", 0.0, 1.0, -FRAC_PI_2, None),
+        ("near emitter", 0.0, height, FRAC_PI_2, Some(0.025)),
+        ("distant emitter", 0.0, height, FRAC_PI_2, Some(0.85)),
+    ] {
+        let foot = Pose::identity().move_local([0.0, 0.0, ground_offset], [0.0; 3], 1.0)?;
+        let eye = foot.move_local([0.0, eye_height, 0.0], [pitch, 0.0, 0.0], 1.0)?;
+        let mut objects = Objects::default();
+        let emission = if let Some(distance) = hit {
+            objects.planes.push(Object {
+                shape: InfinitePlane,
+                pose: foot.move_local([0.0, eye_height + distance, 0.0], [0.0; 3], 1.0)?,
+                material: Material::Emissive(Vec3::splat(0.08)),
+            });
+            0.08
+        } else {
+            0.0
+        };
+        let drawing = projection::prepare(&objects, eye, &shader)?;
+        let image = snapshot(&mut target, &camera, &drawing)?;
+        let pixel = image.data()[32 * 65 + 32];
+        let integral = reference(eye, hit.unwrap_or(24.0));
+        for (value, beta) in [pixel.r, pixel.g, pixel.b].into_iter().zip(air.scattering) {
+            let expected = emission + integral * f64::from(beta);
+            let actual = f64::from(value.to_f32());
+            assert!(
+                (actual - expected).abs() < 0.001 + 0.009 * expected,
+                "{label}: {actual} vs {expected}"
+            );
+        }
     }
     Ok(())
 }

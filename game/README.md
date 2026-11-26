@@ -4,7 +4,8 @@ Hypergame is a native first-person triangle rasterizer for hyperbolic space.
 Its Earth and Sun are disjoint geodesic planes inspired by the original
 [`hearth` example](https://github.com/agerasev/hypertrace/blob/20565c3ad9f441358e6a148b98416978133a85d7/main/examples/hearth.rs).
 A finite triangulated horosphere forms the Moon. The opening view looks
-across green vegetation toward the Sun and Moon, with stars in the background.
+across green vegetation toward the Sun and Moon. Sunlit air gives the day sky
+its blue color, and stars show through the dark sky at night.
 
 From the Hypertrace workspace root, run
 
@@ -60,6 +61,21 @@ fade stars in and out to maintain their angular density as the observer moves.
 The stars keep their world positions, so returning to a viewpoint restores
 its constellation. [Star field](src/world/stars.rs)
 
+## Scattered daylight
+
+The atmosphere occupies the first `0.45R` above Earth. For each sightline,
+the shader adds the sunlight scattered from the air between the eye and the
+first visible surface. The same calculation gives an empty sightline its sky
+color. Surface and stellar radiance pass through the air at full strength.
+This lets a night observer see daylit ground with blue light around it, while
+a blade of grass close to the eye picks up very little haze.
+
+The shader integrates the full solar disk with the Rayleigh angular law and
+constant density inside the layer. The result depends only on the endpoints of
+the segment and its direction. It uses a closed form that also covers sky rays
+extending to the ideal horizon. RGB scattering strengths favor blue.
+[Atmosphere shader](src/atmosphere.wgsl)
+
 ## Shapes and materials
 
 Each `Object<S>` has a shape, a hyperbolic pose, and a material. Earth, Sun,
@@ -78,10 +94,10 @@ In this chart Earth is a hemisphere below the Moon. Every above-ground observer
 below the lunar gap sees a first-hit disk contained in the mesh, including
 during a jump. [Moon geometry](src/world/moon.rs)
 
-The first Wgame render pass draws complete planes using a shared pair of
-triangles. The plane shader clips each pair to its open Klein disk, giving
-the plane a continuous horizon as the viewer moves. The second pass draws
-finite meshes using the same depth buffer, so the nearer surface is visible
+Wgame draws the atmospheric sky first. A depth-tested pass then draws complete
+planes using a shared pair of triangles. The plane shader clips each pair to
+its open Klein disk, giving the plane a continuous horizon as the viewer moves.
+The mesh pass uses the same depth buffer, so the nearer surface is visible
 where a mesh overlaps a plane.
 
 ## How the camera works

@@ -8,7 +8,7 @@ use wgame::{
     shapes::{Mesh, Polygon, shader::Vertex},
 };
 
-use crate::projection::Pose;
+use crate::{atmosphere::Atmosphere, projection::Pose};
 
 mod ecology;
 mod ground_cells;
@@ -66,6 +66,7 @@ pub struct AmbientLight {
 }
 
 pub struct World {
+    pub(crate) atmosphere: Atmosphere,
     objects: Objects,
     fixed_meshes: Vec<Object<Polygon>>,
     center: Option<Cell>,
@@ -232,6 +233,11 @@ pub fn world(library: &Library) -> Result<World> {
     Ok(World {
         fixed_plane_count: planes.len(),
         stars: Stars::default(),
+        atmosphere: Atmosphere {
+            ground: earth,
+            height: 0.45,
+            scattering: [0.70, 1.41, 3.08],
+        },
         objects: Objects {
             planes,
             ..Objects::default()

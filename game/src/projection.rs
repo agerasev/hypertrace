@@ -4,7 +4,7 @@ use ccgeom::{Hyperboloid3, Space3};
 use hypertrace_scene::Transform;
 use wgame::{
     Library,
-    gfx::{BakedScene, Camera, Scene, Target},
+    gfx::{BakedScene, Camera, DepthMode, Scene, Target},
     glam::{Mat4, Vec2, Vec3, Vec4, camera::rh::proj::directx},
     shader::Attribute,
     shapes::{
@@ -16,11 +16,16 @@ use wgame::{
 };
 use wgpu::util::DeviceExt;
 
-use crate::world::{AmbientLight, Material, Objects, Sun};
+use crate::{
+    atmosphere::{AirBindings, Atmosphere},
+    world::{AmbientLight, Material, Objects, Sun},
+};
 
 pub(crate) type Pose = Transform<Hyperboloid3>;
 
 pub(crate) struct Shader {
+    sky: MeshShader<()>,
+    air: AirBindings,
     mesh: MeshShader<Instance>,
     plane: MeshShader<Instance>,
     plane_quad: Polygon,
@@ -38,6 +43,7 @@ struct Instance {
 
 #[derive(Attribute)]
 struct Varyings {
+    eye_point: Vec4,
     local_klein: Vec3,
     smooth_normal: Vec3,
     sun_plane: Vec4,
@@ -59,7 +65,12 @@ pub(crate) fn camera_matrix((width, height): (u32, u32), tan_half_fov: f64) -> M
     )
 }
 
-pub(crate) fn shader(library: &Library, sun: &Sun, ambient: AmbientLight) -> Result<Shader> {
+pub(crate) fn shader(
+    library: &Library,
+    sun: &Sun,
+    ambient: AmbientLight,
+    atmosphere: Option<Atmosphere>,
+) -> Result<Shader> {
     ensure!(
         [sun.radiance, ambient.night, ambient.day]
             .into_iter()
@@ -105,13 +116,16 @@ pub(crate) fn shader(library: &Library, sun: &Sun, ambient: AmbientLight) -> Res
         module_source: concat!(
             include_str!("projection.wgsl"),
             "\n",
-            include_str!("lighting.wgsl")
+            include_str!("lighting.wgsl"),
+            "\n",
+            include_str!("atmosphere.wgsl")
         )
         .into(),
         varying: Varyings::bindings(),
         vertex_source: "
             let local = model_matrix * vertex.position;
-            output.position = view_matrix * place_vertex(instance.real, instance.imag, local);
+            output.eye_point = place_vertex(instance.real, instance.imag, local);
+            output.position = view_matrix * output.eye_point;
             output.local_klein = local.xyz;
             // Spatial Lorentz normals are also Klein tangent-plane covectors.
             let a = model_matrix[0].xyz;
@@ -123,12 +137,25 @@ pub(crate) fn shader(library: &Library, sun: &Sun, ambient: AmbientLight) -> Res
         "
         .into(),
         fragment_color_source: format!(
-            "let linear = display_linear(illuminate(input, color.rgb)); color = vec4<f32>({display}, color.a);"
+            "let linear = display_linear(illuminate(input, color.rgb) + air_to_surface(input.eye_point)); color = vec4<f32>({display}, color.a);"
         ),
         ..Default::default()
     };
-    let layouts = [layout];
+    let air = AirBindings::new(device, atmosphere, sun)?;
+    let layouts = [layout, air.layout.clone()];
     let shapes = library.shapes().state();
+    let sky_config = ShaderConfig {
+        vertex_source: "
+            let ndc = vertex.position.xz;
+            output.position = vec4<f32>(ndc, 1.0, 1.0);
+            output.eye_point = vec4<f32>(ndc.x/view_matrix[0][0], ndc.y/view_matrix[1][1], -1.0, 0.0);
+        ".into(),
+        fragment_color_source: format!(
+            "let linear = display_linear(air_glow(input.eye_point.xyz, 0.0)); color = vec4<f32>({display}, 1.0);"
+        ),
+        ..config.clone()
+    };
+    let sky = MeshShader::new(shapes, sky_config, &layouts)?;
     let mesh = MeshShader::new(shapes, config.clone(), &layouts)?;
     // The two triangles cover a square. Only its open unit disk is in the plane.
     config
@@ -136,6 +163,8 @@ pub(crate) fn shader(library: &Library, sun: &Sun, ambient: AmbientLight) -> Res
         .push_str("\nif dot(input.local_klein, input.local_klein) >= 1.0 { discard; }");
     let plane = MeshShader::new(shapes, config, &layouts)?;
     Ok(Shader {
+        sky,
+        air,
         mesh,
         plane,
         plane_quad: plane_quad(library),
@@ -194,6 +223,7 @@ impl Shader {
         relative: Pose,
         sun_in_object: Pose,
         material: Material,
+        air: &MaterialBinding,
     ) -> Result<MaterialMesh<Instance>> {
         let color = material.color();
         ensure!(color.is_finite(), "invalid material color");
@@ -221,18 +251,22 @@ impl Shader {
             sun_plane,
             material: Vec2::new(emission, transmission),
         };
-        let material = pipeline.material(vec![self.light.clone()], attributes)?;
+        let material = pipeline.material(vec![self.light.clone(), air.clone()], attributes)?;
         Ok(polygon.fill_color(color).with_material(&material))
     }
 }
 
 pub(crate) struct Drawing {
+    sky: Option<BakedScene>,
     planes: BakedScene,
     meshes: BakedScene,
 }
 
 impl Drawing {
     pub(crate) fn draw(&self, target: &mut impl Target, camera: &Camera) {
+        if let Some(sky) = &self.sky {
+            target.render(camera, sky);
+        }
         // Both passes use the target's depth buffer so a plane can occlude a mesh.
         target.render(camera, &self.planes);
         target.render(camera, &self.meshes);
@@ -241,6 +275,23 @@ impl Drawing {
 
 pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Result<Drawing> {
     let view = camera.inverse()?;
+    let air = shader.air.frame(view)?;
+    let sky = if shader.air.enabled() {
+        let material = shader
+            .sky
+            .material(vec![shader.light.clone(), air.clone()], ())?;
+        let mut sky = Scene::default();
+        sky.add(
+            &shader
+                .plane_quad
+                .fill_color(Vec3::ONE)
+                .with_material(&material)
+                .depth(DepthMode::Overlay),
+        );
+        Some(sky.bake())
+    } else {
+        None
+    };
     let mut planes = Scene::default();
     for plane in &objects.planes {
         let relative = view.chain(&plane.pose)?;
@@ -253,6 +304,7 @@ pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Resul
             relative.chain(&foot)?,
             foot.inverse()?.chain(&sun_in_plane)?,
             plane.material,
+            &air,
         )?;
         planes.add(&mesh);
     }
@@ -264,10 +316,12 @@ pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Resul
             view.chain(&object.pose)?,
             object.pose.inverse()?.chain(&shader.sun_pose)?,
             object.material,
+            &air,
         )?;
         meshes.add(&mesh);
     }
     Ok(Drawing {
+        sky,
         planes: planes.bake(),
         meshes: meshes.bake(),
     })

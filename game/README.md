@@ -47,8 +47,11 @@ perpendicular distance to the Sun is `d` and the curvature radius is `R`,
 the disk's angular radius `a` satisfies `sin(a) = 1/cosh(d/R)`.
 The shader integrates the incoming light over the part of this disk above
 the receiving face's horizon. Thin grass blades also transmit some direct
-light, so a backlit blade still shows its green color. The model
-includes direct diffuse light. It omits cast shadows and indirect light.
+light, so a backlit blade still shows its green color. Direct sunlight is slightly yellow. Diffuse surfaces also receive a cool,
+nearly white ambient term that grows with the apparent area of the solar disk
+at the surface. A dim ambient floor keeps the ground visible at night. Emissive
+materials specify their own linear RGB radiance. Overbright colors retain their
+hue when mapped to the display. The model omits cast shadows.
 
 ## Shapes and materials
 

@@ -16,7 +16,7 @@ use wgame::{
 };
 use wgpu::util::DeviceExt;
 
-use crate::world::{Material, Objects, Sun};
+use crate::world::{AmbientLight, Material, Objects, Sun};
 
 pub(crate) type Pose = Transform<Hyperboloid3>;
 
@@ -58,34 +58,37 @@ pub(crate) fn camera_matrix((width, height): (u32, u32), tan_half_fov: f64) -> M
     )
 }
 
-pub(crate) fn shader(library: &Library, sun: &Sun) -> Result<Shader> {
+pub(crate) fn shader(library: &Library, sun: &Sun, ambient: AmbientLight) -> Result<Shader> {
     ensure!(
-        sun.radiance.iter().all(|x| x.is_finite() && *x >= 0.0),
-        "invalid Sun radiance"
+        [sun.radiance, ambient.night, ambient.day]
+            .into_iter()
+            .flatten()
+            .all(|x| x.is_finite() && x >= 0.0),
+        "invalid lighting radiance"
     );
     let state = library.state();
     let device = state.device();
     let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("Sun radiance"),
+        label: Some("Surface lighting"),
         entries: &[wgpu::BindGroupLayoutEntry {
             binding: 0,
             visibility: wgpu::ShaderStages::FRAGMENT,
             ty: wgpu::BindingType::Buffer {
                 ty: wgpu::BufferBindingType::Uniform,
                 has_dynamic_offset: false,
-                min_binding_size: wgpu::BufferSize::new(16),
+                min_binding_size: wgpu::BufferSize::new(48),
             },
             count: None,
         }],
     });
-    let [r, g, b] = sun.radiance;
+    let colors = [sun.radiance, ambient.night, ambient.day].map(|[r, g, b]| [r, g, b, 0.0]);
     let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Sun radiance"),
-        contents: bytemuck::cast_slice(&[r, g, b, 0.0]),
+        label: Some("Surface lighting"),
+        contents: bytemuck::cast_slice(&colors),
         usage: wgpu::BufferUsages::UNIFORM,
     });
     let uniforms = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("Sun radiance"),
+        label: Some("Surface lighting"),
         layout: &layout,
         entries: &[wgpu::BindGroupEntry {
             binding: 0,
@@ -114,7 +117,7 @@ pub(crate) fn shader(library: &Library, sun: &Sun) -> Result<Shader> {
         "
         .into(),
         fragment_color_source: format!(
-            "let linear = illuminate(input, color.rgb); color = vec4<f32>({display}, color.a);"
+            "let linear = display_linear(illuminate(input, color.rgb)); color = vec4<f32>({display}, color.a);"
         ),
         ..Default::default()
     };

@@ -1,4 +1,9 @@
-@group(2) @binding(0) var<uniform> sun_radiance: vec4<f32>;
+struct Lighting {
+    sun: vec4<f32>,
+    night: vec4<f32>,
+    day: vec4<f32>,
+}
+@group(2) @binding(0) var<uniform> lighting: Lighting;
 
 // Integrate max(0, N·direction)/pi over a circular cap of uniform radiance.
 // mu is the cosine to its axis; s and c are sin and cos of its angular radius.
@@ -18,7 +23,7 @@ fn illuminate(input: VaryingData, albedo: vec3<f32>) -> vec3<f32> {
     // The fragment's visible face points toward the eye; screen Y grows down.
     let n = cross(dpdy(k), dpdx(k));
     let rho2 = 1.0 - dot(k,k);
-    if input.material.x > 0.5 { return albedo * sun_radiance.rgb; }
+    if input.material.x > 0.5 { return albedo; }
     if rho2 <= 0.0 { return vec3<f32>(0.0); }
 
     // (n,n·k) is a Lorentz normal to this geodesic triangle. Normalize it
@@ -41,7 +46,15 @@ fn illuminate(input: VaryingData, albedo: vec3<f32>) -> vec3<f32> {
     // The signed cosine integral is mu*s². Subtracting it from the
     // front integral gives the light incident on the back of a thin leaf.
     let back = max(0.0, front - mu*s*s);
-    return albedo * sun_radiance.rgb * mix(front, back, input.material.y);
+    // The projected solar disk area (in units of pi) drives the local diffuse fill.
+    let sun_peak = max(lighting.sun.r, max(lighting.sun.g, lighting.sun.b));
+    let fill = mix(lighting.night.rgb, lighting.day.rgb, min(sun_peak * s*s, 1.0));
+    return albedo * (fill + lighting.sun.rgb * mix(front, back, input.material.y));
+}
+
+// Fit overbright highlights into the display gamut while preserving their hue.
+fn display_linear(linear: vec3<f32>) -> vec3<f32> {
+    return linear / max(1.0, max(linear.r, max(linear.g, linear.b)));
 }
 
 fn encode_srgb(linear: vec3<f32>) -> vec3<f32> {

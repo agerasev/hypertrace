@@ -81,7 +81,7 @@ async fn run(mut window: Window<'_>, smoke: bool) -> Result<()> {
     eprintln!("Adapter: {:?}", graphics.adapter().get_info());
     let library = Library::new(&graphics);
     let mut world = world::world(&library)?;
-    let shader = projection::shader(&library, &world.sun)?;
+    let shader = projection::shader(&library, &world.sun, world.ambient)?;
     let start = Walker::new(world::spawn_frame()?, 0.14)?;
     let mut walker = start;
     let mut prepare = |walker: &Walker| {

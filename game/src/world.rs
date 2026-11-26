@@ -55,6 +55,13 @@ pub struct Sun {
     pub radiance: [f32; 3],
 }
 
+/// Diffuse fill on a white receiver, in linear RGB.
+#[derive(Clone, Copy, Default)]
+pub struct AmbientLight {
+    pub night: [f32; 3],
+    pub day: [f32; 3],
+}
+
 pub struct World {
     objects: Objects,
     center: Option<Cell>,
@@ -62,6 +69,7 @@ pub struct World {
     plants: Plants,
     daylight: Daylight,
     pub sun: Sun,
+    pub ambient: AmbientLight,
 }
 
 /// Upload a static indexed mesh. Each vertex is (local upper-half-space point, RGB).
@@ -180,7 +188,7 @@ impl World {
 pub fn world(library: &Library) -> Result<World> {
     let sun = Sun {
         pose: Pose::from_isometry(Hyperboloid3::shift_y(3.0))?,
-        radiance: [100.0, 94.0, 72.0],
+        radiance: [100.0, 96.0, 82.0],
     };
     let earth = Pose::identity();
     let planes = vec![
@@ -192,7 +200,7 @@ pub fn world(library: &Library) -> Result<World> {
         Object {
             shape: InfinitePlane,
             pose: sun.pose,
-            material: Material::Emissive(Vec3::ONE),
+            material: Material::Emissive(Vec3::from_array(sun.radiance)),
         },
         Object {
             shape: InfinitePlane,
@@ -212,5 +220,9 @@ pub fn world(library: &Library) -> Result<World> {
         plants: Plants::new(library)?,
         daylight: Daylight::new(earth, &sun)?,
         sun,
+        ambient: AmbientLight {
+            night: [0.004, 0.005, 0.007],
+            day: [0.13, 0.14, 0.15],
+        },
     })
 }

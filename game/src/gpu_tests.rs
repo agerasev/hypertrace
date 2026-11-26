@@ -1,6 +1,6 @@
 use crate::{
     projection::{self, Drawing, Pose},
-    world::{self, InfinitePlane, Material, Object, Objects, Sun},
+    world::{self, AmbientLight, InfinitePlane, Material, Object, Objects, Sun},
 };
 use anyhow::Result;
 use futures::executor::block_on;
@@ -60,6 +60,7 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
             pose: Pose::identity(),
             radiance: [1.0; 3],
         },
+        AmbientLight::default(),
     )?;
 
     // At local chart height 1, all three corners have the same horizontal
@@ -196,7 +197,9 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
             1.0,
         )
     };
-    let illuminated = |pose, radiance| projection::shader(&library, &Sun { pose, radiance });
+    let illuminated = |pose, radiance| {
+        projection::shader(&library, &Sun { pose, radiance }, AmbientLight::default())
+    };
     let check_center = |image: &Image<Rgba<f16>>, expected: f64| {
         let p = image.data()[CENTER * WIDTH + CENTER];
         for value in [p.r, p.g, p.b] {
@@ -286,13 +289,26 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     );
 
     let extinguished = illuminated(sun, [0.0; 3])?;
-    for (object, eye) in [(&moon, above(moon_pose, 0.2)?), (&emitter, looking_up)] {
-        assert!(
-            render(object, eye, &extinguished)?
-                .data()
-                .iter()
-                .all(|p| *p == color::BLACK.to_rgba_f16())
-        );
+    check_center(&render(&moon, above(moon_pose, 0.2)?, &extinguished)?, 0.0);
+    check_center(&render(&emitter, looking_up, &extinguished)?, 1.0);
+
+    // On the unlit side of a white receiver, only local ambient light remains.
+    let fill = AmbientLight {
+        night: [0.005; 3],
+        day: [0.15; 3],
+    };
+    let with_fill = projection::shader(
+        &library,
+        &Sun {
+            pose: sun,
+            radiance: [1.0; 3],
+        },
+        fill,
+    )?;
+    for radius in [0.0_f64, 1.8, 6.0] {
+        let foot = Pose::identity().move_local([radius, 0.0, 0.0], [0.0; 3], 1.0)?;
+        let expected = 0.005 + 0.145 / (1.0 + (gap.sinh() * radius.cosh()).powi(2));
+        check_center(&render(&earth, above(foot, -0.2)?, &with_fill)?, expected);
     }
     Ok(())
 }

@@ -1,4 +1,4 @@
-use std::f64::consts::TAU;
+use std::{collections::BTreeMap, f64::consts::TAU, ops::Range};
 
 use anyhow::{Context, Result, ensure};
 use ccgeom::{Geometry3, Hyperboloid3, Space3};
@@ -9,6 +9,14 @@ use wgame::{
 };
 
 use crate::projection::Pose;
+
+mod ecology;
+mod ground_cells;
+mod plants;
+
+use ecology::{Daylight, Species};
+use ground_cells::Cell;
+use plants::Plants;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Material {
@@ -48,7 +56,11 @@ pub struct Sun {
 }
 
 pub struct World {
-    pub objects: Objects,
+    objects: Objects,
+    center: Option<Cell>,
+    cell_meshes: BTreeMap<Cell, Range<usize>>,
+    plants: Plants,
+    daylight: Daylight,
     pub sun: Sun,
 }
 
@@ -92,174 +104,77 @@ pub fn mesh(
     Ok(shapes.mesh(Mesh::from_arrays(shapes.state(), &vertices, Some(indices))))
 }
 
-#[derive(Default)]
-struct Plant {
-    vertices: Vec<([f64; 3], [f32; 3])>,
-    indices: Vec<u32>,
-}
-
-impl Plant {
-    // The root is (0,0,1) in local half-space. +y grows away from
-    // the geodesic ground plane and z is an offset in chart height.
-    fn vertex(&mut self, [x, y, z]: [f64; 3], rgb: [f32; 3]) -> u32 {
-        const PLANT_SCALE: f64 = 0.25;
-        let index = self.vertices.len() as u32;
-        self.vertices.push((
-            [x * PLANT_SCALE, y * PLANT_SCALE, 1.0 + z * PLANT_SCALE],
-            rgb,
-        ));
-        index
-    }
-
-    // Stack polygonal rings, close the base, then taper to a single tip.
-    fn tapered_rings(
-        &mut self,
-        height: f64,
-        sides: u32,
-        rings: &[(f64, f64)],
-        tip: f64,
-        color: [f32; 3],
-    ) {
-        let base = self.vertices.len() as u32;
-        for (ring, &(level, radius)) in rings.iter().enumerate() {
-            for side in 0..sides {
-                let angle = TAU * f64::from(side) / f64::from(sides);
-                let (sin, cos) = angle.sin_cos();
-                let i = self.vertex(
-                    [radius * height * cos, level * height, radius * height * sin],
-                    color,
-                );
-                if ring > 0 {
-                    let next = base + ring as u32 * sides + (side + 1) % sides;
-                    self.indices
-                        .extend([i - sides, i, next - sides, next - sides, i, next]);
-                }
-            }
-        }
-        let top = self.vertex([0.0, height * tip, 0.0], color);
-        for side in 0..sides {
-            self.indices
-                .extend([top - sides + side, top, top - sides + (side + 1) % sides]);
-        }
-        for side in 1..sides - 1 {
-            self.indices.extend([base, base + side, base + side + 1]);
-        }
-    }
-
-    fn upload(&self, library: &Library) -> Result<Polygon> {
-        mesh(library, &self.vertices, &self.indices)
-    }
-}
-
-fn tree(library: &Library, height: f64, conifer: bool) -> Result<Polygon> {
-    let mut plant = Plant::default();
-    plant.tapered_rings(
-        height,
-        5,
-        &[(0.0, 0.048), (0.50, 0.033)],
-        0.56,
-        [0.29, 0.14, 0.055],
-    );
-    if conifer {
-        plant.tapered_rings(height, 7, &[(0.24, 0.29)], 0.73, [0.07, 0.32, 0.14]);
-        plant.tapered_rings(height, 7, &[(0.44, 0.23)], 0.88, [0.095, 0.39, 0.15]);
-        plant.tapered_rings(height, 7, &[(0.64, 0.16)], 1.0, [0.15, 0.47, 0.18]);
-    } else {
-        plant.tapered_rings(
-            height,
-            7,
-            &[(0.34, 0.14), (0.47, 0.30), (0.71, 0.34), (0.89, 0.21)],
-            1.0,
-            [0.28, 0.51, 0.10],
-        );
-    }
-    plant.upload(library)
-}
-
-fn grass(library: &Library) -> Result<Polygon> {
-    let mut plant = Plant::default();
-    for blade in 0..9 {
-        let angle = TAU * f64::from(blade) / 9.0;
-        let (sin, cos) = angle.sin_cos();
-        let height = 0.016 + 0.003 * f64::from(blade * 5 % 7);
-        // The blade bends outward near its tip, where it catches sunlight
-        // even when the nearly vertical lower face is in shade.
-        let mut strip = |radius: f64, width: f64, y, tint| {
-            [-width, width].map(|offset| {
-                plant.vertex(
-                    [radius * cos - offset * sin, y, radius * sin + offset * cos],
-                    tint,
-                )
-            })
-        };
-        let [a, b] = strip(0.007, 0.0045, 0.0, [0.18, 0.39, 0.06]);
-        let [c, d] = strip(0.018, 0.0035, height * 0.80, [0.28, 0.53, 0.09]);
-        let tip = plant.vertex([0.037 * cos, height, 0.037 * sin], [0.35, 0.61, 0.13]);
-        plant.indices.extend([a, b, c, b, d, c, c, d, tip]);
-    }
-    plant.upload(library)
-}
-
 pub fn spawn_frame() -> Result<Pose> {
     Pose::from_isometry(Hyperboloid3::shift_z(1.3))
 }
 
-fn vegetation(library: &Library) -> Result<Vec<Object<Polygon>>> {
-    let trees = [
-        tree(library, 0.16, false)?,
-        tree(library, 0.22, true)?,
-        tree(library, 0.25, false)?,
-        tree(library, 0.15, true)?,
-    ];
-    let grass = grass(library)?;
-    let mut meshes = Vec::new();
-    let mut seed = 191813u32;
-    let mut sample = || {
-        seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
-        f64::from(seed) / (f64::from(u32::MAX) + 1.0)
-    };
+// SplitMix64. The cell address fixes each sample stream independently of visit order.
+struct Samples(u64);
 
-    // Scatter across the daylight disk and put denser groves on the walk
-    // from the starting meadow to the subsolar point.
-    for i in 0..570 {
-        let site = if i % 2 == 0 {
-            let along = 2.0 * sample() - 0.3;
-            let across = 0.64 * (sample() - 0.5);
-            Hyperboloid3::shift_z(along).chain(Hyperboloid3::shift_x(across))
-        } else {
-            // Hyperbolic disk area is proportional to cosh(r)-1.
-            let radius = (1.0 + sample() * (2.0_f64.cosh() - 1.0)).acosh();
-            let azimuth = TAU * sample();
-            Hyperboloid3::rotate_y(azimuth).chain(Hyperboloid3::shift_z(radius))
-        };
-        let root = site.chain(Hyperboloid3::rotate_y(TAU * sample()));
-        let pose = Pose::from_isometry(root)?;
-        let [_, x, _, z] = pose.apply_vector([1.0, 0.0, 0.0, 0.0]);
-        let (shape, material) = if i < 200 {
-            // Leave a winding meadow among the groves, including the spawn point.
-            if (x - 0.045 * (2.0 * z).sin()).abs() < 0.07
-                || (4.0 * x + z).sin() + (2.5 * z - x).cos() < -0.40
-            {
-                continue;
-            }
-            let index = (sample() * trees.len() as f64) as usize;
-            (trees[index].clone(), Material::Diffuse(Vec3::ONE))
-        } else {
-            (
-                grass.clone(),
-                Material::Translucent {
-                    color: Vec3::ONE,
-                    transmission: 0.22,
-                },
-            )
-        };
-        meshes.push(Object {
-            shape,
-            pose,
-            material,
-        });
+impl Samples {
+    fn for_cell(cell: Cell) -> Self {
+        Self(
+            (cell.band as u64).wrapping_mul(0x8cb92ba72f3d8dd7)
+                ^ (cell.column as u64).wrapping_mul(0xd6e8feb86659fd93),
+        )
     }
-    Ok(meshes)
+
+    fn next(&mut self) -> f64 {
+        self.0 = self.0.wrapping_add(0x9e3779b97f4a7c15);
+        let mut z = self.0;
+        z = (z ^ (z >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
+        z = (z ^ (z >> 27)).wrapping_mul(0x94d049bb133111eb);
+        ((z ^ (z >> 31)) >> 11) as f64 * (1.0 / (1u64 << 53) as f64)
+    }
+}
+
+impl World {
+    /// Rebuild the local patch only when the observer enters a new ground cell.
+    pub fn objects_near(&mut self, eye: Pose) -> Result<&Objects> {
+        let center = Cell::at(eye)?;
+        if self.center != Some(center) {
+            let mut meshes = Vec::with_capacity(self.objects.meshes.len());
+            let mut cell_meshes = BTreeMap::new();
+            for cell in center.neighborhood()? {
+                let start = meshes.len();
+                if let Some(range) = self.cell_meshes.get(&cell) {
+                    meshes.extend_from_slice(&self.objects.meshes[range.clone()]);
+                } else {
+                    self.plant_cell(cell, &mut meshes)?;
+                }
+                cell_meshes.insert(cell, start..meshes.len());
+            }
+            self.objects.meshes = meshes;
+            self.cell_meshes = cell_meshes;
+            self.center = Some(center);
+        }
+        Ok(&self.objects)
+    }
+
+    fn plant_cell(&self, cell: Cell, meshes: &mut Vec<Object<Polygon>>) -> Result<()> {
+        let mut samples = Samples::for_cell(cell);
+        // Equal numbers of independent sites per species per unit of intrinsic area.
+        for _ in 0..8 {
+            for species in [Species::Deciduous, Species::Pine, Species::Grass] {
+                let root = cell.root(samples.next(), samples.next())?;
+                let occupied = samples.next();
+                let maturity = 0.65 + 0.35 * samples.next();
+                let yaw = TAU * samples.next();
+                let light = self.daylight.at(root.apply_vector([1.0, 0.0, 0.0, 0.0]));
+                if occupied >= species.density(light) {
+                    continue;
+                }
+                let (shape, material) =
+                    self.plants.grown(species, maturity * species.growth(light));
+                meshes.push(Object {
+                    shape,
+                    pose: root.chain(&Pose::from_isometry(Hyperboloid3::rotate_y(yaw))?)?,
+                    material,
+                });
+            }
+        }
+        Ok(())
+    }
 }
 
 pub fn world(library: &Library) -> Result<World> {
@@ -267,10 +182,11 @@ pub fn world(library: &Library) -> Result<World> {
         pose: Pose::from_isometry(Hyperboloid3::shift_y(3.0))?,
         radiance: [100.0, 94.0, 72.0],
     };
+    let earth = Pose::identity();
     let planes = vec![
         Object {
             shape: InfinitePlane,
-            pose: Pose::identity(),
+            pose: earth,
             material: Material::Diffuse(Vec3::new(0.23, 0.48, 0.10)),
         },
         Object {
@@ -289,8 +205,12 @@ pub fn world(library: &Library) -> Result<World> {
     Ok(World {
         objects: Objects {
             planes,
-            meshes: vegetation(library)?,
+            ..Objects::default()
         },
+        center: None,
+        cell_meshes: BTreeMap::new(),
+        plants: Plants::new(library)?,
+        daylight: Daylight::new(earth, &sun)?,
         sun,
     })
 }

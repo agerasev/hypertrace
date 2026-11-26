@@ -14,6 +14,7 @@ use wgame::{
     glam::Vec3,
     half::f16,
     image::{Image, ImageRead},
+    prelude::Transformable,
     rgb::Rgba,
     texture::RenderTexture,
 };
@@ -146,6 +147,19 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
                 "plane between triangles at pixel (32, {y}) with world offset {world_offset}"
             );
         }
+        // Growth scales the local mesh about its root before the hyperbolic pose.
+        objects.meshes[0].shape = near.scale(0.5);
+        let smaller = projection::prepare(&objects, frame, &shader)?;
+        let smaller = snapshot(&mut target, &projection_camera, &smaller)?;
+        let red_area = |frame: &Image<Rgba<f16>>| {
+            frame
+                .data()
+                .iter()
+                .filter(|&&pixel| pixel == color::RED.to_rgba_f16())
+                .count()
+        };
+        assert_eq!(smaller.data()[32 * 64 + 32], color::RED.to_rgba_f16());
+        assert!(red_area(&smaller) * 2 < red_area(&image));
     }
     Ok(())
 }

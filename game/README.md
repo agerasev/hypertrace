@@ -27,9 +27,19 @@ You can keep walking and turning during the jump.
 The common perpendicular from Earth to the Sun is three curvature radii long.
 Its foot on Earth has permanent noon. Travel along Earth away from that point
 and the Sun occupies less of the sky and approaches the horizon. Sunlight fades
-continuously into night. The low-poly vegetation grows in the daylight region.
-The Moon is gray and diffuse. Its visible brightness comes from the same Sun
-that lights the ground and the plants.
+continuously into night. The Moon is gray and diffuse. Its visible brightness
+comes from the same Sun that lights the ground and the plants.
+
+Broadleaf trees are most common in daylight. Pines become the more common tree
+at dusk, and grass persists farther into the dark. Deep in the night, a patch of
+ground is usually bare, but you can still encounter a tuft of grass or, about
+twenty times less often, a dwarf pine. Each species also grows taller in better
+light. The plants use the direct sunlight at their roots as a fraction of the
+light at permanent noon. [Vegetation model](src/world/ecology.rs)
+
+As you walk, the game populates equal-area cells around you, covering at least
+`1.5R` in every direction. Each cell has its own seed, so turning, jumping,
+or walking back to a grove preserves its plants.
 
 Wgame's mesh shader uses a shared uniform for the Sun's radiance. At each
 fragment, the Sun plane fills a disk of incoming directions. If the

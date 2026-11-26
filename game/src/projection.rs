@@ -98,15 +98,24 @@ pub(crate) fn shader(library: &Library, sun: &Sun) -> Result<Shader> {
         "encode_srgb(linear)"
     };
     let mut config = ShaderConfig {
-        module_source: concat!(include_str!("projection.wgsl"), "\n", include_str!("lighting.wgsl")).into(),
+        module_source: concat!(
+            include_str!("projection.wgsl"),
+            "\n",
+            include_str!("lighting.wgsl")
+        )
+        .into(),
         varying: Varyings::bindings(),
         vertex_source: "
-            output.position = view_matrix * place_vertex(instance.real, instance.imag, vertex.position);
-            output.local_klein = vertex.position.xyz;
+            let local = model_matrix * vertex.position;
+            output.position = view_matrix * place_vertex(instance.real, instance.imag, local);
+            output.local_klein = local.xyz;
             output.sun_plane = instance.sun_plane;
             output.material = instance.material;
-        ".into(),
-        fragment_color_source: format!("let linear = illuminate(input, color.rgb); color = vec4<f32>({display}, color.a);"),
+        "
+        .into(),
+        fragment_color_source: format!(
+            "let linear = illuminate(input, color.rgb); color = vec4<f32>({display}, color.a);"
+        ),
         ..Default::default()
     };
     let layouts = [layout];

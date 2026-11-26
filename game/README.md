@@ -2,7 +2,9 @@
 
 Hypergame is a native first-person triangle rasterizer for hyperbolic space.
 Its Earth and Sun are disjoint geodesic planes inspired by the original
-[`hearth` example](https://github.com/agerasev/hypertrace/blob/20565c3ad9f441358e6a148b98416978133a85d7/main/examples/hearth.rs). A finite triangulated horosphere forms the Moon. The opening view looks across green vegetation toward the Sun and Moon. The sky is black.
+[`hearth` example](https://github.com/agerasev/hypertrace/blob/20565c3ad9f441358e6a148b98416978133a85d7/main/examples/hearth.rs).
+A finite triangulated horosphere forms the Moon. The opening view looks
+across green vegetation toward the Sun and Moon, with stars in the background.
 
 From the Hypertrace workspace root, run
 
@@ -52,10 +54,16 @@ at the surface. A dim ambient floor keeps the ground visible at night. Emissive
 materials specify their own linear RGB radiance. Overbright colors retain their
 hue when mapped to the display. The model omits cast shadows.
 
+Stars are distant emissive geodesic planes. Walking changes the apparent
+direction and angular size of each plane. Four overlapping, seeded catalogues
+fade stars in and out to maintain their angular density as the observer moves.
+The stars keep their world positions, so returning to a viewpoint restores
+its constellation. [Star field](src/world/stars.rs)
+
 ## Shapes and materials
 
-Each `Object<S>` has a shape, a hyperbolic pose, and a material. Earth and
-Sun use the `InfinitePlane` shape. The Moon, trees, and grass use indexed
+Each `Object<S>` has a shape, a hyperbolic pose, and a material. Earth, Sun,
+and stars use the `InfinitePlane` shape. The Moon, trees, and grass use indexed
 Wgame polygons. Either shape can have a diffuse, translucent, or emissive material.
 The material tint multiplies the vertex colors. [Scene construction](src/world.rs)
 

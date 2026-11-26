@@ -8,4 +8,5 @@ members = [
     "scene",
     "examples",
     "examples/gallery",
+    "game",
 ]

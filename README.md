@@ -13,7 +13,8 @@ coordinates are explicit charts for construction and surface patterns.
 [Examples and screenshots](https://agerasev.github.io/hypertrace/) ·
 [Build and run locally](https://agerasev.github.io/hypertrace/run.html) ·
 [Theory](https://agerasev.github.io/hypertrace/theory.html) ·
-[Original video](https://www.youtube.com/watch?v=LGWusRNcJ6A)
+[Original video](https://www.youtube.com/watch?v=LGWusRNcJ6A) ·
+[Hypergame](game/README.md)
 
 ## Requirements
 

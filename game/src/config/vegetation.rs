@@ -40,7 +40,7 @@ pub(crate) struct Deciduous {
     pub height: f64,
     pub bark: [f32; 3],
     pub foliage: [f32; 3],
-    pub material: Material<f32>,
+    pub material: Material,
     pub ecology: LightResponse,
 }
 
@@ -50,7 +50,7 @@ pub(crate) struct Pine {
     pub height: f64,
     pub bark: [f32; 3],
     pub foliage: [[f32; 3]; 3],
-    pub material: Material<f32>,
+    pub material: Material,
     pub ecology: LightResponse,
     pub daylight_range: [f64; 2],
     pub daylight_suppression: f64,
@@ -64,7 +64,7 @@ pub(crate) struct Grass {
     pub blade_width: f64,
     pub spread_radius: f64,
     pub colors: [[f32; 3]; 3],
-    pub material: Material<f32>,
+    pub material: Material,
     pub ecology: LightResponse,
 }
 

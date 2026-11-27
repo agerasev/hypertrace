@@ -18,16 +18,10 @@ impl Plants {
         Ok(Self {
             deciduous: (
                 deciduous(library, &settings.deciduous)?,
-                settings.deciduous.material.achromatic(),
+                settings.deciduous.material,
             ),
-            pine: (
-                pine(library, &settings.pine)?,
-                settings.pine.material.achromatic(),
-            ),
-            grass: (
-                grass(library, &settings.grass)?,
-                settings.grass.material.achromatic(),
-            ),
+            pine: (pine(library, &settings.pine)?, settings.pine.material),
+            grass: (grass(library, &settings.grass)?, settings.grass.material),
         })
     }
 

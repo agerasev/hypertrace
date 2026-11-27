@@ -1,7 +1,7 @@
 # All colors are linear RGB. Lengths use the curvature radius R, time uses seconds.
 # Coordinates on Earth are local X and Z displacements applied in that order.
 [earth]
-material = { reflection = [0.23, 0.48, 0.10], transmission = [0, 0, 0], emission = [0, 0, 0] }
+material.reflection = { weight = 1.0, color = [0.23, 0.48, 0.10] }
 
 [sun]
 distance = 3.0
@@ -11,7 +11,7 @@ emission = [100.0, 100.0, 60.0]
 ground_offset = [-0.971987, 0.020546]
 distance = 1.325230
 subdivisions = 128
-material = { reflection = [0.76, 0.76, 0.74], transmission = [0, 0, 0], emission = [0, 0, 0] }
+material.reflection = { weight = 1.0, color = [0.76, 0.76, 0.74] }
 
 [ambient]
 night = [0.004, 0.005, 0.007]
@@ -78,7 +78,7 @@ max_patch_sites = 1_048_576
 height = 0.0625
 bark = [0.29, 0.14, 0.055]
 foliage = [0.28, 0.51, 0.10]
-material = { reflection = 1.0, transmission = 0.0, emission = 0.0 }
+material.reflection = { weight = 1.0 }
 ecology = { light_range = [
     0.055,
     0.42,
@@ -92,7 +92,7 @@ height = 0.055
 bark = [0.29, 0.14, 0.055]
 # Foliage tiers from the bottom to the tip.
 foliage = [[0.07, 0.32, 0.14], [0.095, 0.39, 0.15], [0.15, 0.47, 0.18]]
-material = { reflection = 1.0, transmission = 0.0, emission = 0.0 }
+material.reflection = { weight = 1.0 }
 ecology = { light_range = [
     0.003,
     0.10,
@@ -111,7 +111,8 @@ blade_width = 0.00225
 spread_radius = 0.00925
 # Vertex tints from root to tip.
 colors = [[0.18, 0.39, 0.06], [0.28, 0.53, 0.09], [0.35, 0.61, 0.13]]
-material = { reflection = 0.78, transmission = 0.22, emission = 0.0 }
+material.reflection = { weight = 0.78 }
+material.transmission = { weight = 0.22 }
 ecology = { light_range = [
     0.001,
     0.19,

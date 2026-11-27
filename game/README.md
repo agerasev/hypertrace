@@ -27,9 +27,11 @@ You can keep walking and turning during the jump.
 ## Configuring a world
 
 Pass a TOML file with `--config` on every launch. Copy [config.toml](config.toml)
-to make another world. Each setting is required, and the game reports missing or
-unknown fields at startup. Light colors specify the final linear RGB radiance.
-Values above one are valid. Distances and speeds use curvature radii and seconds.
+to make another world. World settings and material tables are required. Within
+a material table, list only the terms that contribute. The game reports unknown
+keys and missing required fields at startup. Light colors specify the final
+linear RGB radiance. Values above one are valid. Distances and speeds use
+curvature radii and seconds.
 
 | Section | Settings |
 | --- | --- |
@@ -46,16 +48,26 @@ along the normal at the resulting foot. Keep the lunar gap above the highest
 jumping eye so the edge of the finite Moon stays hidden. Set `jump_height = 0`
 to disable jumping, or set the star count to zero for an empty catalogue.
 
-Every material has three required coefficients. `reflection` weights light
-arriving on the visible side, `transmission` weights light arriving on the
-opposite side, and `emission` adds light of its own. Both lit terms receive
-ambient light. The shader adds the three contributions in linear RGB, with no
-requirement that the coefficients sum to one.
+`reflection` weights light arriving on the visible side, `transmission` weights
+light arriving on the opposite side, and `emission` adds the surface's own
+light. Both lit terms receive ambient light. For example, a Moon that reflects
+gray light and glows faintly blue could use
 
-Earth and Moon use an RGB triple for each coefficient, so a surface can reflect
-one color and emit another. Plants use three scalar coefficients with their
-bark, foliage or blade vertex colors. The supplied grass uses
-`{ reflection = 0.78, transmission = 0.22, emission = 0.0 }`.
+```toml
+[moon.material]
+reflection = { weight = 1.0, color = [0.76, 0.76, 0.74] }
+emission = { weight = 0.02, color = [0.2, 0.4, 1.0] }
+```
+
+The omitted transmission term contributes zero. An empty `material = {}`
+absorbs all incident light and has no emission of its own. Each listed term
+requires a nonnegative `weight`. Its optional `color` is linear RGB and defaults
+to white. The shader uses `weight × color × vertex color` for that term,
+multiplying channel by channel. Weights are independent. For example, the
+supplied grass sets `material.transmission = { weight = 0.22 }`, so backlighting
+uses the blade's own color. Set tree vertex colors with each species' `bark`
+and `foliage` fields, and blade colors from root to tip with
+`vegetation.grass.colors`.
 
 ## Permanent day and night
 

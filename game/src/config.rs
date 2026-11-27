@@ -1,4 +1,4 @@
-//! Runtime scene and viewer settings. Every field comes from the requested TOML file.
+//! Runtime scene and viewer settings loaded from the requested TOML file.
 use std::{fs, path::Path};
 
 use anyhow::{Context, Result, ensure};
@@ -164,7 +164,7 @@ mod tests {
     const WORLD: &str = include_str!("../config.toml");
 
     #[test]
-    fn every_setting_in_the_supplied_world_is_required() -> Result<()> {
+    fn only_material_terms_and_their_colors_can_be_omitted() -> Result<()> {
         Config::parse(WORLD)?;
         let table: toml::Table = toml::from_str(WORLD)?;
         fn check_fields(
@@ -179,10 +179,16 @@ mod tests {
                     parent = parent[component].as_table_mut().unwrap();
                 }
                 parent.remove(key);
+                let optional = match path.as_slice() {
+                    [.., table] if table == "material" => true,
+                    [.., table, _term] if table == "material" => key == "color",
+                    _ => false,
+                };
                 path.push(key.clone());
-                assert!(
-                    Config::parse(&toml::to_string(&incomplete)?).is_err(),
-                    "omitting {} should fail",
+                assert_eq!(
+                    Config::parse(&toml::to_string(&incomplete)?).is_ok(),
+                    optional,
+                    "unexpected result when omitting {}",
                     path.join(".")
                 );
                 if let Some(children) = value.as_table() {

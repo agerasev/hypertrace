@@ -27,11 +27,18 @@ use ground_cells::{RootSampler, TileId};
 pub(crate) use material::Material;
 use plants::Plants;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum LightingDomain {
+    Terrestrial,
+    Celestial,
+}
+
 #[derive(Clone, Copy)]
 pub struct Object<S> {
     pub shape: S,
     pub pose: Pose,
     pub material: Material,
+    pub domain: LightingDomain,
 }
 
 /// The complete geodesic plane through the local origin with normal +Y.
@@ -230,6 +237,7 @@ impl World {
                     shape,
                     pose: root.chain(&Pose::from_isometry(Hyperboloid3::rotate_y(yaw))?)?,
                     material,
+                    domain: LightingDomain::Terrestrial,
                 });
             }
         }
@@ -248,6 +256,7 @@ pub fn world(
         shape: InfinitePlane,
         pose: earth,
         material: config.earth.material,
+        domain: LightingDomain::Terrestrial,
     }];
     let mut suns = Vec::with_capacity(config.suns.len());
     for source in &config.suns {
@@ -260,6 +269,7 @@ pub fn world(
             shape: InfinitePlane,
             pose,
             material: Material::emissive(source.surface_radiance),
+            domain: LightingDomain::Celestial,
         });
         suns.push(Sun {
             pose,
@@ -335,6 +345,7 @@ mod tests {
             shape: shape.clone(),
             pose,
             material: Material::emissive([1.0, 0.2, 0.0]),
+            domain: LightingDomain::Terrestrial,
         };
         let mut world = world(&library, &config, patch, [object(poses[0])])?;
         let loaded = |world: &World, id: &TileId| Rc::clone(&world.objects.tiles[world.loaded[id]]);

@@ -1,7 +1,7 @@
 //! Instanced surface materials and their object-local solar planes.
 use anyhow::{Result, ensure};
 use wgame::{
-    glam::Vec3,
+    glam::{Vec2, Vec3},
     shader::Attribute,
     shapes::{
         Polygon,
@@ -14,7 +14,7 @@ use wgpu::util::DeviceExt;
 use super::{Instance, Pose, Shader, plane_foot, projective_pair};
 use crate::{
     config::AmbientLight,
-    world::{InfinitePlane, MAX_SUNS, Material, Object, Sun},
+    world::{InfinitePlane, LightingDomain, MAX_SUNS, Material, Object, Sun},
 };
 
 pub(super) fn instance_capacity(device: &wgpu::Device) -> u64 {
@@ -134,6 +134,7 @@ struct Surface<'a> {
     relative: Pose,
     local_to_parent: Pose,
     material: Material,
+    domain: LightingDomain,
 }
 
 impl Shader {
@@ -152,6 +153,7 @@ impl Shader {
                     relative: view.chain(&object.pose)?,
                     local_to_parent: object.pose,
                     material: object.material,
+                    domain: object.domain,
                 })
             }),
             suns,
@@ -179,6 +181,7 @@ impl Shader {
                     relative: relative.chain(&foot)?,
                     local_to_parent: object.pose.chain(&foot)?,
                     material: object.material,
+                    domain: object.domain,
                 })
             }),
             suns,
@@ -221,7 +224,10 @@ impl Shader {
             let attributes = Instance {
                 real,
                 imag,
-                light_index: light_index as f32,
+                lighting: Vec2::new(
+                    light_index as f32,
+                    f32::from(surface.domain == LightingDomain::Terrestrial),
+                ),
                 reflection: Vec3::from_array(material.reflection),
                 transmission: Vec3::from_array(material.transmission),
             };

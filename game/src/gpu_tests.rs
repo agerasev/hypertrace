@@ -1,7 +1,11 @@
 use crate::{
     config::{AmbientLight, SunAmbient},
     projection::{self, Drawing, Pose},
-    world::{self, InfinitePlane, Material, Object, Objects, Sun},
+    world::{
+        self, InfinitePlane,
+        LightingDomain::{Celestial, Terrestrial},
+        Material, Object, Objects, Sun,
+    },
 };
 use anyhow::Result;
 use futures::executor::block_on;
@@ -99,11 +103,13 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
             meshes: vec![
                 Object {
                     shape: near.clone(),
+                    domain: Terrestrial,
                     material: Material::emissive([1.0; 3]),
                     pose: frame.move_local([0.0, 0.0, -2_f64.ln()], [0.0; 3], 1.0)?,
                 },
                 Object {
                     shape: far.clone(),
+                    domain: Terrestrial,
                     material: Material::emissive([1.0; 3]),
                     pose: frame.move_local([0.0, 0.0, -3_f64.ln()], [0.0; 3], 1.0)?,
                 },
@@ -146,6 +152,7 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
         // curvature radii. The intermediate plane must occlude only the far face.
         objects.planes.push(Object {
             shape: InfinitePlane,
+            domain: Terrestrial,
             pose: frame.move_local([0.0, 0.0, -0.7], [FRAC_PI_2, 0.0, 0.0], 1.0)?,
             material: Material::emissive([0.0, 1.0, 0.0]),
         });
@@ -201,7 +208,7 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
                 [0.1, 0.0, 0.02],
             ),
         ],
-        NO_AMBIENT,
+        AmbientLight { night: [0.15; 3] },
         Some(Atmosphere {
             ground,
             height: 0.6,
@@ -232,6 +239,7 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
     let object = |shape: &wgame::shapes::Polygon, position, yaw, scale, emission| -> Result<_> {
         Ok(Object {
             shape: shape.scale(scale),
+            domain: Terrestrial,
             pose: Pose::identity().move_local(position, [0.0, yaw, 0.0], 1.0)?,
             material: Material {
                 reflection: [0.42, 0.33, 0.21],
@@ -243,10 +251,15 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
     let star = |yaw, emission| -> Result<_> {
         Ok(Object {
             shape: InfinitePlane,
+            domain: Celestial,
             pose: Pose::identity()
                 .move_local([0.0; 3], [0.48, yaw, 0.0], 1.0)?
                 .move_local([0.0, 0.0, -2.5], [FRAC_PI_2, 0.0, 0.0], 1.0)?,
-            material: Material::emissive(emission),
+            // The reflective term exposes any ambient picked up by the tiled plane.
+            material: Material {
+                reflection: [0.3; 3],
+                ..Material::emissive(emission)
+            },
         })
     };
     let tiles = vec![
@@ -405,11 +418,12 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         let drawing = projection::prepare(objects, eye, light)?;
         snapshot(&mut target, &camera, &drawing)
     };
-    let plane = |pose, material| Objects {
+    let plane = |pose, material, domain| Objects {
         planes: vec![Object {
             shape: InfinitePlane,
             pose,
             material,
+            domain,
         }],
         ..Objects::default()
     };
@@ -417,7 +431,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         reflection: [1.0; 3],
         ..Material::default()
     };
-    let earth = plane(Pose::identity(), white);
+    let earth = plane(Pose::identity(), white, Terrestrial);
     let above = |foot: Pose, height: f64| {
         foot.move_local(
             [0.0, height, 0.0],
@@ -466,7 +480,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     let light = illuminated(sun, [1.0; 3])?;
     let moon_height = 0.35;
     let moon_pose = Pose::identity().move_local([0.0, moon_height, 0.0], [0.0; 3], 1.0)?;
-    let moon = plane(moon_pose, white);
+    let moon = plane(moon_pose, white, Celestial);
     check_center(
         &render(&moon, above(moon_pose, 0.2)?, &light)?,
         (gap - moon_height).cosh().recip().powi(2),
@@ -481,29 +495,36 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         emission: [0.05, 0.025, 0.04],
     };
     let tint = [0.7, 0.85, 0.6];
-    let leaf = Objects {
+    let triangle = world::mesh(
+        &library,
+        &[[-0.2, 0.0, 0.8], [0.2, 0.0, 0.8], [0.0, 0.0, 1.2]].map(|point| (point, tint)),
+        &[0, 1, 2],
+    )?;
+    let mesh = |domain| Objects {
         meshes: vec![Object {
-            shape: world::mesh(
-                &library,
-                &[[-0.2, 0.0, 0.8], [0.2, 0.0, 0.8], [0.0, 0.0, 1.2]].map(|point| (point, tint)),
-                &[0, 1, 2],
-            )?,
+            shape: triangle.clone(),
             pose: moon_pose,
             material: mixed,
+            domain,
         }],
         ..Objects::default()
     };
     let sunlight = [0.8, 0.45, 0.7];
-    let ambient = [0.06, 0.09, 0.12];
-    let colored = projection::shader(
-        &library,
-        &[plane_light(sun, sunlight, [0.0; 3])],
-        AmbientLight { night: ambient },
-        None,
-    )?;
+    let night = [0.06, 0.09, 0.12];
+    let day = [0.05, 0.07, 0.02];
+    let mut source = plane_light(sun, sunlight, [0.0; 3]);
+    // The daytime response saturates at the centre of the triangle.
+    source.ambient.color = day;
+    source.ambient.response_factor = 10.0;
+    let colored = projection::shader(&library, &[source], AmbientLight { night }, None)?;
     let extinguished = illuminated(sun, [0.0; 3])?;
     let disc = (gap - moon_height).cosh().recip().powi(2) as f32;
-    for (surface, tint) in [(plane(moon_pose, mixed), [1.0; 3]), (leaf, tint)] {
+    let ambient = std::array::from_fn(|i| night[i] + day[i]);
+    for (surface, tint, ambient) in [
+        (plane(moon_pose, mixed, Terrestrial), [1.0; 3], ambient),
+        (mesh(Terrestrial), tint, ambient),
+        (mesh(Celestial), tint, [0.0; 3]),
+    ] {
         for (light, height, direct, fill) in [
             (&colored, 0.2, mixed.reflection, ambient),
             (&colored, -0.2, mixed.transmission, ambient),
@@ -537,6 +558,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
                 &[0, 1, 2],
                 |[w, x, _, _]| Vec3::new((0.5 + 2.0 * x / w) as f32, 1.0, 0.0),
             )?,
+            domain: Terrestrial,
             pose: Pose::identity(),
             material: white,
         }],
@@ -561,7 +583,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         (a - a.sin() * a.cos()) / PI,
     );
 
-    let emitter = plane(sun, Material::emissive([1.0; 3]));
+    let emitter = plane(sun, Material::emissive([1.0; 3]), Celestial);
     let looking_up = Pose::identity().move_local([0.0; 3], [FRAC_PI_2, 0.0, 0.0], 1.0)?;
     let frame = render(&emitter, looking_up, &light)?;
     // At this distance the disc's image radius is 32.5/sinh(gap) pixels.
@@ -593,6 +615,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         fill,
         None,
     )?;
+    check_center(&render(&moon, above(moon_pose, -0.2)?, &with_fill)?, 0.0);
     for radius in [0.0_f64, 1.8, 6.0] {
         let foot = Pose::identity().move_local([radius, 0.0, 0.0], [0.0; 3], 1.0)?;
         let weight = (1.5 / (1.0 + (gap.sinh() * radius.cosh()).powi(2)))
@@ -683,7 +706,7 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
         height: 0.65,
         background: [0.012; 3],
     };
-    let shader = projection::shader(&library, &suns, NO_AMBIENT, Some(air))?;
+    let shader = projection::shader(&library, &suns, AmbientLight { night: [0.2; 3] }, Some(air))?;
     let height = 0.05_f64;
     let horizon_pitch = -height.tanh().asin();
     // Use direct numerical quadrature of the finite solar disk's Rayleigh phase
@@ -728,6 +751,7 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
         let emission = if let Some(distance) = hit {
             objects.planes.push(Object {
                 shape: InfinitePlane,
+                domain: Celestial,
                 pose: foot.move_local([0.0, eye_height + distance, 0.0], [0.0; 3], 1.0)?,
                 material: Material {
                     reflection: [0.5; 3],

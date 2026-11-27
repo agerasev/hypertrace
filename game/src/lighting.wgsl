@@ -49,7 +49,8 @@ fn illuminate(input: VaryingData) -> vec3<f32> {
     let rho = sqrt(rho2);
     var front_light = vec3<f32>(0.0);
     var back_light = vec3<f32>(0.0);
-    var fill = lighting.night.rgb;
+    let receives_ambient = input.receives_ambient > 0.5;
+    var fill = select(vec3<f32>(0.0), lighting.night.rgb, receives_ambient);
     for (var i = 0u; i < u32(lighting.night.w); i++) {
         let light = lighting.suns[i];
         let sun = planes[i];
@@ -65,9 +66,11 @@ fn illuminate(input: VaryingData) -> vec3<f32> {
         let back = max(0.0, front - mu*s*s);
         front_light += light.radiance.rgb * front;
         back_light += light.radiance.rgb * back;
-        let peak = max(light.radiance.r, max(light.radiance.g, light.radiance.b));
-        let daylight = min((peak*s*s)*light.radiance.w, 1.0);
-        fill += light.ambient.rgb * pow(daylight, light.ambient.w);
+        if receives_ambient {
+            let peak = max(light.radiance.r, max(light.radiance.g, light.radiance.b));
+            let daylight = min((peak*s*s)*light.radiance.w, 1.0);
+            fill += light.ambient.rgb * pow(daylight, light.ambient.w);
+        }
     }
     return input.emission + input.reflection * (fill + front_light)
         + input.transmission * (fill + back_light);

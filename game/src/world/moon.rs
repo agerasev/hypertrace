@@ -8,7 +8,7 @@ use wgame::{
     shapes::{Polygon, shader::Vertex},
 };
 
-use super::{Object, Pose, mesh};
+use super::{LightingDomain, Object, Pose, mesh};
 use crate::config::Moon;
 
 pub(crate) struct HexGrid {
@@ -112,6 +112,7 @@ pub(super) fn moon(library: &Library, moon: &Moon) -> Result<Object<Polygon>> {
         shape: mesh(library, &vertices, &indices)?,
         pose,
         material: moon.material,
+        domain: LightingDomain::Celestial,
     })
 }
 

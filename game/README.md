@@ -37,7 +37,7 @@ curvature radii and seconds.
 | --- | --- |
 | `earth`, `moon` | Earth material and ground grid, Moon ground location, perpendicular gap, tessellation and material |
 | `[[suns]]` | One Sun's ground location, perpendicular gap, surface and air radiances, daytime ambient response and vegetation |
-| `ambient` | Shared night fill radiance |
+| `ambient` | Shared night fill radiance for terrestrial surfaces |
 | `atmosphere` | Air layer thickness and background sky radiance |
 | `stars` | Stars per square curvature radius, seed, range of gaps above Earth, two RGB colors |
 | `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, night occupancy, minimum size, shapes, vertex colors and materials |
@@ -53,8 +53,9 @@ to disable jumping, or set `stars.density = 0` for a starless sky.
 
 `reflection` weights light arriving on the visible side, `transmission` weights
 light arriving on the opposite side, and `emission` adds the surface's own
-light. Both lit terms receive ambient light. For example, a Moon that reflects
-gray light and glows faintly blue could use
+light. On Earth and its vegetation, both lit terms also receive ambient light.
+Celestial surfaces receive only direct sunlight for reflection and transmission.
+For example, a Moon that reflects gray light and glows faintly blue could use
 
 ```toml
 [moon.material]
@@ -126,7 +127,8 @@ The shader integrates the incoming light over the part of this disk above
 the receiving face's horizon. Thin grass blades also transmit some direct
 light, so a backlit blade still shows its green color. Each Sun's
 `surface_radiance` colors its visible disk, reflections and transmitted light.
-Its `ambient.color` adds diffuse fill above the shared `ambient.night` floor.
+On terrestrial objects, its `ambient.color` adds diffuse fill above the shared
+`ambient.night` floor.
 The weight of that fill is `clamp(response_factor × peak × sin²(a), 0, 1)^response_exponent`,
 where `peak` is the largest channel of that Sun's surface radiance. The shader
 sums all contributions in linear RGB before mapping highlights to the display.
@@ -137,7 +139,9 @@ by area inside that pentagon. The perpendicular from the foot to the star
 plane has a length sampled uniformly from `stars.gap`.
 Moving toward the foot makes the apparent disk grow. The plane extends across
 tile boundaries and keeps its emitted color, sampled uniformly between
-`stars.colors.start` and `stars.colors.end` in linear RGB.
+`stars.colors.start` and `stars.colors.end` in linear RGB. Stars are purely
+emissive. Sunlight affects their apparent color only through scattering in the
+air along the sightline.
 
 `stars.density` sets the mean count per `R²` everywhere on Earth. Each tile's
 address and seed reproduce its stars on a return visit. Stars and vegetation

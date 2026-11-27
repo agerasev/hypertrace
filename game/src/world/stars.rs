@@ -3,7 +3,7 @@ use anyhow::Result;
 use ccgeom::{Geometry3, Hyperboloid3};
 use wgame::glam::Vec3;
 
-use super::{InfinitePlane, Material, Object, Pose, RootSampler, Samples, TileId};
+use super::{InfinitePlane, LightingDomain, Material, Object, Pose, RootSampler, Samples, TileId};
 use crate::config::stars::StarField;
 
 pub(super) fn in_tile(settings: &StarField, id: &TileId) -> Result<Vec<Object<InfinitePlane>>> {
@@ -23,6 +23,7 @@ pub(super) fn in_tile(settings: &StarField, id: &TileId) -> Result<Vec<Object<In
                 shape: InfinitePlane,
                 pose,
                 material: Material::emissive(color.to_array()),
+                domain: LightingDomain::Celestial,
             })
         })
         .collect()

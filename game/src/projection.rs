@@ -5,7 +5,7 @@ use hypertrace_scene::Transform;
 use wgame::{
     Library,
     gfx::{BakedScene, Camera, DepthMode, Scene, Target},
-    glam::{Mat4, Vec3, Vec4, camera::rh::proj::directx},
+    glam::{Mat4, Vec2, Vec3, Vec4, camera::rh::proj::directx},
     shader::Attribute,
     shapes::{
         Mesh, Polygon,
@@ -44,7 +44,8 @@ pub(crate) struct Shader {
 struct Instance {
     real: Vec4,
     imag: Vec4,
-    light_index: f32,
+    // Pack the Sun-plane index and terrestrial ambient flag in one vertex attribute.
+    lighting: Vec2,
     reflection: Vec3,
     transmission: Vec3,
 }
@@ -55,6 +56,7 @@ struct Varyings {
     local_klein: Vec3,
     smooth_normal: Vec3,
     sun_plane: [Vec4; MAX_SUNS],
+    receives_ambient: f32,
     reflection: Vec3,
     transmission: Vec3,
     emission: Vec3,
@@ -107,7 +109,8 @@ pub(crate) fn shader(
             let b = model_matrix[1].xyz;
             let c = model_matrix[2].xyz;
             output.smooth_normal = mat3x3<f32>(cross(b,c), cross(c,a), cross(a,b)) * vertex.normal;
-            let planes = surface_lights[u32(instance.light_index)];
+            let planes = surface_lights[u32(instance.lighting.x)];
+            output.receives_ambient = instance.lighting.y;
             output.sun_plane_0 = planes[0];
             output.sun_plane_1 = planes[1];
             output.sun_plane_2 = planes[2];

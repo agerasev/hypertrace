@@ -1,19 +1,22 @@
 //! Camera-relative data shared by the sky and every opaque surface.
 use anyhow::{Result, ensure};
+use bytemuck::{Pod, Zeroable};
 use wgame::{
     glam::{Vec3, Vec4},
     shapes::material::MaterialBinding,
 };
 use wgpu::util::DeviceExt;
 
-use crate::{projection::Pose, world::Sun};
+use crate::{
+    projection::Pose,
+    world::{MAX_SUNS, Sun},
+};
 
 #[derive(Clone, Copy)]
 pub(crate) struct Atmosphere {
     pub(crate) ground: Pose,
-    /// Altitude and RGB scattering coefficients in curvature-radius units.
+    /// Altitude in curvature-radius units.
     pub(crate) height: f64,
-    pub(crate) scattering: [f32; 3],
     pub(crate) background: [f32; 3],
 }
 
@@ -21,44 +24,80 @@ pub(crate) struct AirBindings {
     pub(crate) layout: wgpu::BindGroupLayout,
     device: wgpu::Device,
     atmosphere: Option<Atmosphere>,
-    sun_pose: Pose,
-    scattering: [f32; 3],
+    /// Only Suns with a nonzero contribution to scattering are uploaded.
+    sources: Vec<(Pose, Vec3)>,
 }
 
-pub(crate) type AirFrame = [[f32; 4]; 3];
-pub(crate) type FrameUniform = [[f32; 4]; 5];
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+struct AirSun {
+    plane: [f32; 4],
+    scattering: [f32; 4],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub(crate) struct AirFrame {
+    earth: [f32; 4],
+    sinh_height: f32,
+    count: u32,
+    padding: [u32; 2],
+    suns: [AirSun; MAX_SUNS],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub(crate) struct FrameUniform {
+    air: AirFrame,
+    tile_real: [f32; 4],
+    tile_imag: [f32; 4],
+}
 
 pub(crate) fn frame_uniform(air: AirFrame, [real, imag]: [Vec4; 2]) -> FrameUniform {
-    let [earth, sun, scattering] = air;
-    [earth, sun, scattering, real.to_array(), imag.to_array()]
+    FrameUniform {
+        air,
+        tile_real: real.to_array(),
+        tile_imag: imag.to_array(),
+    }
 }
 
 impl AirBindings {
     pub(crate) fn new(
         device: &wgpu::Device,
         atmosphere: Option<Atmosphere>,
-        sun: &Sun,
+        suns: &[Sun],
     ) -> Result<Self> {
-        let mut scattering = [0.0; 3];
+        ensure!(
+            suns.len() <= MAX_SUNS,
+            "too many Suns for the atmospheric shader"
+        );
+        let mut sources = Vec::new();
         if let Some(atmosphere) = atmosphere {
-            let normal = atmosphere
-                .ground
-                .inverse()?
-                .chain(&sun.pose)?
-                .apply_vector([0.0, 0.0, 1.0, 0.0]);
             ensure!(
-                atmosphere.height > 0.0
-                    && (atmosphere.height.sinh() as f32).is_finite()
-                    && normal[2].abs() > atmosphere.height.cosh()
-                    && normal[2].is_sign_positive() == normal[0].is_sign_positive(),
-                "the Sun must lie above the entire atmospheric layer"
+                atmosphere.height > 0.0 && (atmosphere.height.sinh() as f32).is_finite(),
+                "invalid atmospheric layer height"
             );
-            for (i, value) in scattering.iter_mut().enumerate() {
-                *value = sun.radiance[i] * atmosphere.scattering[i];
+            let world_to_ground = atmosphere.ground.inverse()?;
+            for sun in suns {
                 ensure!(
-                    atmosphere.scattering[i] >= 0.0 && value.is_finite(),
-                    "invalid atmospheric scattering coefficient"
+                    sun.scattering_radiance
+                        .iter()
+                        .all(|&v| v.is_finite() && v >= 0.0),
+                    "invalid solar scattering radiance"
                 );
+                let scattering = Vec3::from_array(sun.scattering_radiance);
+                if scattering == Vec3::ZERO {
+                    continue;
+                }
+                let normal = world_to_ground
+                    .chain(&sun.pose)?
+                    .apply_vector([0.0, 0.0, 1.0, 0.0]);
+                ensure!(
+                    normal[2].abs() > atmosphere.height.cosh()
+                        && normal[2].is_sign_positive() == normal[0].is_sign_positive(),
+                    "each scattering Sun must lie above the entire atmospheric layer"
+                );
+                sources.push((sun.pose, scattering));
             }
         }
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -78,8 +117,7 @@ impl AirBindings {
             device: device.clone(),
             layout,
             atmosphere,
-            sun_pose: sun.pose,
-            scattering,
+            sources,
         })
     }
 
@@ -88,24 +126,26 @@ impl AirBindings {
     }
 
     pub(crate) fn words(&self, view: Pose) -> Result<AirFrame> {
-        let mut words = [[0.0_f32; 4]; 3];
+        let mut frame = AirFrame::zeroed();
         if let Some(atmosphere) = self.atmosphere {
-            for (out, pose) in words[..2]
-                .iter_mut()
-                .zip([atmosphere.ground, self.sun_pose])
-            {
-                let [w, x, y, z] = view.chain(&pose)?.apply_vector([0.0, 0.0, 1.0, 0.0]);
+            let plane = |pose| -> Result<[f32; 4]> {
+                let [w, x, y, z] = view.chain(pose)?.apply_vector([0.0, 0.0, 1.0, 0.0]);
                 let plane = Vec4::new(x as f32, y as f32, z as f32, -w as f32);
                 ensure!(
                     plane.is_finite(),
                     "atmospheric plane exceeds shader coordinate range"
                 );
-                *out = plane.to_array();
+                Ok(plane.to_array())
+            };
+            frame.earth = plane(&atmosphere.ground)?;
+            frame.sinh_height = atmosphere.height.sinh() as f32;
+            frame.count = self.sources.len() as u32;
+            for (out, (pose, scattering)) in frame.suns.iter_mut().zip(&self.sources) {
+                out.plane = plane(pose)?;
+                out.scattering = scattering.extend(0.0).to_array();
             }
-            let [r, g, b] = self.scattering;
-            words[2] = [r, g, b, atmosphere.height.sinh() as f32];
         }
-        Ok(words)
+        Ok(frame)
     }
 
     pub(crate) fn device(&self) -> &wgpu::Device {
@@ -117,7 +157,7 @@ impl AirBindings {
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Camera-relative atmosphere"),
-                contents: bytemuck::cast_slice(&frame_uniform(*air, [Vec4::X, Vec4::ZERO])),
+                contents: bytemuck::bytes_of(&frame_uniform(*air, [Vec4::X, Vec4::ZERO])),
                 usage: wgpu::BufferUsages::UNIFORM,
             });
         self.bind_buffer(&buffer)

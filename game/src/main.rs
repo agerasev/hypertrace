@@ -94,7 +94,7 @@ async fn run(
     eprintln!("Adapter: {:?}", graphics.adapter().get_info());
     let library = Library::new(&graphics);
     let mut world = world::world(&library, &config, patch, [])?;
-    let shader = projection::shader(&library, &world.sun, world.ambient, Some(world.atmosphere))?;
+    let shader = projection::shader(&library, &world.suns, world.ambient, Some(world.atmosphere))?;
     let start = Walker::new(config.observer)?;
     let mut walker = start;
     let mut prepare = |walker: &Walker| {

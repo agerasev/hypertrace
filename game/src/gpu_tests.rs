@@ -1,5 +1,5 @@
 use crate::{
-    config::AmbientLight,
+    config::{AmbientLight, SunAmbient},
     projection::{self, Drawing, Pose},
     world::{self, InfinitePlane, Material, Object, Objects, Sun},
 };
@@ -20,12 +20,20 @@ use wgame::{
     texture::RenderTexture,
 };
 
-const NO_AMBIENT: AmbientLight = AmbientLight {
-    night: [0.0; 3],
-    day: [0.0; 3],
-    response_factor: 1.0,
-    response_exponent: 1.0,
-};
+const NO_AMBIENT: AmbientLight = AmbientLight { night: [0.0; 3] };
+
+fn plane_light(pose: Pose, surface_radiance: [f32; 3], scattering_radiance: [f32; 3]) -> Sun {
+    Sun {
+        pose,
+        surface_radiance,
+        scattering_radiance,
+        ambient: SunAmbient {
+            color: [0.0; 3],
+            response_factor: 1.0,
+            response_exponent: 1.0,
+        },
+    }
+}
 
 pub(crate) fn headless_library() -> Result<Library> {
     let instance =
@@ -63,15 +71,7 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
         .render_texture(size, Default::default())?;
     let projection_camera =
         Camera::new(library.state(), projection::camera_matrix(size, 1.0, 0.005));
-    let shader = projection::shader(
-        &library,
-        &Sun {
-            pose: Pose::identity(),
-            radiance: [1.0; 3],
-        },
-        NO_AMBIENT,
-        None,
-    )?;
+    let shader = projection::shader(&library, &[], NO_AMBIENT, None)?;
 
     // At local chart height 1, all three corners have the same horizontal
     // radius, hence the same embedded Z. Translating along -Z scales all
@@ -189,15 +189,22 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
     let ground = Pose::identity().move_local([12.0, 0.0, 0.0], [0.0, 0.3, 0.0], 1.0)?;
     let shader = projection::shader(
         &library,
-        &Sun {
-            pose: ground.move_local([0.0, 1.1, 0.0], [0.0; 3], 1.0)?,
-            radiance: [0.7, 0.9, 0.6],
-        },
+        &[
+            plane_light(
+                ground.move_local([0.0, 1.1, 0.0], [0.0; 3], 1.0)?,
+                [0.7, 0.9, 0.6],
+                [0.2, 0.5, 0.6],
+            ),
+            plane_light(
+                ground.move_local([0.7, 1.8, -0.3], [0.0; 3], 1.0)?,
+                [0.4, 0.15, 0.0],
+                [0.1, 0.0, 0.02],
+            ),
+        ],
         NO_AMBIENT,
         Some(Atmosphere {
             ground,
             height: 0.6,
-            scattering: [0.3, 0.5, 0.8],
             background: [0.01; 3],
         }),
     )?;
@@ -418,8 +425,14 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
             1.0,
         )
     };
-    let illuminated =
-        |pose, radiance| projection::shader(&library, &Sun { pose, radiance }, NO_AMBIENT, None);
+    let illuminated = |pose, surface_radiance| {
+        projection::shader(
+            &library,
+            &[plane_light(pose, surface_radiance, [0.0; 3])],
+            NO_AMBIENT,
+            None,
+        )
+    };
     let check_center = |image: &Image<Rgba<f16>>, expected: f64| {
         let p = image.data()[CENTER * WIDTH + CENTER];
         for value in [p.r, p.g, p.b] {
@@ -484,15 +497,8 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     let ambient = [0.06, 0.09, 0.12];
     let colored = projection::shader(
         &library,
-        &Sun {
-            pose: sun,
-            radiance: sunlight,
-        },
-        AmbientLight {
-            night: ambient,
-            day: ambient,
-            ..NO_AMBIENT
-        },
+        &[plane_light(sun, sunlight, [0.0; 3])],
+        AmbientLight { night: ambient },
         None,
     )?;
     let extinguished = illuminated(sun, [0.0; 3])?;
@@ -573,18 +579,17 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     check_center(&render(&emitter, looking_up, &extinguished)?, 1.0);
 
     // On the unlit side of a white receiver, only local ambient light remains.
-    let fill = AmbientLight {
-        night: [0.005; 3],
-        day: [0.15; 3],
-        response_factor: 1.5,
-        response_exponent: 2.0,
-    };
+    let fill = AmbientLight { night: [0.005; 3] };
     let with_fill = projection::shader(
         &library,
-        &Sun {
-            pose: sun,
-            radiance: [1.0; 3],
-        },
+        &[Sun {
+            ambient: SunAmbient {
+                color: [0.145; 3],
+                response_factor: 1.5,
+                response_exponent: 2.0,
+            },
+            ..plane_light(sun, [1.0; 3], [0.0; 3])
+        }],
         fill,
         None,
     )?;
@@ -595,6 +600,61 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
             .powi(2);
         let expected = 0.005 + 0.145 * weight;
         check_center(&render(&earth, above(foot, -0.2)?, &with_fill)?, expected);
+    }
+    let dark = projection::shader(&library, &[], fill, None)?;
+    check_center(
+        &render(&earth, above(Pose::identity(), 0.2)?, &dark)?,
+        f64::from(fill.night[0]),
+    );
+
+    // Add the projected irradiances of three distinct disks. The brightest
+    // channel exceeds one, so channel ratios also test the final display mapping.
+    let mut suns = Vec::new();
+    let mut direct = Vec3::ZERO;
+    let mut ambient = Vec3::from(fill.night);
+    for (offset, gap, color) in [
+        (0.0_f64, 1.1_f64, Vec3::new(3.1, 0.07, 0.3)),
+        (0.5, 0.8, Vec3::new(1.6, 0.75, 0.09)),
+        (-0.35, 0.55, Vec3::new(0.05, 0.2, 2.5)),
+    ] {
+        let pose = Pose::identity().move_local([offset, gap, 0.0], [0.0; 3], 1.0)?;
+        let fill = SunAmbient {
+            color: (color * 0.1).to_array(),
+            response_factor: gap as f32,
+            response_exponent: 1.0 + offset as f32,
+        };
+        suns.push(Sun {
+            ambient: fill,
+            ..plane_light(pose, color.to_array(), [0.0; 3])
+        });
+        let cosh_d = (gap.sinh() * offset.cosh()).hypot(1.0);
+        direct += color * (gap.cosh() / cosh_d.powi(3)) as f32;
+        let weight = (fill.response_factor * color.max_element() / cosh_d.powi(2) as f32)
+            .min(1.0)
+            .powf(fill.response_exponent);
+        ambient += Vec3::from(fill.color) * weight;
+    }
+    // A surface-only Sun can illuminate the receiver from inside the air layer.
+    let combined = projection::shader(
+        &library,
+        &suns,
+        fill,
+        Some(crate::atmosphere::Atmosphere {
+            ground: Pose::identity(),
+            height: 0.9,
+            background: [0.0; 3],
+        }),
+    )?;
+    for (height, direct) in [(0.2, direct), (-0.2, Vec3::ZERO)] {
+        let linear = direct + ambient;
+        let expected = linear / linear.max_element().max(1.0);
+        let frame = render(&earth, above(Pose::identity(), height)?, &combined)?;
+        let p = frame.data()[CENTER * WIDTH + CENTER];
+        let actual = Vec3::new(p.r.to_f32(), p.g.to_f32(), p.b.to_f32());
+        assert!(
+            actual.abs_diff_eq(expected, 0.006),
+            "{actual} vs {expected}"
+        );
     }
     Ok(())
 }
@@ -609,28 +669,32 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
         .texturing()
         .render_texture(size, Default::default())?;
     let camera = Camera::new(library.state(), projection::camera_matrix(size, 1.0, 0.005));
-    let gap = 1.3_f64;
-    let sun = Sun {
-        pose: Pose::identity().move_local([0.0, gap, 0.0], [0.0; 3], 1.0)?,
-        radiance: [1.0; 3],
-    };
+    let mut suns = Vec::new();
+    for (foot, gap, scattering_radiance) in [
+        (0.0, 1.3, [0.8, 0.1, 0.0]),
+        (0.85, 0.95, [0.2, 0.7, 0.0]),
+        (-0.45, 1.9, [0.0, 0.1, 1.0]),
+    ] {
+        let pose = Pose::identity().move_local([foot, gap, 0.0], [0.0; 3], 1.0)?;
+        suns.push(plane_light(pose, [0.0; 3], scattering_radiance));
+    }
     let air = Atmosphere {
         ground: Pose::identity(),
         height: 0.65,
         background: [0.012; 3],
-        scattering: [0.5, 0.85, 1.20],
     };
-    let shader = projection::shader(&library, &sun, NO_AMBIENT, Some(air))?;
+    let shader = projection::shader(&library, &suns, NO_AMBIENT, Some(air))?;
     let height = 0.05_f64;
     let horizon_pitch = -height.tanh().asin();
-    let mean = |p: [f64; 4]| -gap.sinh() * p[0] + gap.cosh() * p[2];
     // Use direct numerical quadrature of the finite solar disk's Rayleigh phase
     // moment at each position. This reference never solves a layer intersection.
-    let reference = |eye: Pose, limit: f64| {
+    let reference = |eye: Pose, limit: f64, sun: &Sun| {
         let start = eye.apply_vector([1.0, 0.0, 0.0, 0.0]);
         let forward = eye.apply_vector([0.0, 0.0, 0.0, -1.0]);
         let step = limit / 16384.0;
-        let (a, b) = (mean(start), mean(forward));
+        let [w, x, y, z] = sun.pose.apply_vector([0.0, 0.0, 1.0, 0.0]);
+        let signed_distance_sinh = |p: [f64; 4]| -w * p[0] + x * p[1] + y * p[2] + z * p[3];
+        let (a, b) = (signed_distance_sinh(start), signed_distance_sinh(forward));
         let mut sum = 0.0;
         for i in 0..16384 {
             let distance = (i as f64 + 0.5) * step;
@@ -665,7 +729,11 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
             objects.planes.push(Object {
                 shape: InfinitePlane,
                 pose: foot.move_local([0.0, eye_height + distance, 0.0], [0.0; 3], 1.0)?,
-                material: Material::emissive([0.08; 3]),
+                material: Material {
+                    reflection: [0.5; 3],
+                    transmission: [0.5; 3],
+                    emission: [0.08; 3],
+                },
             });
             0.08
         } else {
@@ -674,9 +742,15 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
         let drawing = projection::prepare(&objects, eye, &shader)?;
         let image = snapshot(&mut target, &camera, &drawing)?;
         let pixel = image.data()[32 * 65 + 32];
-        let integral = reference(eye, hit.unwrap_or(24.0));
-        for (value, beta) in [pixel.r, pixel.g, pixel.b].into_iter().zip(air.scattering) {
-            let expected = emission + integral * f64::from(beta);
+        let scattered: wgame::glam::DVec3 = suns
+            .iter()
+            .map(|sun| {
+                Vec3::from(sun.scattering_radiance).as_dvec3()
+                    * reference(eye, hit.unwrap_or(24.0), sun)
+            })
+            .sum();
+        for (i, value) in [pixel.r, pixel.g, pixel.b].into_iter().enumerate() {
+            let expected = emission + scattered[i];
             let actual = f64::from(value.to_f32());
             assert!(
                 (actual - expected).abs() < 0.001 + 0.009 * expected,

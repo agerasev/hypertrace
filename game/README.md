@@ -1,11 +1,11 @@
 # Hypergame
 
 Hypergame is a native first-person triangle rasterizer for hyperbolic space.
-Its Earth and Sun are disjoint geodesic planes inspired by the original
+Its Earth and three Suns are geodesic planes. Each Sun is separated from Earth, as in the original
 [`hearth` example](https://github.com/agerasev/hypertrace/blob/20565c3ad9f441358e6a148b98416978133a85d7/main/examples/hearth.rs).
 A finite triangulated horosphere forms the Moon. The opening view looks
-across green vegetation toward the Sun and Moon. Sunlit air gives the day sky
-its blue color, and stars show through the dark sky at night.
+across vegetation toward a warm Sun, a broad red Sun and a small, bright blue
+Sun. Each lights the surfaces and air around it. Stars show through the dark sky.
 
 From the Hypertrace workspace root, run
 
@@ -35,16 +35,19 @@ curvature radii and seconds.
 
 | Section | Settings |
 | --- | --- |
-| `earth`, `sun`, `moon` | Earth material and ground grid, perpendicular Sun distance and emission, Moon ground location, perpendicular gap, tessellation and material |
-| `ambient` | Night and day fill radiances, response factor and exponent |
-| `atmosphere` | Air layer thickness, RGB scattering coefficients, background sky radiance |
+| `earth`, `moon` | Earth material and ground grid, Moon ground location, perpendicular gap, tessellation and material |
+| `[[suns]]` | One Sun's ground location, perpendicular gap, surface and air radiances, daytime ambient response and vegetation |
+| `ambient` | Shared night fill radiance |
+| `atmosphere` | Air layer thickness and background sky radiance |
 | `stars` | Stars per square curvature radius, seed, range of gaps above Earth, two RGB colors |
-| `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, species occupancy and growth, shapes, vertex colors and materials |
+| `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, night occupancy, minimum size, shapes, vertex colors and materials |
 | `observer`, `view` | Spawn, yaw and pitch, eye height, walk speed, jump height, gravity, window size, field of view, near clip, mouse sensitivity and frame time limit |
 
-The Sun's perpendicular meets Earth at the world origin. Moon and observer
-ground offsets start there and follow local X then local Z. Heights are measured
-along the normal at the resulting foot. Keep the lunar gap above the highest
+Give each Sun a `[[suns]]` entry (up to three), or set `suns = []` at the
+top of the file for a world with only night ambient. Sun, Moon and observer
+ground offsets start at the world origin and follow local X then local Z.
+Each Sun's `distance` is the perpendicular gap above its ground offset.
+Keep a Sun that contributes air scattering above the air layer, and the lunar gap above the highest
 jumping eye so the edge of the finite Moon stays hidden. Set `jump_height = 0`
 to disable jumping, or set `stars.density = 0` for a starless sky.
 
@@ -72,27 +75,26 @@ color. Pines have a `bark` color and three foliage tiers named `foliage.lower`,
 
 ## Permanent day and night
 
-The supplied world separates Earth and Sun by three curvature radii along their
-common perpendicular. Its foot on Earth has permanent noon. Travel along Earth away from that point
-and the Sun occupies less of the sky and approaches the horizon. Sunlight fades
-continuously into night. The Moon is gray and diffuse. Its visible brightness
-comes from the same Sun that lights the ground and the plants.
+Each Sun has a permanent noon at the foot of its perpendicular to Earth.
+As you walk away, its disk shrinks and approaches the horizon. The supplied
+warm, red and blue Suns have perpendicular gaps of `3R`, `1.65R` and
+`4.3R`, respectively.
 
-Broadleaf trees are most common in daylight. Pines become the more common tree
-at dusk, and grass persists farther into the dark. Deep in the night, a patch of
-ground is usually bare, but you can still encounter a tuft of grass or, about
-twenty times less often, a dwarf pine. Each species also grows taller in better
-light. The plants use the direct sunlight at their roots as a fraction of the
-light at permanent noon. [Vegetation model](src/world/ecology.rs)
+Each Sun owns a `[suns.vegetation]` table. The warm Sun supports deciduous
+trees, pines and grass. The red Sun favors pines, and the blue Sun supports
+grass alone. Omit a species to give it no contribution from that Sun, or
+set `vegetation = {}` on a Sun with no biome. Where regions overlap, each
+species takes the highest occupancy and the largest growth response offered
+by any Sun. In deep night the shared `night_occupancy` and `minimum_size`
+leave occasional tufts of grass and rarer small pines. [Vegetation model](src/world/ecology.rs)
 
-To extend a species farther into dusk, lower both numbers in its
-`ecology.light_range`. Moving outward from noon, plants start thinning at the
-upper value and reach their night density at the lower one. Lower
-`ecology.half_saturation` to keep the plants tall in that dimmer light.
-Far from noon, direct ground light drops by a factor of ten over about
-`0.77R`, so dividing all three settings by ten shifts the outer transition
-roughly that far. In the supplied world, ground `3R` from noon receives about
-0.1% of noon light and supports an average of 31 pines per `R²`.
+To extend one Sun's forest into dusk, lower both ends of its species'
+`light_range`. This interval measures direct irradiance at the root in units
+of the brightest individual noon on Earth, using the strongest RGB channel.
+`max_occupancy` is the bright-end probability of a candidate becoming a plant.
+Lower `half_saturation` to approach `max_size` in dimmer light. For pines,
+`daylight_range` and `daylight_suppression` can thin that Sun's forest in
+its brightest region.
 
 Vegetation grows on a regular `{5,4}` grid. Each tile is a geodesic pentagon
 with five right angles, and four tiles meet at each corner. Each pentagon
@@ -117,18 +119,18 @@ orientation and material are preserved when the tile is loaded again. For
 structures spanning many tiles, place sections in their respective tiles so
 each section streams with the ground beneath it. [Ground objects](src/world.rs)
 
-Wgame's mesh shader uses a shared uniform for the Sun's radiance. At each
-fragment, the Sun plane fills a disk of incoming directions. If the
+At each fragment, each Sun plane fills a disk of incoming directions. If the
 perpendicular distance to the Sun is `d` and the curvature radius is `R`,
 the disk's angular radius `a` satisfies `sin(a) = 1/cosh(d/R)`.
 The shader integrates the incoming light over the part of this disk above
 the receiving face's horizon. Thin grass blades also transmit some direct
-light, so a backlit blade still shows its green color. Direct sunlight is slightly
-yellow in the supplied world. The shader interpolates between the night and day
-ambient radiances with weight `clamp(factor × peak × sin²(a), 0, 1)^exponent`,
-where `peak` is the largest RGB component of the Sun's emitted radiance. This
-gives cool, nearly white fill in daylight and a dim floor at night. Overbright
-colors retain their hue when mapped to the display. The model omits cast shadows.
+light, so a backlit blade still shows its green color. Each Sun's
+`surface_radiance` colors its visible disk, reflections and transmitted light.
+Its `ambient.color` adds diffuse fill above the shared `ambient.night` floor.
+The weight of that fill is `clamp(response_factor × peak × sin²(a), 0, 1)^response_exponent`,
+where `peak` is the largest channel of that Sun's surface radiance. The shader
+sums all contributions in linear RGB before mapping highlights to the display.
+The model omits cast shadows.
 
 Each Earth pentagon generates its own stars. A star's foot is sampled uniformly
 by area inside that pentagon. The perpendicular from the foot to the star
@@ -152,10 +154,12 @@ color. Surface and stellar radiance pass through the air at full strength.
 This lets a night observer see daylit ground with blue light around it, while
 a blade of grass close to the eye picks up very little haze.
 
-The shader integrates the full solar disk with the Rayleigh angular law and
-constant density inside the layer. The result depends only on the endpoints of
-the segment and its direction. It uses a closed form that also covers sky rays
-extending to the ideal horizon. RGB scattering strengths favor blue.
+The shader clips the ray to the air layer once. For each scattering Sun, it
+integrates the full disk with the Rayleigh angular law over that segment.
+The closed form also covers sky rays extending to the ideal horizon. Each
+Sun's `scattering_radiance` is its effective RGB source in air, including the
+air's color response. Set it to `[0, 0, 0]` to keep that Sun's surface lighting
+while turning off its sky glow.
 [Atmosphere shader](src/atmosphere.wgsl)
 
 ## Shapes and materials

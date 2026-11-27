@@ -1,9 +1,14 @@
-// Additive single scattering by the full solar disk in a layer of constant density.
+// Additive single scattering by solar disks in a layer of constant density.
 // Plane.w is its signed distance coefficient at the camera (-normal.w).
+struct AirSun {
+    plane: vec4<f32>,
+    scattering: vec4<f32>, // effective RGB scattering radiance of this Sun
+};
 struct AirFrame {
     earth: vec4<f32>,
-    sun: vec4<f32>,
-    scattering: vec4<f32>, // solar radiance times RGB scattering coefficients, sinh(layer height)
+    sinh_height: f32,
+    count: u32,
+    suns: array<AirSun, MAX_SUNS>,
     tile_real: vec4<f32>,  // tile-to-eye projective quaternion pair
     tile_imag: vec4<f32>,
 };
@@ -27,7 +32,7 @@ fn air_interval(direction: vec3<f32>, end: f32) -> vec2<f32> {
         near_z = min(near_z, sqrt(-p/q));
     }
     // Clip below the layer top: p - h*z + q*z² <= 0.
-    let h = air.scattering.w;
+    let h = air.sinh_height;
     let disc = h*h - 4.0*p*q;
     if disc <= 0.0 { return vec2<f32>(0.0); }
     let denominator = h + sqrt(disc);
@@ -46,13 +51,9 @@ fn sun_endpoint(z: f32, p: f32, q: f32, scale: f32) -> vec2<f32> {
     return vec2<f32>(abs(n)+c, sign(n)*((p-q*z*z)/c)*(w/c)*(w/c));
 }
 
-fn air_glow(ray: vec3<f32>, end: f32) -> vec3<f32> {
-    if air.scattering.w == 0.0 { return vec3<f32>(0.0); }
-    let direction = normalize(ray);
-    let z = air_interval(direction, end);
-    if z.x <= z.y { return vec3<f32>(0.0); }
-    let a = air.sun.w;
-    let b = dot(air.sun.xyz, direction);
+fn sun_scattering(plane: vec4<f32>, direction: vec3<f32>, z: vec2<f32>) -> f32 {
+    let a = plane.w;
+    let b = dot(plane.xyz, direction);
     let scale = 1.0 / max(1.0, max(abs(a), abs(b)));
     let p = 0.5*(a*scale + b*scale);
     let q = 0.5*(a*scale - b*scale);
@@ -61,13 +62,25 @@ fn air_glow(ray: vec3<f32>, end: f32) -> vec3<f32> {
     // Integral of the solar sky fraction (1-tanh(d/R))/2. Cancel the exp(length)
     // factors algebraically so even z=0 at the ideal horizon has a finite limit.
     let denominator = entry.x*exit.x + (scale*z.y)*(scale*z.y);
-    if denominator <= 0.0 { return vec3<f32>(0.0); }
+    if denominator <= 0.0 { return 0.0; }
     let ratio = ((z.x-z.y)*scale)*((z.x+z.y)*scale)/denominator;
     let logarithm = select(log(1.0+ratio), ratio*(1.0-0.5*ratio), ratio < 0.001);
     // Integrating 3(1+cos²(theta))/(16*pi) over the Sun disk and along the
     // ray adds this boundary term to the isotropic result.
-    let integral = max(0.0, 0.5*logarithm + (entry.y-exit.y)/16.0);
-    return air.scattering.rgb * integral;
+    return max(0.0, 0.5*logarithm + (entry.y-exit.y)/16.0);
+}
+
+fn air_glow(ray: vec3<f32>, end: f32) -> vec3<f32> {
+    if air.count == 0u { return vec3<f32>(0.0); }
+    let direction = normalize(ray);
+    let z = air_interval(direction, end);
+    if z.x <= z.y { return vec3<f32>(0.0); }
+    var glow = vec3<f32>(0.0);
+    for (var i = 0u; i < air.count; i++) {
+        let sun = air.suns[i];
+        glow += sun.scattering.rgb * sun_scattering(sun.plane, direction, z);
+    }
+    return glow;
 }
 
 fn air_to_surface(point: vec4<f32>) -> vec3<f32> {

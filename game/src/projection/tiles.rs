@@ -26,7 +26,13 @@ struct BakedTile {
 impl BakedTile {
     fn new(shader: &Shader, tile: &Rc<GroundTile>) -> Result<Self> {
         let (frame_buffer, binding) = shader.air.tile_binding();
-        let sun_in_tile = tile.pose.inverse()?.chain(&shader.sun_pose)?;
+        let inverse = tile.pose.inverse()?;
+        let suns = shader
+            .light
+            .poses
+            .iter()
+            .map(|pose| inverse.chain(pose))
+            .collect::<Result<Vec<_>>>()?;
         let mut meshes = Vec::new();
         // Even a whole tile of identical objects must fit Wgame's instance buffers.
         let capacity = instance_capacity(shader.air.device()) as usize;
@@ -39,15 +45,9 @@ impl BakedTile {
             )]
             let mut indices = HashMap::new();
             let mut batches = Vec::new();
-            for object in chunk {
-                let mesh = shader.shaded_mesh(
-                    &object.shape,
-                    &shader.tile_mesh,
-                    object.pose,
-                    object.pose.inverse()?.chain(&sun_in_tile)?,
-                    object.material,
-                    &binding,
-                )?;
+            for mesh in
+                shader.mesh_batch(chunk, Pose::identity(), &suns, &shader.tile_mesh, &binding)?
+            {
                 let index = indices.entry(mesh.resource()).or_insert_with(|| {
                     batches.push(Scene::default());
                     batches.len() - 1
@@ -61,14 +61,10 @@ impl BakedTile {
         let mut planes = Vec::new();
         for chunk in tile.planes.chunks(capacity) {
             let mut batch = Scene::default();
-            for plane in chunk {
-                batch.add(&shader.shaded_plane(
-                    &shader.tile_plane,
-                    plane,
-                    plane.pose,
-                    sun_in_tile,
-                    &binding,
-                )?);
+            for mesh in
+                shader.plane_batch(chunk, Pose::identity(), &suns, &shader.tile_plane, &binding)?
+            {
+                batch.add(&mesh);
             }
             planes.push(batch.bake());
         }

@@ -4,7 +4,7 @@ use std::{fs, path::Path};
 use anyhow::{Context, Result, ensure};
 use serde::{Deserialize, Deserializer, de::DeserializeOwned};
 
-use crate::world::Material;
+use crate::world::{MAX_SUNS, Material};
 
 pub(crate) mod observer;
 pub(crate) mod stars;
@@ -12,13 +12,13 @@ pub(crate) mod vegetation;
 
 use observer::{Observer, View};
 use stars::StarField;
-use vegetation::Vegetation;
+use vegetation::{SunVegetation, Vegetation};
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Config {
     pub earth: Earth,
-    pub sun: Sun,
+    pub suns: Vec<Sun>,
     pub moon: Moon,
     pub ambient: AmbientLight,
     pub atmosphere: Air,
@@ -65,8 +65,31 @@ pub(crate) struct GroundGrid {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Sun {
+    pub ground_offset: [f64; 2],
     pub distance: f64,
-    pub emission: [f32; 3],
+    pub surface_radiance: [f32; 3],
+    pub scattering_radiance: [f32; 3],
+    pub ambient: SunAmbient,
+    pub vegetation: SunVegetation,
+}
+
+impl Sun {
+    fn validate(&self, air_height: f64) -> Result<()> {
+        let origin_w =
+            self.distance.cosh() * self.ground_offset[0].cosh() * self.ground_offset[1].cosh();
+        ensure!(
+            self.distance.cosh() > 1.0 && self.distance > 0.0 && (origin_w as f32).is_finite(),
+            "distance must be positive and the ground_offset and distance must be representable"
+        );
+        validate_rgb(self.surface_radiance).context("surface_radiance")?;
+        validate_rgb(self.scattering_radiance).context("scattering_radiance")?;
+        ensure!(
+            self.scattering_radiance == [0.0; 3] || self.distance.cosh() > air_height.cosh(),
+            "a scattering Sun must have distance above atmosphere.height"
+        );
+        self.ambient.validate().context("ambient")?;
+        self.vegetation.validate().context("vegetation")
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -83,15 +106,19 @@ pub(crate) struct Moon {
 #[serde(deny_unknown_fields)]
 pub(crate) struct AmbientLight {
     pub night: [f32; 3],
-    pub day: [f32; 3],
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SunAmbient {
+    pub color: [f32; 3],
     pub response_factor: f32,
     pub response_exponent: f32,
 }
 
-impl AmbientLight {
+impl SunAmbient {
     fn validate(&self) -> Result<()> {
-        validate_rgb(self.night).context("night")?;
-        validate_rgb(self.day).context("day")?;
+        validate_rgb(self.color).context("color")?;
         ensure!(
             self.response_factor.is_finite() && self.response_factor >= 0.0,
             "response_factor must be finite and nonnegative"
@@ -108,7 +135,6 @@ impl AmbientLight {
 #[serde(deny_unknown_fields)]
 pub(crate) struct Air {
     pub height: f64,
-    pub scattering: [f32; 3],
     pub background: [f32; 3],
 }
 
@@ -133,30 +159,21 @@ impl Config {
 
     fn validate(&self) -> Result<()> {
         self.earth.material.validate().context("earth.material")?;
-        validate_rgb(self.sun.emission).context("sun.emission")?;
+        let air_height = self.atmosphere.height.sinh() as f32;
         ensure!(
-            self.sun.distance > 0.0
-                && self.sun.distance.cosh() > 1.0
-                && (self.sun.distance.sinh() as f32).is_finite(),
-            "sun.distance must be positive and representable"
-        );
-        ensure!(
-            self.atmosphere.height > 0.0
-                && self.atmosphere.height.cosh() < self.sun.distance.cosh()
-                && (self.atmosphere.height.sinh() as f32) > 0.0,
-            "atmosphere.height must be positive and below sun.distance"
+            air_height > 0.0 && air_height.is_finite(),
+            "atmosphere.height must be positive and representable"
         );
         validate_rgb(self.atmosphere.background).context("atmosphere.background")?;
-        validate_rgb(self.atmosphere.scattering).context("atmosphere.scattering")?;
+        validate_rgb(self.ambient.night).context("ambient.night")?;
         ensure!(
-            self.sun
-                .emission
-                .into_iter()
-                .zip(self.atmosphere.scattering)
-                .all(|(light, beta)| (light * beta).is_finite()),
-            "sun.emission times atmosphere.scattering exceeds the shader range"
+            self.suns.len() <= MAX_SUNS,
+            "suns supports up to {MAX_SUNS} entries"
         );
-        self.ambient.validate().context("ambient")?;
+        for (i, sun) in self.suns.iter().enumerate() {
+            sun.validate(self.atmosphere.height)
+                .with_context(|| format!("suns[{i}]"))?;
+        }
         self.moon.material.validate().context("moon.material")?;
         ensure!(
             self.moon.distance > 0.0
@@ -186,7 +203,7 @@ mod tests {
     const WORLD: &str = include_str!("../config.toml");
 
     #[test]
-    fn only_material_terms_and_their_colors_can_be_omitted() -> Result<()> {
+    fn shared_world_settings_require_all_fields_except_material_terms_and_colors() -> Result<()> {
         Config::parse(WORLD)?;
         let table: toml::Table = toml::from_str(WORLD)?;
         fn check_fields(
@@ -249,17 +266,52 @@ mod tests {
     #[test]
     fn unknown_settings_and_incompatible_values_report_the_field() -> Result<()> {
         let mut table: toml::Table = toml::from_str(WORLD)?;
-        table["sun"]
+        table["suns"][0]
             .as_table_mut()
             .unwrap()
             .insert("distence".into(), 3.0.into());
         let error = Config::parse(&toml::to_string(&table)?).unwrap_err();
         assert!(error.to_string().contains("distence"));
 
-        table["sun"].as_table_mut().unwrap().remove("distence");
-        table["atmosphere"]["height"] = table["sun"]["distance"].clone();
+        table["suns"][0].as_table_mut().unwrap().remove("distence");
+        table["atmosphere"]["height"] = table["suns"][0]["distance"].clone();
         let error = Config::parse(&toml::to_string(&table)?).unwrap_err();
         assert!(format!("{error:#}").contains("atmosphere.height"));
+        Ok(())
+    }
+
+    #[test]
+    fn sun_list_allows_dark_worlds_and_checks_each_source_independently() -> Result<()> {
+        let mut document: toml::Value = toml::from_str(WORLD)?;
+        let source = document["suns"][0].clone();
+        document["suns"] = toml::Value::Array(Vec::new());
+        Config::parse(&toml::to_string(&document)?)?;
+        document["suns"] = toml::Value::Array(vec![source; MAX_SUNS + 1]);
+        let error = Config::parse(&toml::to_string(&document)?).unwrap_err();
+        assert!(format!("{error:#}").contains("up to"));
+        document["suns"].as_array_mut().unwrap().pop();
+        document["suns"][1]["scattering_radiance"][2] = (-1.0).into();
+        let error = Config::parse(&toml::to_string(&document)?).unwrap_err();
+        let message = format!("{error:#}");
+        assert!(message.contains("suns[1]") && message.contains("scattering_radiance"));
+        Ok(())
+    }
+
+    #[test]
+    fn a_sun_lists_only_the_species_it_supports() -> Result<()> {
+        let mut document: toml::Value = toml::from_str(WORLD)?;
+        let biome = &mut document["suns"][0]["vegetation"];
+        let mut pine = biome["pine"].clone();
+        *biome = toml::Value::Table(toml::Table::new());
+        let config = Config::parse(&toml::to_string(&document)?)?;
+        assert!(config.suns[0].vegetation.pine.is_none());
+        pine.as_table_mut().unwrap().remove("max_size");
+        document["suns"][0]["vegetation"]
+            .as_table_mut()
+            .unwrap()
+            .insert("pine".into(), pine);
+        let error = Config::parse(&toml::to_string(&document)?).unwrap_err();
+        assert!(format!("{error:#}").contains("max_size"));
         Ok(())
     }
 }

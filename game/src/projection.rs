@@ -9,20 +9,21 @@ use wgame::{
     shader::Attribute,
     shapes::{
         Mesh, Polygon,
-        material::{MaterialBinding, MaterialMesh, MeshShader},
+        material::MeshShader,
         prelude::ShapeFill,
         shader::{ShaderConfig, Vertex},
     },
 };
-use wgpu::util::DeviceExt;
 
 use crate::{
     atmosphere::{AirBindings, Atmosphere},
     config::AmbientLight,
-    world::{InfinitePlane, Material, Object, Objects, Sun},
+    world::{MAX_SUNS, Objects, Sun},
 };
 
+mod surfaces;
 mod tiles;
+use surfaces::{SURFACES_PER_BATCH, SurfaceLights, instance_capacity};
 use tiles::{TileCache, TileDrawing};
 
 pub(crate) type Pose = Transform<Hyperboloid3>;
@@ -36,22 +37,16 @@ pub(crate) struct Shader {
     plane: MeshShader<Instance>,
     tile_plane: MeshShader<Instance>,
     plane_quad: Polygon,
-    light: MaterialBinding,
-    sun_pose: Pose,
+    light: SurfaceLights,
 }
 
 #[derive(Clone, Attribute)]
 struct Instance {
     real: Vec4,
     imag: Vec4,
-    sun_plane: Vec4,
+    light_index: f32,
     reflection: Vec3,
     transmission: Vec3,
-}
-
-fn instance_capacity(device: &wgpu::Device) -> u64 {
-    let stride = wgame::shapes::shader::InstanceData::<Instance>::bindings().size();
-    (device.limits().max_buffer_size / stride).min(u32::MAX.into())
 }
 
 #[derive(Attribute)]
@@ -59,7 +54,7 @@ struct Varyings {
     eye_point: Vec4,
     local_klein: Vec3,
     smooth_normal: Vec3,
-    sun_plane: Vec4,
+    sun_plane: [Vec4; MAX_SUNS],
     reflection: Vec3,
     transmission: Vec3,
     emission: Vec3,
@@ -83,54 +78,17 @@ pub(crate) fn camera_matrix(
 
 pub(crate) fn shader(
     library: &Library,
-    sun: &Sun,
+    suns: &[Sun],
     ambient: AmbientLight,
     atmosphere: Option<Atmosphere>,
 ) -> Result<Shader> {
     ensure!(
-        [sun.radiance, ambient.night, ambient.day]
-            .into_iter()
-            .flatten()
-            .all(|x| x.is_finite() && x >= 0.0),
-        "invalid lighting radiance"
+        suns.len() <= MAX_SUNS,
+        "too many Suns for the lighting shader"
     );
     let state = library.state();
     let device = state.device();
-    let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: Some("Surface lighting"),
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::FRAGMENT,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: wgpu::BufferSize::new(48),
-            },
-            count: None,
-        }],
-    });
-    let colors = [
-        Vec3::from_array(sun.radiance).extend(0.0).to_array(),
-        Vec3::from_array(ambient.night)
-            .extend(ambient.response_factor)
-            .to_array(),
-        Vec3::from_array(ambient.day)
-            .extend(ambient.response_exponent)
-            .to_array(),
-    ];
-    let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Surface lighting"),
-        contents: bytemuck::cast_slice(&colors),
-        usage: wgpu::BufferUsages::UNIFORM,
-    });
-    let uniforms = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: Some("Surface lighting"),
-        layout: &layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: buffer.as_entire_binding(),
-        }],
-    });
+    let light = SurfaceLights::new(device, suns, ambient)?;
     let display = if state.format().is_srgb() {
         "linear"
     } else {
@@ -149,7 +107,10 @@ pub(crate) fn shader(
             let b = model_matrix[1].xyz;
             let c = model_matrix[2].xyz;
             output.smooth_normal = mat3x3<f32>(cross(b,c), cross(c,a), cross(a,b)) * vertex.normal;
-            output.sun_plane = instance.sun_plane;
+            let planes = surface_lights[u32(instance.light_index)];
+            output.sun_plane_0 = planes[0];
+            output.sun_plane_1 = planes[1];
+            output.sun_plane_2 = planes[2];
             output.reflection = instance.reflection;
             output.transmission = instance.transmission;
             output.emission = instance.tex_color.rgb;
@@ -158,14 +119,16 @@ pub(crate) fn shader(
         )
     };
     let mut config = ShaderConfig {
-        module_source: concat!(
-            include_str!("projection.wgsl"),
-            "\n",
-            include_str!("lighting.wgsl"),
-            "\n",
-            include_str!("atmosphere.wgsl")
-        )
-        .into(),
+        module_source: format!(
+            "const MAX_SUNS: u32 = {MAX_SUNS}u;\nconst SURFACES_PER_BATCH: u32 = {SURFACES_PER_BATCH}u;\n{}",
+            concat!(
+                include_str!("projection.wgsl"),
+                "\n",
+                include_str!("lighting.wgsl"),
+                "\n",
+                include_str!("atmosphere.wgsl")
+            )
+        ),
         varying: Varyings::bindings(),
         vertex_source: surface_vertex("placed"),
         fragment_color_source: format!(
@@ -173,8 +136,8 @@ pub(crate) fn shader(
         ),
         ..Default::default()
     };
-    let air = AirBindings::new(device, atmosphere, sun)?;
-    let layouts = [layout, air.layout.clone()];
+    let air = AirBindings::new(device, atmosphere, suns)?;
+    let layouts = [light.layout.clone(), air.layout.clone()];
     let shapes = library.shapes().state();
     let sky_config = ShaderConfig {
         vertex_source: "
@@ -209,8 +172,7 @@ pub(crate) fn shader(
         plane,
         tile_plane,
         plane_quad: plane_quad(library),
-        light: MaterialBinding::Uniforms(uniforms),
-        sun_pose: sun.pose,
+        light,
     })
 }
 
@@ -256,70 +218,10 @@ fn plane_foot(relative: Pose) -> Result<Pose> {
     )
 }
 
-impl Shader {
-    fn shaded_plane(
-        &self,
-        pipeline: &MeshShader<Instance>,
-        plane: &Object<InfinitePlane>,
-        relative: Pose,
-        sun: Pose,
-        air: &MaterialBinding,
-    ) -> Result<MaterialMesh<Instance>> {
-        // Center the disk at the eye's foot for global planes, or the tile
-        // center's foot for instances baked with a ground tile.
-        let foot = plane_foot(relative)?;
-        let sun_in_plane =
-            if plane.material.reflection == [0.0; 3] && plane.material.transmission == [0.0; 3] {
-                Pose::identity()
-            } else {
-                foot.inverse()?.chain(&plane.pose.inverse()?.chain(&sun)?)?
-            };
-        self.shaded_mesh(
-            &self.plane_quad,
-            pipeline,
-            relative.chain(&foot)?,
-            sun_in_plane,
-            plane.material,
-            air,
-        )
-    }
-
-    fn shaded_mesh(
-        &self,
-        polygon: &Polygon,
-        pipeline: &MeshShader<Instance>,
-        relative: Pose,
-        sun_in_object: Pose,
-        material: Material,
-        air: &MaterialBinding,
-    ) -> Result<MaterialMesh<Instance>> {
-        material.validate()?;
-        let [w, x, y, z] = sun_in_object.apply_vector([0.0, 0.0, 1.0, 0.0]);
-        let sun_plane = Vec4::new(x as f32, y as f32, z as f32, w as f32);
-        ensure!(
-            sun_plane.is_finite(),
-            "Sun plane exceeds shader coordinate range"
-        );
-        let [real, imag] = projective_pair(relative)?;
-        let attributes = Instance {
-            real,
-            imag,
-            sun_plane,
-            reflection: Vec3::from_array(material.reflection),
-            transmission: Vec3::from_array(material.transmission),
-        };
-        // Using Wgame's built-in instance color for emission keeps the vertex
-        // layout within WebGPU's guaranteed 16 attribute locations.
-        let emission = Vec3::from_array(material.emission);
-        let material = pipeline.material(vec![self.light.clone(), air.clone()], attributes)?;
-        Ok(polygon.fill_color(emission).with_material(&material))
-    }
-}
-
 pub(crate) struct Drawing {
     sky: Option<BakedScene>,
-    planes: BakedScene,
-    meshes: BakedScene,
+    planes: Vec<BakedScene>,
+    meshes: Vec<BakedScene>,
     tiles: TileDrawing,
 }
 
@@ -339,14 +241,8 @@ impl Drawing {
             target.render(camera, sky);
         }
         // Both passes use the target's depth buffer so a plane can occlude a mesh.
-        target.render_iter(
-            camera,
-            std::iter::once(&self.planes).chain(self.tiles.planes()),
-        );
-        target.render_iter(
-            camera,
-            std::iter::once(&self.meshes).chain(self.tiles.meshes()),
-        );
+        target.render_iter(camera, self.planes.iter().chain(self.tiles.planes()));
+        target.render_iter(camera, self.meshes.iter().chain(self.tiles.meshes()));
     }
 }
 
@@ -357,7 +253,7 @@ pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Resul
     let sky = if let Some(background) = shader.air.sky_background() {
         let material = shader
             .sky
-            .material(vec![shader.light.clone(), air.clone()], ())?;
+            .material(vec![shader.light.unlit.clone(), air.clone()], ())?;
         let mut sky = Scene::default();
         sky.add(
             &shader
@@ -370,33 +266,27 @@ pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Resul
     } else {
         None
     };
-    let mut planes = Scene::default();
-    for plane in &objects.planes {
-        let mesh = shader.shaded_plane(
-            &shader.plane,
-            plane,
-            view.chain(&plane.pose)?,
-            shader.sun_pose,
-            &air,
-        )?;
-        planes.add(&mesh);
+    let capacity = instance_capacity(shader.air.device()) as usize;
+    let mut planes = Vec::new();
+    for chunk in objects.planes.chunks(capacity) {
+        let mut scene = Scene::default();
+        for plane in shader.plane_batch(chunk, view, &shader.light.poses, &shader.plane, &air)? {
+            scene.add(&plane);
+        }
+        planes.push(scene.bake());
     }
-    let mut meshes = Scene::default();
-    for object in &objects.meshes {
-        let mesh = shader.shaded_mesh(
-            &object.shape,
-            &shader.mesh,
-            view.chain(&object.pose)?,
-            object.pose.inverse()?.chain(&shader.sun_pose)?,
-            object.material,
-            &air,
-        )?;
-        meshes.add(&mesh);
+    let mut meshes = Vec::new();
+    for chunk in objects.meshes.chunks(capacity) {
+        let mut scene = Scene::default();
+        for mesh in shader.mesh_batch(chunk, view, &shader.light.poses, &shader.mesh, &air)? {
+            scene.add(&mesh);
+        }
+        meshes.push(scene.bake());
     }
     Ok(Drawing {
         sky,
-        planes: planes.bake(),
-        meshes: meshes.bake(),
+        planes,
+        meshes,
         tiles: shader
             .tile_cache
             .prepare(shader, &objects.tiles, view, atmosphere)?,

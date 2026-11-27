@@ -53,9 +53,14 @@ pub struct Objects {
     pub tiles: Vec<Rc<GroundTile>>,
 }
 
+pub(crate) const MAX_SUNS: usize = 3;
+
+#[derive(Clone, Copy)]
 pub struct Sun {
     pub pose: Pose,
-    pub radiance: [f32; 3],
+    pub surface_radiance: [f32; 3],
+    pub scattering_radiance: [f32; 3],
+    pub ambient: crate::config::SunAmbient,
 }
 
 pub struct World {
@@ -69,7 +74,7 @@ pub struct World {
     plants: Plants,
     vegetation: Vegetation,
     daylight: Daylight,
-    pub sun: Sun,
+    pub suns: Vec<Sun>,
     pub ambient: AmbientLight,
 }
 
@@ -216,13 +221,11 @@ impl World {
                 let maturity = min_maturity + (max_maturity - min_maturity) * samples.next();
                 let yaw = TAU * samples.next();
                 let position = frame.apply_vector(root.apply_vector([1.0, 0.0, 0.0, 0.0]));
-                let light = self.daylight.at(position);
-                if occupied >= species.density(light, vegetation) {
+                let (density, growth) = self.daylight.at(position, species, vegetation);
+                if occupied >= density {
                     continue;
                 }
-                let (shape, material) = self
-                    .plants
-                    .grown(species, maturity * species.growth(light, vegetation));
+                let (shape, material) = self.plants.grown(species, maturity * growth);
                 meshes.push(Object {
                     shape,
                     pose: root.chain(&Pose::from_isometry(Hyperboloid3::rotate_y(yaw))?)?,
@@ -240,29 +243,40 @@ pub fn world(
     patch: Patch,
     ground_objects: impl IntoIterator<Item = Object<Polygon>>,
 ) -> Result<World> {
-    let sun = Sun {
-        pose: Pose::from_isometry(Hyperboloid3::shift_y(config.sun.distance))?,
-        radiance: config.sun.emission,
-    };
     let earth = Pose::identity();
-    let planes = vec![
-        Object {
+    let mut planes = vec![Object {
+        shape: InfinitePlane,
+        pose: earth,
+        material: config.earth.material,
+    }];
+    let mut suns = Vec::with_capacity(config.suns.len());
+    for source in &config.suns {
+        let pose = Pose::from_isometry(
+            Hyperboloid3::shift_x(source.ground_offset[0])
+                .chain(Hyperboloid3::shift_z(source.ground_offset[1]))
+                .chain(Hyperboloid3::shift_y(source.distance)),
+        )?;
+        planes.push(Object {
             shape: InfinitePlane,
-            pose: earth,
-            material: config.earth.material,
-        },
-        Object {
-            shape: InfinitePlane,
-            pose: sun.pose,
-            material: Material::emissive(sun.radiance),
-        },
-    ];
+            pose,
+            material: Material::emissive(source.surface_radiance),
+        });
+        suns.push(Sun {
+            pose,
+            surface_radiance: source.surface_radiance,
+            scattering_radiance: source.scattering_radiance,
+            ambient: source.ambient,
+        });
+    }
+    let daylight = Daylight::new(
+        earth,
+        suns.iter().zip(config.suns.iter().map(|s| &s.vegetation)),
+    )?;
     let mut world = World {
         atmosphere: Atmosphere {
             ground: earth,
             height: config.atmosphere.height,
             background: config.atmosphere.background,
-            scattering: config.atmosphere.scattering,
         },
         objects: Objects {
             planes,
@@ -276,8 +290,8 @@ pub fn world(
         stars: config.stars,
         plants: Plants::new(library, &config.vegetation)?,
         vegetation: config.vegetation.clone(),
-        daylight: Daylight::new(earth, &sun)?,
-        sun,
+        daylight,
+        suns,
         ambient: config.ambient,
     };
     for object in ground_objects {

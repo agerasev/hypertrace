@@ -1,9 +1,13 @@
+struct SurfaceSun {
+    radiance: vec4<f32>, // surface RGB, ambient response factor
+    ambient: vec4<f32>,  // additive fill RGB, ambient response exponent
+}
 struct Lighting {
-    sun: vec4<f32>,
-    night: vec4<f32>, // RGB radiance, ambient response factor
-    day: vec4<f32>,   // RGB radiance, ambient response exponent
+    night: vec4<f32>, // shared night fill RGB, number of Suns
+    suns: array<SurfaceSun, MAX_SUNS>,
 }
 @group(2) @binding(0) var<uniform> lighting: Lighting;
+@group(2) @binding(1) var<uniform> surface_lights: array<array<vec4<f32>, MAX_SUNS>, SURFACES_PER_BATCH>;
 
 // Integrate max(0, N·direction)/pi over a circular cap of uniform radiance.
 // mu is the cosine to its axis; s and c are sin and cos of its angular radius.
@@ -41,27 +45,32 @@ fn illuminate(input: VaryingData) -> vec3<f32> {
     let normal2 = dot(n,n) - nw*nw;
     if normal2 <= 0.0 { return input.emission; }
     let normal = vec4<f32>(n,nw) / sqrt(normal2);
-    let sun = input.sun_plane;
-
-    // P=(k,1)/rho is the unit hyperboloid point. Its signed distance to
-    // the Sun satisfies sinh(d)=g(P,sun)=t/rho, in curvature-radius units.
-    let t = dot(k,sun.xyz) - sun.w;
-    let denom = sqrt(rho2 + t*t);
-    let s = sqrt(rho2)/denom; // sech(d), sine of the apparent angular radius
-    let c = abs(t)/denom;
-    let normal_sun = dot(normal.xyz,sun.xyz) - normal.w*sun.w;
-    let mu = clamp(select(1.0, -1.0, t >= 0.0)*normal_sun*s, -1.0, 1.0);
-    let front = diffuse_cap(mu,s,c);
-    // The signed cosine integral is mu*s². Subtracting it from the
-    // front integral gives the light incident on the back of a thin leaf.
-    let back = max(0.0, front - mu*s*s);
-    // The projected solar disk area (in units of pi) drives the local diffuse fill.
-    let sun_peak = max(lighting.sun.r, max(lighting.sun.g, lighting.sun.b));
-    let daylight = min((sun_peak * s*s) * lighting.night.w, 1.0);
-    let fill = mix(lighting.night.rgb, lighting.day.rgb, pow(daylight, lighting.day.w));
-    return input.emission
-        + input.reflection * (fill + lighting.sun.rgb * front)
-        + input.transmission * (fill + lighting.sun.rgb * back);
+    let planes = array(input.sun_plane_0, input.sun_plane_1, input.sun_plane_2);
+    let rho = sqrt(rho2);
+    var front_light = vec3<f32>(0.0);
+    var back_light = vec3<f32>(0.0);
+    var fill = lighting.night.rgb;
+    for (var i = 0u; i < u32(lighting.night.w); i++) {
+        let light = lighting.suns[i];
+        let sun = planes[i];
+        // For P=(k,1)/rho, the signed distance d satisfies sinh(d)=t/rho.
+        let t = dot(k,sun.xyz) - sun.w;
+        let denom = length(vec2<f32>(rho, t));
+        let s = rho/denom; // sin(angular disk radius) = sech(d)
+        let c = abs(t)/denom;
+        let normal_sun = dot(normal.xyz,sun.xyz) - normal.w*sun.w;
+        let mu = clamp(select(1.0, -1.0, t >= 0.0)*normal_sun*s, -1.0, 1.0);
+        let front = diffuse_cap(mu,s,c);
+        // The signed cosine integral over the whole disk is mu*s².
+        let back = max(0.0, front - mu*s*s);
+        front_light += light.radiance.rgb * front;
+        back_light += light.radiance.rgb * back;
+        let peak = max(light.radiance.r, max(light.radiance.g, light.radiance.b));
+        let daylight = min((peak*s*s)*light.radiance.w, 1.0);
+        fill += light.ambient.rgb * pow(daylight, light.ambient.w);
+    }
+    return input.emission + input.reflection * (fill + front_light)
+        + input.transmission * (fill + back_light);
 }
 
 // Fit overbright highlights into the display gamut while preserving their hue.

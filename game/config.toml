@@ -32,11 +32,12 @@ count = 1536
 seed = 0x33cd831e60109289
 ground_radius = 5.0
 gap = [6, 8]
-cool_color = [0.72, 0.83, 1.0]
-warm_color = [1.0, 0.87, 0.67]
-# Intensity interpolates between the endpoints using U^intensity_exponent.
-intensity = [0.05, 1.25]
-intensity_exponent = 3.0
+# Each star samples a uniform mix of these two linear RGB radiances.
+# These cool and warm endpoints have equal luminance.
+colors = [
+    [0.26325425, 0.30175425, 0.36125425],
+    [0.33874575, 0.29324575, 0.22324575],
+]
 
 [observer]
 # Intrinsic ground displacements along local X, then local Z, in curvature radii.

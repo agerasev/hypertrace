@@ -36,7 +36,7 @@ Values above one are valid. Distances and speeds use curvature radii and seconds
 | `earth`, `sun`, `moon` | Earth material, perpendicular Sun distance and emission, Moon ground location, perpendicular gap, tessellation and material |
 | `ambient` | Night and day fill radiances, response factor and exponent |
 | `atmosphere` | Air layer thickness, RGB scattering coefficients, background sky radiance |
-| `stars` | Number of planes, seed, ground footprint radius, range of gaps above Earth, color and brightness distributions |
+| `stars` | Number of planes, seed, ground footprint radius, range of gaps above Earth, two RGB colors |
 | `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, grid, species occupancy and growth, shapes, vertex colors and materials |
 | `observer`, `view` | Spawn, yaw and pitch, eye height, walk speed, jump height, gravity, window size, field of view, near clip, mouse sensitivity and frame time limit |
 
@@ -94,8 +94,11 @@ gives cool, nearly white fill in daylight and a dim floor at night. Emissive
 materials specify their own linear RGB radiance. Overbright colors retain their
 hue when mapped to the display. The model omits cast shadows.
 
-Stars are distant emissive geodesic planes. The renderer draws the entire
-fixed catalogue together. Walking toward a star's nearest point on Earth
+Stars are distant emissive geodesic planes. Each star draws one uniform
+fraction between zero and one and uses it to interpolate all three channels of
+`stars.colors`. Equal-luminance endpoints give every star the same emitted
+luminance, as in the supplied world. The renderer draws the entire fixed
+catalogue together. Walking toward a star's nearest point on Earth
 makes its disk grow, and walking away shrinks it until it covers less than a
 pixel. Its emitted radiance stays constant. The nearest points are scattered
 uniformly by ground area within a finite disk around noon, so the sky looking

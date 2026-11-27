@@ -9,14 +9,14 @@ use super::{InfinitePlane, Material, Object, Pose, Samples};
 use crate::config::stars::StarField;
 
 pub(super) fn catalogue(settings: &StarField) -> Result<Vec<Object<InfinitePlane>>> {
-    let mut samples = Samples(settings.seed);
     let disk_scale = (0.5 * settings.ground_radius).sinh();
     let [near, far] = settings.gap;
-    let cool = Vec3::from_array(settings.cool_color);
-    let warm = Vec3::from_array(settings.warm_color);
-    let [dim, bright] = settings.intensity;
+    let [start, end] = settings.colors.map(|rgb| Vec3::from_array(rgb).as_dvec3());
     (0..settings.count)
-        .map(|_| {
+        .map(|index| {
+            // The catalogue assigns five sample slots per star. Addressing its
+            // entry directly keeps the seeded constellation stable as colors change.
+            let mut samples = Samples::at_offset(settings.seed, u64::from(index) * 5);
             // Place the foot of the common perpendicular uniformly by area on
             // Earth. A disk of radius r has area 4π sinh²(r/2) in unit curvature.
             let radius = 2.0 * (samples.next().sqrt() * disk_scale).asinh();
@@ -27,13 +27,11 @@ pub(super) fn catalogue(settings: &StarField) -> Result<Vec<Object<InfinitePlane
                     .chain(Hyperboloid3::shift_z(radius))
                     .chain(Hyperboloid3::shift_y(gap)),
             )?;
-            let color = cool.lerp(warm, samples.next() as f32);
-            let intensity =
-                dim + (bright - dim) * (samples.next() as f32).powf(settings.intensity_exponent);
+            let color = start.lerp(end, samples.next()).as_vec3();
             Ok(Object {
                 shape: InfinitePlane,
                 pose,
-                material: Material::Emissive(color * intensity),
+                material: Material::Emissive(color),
             })
         })
         .collect()
@@ -43,18 +41,19 @@ pub(super) fn catalogue(settings: &StarField) -> Result<Vec<Object<InfinitePlane
 mod tests {
     use super::*;
 
-    #[test]
-    fn fixed_catalogue_reproduces_distant_earth_disjoint_planes() -> Result<()> {
-        let settings = StarField {
+    fn field() -> StarField {
+        StarField {
             count: 32,
             seed: 11,
             ground_radius: 4.0,
             gap: [3.0, 6.0],
-            cool_color: [0.4, 0.7, 1.0],
-            warm_color: [1.0, 0.9, 0.5],
-            intensity: [0.01, 0.1],
-            intensity_exponent: 1.5,
-        };
+            colors: [[0.0, 1.0, 2.0], [1.0, 0.0, 2.0]],
+        }
+    }
+
+    #[test]
+    fn fixed_catalogue_reproduces_distant_earth_disjoint_planes() -> Result<()> {
+        let settings = field();
         let first = catalogue(&settings)?;
         let second = catalogue(&settings)?;
         assert_eq!(first.len(), settings.count as usize);
@@ -75,6 +74,41 @@ mod tests {
             assert!(radius_sine(sinh_gap) >= radius_sine(half_sinh_d));
             assert!(radius_sine(half_sinh_d) >= radius_sine(w));
         }
+        Ok(())
+    }
+
+    #[test]
+    fn stars_sample_one_uniform_color_mix_independently_of_placement() -> Result<()> {
+        let settings = StarField {
+            count: 1024,
+            ..field()
+        };
+        let stars = catalogue(&settings)?;
+        let flat = catalogue(&StarField {
+            colors: [[0.17, 1.3, f32::MAX]; 2],
+            ..settings
+        })?;
+        let mut bins = [0; 4];
+        let mut nearest = f64::INFINITY;
+        let mut farthest = 0.0_f64;
+        for (star, plain) in stars.iter().zip(flat) {
+            assert_eq!(star.pose.components()?, plain.pose.components()?);
+            assert_eq!(plain.material.color(), Vec3::new(0.17, 1.3, f32::MAX));
+            let gap = star.pose.apply_vector([0.0, 0.0, 1.0, 0.0])[2].acosh();
+            nearest = nearest.min(gap);
+            farthest = farthest.max(gap);
+
+            let color = star.material.color();
+            let t = color.x;
+            assert!((0.0..=1.0).contains(&t));
+            assert!(color.abs_diff_eq(Vec3::new(t, 1.0 - t, 2.0), 1e-6));
+            bins[((t * 4.0) as usize).min(3)] += 1;
+        }
+        assert!(farthest - nearest > 0.5 * (settings.gap[1] - settings.gap[0]));
+        assert!(
+            bins.iter().all(|&count| (200..320).contains(&count)),
+            "{bins:?}"
+        );
         Ok(())
     }
 }

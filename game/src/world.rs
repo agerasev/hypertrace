@@ -135,8 +135,14 @@ pub(super) fn mesh_with_normals(
 struct Samples(u64);
 
 impl Samples {
+    const STEP: u64 = 0x9e3779b97f4a7c15;
+
+    fn at_offset(seed: u64, offset: u64) -> Self {
+        Self(seed.wrapping_add(Self::STEP.wrapping_mul(offset)))
+    }
+
     fn next(&mut self) -> f64 {
-        self.0 = self.0.wrapping_add(0x9e3779b97f4a7c15);
+        self.0 = self.0.wrapping_add(Self::STEP);
         let mut z = self.0;
         z = (z ^ (z >> 30)).wrapping_mul(0xbf58476d1ce4e5b9);
         z = (z ^ (z >> 27)).wrapping_mul(0x94d049bb133111eb);

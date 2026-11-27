@@ -28,14 +28,14 @@ You can keep walking and turning during the jump.
 
 Pass a TOML file with `--config` on every launch. Copy [config.toml](config.toml)
 to make another world. Each setting is required, and the game reports missing or
-unknown fields at startup. Colors are linear RGB. Distances and speeds use
-curvature radii and seconds.
+unknown fields at startup. Light colors specify the final linear RGB radiance.
+Values above one are valid. Distances and speeds use curvature radii and seconds.
 
 | Section | Settings |
 | --- | --- |
 | `earth`, `sun`, `moon` | Earth material, perpendicular Sun distance and emission, Moon ground location, perpendicular gap, tessellation and material |
-| `ambient` | Night and day fill colors and intensities, response factor and exponent |
-| `atmosphere` | Air layer thickness, scattering color and intensity, background sky radiance |
+| `ambient` | Night and day fill radiances, response factor and exponent |
+| `atmosphere` | Air layer thickness, RGB scattering coefficients, background sky radiance |
 | `stars` | Number of planes, seed, ground footprint radius, range of gaps above Earth, color and brightness distributions |
 | `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, grid, species occupancy and growth, shapes, vertex colors and materials |
 | `observer`, `view` | Spawn, yaw and pitch, eye height, walk speed, jump height, gravity, window size, field of view, near clip, mouse sensitivity and frame time limit |
@@ -47,7 +47,7 @@ jumping eye so the edge of the finite Moon stays hidden. Set `jump_height = 0`
 to disable jumping, or set the star count to zero for an empty catalogue.
 
 Materials accept `kind = "diffuse"` with a color, `"translucent"` with a color
-and transmission fraction, or `"emissive"` with a color and intensity. Each
+and transmission fraction, or `"emissive"` with its emitted RGB color. Each
 plant's material tint multiplies its bark, foliage or blade colors.
 
 ## Permanent day and night

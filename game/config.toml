@@ -5,7 +5,7 @@ material = { kind = "diffuse", color = [0.23, 0.48, 0.10] }
 
 [sun]
 distance = 3.0
-emission = { color = [1.0, 1.0, 0.6], intensity = 100.0 }
+emission = [100.0, 100.0, 60.0]
 
 [moon]
 ground_offset = [-0.971987, 0.020546]
@@ -14,16 +14,16 @@ subdivisions = 128
 material = { kind = "diffuse", color = [0.76, 0.76, 0.74] }
 
 [ambient]
-night = { color = [0.4, 0.5, 0.7], intensity = 0.01 }
-day = { color = [0.65, 0.70, 0.75], intensity = 0.20 }
+night = [0.004, 0.005, 0.007]
+day = [0.13, 0.14, 0.15]
 # mix(night, day, clamp(response_factor * peak_solar_radiance * sin²(disk_radius), 0, 1)^response_exponent)
 response_factor = 1.0
 response_exponent = 1.0
 
 [atmosphere]
 height = 0.45
-background = [0.0, 0.0, 0.0]                              # Sky radiance beyond the atmosphere.
-scattering = { color = [0.1, 0.2, 0.8], intensity = 4.0 }
+background = [0.0, 0.0, 0.0] # Sky radiance beyond the atmosphere.
+scattering = [0.4, 0.8, 3.2]
 
 [stars]
 # World-fixed geodesic planes. The perpendicular feet are uniform by area

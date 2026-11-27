@@ -5,7 +5,7 @@ use anyhow::{Context, Result, ensure};
 use serde::Deserialize;
 use wgame::glam::Vec3;
 
-use crate::world::{AmbientLight, Material};
+use crate::world::Material;
 
 pub(crate) mod observer;
 pub(crate) mod stars;
@@ -21,32 +21,12 @@ pub(crate) struct Config {
     pub earth: Earth,
     pub sun: Sun,
     pub moon: Moon,
-    pub ambient: Ambient,
+    pub ambient: AmbientLight,
     pub atmosphere: Air,
     pub stars: StarField,
     pub observer: Observer,
     pub view: View,
     pub vegetation: Vegetation,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct Light {
-    pub color: [f32; 3],
-    pub intensity: f32,
-}
-
-impl Light {
-    pub fn rgb(self) -> Result<[f32; 3]> {
-        validate_rgb(self.color)?;
-        ensure!(
-            self.intensity.is_finite() && self.intensity >= 0.0,
-            "intensity must be finite and nonnegative"
-        );
-        let rgb = self.color.map(|v| v * self.intensity);
-        validate_rgb(rgb)?;
-        Ok(rgb)
-    }
 }
 
 pub(crate) fn validate_rgb(rgb: [f32; 3]) -> Result<()> {
@@ -62,7 +42,7 @@ pub(crate) fn validate_rgb(rgb: [f32; 3]) -> Result<()> {
 pub(crate) enum MaterialConfig {
     Diffuse { color: [f32; 3] },
     Translucent { color: [f32; 3], transmission: f32 },
-    Emissive { color: [f32; 3], intensity: f32 },
+    Emissive { color: [f32; 3] },
 }
 
 impl MaterialConfig {
@@ -82,9 +62,7 @@ impl MaterialConfig {
                     transmission,
                 }
             }
-            Self::Emissive { color, intensity } => {
-                Material::Emissive(Vec3::from_array(Light { color, intensity }.rgb()?))
-            }
+            Self::Emissive { color } => Material::Emissive(Vec3::from_array(color)),
         };
         validate_rgb(material.color().to_array())?;
         Ok(material)
@@ -101,7 +79,7 @@ pub(crate) struct Earth {
 #[serde(deny_unknown_fields)]
 pub(crate) struct Sun {
     pub distance: f64,
-    pub emission: Light,
+    pub emission: [f32; 3],
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -113,17 +91,20 @@ pub(crate) struct Moon {
     pub material: MaterialConfig,
 }
 
-#[derive(Clone, Debug, Deserialize)]
+/// Diffuse fill on a white receiver, in linear RGB.
+#[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct Ambient {
-    pub night: Light,
-    pub day: Light,
+pub(crate) struct AmbientLight {
+    pub night: [f32; 3],
+    pub day: [f32; 3],
     pub response_factor: f32,
     pub response_exponent: f32,
 }
 
-impl Ambient {
-    pub fn build(&self) -> Result<AmbientLight> {
+impl AmbientLight {
+    fn validate(&self) -> Result<()> {
+        validate_rgb(self.night).context("night")?;
+        validate_rgb(self.day).context("day")?;
         ensure!(
             self.response_factor.is_finite() && self.response_factor >= 0.0,
             "response_factor must be finite and nonnegative"
@@ -132,12 +113,7 @@ impl Ambient {
             self.response_exponent.is_finite() && self.response_exponent > 0.0,
             "response_exponent must be positive and finite"
         );
-        Ok(AmbientLight {
-            day: self.day.rgb().context("day")?,
-            night: self.night.rgb().context("night")?,
-            response_factor: self.response_factor,
-            response_exponent: self.response_exponent,
-        })
+        Ok(())
     }
 }
 
@@ -145,7 +121,7 @@ impl Ambient {
 #[serde(deny_unknown_fields)]
 pub(crate) struct Air {
     pub height: f64,
-    pub scattering: Light,
+    pub scattering: [f32; 3],
     pub background: [f32; 3],
 }
 
@@ -164,7 +140,7 @@ impl Config {
 
     fn validate(&self) -> Result<()> {
         self.earth.material.build().context("earth.material")?;
-        let sun = self.sun.emission.rgb().context("sun.emission")?;
+        validate_rgb(self.sun.emission).context("sun.emission")?;
         ensure!(
             self.sun.distance > 0.0
                 && self.sun.distance.cosh() > 1.0
@@ -178,18 +154,16 @@ impl Config {
             "atmosphere.height must be positive and below sun.distance"
         );
         validate_rgb(self.atmosphere.background).context("atmosphere.background")?;
-        let scattering = self
-            .atmosphere
-            .scattering
-            .rgb()
-            .context("atmosphere.scattering")?;
+        validate_rgb(self.atmosphere.scattering).context("atmosphere.scattering")?;
         ensure!(
-            sun.into_iter()
-                .zip(scattering)
+            self.sun
+                .emission
+                .into_iter()
+                .zip(self.atmosphere.scattering)
                 .all(|(light, beta)| (light * beta).is_finite()),
             "sun.emission times atmosphere.scattering exceeds the shader range"
         );
-        self.ambient.build().context("ambient")?;
+        self.ambient.validate().context("ambient")?;
         self.moon.material.build().context("moon.material")?;
         ensure!(
             self.moon.distance > 0.0
@@ -221,6 +195,19 @@ mod tests {
     use super::*;
 
     const WORLD: &str = include_str!("../config.toml");
+
+    #[test]
+    fn emissive_color_is_the_full_radiance() -> Result<()> {
+        let definition = "kind = 'emissive'\ncolor = [0.125, 0.0, 8.0]";
+        let material: MaterialConfig = toml::from_str(definition)?;
+        assert!(
+            matches!(material.build()?, Material::Emissive(rgb) if rgb.to_array() == [0.125, 0.0, 8.0])
+        );
+        assert!(
+            toml::from_str::<MaterialConfig>(&format!("{definition}\nintensity = 2.0")).is_err()
+        );
+        Ok(())
+    }
 
     #[test]
     fn every_setting_in_the_supplied_world_is_required() -> Result<()> {

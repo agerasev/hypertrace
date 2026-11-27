@@ -18,7 +18,8 @@ use wgpu::util::DeviceExt;
 
 use crate::{
     atmosphere::{AirBindings, Atmosphere},
-    world::{AmbientLight, Material, Objects, Sun},
+    config::AmbientLight,
+    world::{Material, Objects, Sun},
 };
 
 pub(crate) type Pose = Transform<Hyperboloid3>;

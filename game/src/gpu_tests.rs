@@ -1,6 +1,7 @@
 use crate::{
+    config::AmbientLight,
     projection::{self, Drawing, Pose},
-    world::{self, AmbientLight, InfinitePlane, Material, Object, Objects, Sun},
+    world::{self, InfinitePlane, Material, Object, Objects, Sun},
 };
 use anyhow::Result;
 use futures::executor::block_on;

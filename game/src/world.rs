@@ -10,7 +10,7 @@ use wgame::{
 
 use crate::{
     atmosphere::Atmosphere,
-    config::{Config, vegetation::Vegetation},
+    config::{AmbientLight, Config, vegetation::Vegetation},
     projection::Pose,
 };
 
@@ -60,15 +60,6 @@ pub struct Objects {
 pub struct Sun {
     pub pose: Pose,
     pub radiance: [f32; 3],
-}
-
-/// Diffuse fill on a white receiver, in linear RGB.
-#[derive(Clone, Copy)]
-pub struct AmbientLight {
-    pub night: [f32; 3],
-    pub day: [f32; 3],
-    pub response_factor: f32,
-    pub response_exponent: f32,
 }
 
 pub struct World {
@@ -218,7 +209,7 @@ impl World {
 pub fn world(library: &Library, config: &Config, patch: Patch) -> Result<World> {
     let sun = Sun {
         pose: Pose::from_isometry(Hyperboloid3::shift_y(config.sun.distance))?,
-        radiance: config.sun.emission.rgb()?,
+        radiance: config.sun.emission,
     };
     let earth = Pose::identity();
     let mut planes = vec![
@@ -243,7 +234,7 @@ pub fn world(library: &Library, config: &Config, patch: Patch) -> Result<World> 
             ground: earth,
             height: config.atmosphere.height,
             background: config.atmosphere.background,
-            scattering: config.atmosphere.scattering.rgb()?,
+            scattering: config.atmosphere.scattering,
         },
         objects: Objects {
             planes,
@@ -257,7 +248,7 @@ pub fn world(library: &Library, config: &Config, patch: Patch) -> Result<World> 
         vegetation: config.vegetation.clone(),
         daylight: Daylight::new(earth, &sun)?,
         sun,
-        ambient: config.ambient.build()?,
+        ambient: config.ambient,
     })
 }
 

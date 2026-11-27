@@ -21,7 +21,8 @@ mod plants;
 mod stars;
 
 use ecology::{Daylight, Species};
-use ground_cells::Cell;
+pub(crate) use ground_cells::Patch;
+use ground_cells::{RootSampler, TileId};
 use plants::Plants;
 
 #[derive(Clone, Copy, Debug)]
@@ -74,8 +75,9 @@ pub struct World {
     pub(crate) atmosphere: Atmosphere,
     objects: Objects,
     fixed_meshes: Vec<Object<Polygon>>,
-    center: Option<Cell>,
-    cell_meshes: BTreeMap<Cell, Range<usize>>,
+    patch: Patch,
+    center: Option<TileId>,
+    tile_meshes: BTreeMap<TileId, Range<usize>>,
     plants: Plants,
     vegetation: Vegetation,
     daylight: Daylight,
@@ -138,17 +140,10 @@ pub(super) fn mesh_with_normals(
     Ok(shapes.mesh(Mesh::from_arrays(shapes.state(), &vertices, Some(indices))))
 }
 
-// SplitMix64. The cell address fixes each sample stream independently of visit order.
+// SplitMix64. Each tile has a separate stream independent of visit order.
 struct Samples(u64);
 
 impl Samples {
-    fn for_cell(cell: Cell, seed: u64) -> Self {
-        Self(
-            seed ^ (cell.band as u64).wrapping_mul(0x8cb92ba72f3d8dd7)
-                ^ (cell.column as u64).wrapping_mul(0xd6e8feb86659fd93),
-        )
-    }
-
     fn next(&mut self) -> f64 {
         self.0 = self.0.wrapping_add(0x9e3779b97f4a7c15);
         let mut z = self.0;
@@ -156,40 +151,49 @@ impl Samples {
         z = (z ^ (z >> 27)).wrapping_mul(0x94d049bb133111eb);
         ((z ^ (z >> 31)) >> 11) as f64 * (1.0 / (1u64 << 53) as f64)
     }
+
+    /// Stochastic rounding preserves the mean even below one site per pentagon.
+    fn site_count(&mut self, mean: f64) -> u32 {
+        mean.floor() as u32 + u32::from(self.next() < mean.fract())
+    }
 }
 
 impl World {
-    /// Rebuild the local patch only when the observer enters a new ground cell.
+    /// Rebuild the local patch only when the observer enters a new pentagon.
     pub fn objects_near(&mut self, eye: Pose) -> Result<&Objects> {
-        let center = Cell::at(eye, &self.vegetation.grid)?;
-        if self.center != Some(center) {
+        let center = TileId::at(eye)?;
+        if self.center.as_ref() != Some(&center) {
             let mut meshes = Vec::with_capacity(self.objects.meshes.len());
             meshes.extend_from_slice(&self.fixed_meshes);
-            let mut cell_meshes = BTreeMap::new();
-            for cell in center.neighborhood(&self.vegetation.grid)? {
+            let mut tile_meshes = BTreeMap::new();
+            for tile in self.patch.tiles(&center) {
                 let start = meshes.len();
-                if let Some(range) = self.cell_meshes.get(&cell) {
+                if let Some(range) = self.tile_meshes.get(&tile) {
                     meshes.extend_from_slice(&self.objects.meshes[range.clone()]);
                 } else {
-                    self.plant_cell(cell, &mut meshes)?;
+                    self.plant_tile(&tile, &mut meshes)?;
                 }
-                cell_meshes.insert(cell, start..meshes.len());
+                tile_meshes.insert(tile, start..meshes.len());
             }
             self.objects.meshes = meshes;
-            self.cell_meshes = cell_meshes;
+            self.tile_meshes = tile_meshes;
             self.center = Some(center);
         }
         Ok(&self.objects)
     }
 
-    fn plant_cell(&self, cell: Cell, meshes: &mut Vec<Object<Polygon>>) -> Result<()> {
+    fn plant_tile(&self, tile: &TileId, meshes: &mut Vec<Object<Polygon>>) -> Result<()> {
         let vegetation = &self.vegetation;
-        let mut samples = Samples::for_cell(cell, vegetation.seed);
+        let mut samples = Samples(tile.seed(vegetation.seed));
+        let count = samples.site_count(vegetation.mean_sites_per_tile());
+        if count == 0 {
+            return Ok(());
+        }
+        let sampler = RootSampler::new(tile)?;
         let [min_maturity, max_maturity] = vegetation.maturity;
-        // Equal numbers of independent sites per species per unit of intrinsic area.
-        for _ in 0..vegetation.sites_per_species {
+        for _ in 0..count {
             for species in [Species::Deciduous, Species::Pine, Species::Grass] {
-                let root = cell.root(samples.next(), samples.next(), &vegetation.grid)?;
+                let root = sampler.root(&mut samples)?;
                 let occupied = samples.next();
                 let maturity = min_maturity + (max_maturity - min_maturity) * samples.next();
                 let yaw = TAU * samples.next();
@@ -211,7 +215,7 @@ impl World {
     }
 }
 
-pub fn world(library: &Library, config: &Config) -> Result<World> {
+pub fn world(library: &Library, config: &Config, patch: Patch) -> Result<World> {
     let sun = Sun {
         pose: Pose::from_isometry(Hyperboloid3::shift_y(config.sun.distance))?,
         radiance: config.sun.emission.rgb()?,
@@ -247,11 +251,31 @@ pub fn world(library: &Library, config: &Config) -> Result<World> {
         },
         fixed_meshes: vec![moon::moon(library, &config.moon)?],
         center: None,
-        cell_meshes: BTreeMap::new(),
+        tile_meshes: BTreeMap::new(),
+        patch,
         plants: Plants::new(library, &config.vegetation)?,
         vegetation: config.vegetation.clone(),
         daylight: Daylight::new(earth, &sun)?,
         sun,
         ambient: config.ambient.build()?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Samples;
+
+    #[test]
+    fn fractional_site_counts_keep_the_requested_mean() {
+        for mean in [0.0_f64, 0.25, 2.0, 20.625] {
+            let mut samples = Samples(7);
+            let mut total = 0;
+            for _ in 0..16_384 {
+                let n = samples.site_count(mean);
+                assert!((mean.floor() as u32..=mean.ceil() as u32).contains(&n));
+                total += n;
+            }
+            assert!((f64::from(total) / 16_384.0 - mean).abs() < 0.01);
+        }
+    }
 }

@@ -23,7 +23,7 @@ in sync. `Cargo.lock` is currently ignored by this repository.
 
 Hypergame uses Serde 1 with derive support and TOML 1 to read its required
 world configuration. From the workspace root, run
-`cargo run -p hypergame -- --config game/hearth.toml`.
+`cargo run -p hypergame -- --config game/config.toml`.
 
 ## Example ownership
 

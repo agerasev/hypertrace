@@ -10,7 +10,7 @@ its blue color, and stars show through the dark sky at night.
 From the Hypertrace workspace root, run
 
 ```sh
-cargo run --release -p hypergame -- --config game/hearth.toml
+cargo run --release -p hypergame -- --config game/config.toml
 ```
 
 Walk with WASD or the arrow keys. Left-drag to look, or press Tab to capture
@@ -26,7 +26,7 @@ You can keep walking and turning during the jump.
 
 ## Configuring a world
 
-Pass a TOML file with `--config` on every launch. Copy [hearth.toml](hearth.toml)
+Pass a TOML file with `--config` on every launch. Copy [config.toml](config.toml)
 to make another world. Each setting is required, and the game reports missing or
 unknown fields at startup. Colors are linear RGB. Distances and speeds use
 curvature radii and seconds.
@@ -37,7 +37,7 @@ curvature radii and seconds.
 | `ambient` | Night and day fill colors and intensities, response factor and exponent |
 | `atmosphere` | Air layer thickness, scattering color and intensity, background sky radiance |
 | `stars` | Number of planes, seed, ground footprint radius, range of gaps above Earth, color and brightness distributions |
-| `vegetation` | Placement seed, sites per species per cell, maturity, grid, species occupancy and growth, shapes, vertex colors and materials |
+| `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, grid, species occupancy and growth, shapes, vertex colors and materials |
 | `observer`, `view` | Spawn, yaw and pitch, eye height, walk speed, jump height, gravity, window size, field of view, near clip, mouse sensitivity and frame time limit |
 
 The Sun's perpendicular meets Earth at the world origin. Moon and observer
@@ -65,9 +65,20 @@ twenty times less often, a dwarf pine. Each species also grows taller in better
 light. The plants use the direct sunlight at their roots as a fraction of the
 light at permanent noon. [Vegetation model](src/world/ecology.rs)
 
-As you walk, the game populates equal-area cells around you, covering at least
-`1.5R` in every direction. Each cell has its own seed, so turning, jumping,
-or walking back to a grove preserves its plants.
+Vegetation grows on a regular `{5,4}` grid. Each tile is a geodesic pentagon
+with five right angles, and four tiles meet at each corner. Each pentagon
+covers `πR²/2`. The setting `vegetation.site_density_per_species` counts
+candidate roots for one species per `R²`. The supplied density of about
+102.89 gives each species 161 or 162 candidates per tile, chosen by seeded
+rounding to preserve the mean. Roots are sampled uniformly by ground area
+before applying the species' light-dependent occupancy.
+
+Crossing a tile boundary updates the loaded vegetation. The game keeps every
+tile that could come within `view_radius` of the observer's feet anywhere in
+the current pentagon. At `1.5R` this takes 41 tiles, including the current one.
+At `1.0R` the current pentagon and its five edge and five corner neighbors
+suffice. Each tile has a stable address and seed, so returning
+by a different route restores the same plants. [Pentagonal grid](src/world/ground_cells.rs)
 
 Wgame's mesh shader uses a shared uniform for the Sun's radiance. At each
 fragment, the Sun plane fills a disk of incoming directions. If the
@@ -160,7 +171,7 @@ nearby mesh origin.
 ```sh
 cargo test -p hypergame
 WGPU_BACKEND=vulkan cargo test -p hypergame -- --ignored --test-threads=1 --nocapture
-cargo run -p hypergame -- --config game/hearth.toml --smoke
+cargo run -p hypergame -- --config game/config.toml --smoke
 ```
 
 GPU checks read back projected triangles, check occlusion between meshes and

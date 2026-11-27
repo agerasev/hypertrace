@@ -7,7 +7,8 @@ use super::{MaterialConfig, validate_rgb};
 #[serde(deny_unknown_fields)]
 pub(crate) struct Vegetation {
     pub seed: u64,
-    pub sites_per_species: u32,
+    /// Candidate sites for each species per square curvature radius of Earth.
+    pub site_density_per_species: f64,
     pub maturity: [f64; 2],
     pub grid: GroundGrid,
     pub deciduous: Deciduous,
@@ -19,8 +20,6 @@ pub(crate) struct Vegetation {
 #[serde(deny_unknown_fields)]
 pub(crate) struct GroundGrid {
     pub view_radius: f64,
-    pub log_height: f64,
-    pub width: f64,
     pub max_patch_sites: u32,
 }
 
@@ -102,8 +101,16 @@ impl LightResponse {
 }
 
 impl Vegetation {
+    pub(crate) fn mean_sites_per_tile(&self) -> f64 {
+        // Angle defect of a right-angled geodesic pentagon, in square curvature radii.
+        self.site_density_per_species * std::f64::consts::FRAC_PI_2
+    }
+
     pub(crate) fn validate(&self) -> Result<()> {
-        self.grid.validate(self.sites_per_species).context("grid")?;
+        ensure!(
+            (0.0..=f64::from(u32::MAX)).contains(&self.mean_sites_per_tile()),
+            "site_density_per_species must give a finite, nonnegative candidate count per pentagon"
+        );
         let [min, max] = self.maturity;
         ensure!(
             fraction(min) && fraction(max) && min <= max,

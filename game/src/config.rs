@@ -220,7 +220,7 @@ impl Config {
 mod tests {
     use super::*;
 
-    const WORLD: &str = include_str!("../hearth.toml");
+    const WORLD: &str = include_str!("../config.toml");
 
     #[test]
     fn every_setting_in_the_supplied_world_is_required() -> Result<()> {

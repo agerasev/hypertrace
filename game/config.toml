@@ -61,15 +61,14 @@ max_frame_seconds = 0.1      # maximum time advanced in one interactive frame
 
 [vegetation]
 seed = 0
-sites_per_species = 8
+# Candidate roots per species per R². Occupancy and growth still depend on light.
+site_density_per_species = 102.88789102693553
 maturity = [0.65, 1.0]
 
 [vegetation.grid]
 view_radius = 1.5 # Intrinsic radius around the observer, in curvature radii.
-log_height = 0.3  # Logarithmic height of an equal-area band.
-width = 0.3       # Cell width relative to the bottom height of the band.
 # Maximum candidate sites in the visible patch, counting all three species.
-# With sites_per_species = 0 the budget covers the number of cells.
+# With zero density the budget counts pentagons.
 max_patch_sites = 1_048_576
 
 # light_range is the fraction of noon illumination over which occupancy

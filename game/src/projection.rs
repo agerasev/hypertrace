@@ -22,12 +22,17 @@ use crate::{
     world::{Material, Objects, Sun},
 };
 
+mod tiles;
+use tiles::{TileCache, TileDrawing};
+
 pub(crate) type Pose = Transform<Hyperboloid3>;
 
 pub(crate) struct Shader {
     sky: MeshShader<()>,
     air: AirBindings,
     mesh: MeshShader<Instance>,
+    tile_mesh: MeshShader<Instance>,
+    tile_cache: TileCache,
     plane: MeshShader<Instance>,
     plane_quad: Polygon,
     light: MaterialBinding,
@@ -43,11 +48,14 @@ struct Instance {
     transmission: Vec3,
 }
 
+fn instance_capacity(device: &wgpu::Device) -> u64 {
+    let stride = wgame::shapes::shader::InstanceData::<Instance>::bindings().size();
+    (device.limits().max_buffer_size / stride).min(u32::MAX.into())
+}
+
 pub(crate) fn check_plane_capacity(library: &Library, count: u64) -> Result<()> {
     // Earth, Sun and stars share one instanced drawing and one vertex buffer.
-    let stride = wgame::shapes::shader::InstanceData::<Instance>::bindings().size();
-    let capacity =
-        (library.state().device().limits().max_buffer_size / stride).min(u32::MAX.into());
+    let capacity = instance_capacity(library.state().device());
     ensure!(
         count <= capacity,
         "{count} planes exceed the device's {capacity}-plane capacity"
@@ -137,19 +145,12 @@ pub(crate) fn shader(
     } else {
         "encode_srgb(linear)"
     };
-    let mut config = ShaderConfig {
-        module_source: concat!(
-            include_str!("projection.wgsl"),
-            "\n",
-            include_str!("lighting.wgsl"),
-            "\n",
-            include_str!("atmosphere.wgsl")
-        )
-        .into(),
-        varying: Varyings::bindings(),
-        vertex_source: "
+    let surface_vertex = |eye_point: &str| {
+        format!(
+            "
             let local = model_matrix * vertex.position;
-            output.eye_point = place_vertex(instance.real, instance.imag, local);
+            let placed = place_vertex(instance.real, instance.imag, local);
+            output.eye_point = {eye_point};
             output.position = view_matrix * output.eye_point;
             output.local_klein = local.xyz;
             // Spatial Lorentz normals are also Klein tangent-plane covectors.
@@ -163,7 +164,19 @@ pub(crate) fn shader(
             output.emission = instance.tex_color.rgb;
             output.color = view_color * vertex.color;
         "
+        )
+    };
+    let mut config = ShaderConfig {
+        module_source: concat!(
+            include_str!("projection.wgsl"),
+            "\n",
+            include_str!("lighting.wgsl"),
+            "\n",
+            include_str!("atmosphere.wgsl")
+        )
         .into(),
+        varying: Varyings::bindings(),
+        vertex_source: surface_vertex("placed"),
         fragment_color_source: format!(
             "let linear = display_linear(color.rgb * illuminate(input) + air_to_surface(input.eye_point)); color = vec4<f32>({display}, color.a);"
         ),
@@ -185,6 +198,14 @@ pub(crate) fn shader(
     };
     let sky = MeshShader::new(shapes, sky_config, &layouts)?;
     let mesh = MeshShader::new(shapes, config.clone(), &layouts)?;
+    let tile_mesh = MeshShader::new(
+        shapes,
+        ShaderConfig {
+            vertex_source: surface_vertex("place_vertex(air.tile_real, air.tile_imag, placed)"),
+            ..config.clone()
+        },
+        &layouts,
+    )?;
     // The two triangles cover a square. Only its open unit disk is in the plane.
     config
         .fragment_color_source
@@ -194,6 +215,8 @@ pub(crate) fn shader(
         sky,
         air,
         mesh,
+        tile_mesh,
+        tile_cache: TileCache::default(),
         plane,
         plane_quad: plane_quad(library),
         light: MaterialBinding::Uniforms(uniforms),
@@ -280,22 +303,33 @@ pub(crate) struct Drawing {
     sky: Option<BakedScene>,
     planes: BakedScene,
     meshes: BakedScene,
+    tiles: TileDrawing,
 }
 
 impl Drawing {
+    #[cfg(test)]
+    pub(crate) fn ground_batch_count(&self) -> usize {
+        self.tiles.scenes().map(BakedScene::len).sum()
+    }
+
     pub(crate) fn draw(&self, target: &mut impl Target, camera: &Camera) {
+        self.tiles.upload(target.encoder());
         if let Some(sky) = &self.sky {
             target.render(camera, sky);
         }
         // Both passes use the target's depth buffer so a plane can occlude a mesh.
         target.render(camera, &self.planes);
-        target.render(camera, &self.meshes);
+        target.render_iter(
+            camera,
+            std::iter::once(&self.meshes).chain(self.tiles.scenes()),
+        );
     }
 }
 
 pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Result<Drawing> {
     let view = camera.inverse()?;
-    let air = shader.air.frame(view)?;
+    let atmosphere = shader.air.words(view)?;
+    let air = shader.air.binding(&atmosphere);
     let sky = if let Some(background) = shader.air.sky_background() {
         let material = shader
             .sky
@@ -344,6 +378,9 @@ pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Resul
         sky,
         planes: planes.bake(),
         meshes: meshes.bake(),
+        tiles: shader
+            .tile_cache
+            .prepare(shader, &objects.tiles, view, atmosphere)?,
     })
 }
 

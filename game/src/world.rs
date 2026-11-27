@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, f64::consts::TAU, ops::Range};
+use std::{collections::BTreeMap, f64::consts::TAU, rc::Rc};
 
 use anyhow::{Context, Result, ensure};
 use ccgeom::{Geometry3, Hyperboloid3, Space3};
@@ -38,10 +38,18 @@ pub struct Object<S> {
 #[derive(Clone, Copy)]
 pub struct InfinitePlane;
 
+/// A finite group of meshes with poses expressed in one Earth tile's frame.
+#[derive(Clone)]
+pub(crate) struct GroundTile {
+    pub pose: Pose,
+    pub meshes: Vec<Object<Polygon>>,
+}
+
 #[derive(Default)]
 pub struct Objects {
     pub meshes: Vec<Object<Polygon>>,
     pub planes: Vec<Object<InfinitePlane>>,
+    pub tiles: Vec<Rc<GroundTile>>,
 }
 
 pub struct Sun {
@@ -52,10 +60,10 @@ pub struct Sun {
 pub struct World {
     pub(crate) atmosphere: Atmosphere,
     objects: Objects,
-    fixed_meshes: Vec<Object<Polygon>>,
     patch: Patch,
     center: Option<TileId>,
-    tile_meshes: BTreeMap<TileId, Range<usize>>,
+    loaded: BTreeMap<TileId, usize>,
+    placed: BTreeMap<TileId, Vec<Object<Polygon>>>,
     plants: Plants,
     vegetation: Vegetation,
     daylight: Daylight,
@@ -143,45 +151,70 @@ impl Samples {
 }
 
 impl World {
+    /// Place a finite mesh at a world pose. Its foot on Earth selects the
+    /// streaming tile; the complete orientation and height are preserved.
+    pub fn place_on_ground(&mut self, mut object: Object<Polygon>) -> Result<()> {
+        let id = TileId::at(object.pose)?;
+        let frame = id.upright_frame()?;
+        object.pose = frame.inverse()?.chain(&object.pose)?;
+        if let Some(&index) = self.loaded.get(&id) {
+            // A previously prepared drawing may still refer to the old tile.
+            Rc::make_mut(&mut self.objects.tiles[index])
+                .meshes
+                .push(object.clone());
+        }
+        self.placed.entry(id).or_default().push(object);
+        Ok(())
+    }
+
     /// Rebuild the local patch only when the observer enters a new pentagon.
     pub fn objects_near(&mut self, eye: Pose) -> Result<&Objects> {
         let center = TileId::at(eye)?;
         if self.center.as_ref() != Some(&center) {
-            let mut meshes = Vec::with_capacity(self.objects.meshes.len());
-            meshes.extend_from_slice(&self.fixed_meshes);
-            let mut tile_meshes = BTreeMap::new();
-            for tile in self.patch.tiles(&center) {
-                let start = meshes.len();
-                if let Some(range) = self.tile_meshes.get(&tile) {
-                    meshes.extend_from_slice(&self.objects.meshes[range.clone()]);
-                } else {
-                    self.plant_tile(&tile, &mut meshes)?;
-                }
-                tile_meshes.insert(tile, start..meshes.len());
+            let mut tiles = Vec::with_capacity(self.objects.tiles.len());
+            let mut loaded = BTreeMap::new();
+            for id in self.patch.tiles(&center) {
+                let tile = match self.loaded.get(&id) {
+                    Some(&index) => Rc::clone(&self.objects.tiles[index]),
+                    None => Rc::new(self.load_tile(&id)?),
+                };
+                loaded.insert(id, tiles.len());
+                tiles.push(tile);
             }
-            self.objects.meshes = meshes;
-            self.tile_meshes = tile_meshes;
+            self.objects.tiles = tiles;
+            self.loaded = loaded;
             self.center = Some(center);
         }
         Ok(&self.objects)
     }
 
-    fn plant_tile(&self, tile: &TileId, meshes: &mut Vec<Object<Polygon>>) -> Result<()> {
+    fn load_tile(&self, id: &TileId) -> Result<GroundTile> {
+        let pose = id.upright_frame()?;
+        let mut meshes = self.plants_in_tile(id, pose)?;
+        if let Some(placed) = self.placed.get(id) {
+            meshes.extend_from_slice(placed);
+        }
+        Ok(GroundTile { pose, meshes })
+    }
+
+    fn plants_in_tile(&self, tile: &TileId, frame: Pose) -> Result<Vec<Object<Polygon>>> {
         let vegetation = &self.vegetation;
         let mut samples = Samples(tile.seed(vegetation.seed));
         let count = samples.site_count(vegetation.mean_sites_per_tile());
         if count == 0 {
-            return Ok(());
+            return Ok(Vec::new());
         }
-        let sampler = RootSampler::new(tile)?;
+        let sampler = RootSampler::new();
+        let mut meshes = Vec::new();
         let [min_maturity, max_maturity] = vegetation.maturity;
         for _ in 0..count {
             for species in [Species::Deciduous, Species::Pine, Species::Grass] {
-                let root = sampler.root(&mut samples)?;
+                let root = sampler.local_root(&mut samples)?;
                 let occupied = samples.next();
                 let maturity = min_maturity + (max_maturity - min_maturity) * samples.next();
                 let yaw = TAU * samples.next();
-                let light = self.daylight.at(root.apply_vector([1.0, 0.0, 0.0, 0.0]));
+                let position = frame.apply_vector(root.apply_vector([1.0, 0.0, 0.0, 0.0]));
+                let light = self.daylight.at(position);
                 if occupied >= species.density(light, vegetation) {
                     continue;
                 }
@@ -195,11 +228,16 @@ impl World {
                 });
             }
         }
-        Ok(())
+        Ok(meshes)
     }
 }
 
-pub fn world(library: &Library, config: &Config, patch: Patch) -> Result<World> {
+pub fn world(
+    library: &Library,
+    config: &Config,
+    patch: Patch,
+    ground_objects: impl IntoIterator<Item = Object<Polygon>>,
+) -> Result<World> {
     let sun = Sun {
         pose: Pose::from_isometry(Hyperboloid3::shift_y(config.sun.distance))?,
         radiance: config.sun.emission,
@@ -222,7 +260,7 @@ pub fn world(library: &Library, config: &Config, patch: Patch) -> Result<World> 
         planes.len() as u64 + u64::from(config.stars.count),
     )?;
     planes.extend(stars::catalogue(&config.stars)?);
-    Ok(World {
+    let mut world = World {
         atmosphere: Atmosphere {
             ground: earth,
             height: config.atmosphere.height,
@@ -231,23 +269,94 @@ pub fn world(library: &Library, config: &Config, patch: Patch) -> Result<World> 
         },
         objects: Objects {
             planes,
+            meshes: vec![moon::moon(library, &config.moon)?],
             ..Objects::default()
         },
-        fixed_meshes: vec![moon::moon(library, &config.moon)?],
         center: None,
-        tile_meshes: BTreeMap::new(),
+        loaded: BTreeMap::new(),
+        placed: BTreeMap::new(),
         patch,
         plants: Plants::new(library, &config.vegetation)?,
         vegetation: config.vegetation.clone(),
         daylight: Daylight::new(earth, &sun)?,
         sun,
         ambient: config.ambient,
-    })
+    };
+    for object in ground_objects {
+        world.place_on_ground(object)?;
+    }
+    Ok(world)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Samples;
+    use super::*;
+    use crate::gpu_tests::headless_library;
+
+    #[test]
+    #[ignore = "requires a graphics adapter"]
+    fn placed_ground_meshes_survive_streaming_and_only_replace_their_own_tile() -> Result<()> {
+        let library = headless_library()?;
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("config.toml");
+        let mut config = Config::load(&path)?;
+        config.vegetation.site_density_per_species = 0.0;
+        config.stars.count = 0;
+        config.earth.grid.view_radius = 1.0;
+        let patch = Patch::new(&config.earth.grid, 0)?;
+        let shape = mesh(
+            &library,
+            &[
+                ([0.0, 0.0, 1.0], [1.0; 3]),
+                ([0.1, 0.0, 1.0], [1.0; 3]),
+                ([0.0, 0.1, 1.0], [1.0; 3]),
+            ],
+            &[0, 1, 2],
+        )?;
+        let origin = TileId::default();
+        let id = origin.neighbor(0);
+        let frame = id.upright_frame()?;
+        let poses = [
+            frame.move_local([0.1, 0.05, -0.1], [0.2, 0.1, -0.4], 1.0)?,
+            frame.move_local([-0.2, 0.04, 0.0], [0.1, -0.3, 0.7], 1.0)?,
+        ];
+        let object = |pose| Object {
+            shape: shape.clone(),
+            pose,
+            material: Material::emissive([1.0, 0.2, 0.0]),
+        };
+        let mut world = world(&library, &config, patch, [object(poses[0])])?;
+        let loaded = |world: &World, id: &TileId| Rc::clone(&world.objects.tiles[world.loaded[id]]);
+        world.objects_near(Pose::identity())?;
+        let empty = loaded(&world, &origin);
+        let first = loaded(&world, &id);
+        world.objects_near(frame)?;
+        assert!(Rc::ptr_eq(&first, &loaded(&world, &id)));
+        world.place_on_ground(object(poses[1]))?;
+        assert!(Rc::ptr_eq(&empty, &loaded(&world, &origin)));
+        assert_eq!(first.meshes.len(), 1);
+        assert_eq!(loaded(&world, &id).meshes.len(), 2);
+
+        world.objects_near(Pose::from_isometry(Hyperboloid3::shift_z(6.0))?)?;
+        assert!(!world.loaded.contains_key(&id));
+        world.objects_near(frame)?;
+        let restored = loaded(&world, &id);
+        assert_eq!(restored.meshes.len(), 2);
+        for (mesh, pose) in restored.meshes.iter().zip(poses) {
+            let relative = pose.inverse()?.chain(&restored.pose.chain(&mesh.pose)?)?;
+            for axis in 0..4 {
+                let mut basis = [0.0; 4];
+                basis[axis] = 1.0;
+                let mapped = relative.apply_vector(basis);
+                assert!(
+                    mapped
+                        .into_iter()
+                        .zip(basis)
+                        .all(|(a, b)| (a - b).abs() < 1e-12)
+                );
+            }
+        }
+        Ok(())
+    }
 
     #[test]
     fn fractional_site_counts_keep_the_requested_mean() {

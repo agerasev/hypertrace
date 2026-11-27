@@ -107,6 +107,18 @@ impl TileId {
         })
     }
 
+    /// Local +Y points up on Earth, including for odd reflection words.
+    pub(in crate::world) fn upright_frame(&self) -> Result<Pose> {
+        let frame = self.frame()?;
+        if self.flips_normal() {
+            // This half-turn reflects Z and preserves the local pentagon.
+            let half_turn = Pose::from_rows([[0.0, 1.0, 0.0, 0.0], [0.0; 4]])?;
+            frame.chain(&half_turn)
+        } else {
+            Ok(frame)
+        }
+    }
+
     pub(crate) fn at(eye: Pose) -> Result<Self> {
         let mut tile = Self::default();
         let mut relative = eye;

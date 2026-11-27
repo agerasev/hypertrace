@@ -4,6 +4,8 @@ struct AirFrame {
     earth: vec4<f32>,
     sun: vec4<f32>,
     scattering: vec4<f32>, // solar radiance times RGB scattering coefficients, sinh(layer height)
+    tile_real: vec4<f32>,  // tile-to-eye projective quaternion pair
+    tile_imag: vec4<f32>,
 };
 @group(3) @binding(0) var<uniform> air: AirFrame;
 

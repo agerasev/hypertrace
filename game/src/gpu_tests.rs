@@ -27,7 +27,7 @@ const NO_AMBIENT: AmbientLight = AmbientLight {
     response_exponent: 1.0,
 };
 
-fn headless_library() -> Result<Library> {
+pub(crate) fn headless_library() -> Result<Library> {
     let instance =
         wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle_from_env());
     let adapter = block_on(instance.request_adapter(&Default::default()))?;
@@ -171,6 +171,179 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
         };
         assert_eq!(smaller.data()[32 * 64 + 32], color::RED.to_rgba_f16());
         assert!(red_area(&smaller) * 2 < red_area(&image));
+    }
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a graphics adapter"]
+fn queued_tile_drawings_match_world_meshes_from_each_camera() -> Result<()> {
+    use crate::{atmosphere::Atmosphere, world::GroundTile};
+    use std::rc::Rc;
+
+    let library = headless_library()?;
+    let size = (96, 96);
+    let target = || library.texturing().render_texture(size, Default::default());
+    let projection = projection::camera_matrix(size, 0.85, 0.005);
+    let camera = Camera::new(library.state(), projection);
+    let ground = Pose::identity().move_local([12.0, 0.0, 0.0], [0.0, 0.3, 0.0], 1.0)?;
+    let shader = projection::shader(
+        &library,
+        &Sun {
+            pose: ground.move_local([0.0, 1.1, 0.0], [0.0; 3], 1.0)?,
+            radiance: [0.7, 0.9, 0.6],
+        },
+        NO_AMBIENT,
+        Some(Atmosphere {
+            ground,
+            height: 0.6,
+            scattering: [0.3, 0.5, 0.8],
+            background: [0.01; 3],
+        }),
+    )?;
+    let triangle = world::mesh_with_normals(
+        &library,
+        &[
+            ([-0.13, -0.11, 1.0], [0.9, 0.8, 0.7]),
+            ([0.13, -0.11, 1.0], [0.8, 0.7, 0.9]),
+            ([0.0, 0.16, 1.0], [0.7, 0.9, 0.8]),
+        ],
+        &[0, 1, 2],
+        |[_, x, _, _]| Vec3::new(x as f32, 0.7, 1.0),
+    )?;
+    let diamond = world::mesh(
+        &library,
+        &[
+            [-0.12, 0.0, 1.0],
+            [0.0, -0.14, 1.0],
+            [0.12, 0.0, 1.0],
+            [0.0, 0.14, 1.0],
+        ]
+        .map(|point| (point, [1.0; 3])),
+        &[0, 1, 2, 0, 2, 3],
+    )?;
+    let object = |shape: &wgame::shapes::Polygon, position, yaw, scale, emission| -> Result<_> {
+        Ok(Object {
+            shape: shape.scale(scale),
+            pose: Pose::identity().move_local(position, [0.0, yaw, 0.0], 1.0)?,
+            material: Material {
+                reflection: [0.42, 0.33, 0.21],
+                transmission: [0.03, 0.08, 0.16],
+                emission,
+            },
+        })
+    };
+    let tiles = vec![
+        Rc::new(GroundTile {
+            pose: ground,
+            meshes: vec![
+                object(
+                    &triangle,
+                    [-0.21, 0.10, -0.65],
+                    0.15,
+                    0.85,
+                    [0.32, 0.0, 0.0],
+                )?,
+                object(&diamond, [0.0, 0.23, -0.95], -0.20, 0.95, [0.0, 0.32, 0.0])?,
+                object(
+                    &triangle,
+                    [-0.14, 0.42, -0.73],
+                    0.04,
+                    0.8,
+                    [0.32, 0.12, 0.0],
+                )?,
+            ],
+        }),
+        Rc::new(GroundTile {
+            pose: ground.move_local([0.4, 0.0, -0.1], [0.0, 0.25, 0.0], 1.0)?,
+            meshes: vec![object(
+                &triangle,
+                [0.03, 0.07, -0.62],
+                0.1,
+                0.9,
+                [0.0, 0.0, 0.32],
+            )?],
+        }),
+    ];
+    let mut global = Objects::default();
+    for tile in &tiles {
+        for mesh in &tile.meshes {
+            global.meshes.push(Object {
+                pose: tile.pose.chain(&mesh.pose)?,
+                ..mesh.clone()
+            });
+        }
+    }
+    let tiled = Objects {
+        tiles,
+        ..Objects::default()
+    };
+    let eyes = [
+        ground.move_local([0.0, 0.12, 0.0], [0.0; 3], 1.0)?,
+        ground.move_local([0.10, 0.20, 0.04], [-0.04, -0.1, 0.02], 1.0)?,
+    ];
+    let mut reference = target()?;
+    let first = snapshot(
+        &mut reference,
+        &camera,
+        &projection::prepare(&global, eyes[0], &shader)?,
+    )?;
+    let second = snapshot(
+        &mut reference,
+        &camera,
+        &projection::prepare(&global, eyes[1], &shader)?,
+    )?;
+
+    // Both drawings share static tile buffers. Each must see its own eye and
+    // atmosphere even when the queue receives both command buffers together.
+    let drawings = [
+        projection::prepare(&tiled, eyes[0], &shader)?,
+        projection::prepare(&tiled, eyes[1], &shader)?,
+    ];
+    let mut outputs = [target()?, target()?];
+    for (output, drawing) in outputs.iter_mut().zip(drawings.iter()) {
+        // The first tile's triangle, diamond and triangle form two instanced
+        // draws. The second tile's triangle uses a separate tile transform.
+        assert_eq!(drawing.ground_batch_count(), 3);
+        output.clear(color::BLACK);
+        drawing.draw(output, &camera);
+    }
+    let submission = library
+        .state()
+        .queue()
+        .submit(outputs.each_mut().map(RenderTexture::finish));
+    library.state().device().poll(wgpu::PollType::Wait {
+        submission_index: Some(submission),
+        timeout: Some(std::time::Duration::from_secs(30)),
+    })?;
+    for ((output, eye), expected) in outputs.iter_mut().zip(eyes).zip([first, second]) {
+        let actual = block_on(output.readback())?;
+        for (mesh, channel) in global.meshes.iter().zip([0, 1, 0, 2]) {
+            // Compare interior pixels, clear of subpixel rounding at the triangle edges.
+            let [w, x, y, z] = eye
+                .inverse()?
+                .chain(&mesh.pose)?
+                .apply_vector([1.0, 0.0, 0.0, 0.0]);
+            let clip = projection * wgame::glam::Vec4::new(x as f32, y as f32, z as f32, w as f32);
+            let px = (0.5 * (1.0 + clip.x / clip.w) * size.0 as f32) as usize;
+            let py = (0.5 * (1.0 - clip.y / clip.w) * size.1 as f32) as usize;
+            for index in [
+                py * size.0 as usize + px,
+                (py + 1) * size.0 as usize + px + 1,
+            ] {
+                let rgb = |p: Rgba<f16>| Vec3::new(p.r.to_f32(), p.g.to_f32(), p.b.to_f32());
+                let baseline = rgb(expected.data()[index]);
+                assert!(
+                    baseline[channel] > 0.20,
+                    "missing reference mesh at ({px}, {py})"
+                );
+                let pixel = rgb(actual.data()[index]);
+                assert!(
+                    pixel.abs_diff_eq(baseline, 0.009),
+                    "tile {pixel:?} vs world {baseline:?} at ({px}, {py})"
+                );
+            }
+        }
     }
     Ok(())
 }

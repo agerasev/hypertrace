@@ -1,9 +1,9 @@
-//! Vegetation paging on the regular right-angled pentagonal tiling of Earth.
+//! Ground tiles in the regular right-angled pentagonal tiling of Earth.
 use std::{collections::BTreeSet, f64::consts::PI};
 
 use anyhow::{Result, ensure};
 
-use crate::{config::vegetation::GroundGrid, projection::Pose};
+use crate::{config::GroundGrid, projection::Pose};
 
 mod sampling;
 mod tile;
@@ -114,7 +114,7 @@ impl Patch {
         let check_budget = |count: f64| -> Result<()> {
             ensure!(
                 count <= tile_budget as f64,
-                "vegetation patch exceeds max_patch_sites ({})",
+                "ground patch exceeds max_patch_sites ({})",
                 grid.max_patch_sites
             );
             Ok(())

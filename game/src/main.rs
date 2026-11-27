@@ -93,7 +93,7 @@ async fn run(
     let graphics = window.graphics().clone();
     eprintln!("Adapter: {:?}", graphics.adapter().get_info());
     let library = Library::new(&graphics);
-    let mut world = world::world(&library, &config, patch)?;
+    let mut world = world::world(&library, &config, patch, [])?;
     let shader = projection::shader(&library, &world.sun, world.ambient, Some(world.atmosphere))?;
     let start = Walker::new(config.observer)?;
     let mut walker = start;
@@ -296,10 +296,10 @@ fn main() -> Result<()> {
     let path = path.context("missing required --config PATH; use --help")?;
     let config = Config::load(&path)?;
     let patch = world::Patch::new(
-        &config.vegetation.grid,
+        &config.earth.grid,
         config.vegetation.mean_sites_per_tile().ceil() as u32,
     )
-    .with_context(|| format!("invalid vegetation grid in {}", path.display()))?;
+    .with_context(|| format!("invalid earth.grid in {}", path.display()))?;
     let window_config = WindowConfig::default().title("Hypergame").size(if smoke {
         (320, 240)
     } else {

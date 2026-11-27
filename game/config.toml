@@ -3,6 +3,12 @@
 [earth]
 material.reflection = { weight = 1.0, color = [0.23, 0.48, 0.10] }
 
+[earth.grid]
+view_radius = 1.5 # Intrinsic radius around the observer, in curvature radii.
+# Maximum candidate sites in the visible patch, counting all three species.
+# With zero density the budget counts pentagons.
+max_patch_sites = 1_048_576
+
 [sun]
 distance = 3.0
 emission = [100.0, 100.0, 60.0]
@@ -65,12 +71,6 @@ seed = 0
 # Candidate roots per species per R². Occupancy and growth still depend on light.
 site_density_per_species = 102.88789102693553
 maturity = [0.65, 1.0]
-
-[vegetation.grid]
-view_radius = 1.5 # Intrinsic radius around the observer, in curvature radii.
-# Maximum candidate sites in the visible patch, counting all three species.
-# With zero density the budget counts pentagons.
-max_patch_sites = 1_048_576
 
 # light_range is the fraction of noon illumination over which occupancy
 # moves smoothly between its two endpoints. Lower both limits to extend

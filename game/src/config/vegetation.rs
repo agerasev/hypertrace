@@ -12,17 +12,9 @@ pub(crate) struct Vegetation {
     /// Candidate sites for each species per square curvature radius of Earth.
     pub site_density_per_species: f64,
     pub maturity: [f64; 2],
-    pub grid: GroundGrid,
     pub deciduous: Deciduous,
     pub pine: Pine,
     pub grass: Grass,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct GroundGrid {
-    pub view_radius: f64,
-    pub max_patch_sites: u32,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]

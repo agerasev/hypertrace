@@ -40,6 +40,14 @@ pub(crate) fn validate_rgb(rgb: [f32; 3]) -> Result<()> {
 #[serde(deny_unknown_fields)]
 pub(crate) struct Earth {
     pub material: Material,
+    pub grid: GroundGrid,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct GroundGrid {
+    pub view_radius: f64,
+    pub max_patch_sites: u32,
 }
 
 #[derive(Clone, Debug, Deserialize)]

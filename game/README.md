@@ -35,11 +35,11 @@ curvature radii and seconds.
 
 | Section | Settings |
 | --- | --- |
-| `earth`, `sun`, `moon` | Earth material, perpendicular Sun distance and emission, Moon ground location, perpendicular gap, tessellation and material |
+| `earth`, `sun`, `moon` | Earth material and ground grid, perpendicular Sun distance and emission, Moon ground location, perpendicular gap, tessellation and material |
 | `ambient` | Night and day fill radiances, response factor and exponent |
 | `atmosphere` | Air layer thickness, RGB scattering coefficients, background sky radiance |
 | `stars` | Number of planes, seed, ground footprint radius, range of gaps above Earth, two RGB colors |
-| `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, grid, species occupancy and growth, shapes, vertex colors and materials |
+| `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, species occupancy and growth, shapes, vertex colors and materials |
 | `observer`, `view` | Spawn, yaw and pitch, eye height, walk speed, jump height, gravity, window size, field of view, near clip, mouse sensitivity and frame time limit |
 
 The Sun's perpendicular meets Earth at the world origin. Moon and observer
@@ -101,12 +101,20 @@ candidate roots for one species per `R²`. The supplied density of about
 rounding to preserve the mean. Roots are sampled uniformly by ground area
 before applying the species' light-dependent occupancy.
 
-Crossing a tile boundary updates the loaded vegetation. The game keeps every
-tile that could come within `view_radius` of the observer's feet anywhere in
+Crossing a tile boundary updates the loaded ground objects. The game keeps every
+tile that could come within `earth.grid.view_radius` of the observer's feet anywhere in
 the current pentagon. At `1.5R` this takes 41 tiles, including the current one.
 At `1.0R` the current pentagon and its five edge and five corner neighbors
 suffice. Each tile has a stable address and seed, so returning
 by a different route restores the same plants. [Pentagonal grid](src/world/ground_cells.rs)
+
+To place a building, rock, or other finite mesh on Earth, pass its
+`Object<Polygon>` to `World::place_on_ground` with a world-space pose, or
+supply it in the ground objects passed to `world::world` at construction.
+The object's origin projected onto Earth selects its tile. Its height,
+orientation and material are preserved when the tile is loaded again. For
+structures spanning many tiles, place sections in their respective tiles so
+each section streams with the ground beneath it. [Ground objects](src/world.rs)
 
 Wgame's mesh shader uses a shared uniform for the Sun's radiance. At each
 fragment, the Sun plane fills a disk of incoming directions. If the
@@ -175,12 +183,13 @@ where a mesh overlaps a plane.
 
 Mesh creation converts each local point once to a hyperboloid point
 `(W, X, Y, Z)` and uploads its homogeneous representative
-`(X/W, Y/W, Z/W, 1)`, keeping local vertex components bounded. Moving the
-camera composes its inverse pose with each object's pose in CPU `f64`.
-The [vertex shader](src/projection.wgsl) applies
-that relative isometry to the local vertex in `f32`. The eye stays at the
-origin of the rendering frame, looking along negative Z. Canonical poses and
-mesh buffers stay in their original frames.
+`(X/W, Y/W, Z/W, 1)`, keeping local vertex components bounded. For ground
+objects, each loaded tile caches the mesh instances and their object-to-tile
+poses. On movement the host composes the inverse eye pose with each occupied
+tile's pose in `f64`. The vertex shader applies the fixed object-to-tile pose
+followed by the tile-to-eye pose in `f32`. Global objects such as the Moon use
+their own camera-relative poses. The eye stays at the origin of the rendering
+frame, looking along negative Z. [Tile rendering](src/projection/tiles.rs)
 
 For a camera-relative point, `(X/W, Y/W, Z/W)` are its Klein coordinates.
 Geodesic triangles are planar in this model. Passing `(X, Y, Z, W)` to

@@ -3,9 +3,8 @@
 Hypergame is a native first-person triangle rasterizer for hyperbolic space.
 Its Earth and three Suns are geodesic planes. Each Sun is separated from Earth, as in the original
 [`hearth` example](https://github.com/agerasev/hypertrace/blob/20565c3ad9f441358e6a148b98416978133a85d7/main/examples/hearth.rs).
-A finite triangulated horosphere forms the Moon. The opening view looks
-across vegetation toward a warm Sun, a broad red Sun and a small, bright blue
-Sun. Each lights the surfaces and air around it. Stars show through the dark sky.
+A finite triangulated horosphere forms the Moon. The warm, red and blue Suns
+each light the surfaces and air around them. Stars show through the dark sky.
 
 From the Hypertrace workspace root, run
 
@@ -36,7 +35,7 @@ curvature radii and seconds.
 | Section | Settings |
 | --- | --- |
 | `earth`, `moon` | Earth material and ground grid, Moon ground location, perpendicular gap, tessellation and material |
-| `[[suns]]` | One Sun's ground location, perpendicular gap, surface and air radiances, daytime ambient response and vegetation |
+| `[[suns]]` | One Sun's ground location, perpendicular gap, disk, surface and air radiances, daytime ambient response and vegetation |
 | `ambient` | Shared night fill radiance for terrestrial surfaces |
 | `atmosphere` | Air layer thickness and background sky radiance |
 | `stars` | Stars per square curvature radius, seed, range of gaps above Earth, two RGB colors |
@@ -129,7 +128,9 @@ the disk's angular radius `a` satisfies `sin(a) = 1/cosh(d/R)`.
 The shader integrates the incoming light over the part of this disk above
 the receiving face's horizon. Thin grass blades also transmit some direct
 light, so a backlit blade still shows its green color. Each Sun's
-`surface_radiance` colors its visible disk, reflections and transmitted light.
+`disk_radiance` is the linear RGB emission of its visible disk before adding
+foreground air and mapping highlights to the display. Its independent
+`surface_radiance` colors reflections and transmitted light.
 On terrestrial objects, its `ambient.color` adds diffuse fill above the shared
 `ambient.night` floor.
 The weight of that fill is `clamp(response_factor × peak × sin²(a), 0, 1)^response_exponent`,

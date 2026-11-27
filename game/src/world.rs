@@ -273,7 +273,7 @@ pub fn world(
         planes.push(Object {
             shape: InfinitePlane,
             pose,
-            material: Material::emissive(source.surface_radiance),
+            material: Material::emissive(source.disk_radiance),
             domain: LightingDomain::Celestial,
         });
         suns.push(Sun {

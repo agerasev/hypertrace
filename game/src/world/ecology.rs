@@ -123,6 +123,7 @@ mod tests {
         Sun {
             ground_offset: [0.0; 2],
             distance: 1.2,
+            disk_radiance: [1.0; 3],
             surface_radiance: [radiance; 3],
             scattering_radiance: [0.0; 3],
             ambient: SunAmbient {

@@ -404,6 +404,55 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
 
 #[test]
 #[ignore = "requires a graphics adapter"]
+fn configured_sun_disk_and_reflected_sunlight_have_independent_colors() -> Result<()> {
+    let library = headless_library()?;
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("config.toml");
+    let mut config = crate::config::Config::load(&path)?;
+    config.earth.material = Material {
+        reflection: [1.0; 3],
+        ..Material::default()
+    };
+    config.suns.truncate(1);
+    let sun = &mut config.suns[0];
+    sun.ground_offset = [0.0; 2];
+    sun.distance = 1.0;
+    sun.disk_radiance = [2.0, 0.5, 0.0];
+    sun.surface_radiance = [0.0, 0.0, 1.0];
+    sun.ambient.color = [0.0; 3];
+    config.earth.grid.view_radius = 0.1;
+    let patch = world::Patch::new(&config.earth.grid, config.max_sites_per_tile())?;
+    let mut world = world::world(&library, &config, patch, [])?;
+    let shader = projection::shader(&library, &world.suns, NO_AMBIENT, None)?;
+    let surfaces = Objects {
+        planes: world.objects_near(Pose::identity())?.planes.clone(),
+        ..Objects::default()
+    };
+    let size = (33, 33);
+    let mut target = library
+        .texturing()
+        .render_texture(size, Default::default())?;
+    let camera = Camera::new(library.state(), projection::camera_matrix(size, 1.0, 0.005));
+    // From just above noon the upward view sees the display-mapped disk.
+    // The white ground below receives the blue source radiance times sech²(gap).
+    for (pitch, expected) in [
+        (FRAC_PI_2, Vec3::new(1.0, 0.25, 0.0)),
+        (-FRAC_PI_2, Vec3::Z / 1.0_f32.cosh().powi(2)),
+    ] {
+        let eye = Pose::identity().move_local([0.0, 0.1, 0.0], [pitch, 0.0, 0.0], 1.0)?;
+        let drawing = projection::prepare(&surfaces, eye, &shader)?;
+        let image = snapshot(&mut target, &camera, &drawing)?;
+        let pixel = image.data()[image.data().len() / 2];
+        let actual = Vec3::new(pixel.r.to_f32(), pixel.g.to_f32(), pixel.b.to_f32());
+        assert!(
+            actual.abs_diff_eq(expected, 0.006),
+            "{actual} vs {expected}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a graphics adapter"]
 fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<()> {
     let library = headless_library()?;
     // Odd dimensions put the central pixel exactly on the camera's optical axis.

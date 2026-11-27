@@ -67,6 +67,7 @@ pub(crate) struct GroundGrid {
 pub(crate) struct Sun {
     pub ground_offset: [f64; 2],
     pub distance: f64,
+    pub disk_radiance: [f32; 3],
     pub surface_radiance: [f32; 3],
     pub scattering_radiance: [f32; 3],
     pub ambient: SunAmbient,
@@ -81,6 +82,7 @@ impl Sun {
             self.distance.cosh() > 1.0 && self.distance > 0.0 && (origin_w as f32).is_finite(),
             "distance must be positive and the ground_offset and distance must be representable"
         );
+        validate_rgb(self.disk_radiance).context("disk_radiance")?;
         validate_rgb(self.surface_radiance).context("surface_radiance")?;
         validate_rgb(self.scattering_radiance).context("scattering_radiance")?;
         ensure!(
@@ -304,10 +306,19 @@ mod tests {
         let error = Config::parse(&toml::to_string(&document)?).unwrap_err();
         assert!(format!("{error:#}").contains("up to"));
         document["suns"].as_array_mut().unwrap().pop();
-        document["suns"][1]["scattering_radiance"][2] = (-1.0).into();
+        for field in ["disk_radiance", "surface_radiance", "scattering_radiance"] {
+            let mut invalid = document.clone();
+            invalid["suns"][1][field][2] = (-1.0).into();
+            let error = Config::parse(&toml::to_string(&invalid)?).unwrap_err();
+            let message = format!("{error:#}");
+            assert!(message.contains("suns[1]") && message.contains(field));
+        }
+        document["suns"][1]
+            .as_table_mut()
+            .unwrap()
+            .remove("disk_radiance");
         let error = Config::parse(&toml::to_string(&document)?).unwrap_err();
-        let message = format!("{error:#}");
-        assert!(message.contains("suns[1]") && message.contains("scattering_radiance"));
+        assert!(error.to_string().contains("disk_radiance"));
         Ok(())
     }
 

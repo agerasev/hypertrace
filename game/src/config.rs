@@ -160,11 +160,7 @@ impl Config {
                 .is_finite(),
             "invalid moon.distance or moon.ground_offset"
         );
-        ensure!(
-            // An n by n grid needs 6*n² indices and (n+1)² vertices.
-            (1..=(u32::MAX / 6).isqrt()).contains(&self.moon.subdivisions),
-            "moon.subdivisions must fit indexed triangle buffers"
-        );
+        crate::world::moon::HexGrid::new(self.moon.subdivisions)?;
         self.observer.validate().context("observer")?;
         ensure!(
             self.observer.height + self.observer.jump_height < self.moon.distance,

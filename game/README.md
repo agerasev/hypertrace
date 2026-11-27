@@ -168,10 +168,12 @@ with horizontal coordinates `u, v` and positive height `h`. The local origin
 sits at `(0, 0, 1)`. Three indices define a face in the geodesic plane through
 its vertices. One uploaded mesh can be drawn at many poses.
 
-The lunar mesh samples chart height `h=1`. Its interpolated tangent normals
-give the surface continuous shading, while geodesic triangles form the limb.
-In this chart Earth is a hemisphere below the Moon. Every above-ground observer
-below the lunar gap sees a first-hit disk contained in the mesh, including
+The Moon has a regular hexagonal grid with three faces meeting at each vertex.
+The six corners of each hexagon sit at chart height `h=1` and lie in one
+geodesic plane. Its four triangles share a face normal, so sunlight reveals
+the creases between hexagons. Lower `moon.subdivisions` for larger facets.
+Their width across opposite sides is `4 / moon.subdivisions` in the
+horosphere chart. The mesh extends past the lunar limb as seen from Earth, including
 during a jump. [Moon geometry](src/world/moon.rs)
 
 Wgame draws the atmospheric sky first. A depth-tested pass then draws complete

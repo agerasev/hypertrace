@@ -17,7 +17,7 @@ use crate::{
 mod ecology;
 mod ground_cells;
 mod material;
-mod moon;
+pub(crate) mod moon;
 mod plants;
 mod stars;
 

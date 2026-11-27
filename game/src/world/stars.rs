@@ -11,7 +11,8 @@ use crate::config::stars::StarField;
 pub(super) fn catalogue(settings: &StarField) -> Result<Vec<Object<InfinitePlane>>> {
     let disk_scale = (0.5 * settings.ground_radius).sinh();
     let [near, far] = settings.gap;
-    let [start, end] = settings.colors.map(|rgb| Vec3::from_array(rgb).as_dvec3());
+    let start = Vec3::from_array(settings.colors.start).as_dvec3();
+    let end = Vec3::from_array(settings.colors.end).as_dvec3();
     (0..settings.count)
         .map(|index| {
             // The catalogue assigns five sample slots per star. Addressing its
@@ -40,6 +41,7 @@ pub(super) fn catalogue(settings: &StarField) -> Result<Vec<Object<InfinitePlane
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::stars::StarColors;
 
     fn field() -> StarField {
         StarField {
@@ -47,7 +49,10 @@ mod tests {
             seed: 11,
             ground_radius: 4.0,
             gap: [3.0, 6.0],
-            colors: [[0.0, 1.0, 2.0], [1.0, 0.0, 2.0]],
+            colors: StarColors {
+                start: [0.0, 1.0, 2.0],
+                end: [1.0, 0.0, 2.0],
+            },
         }
     }
 
@@ -85,7 +90,10 @@ mod tests {
         };
         let stars = catalogue(&settings)?;
         let flat = catalogue(&StarField {
-            colors: [[0.17, 1.3, f32::MAX]; 2],
+            colors: StarColors {
+                start: [0.17, 1.3, f32::MAX],
+                end: [0.17, 1.3, f32::MAX],
+            },
             ..settings
         })?;
         let mut bins = [0; 4];

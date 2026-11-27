@@ -38,14 +38,31 @@ pub(crate) struct Deciduous {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
+pub(crate) struct PineFoliage {
+    pub lower: [f32; 3],
+    pub middle: [f32; 3],
+    pub upper: [f32; 3],
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct Pine {
     pub height: f64,
     pub bark: [f32; 3],
-    pub foliage: [[f32; 3]; 3],
+    #[serde(deserialize_with = "super::named_colors")]
+    pub foliage: PineFoliage,
     pub material: Material,
     pub ecology: LightResponse,
     pub daylight_range: [f64; 2],
     pub daylight_suppression: f64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct BladeColors {
+    pub root: [f32; 3],
+    pub middle: [f32; 3],
+    pub tip: [f32; 3],
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -55,7 +72,8 @@ pub(crate) struct Grass {
     pub blade_height: [f64; 2],
     pub blade_width: f64,
     pub spread_radius: f64,
-    pub colors: [[f32; 3]; 3],
+    #[serde(deserialize_with = "super::named_colors")]
+    pub colors: BladeColors,
     pub material: Material,
     pub ecology: LightResponse,
 }
@@ -138,9 +156,9 @@ impl Vegetation {
         validate_rgb(self.deciduous.bark).context("deciduous.bark")?;
         validate_rgb(self.deciduous.foliage).context("deciduous.foliage")?;
         validate_rgb(self.pine.bark).context("pine.bark")?;
-        for color in self.pine.foliage {
-            validate_rgb(color).context("pine.foliage")?;
-        }
+        validate_rgb(self.pine.foliage.lower).context("pine.foliage.lower")?;
+        validate_rgb(self.pine.foliage.middle).context("pine.foliage.middle")?;
+        validate_rgb(self.pine.foliage.upper).context("pine.foliage.upper")?;
         ensure!(
             light_interval(self.pine.daylight_range),
             "pine.daylight_range must increase within [0, 1]"
@@ -155,9 +173,9 @@ impl Vegetation {
             "grass.blade_height must be an ordered positive finite interval"
         );
         ensure!(self.grass.blades > 0, "grass.blades must be positive");
-        for color in self.grass.colors {
-            validate_rgb(color).context("grass.colors")?;
-        }
+        validate_rgb(self.grass.colors.root).context("grass.colors.root")?;
+        validate_rgb(self.grass.colors.middle).context("grass.colors.middle")?;
+        validate_rgb(self.grass.colors.tip).context("grass.colors.tip")?;
         Ok(())
     }
 }

@@ -110,9 +110,9 @@ fn deciduous(library: &Library, tree: &Deciduous) -> Result<Polygon> {
 
 fn pine(library: &Library, tree: &Pine) -> Result<Polygon> {
     let mut plant = trunk(tree.height, tree.bark);
-    plant.tapered_rings(tree.height, 7, &[(0.24, 0.29)], 0.73, tree.foliage[0]);
-    plant.tapered_rings(tree.height, 7, &[(0.44, 0.23)], 0.88, tree.foliage[1]);
-    plant.tapered_rings(tree.height, 7, &[(0.64, 0.16)], 1.0, tree.foliage[2]);
+    plant.tapered_rings(tree.height, 7, &[(0.24, 0.29)], 0.73, tree.foliage.lower);
+    plant.tapered_rings(tree.height, 7, &[(0.44, 0.23)], 0.88, tree.foliage.middle);
+    plant.tapered_rings(tree.height, 7, &[(0.64, 0.16)], 1.0, tree.foliage.upper);
     plant.upload(library)
 }
 
@@ -137,17 +137,17 @@ fn grass(library: &Library, tuft: &Grass) -> Result<Polygon> {
             tuft.spread_radius * (7.0 / 37.0),
             0.5 * tuft.blade_width,
             0.0,
-            tuft.colors[0],
+            tuft.colors.root,
         );
         let [c, d] = strip(
             tuft.spread_radius * (18.0 / 37.0),
             tuft.blade_width * (3.5 / 9.0),
             height * 0.80,
-            tuft.colors[1],
+            tuft.colors.middle,
         );
         let tip = plant.vertex(
             [tuft.spread_radius * cos, height, tuft.spread_radius * sin],
-            tuft.colors[2],
+            tuft.colors.tip,
         );
         plant.indices.extend([a, b, c, b, d, c, c, d, tip]);
     }

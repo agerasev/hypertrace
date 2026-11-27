@@ -65,9 +65,10 @@ requires a nonnegative `weight`. Its optional `color` is linear RGB and defaults
 to white. The shader uses `weight × color × vertex color` for that term,
 multiplying channel by channel. Weights are independent. For example, the
 supplied grass sets `material.transmission = { weight = 0.22 }`, so backlighting
-uses the blade's own color. Set tree vertex colors with each species' `bark`
-and `foliage` fields, and blade colors from root to tip with
-`vegetation.grass.colors`.
+uses the blade's own color. Deciduous trees have a `bark` color and a `foliage`
+color. Pines have a `bark` color and three foliage tiers named `foliage.lower`,
+`foliage.middle` and `foliage.upper`. Grass blades use `colors.root`,
+`colors.middle` and `colors.tip` under `vegetation.grass`.
 
 ## Permanent day and night
 
@@ -130,9 +131,9 @@ gives cool, nearly white fill in daylight and a dim floor at night. Overbright
 colors retain their hue when mapped to the display. The model omits cast shadows.
 
 Stars are distant emissive geodesic planes. Each star draws one uniform
-fraction between zero and one and uses it to interpolate all three channels of
-`stars.colors`. Equal-luminance endpoints give every star the same emitted
-luminance, as in the supplied world. The renderer draws the entire fixed
+fraction between zero and one and uses it to interpolate from `stars.colors.start`
+to `stars.colors.end` in linear RGB. Equal-luminance endpoints give every star
+the same emitted luminance. The renderer draws the entire fixed
 catalogue together. Walking toward a star's nearest point on Earth
 makes its disk grow, and walking away shrinks it until it covers less than a
 pixel. Its emitted radiance stays constant. The nearest points are scattered

@@ -2,7 +2,7 @@
 use std::{fs, path::Path};
 
 use anyhow::{Context, Result, ensure};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, de::DeserializeOwned};
 
 use crate::world::Material;
 
@@ -34,6 +34,18 @@ pub(crate) fn validate_rgb(rgb: [f32; 3]) -> Result<()> {
         "RGB components must be finite and nonnegative"
     );
     Ok(())
+}
+
+// A derived struct can also deserialize a sequence by field order. Palette
+// entries must be keyed by name so changing the order cannot recolor a part.
+fn named_colors<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: DeserializeOwned,
+{
+    toml::Table::deserialize(deserializer)?
+        .try_into()
+        .map_err(serde::de::Error::custom)
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -207,6 +219,29 @@ mod tests {
             Ok(())
         }
         check_fields(&table, &table, &mut Vec::new())
+    }
+
+    #[test]
+    fn palettes_require_named_colors() -> Result<()> {
+        let world: toml::Value = toml::from_str(WORLD)?;
+        for path in [
+            &["vegetation", "pine", "foliage"][..],
+            &["vegetation", "grass", "colors"],
+            &["stars", "colors"],
+        ] {
+            let mut document = world.clone();
+            let palette = path
+                .iter()
+                .fold(&mut document, |value, &key| &mut value[key]);
+            let positional = palette.as_table().unwrap().values().cloned().collect();
+            *palette = toml::Value::Array(positional);
+            assert!(
+                Config::parse(&toml::to_string(&document)?).is_err(),
+                "{} accepted a positional palette",
+                path.join(".")
+            );
+        }
+        Ok(())
     }
 
     #[test]

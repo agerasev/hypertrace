@@ -39,11 +39,8 @@ seed = 0x33cd831e60109289
 ground_radius = 5.0
 gap = [6, 8]
 # Each star samples a uniform mix of these two linear RGB radiances.
-# These cool and warm endpoints have equal luminance.
-colors = [
-    [0.26325425, 0.30175425, 0.36125425],
-    [0.33874575, 0.29324575, 0.22324575],
-]
+colors.start = [0.26325425, 0.30175425, 0.36125425]
+colors.end = [0.33874575, 0.29324575, 0.22324575]
 
 [observer]
 # Intrinsic ground displacements along local X, then local Z, in curvature radii.
@@ -91,8 +88,9 @@ ecology = { light_range = [
 [vegetation.pine]
 height = 0.055
 bark = [0.29, 0.14, 0.055]
-# Foliage tiers from the bottom to the tip.
-foliage = [[0.07, 0.32, 0.14], [0.095, 0.39, 0.15], [0.15, 0.47, 0.18]]
+foliage.lower = [0.07, 0.32, 0.14]
+foliage.middle = [0.095, 0.39, 0.15]
+foliage.upper = [0.15, 0.47, 0.18]
 material.reflection = { weight = 1.0 }
 ecology = { light_range = [
     2e-6,
@@ -110,8 +108,9 @@ blades = 9
 blade_height = [0.004, 0.0085]
 blade_width = 0.00225
 spread_radius = 0.00925
-# Vertex tints from root to tip.
-colors = [[0.18, 0.39, 0.06], [0.28, 0.53, 0.09], [0.35, 0.61, 0.13]]
+colors.root = [0.18, 0.39, 0.06]
+colors.middle = [0.28, 0.53, 0.09]
+colors.tip = [0.35, 0.61, 0.13]
 material.reflection = { weight = 0.78 }
 material.transmission = { weight = 0.22 }
 ecology = { light_range = [

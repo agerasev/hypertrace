@@ -60,6 +60,6 @@ pub(super) fn moon(library: &Library, moon: &Moon) -> Result<Object<Polygon>> {
     Ok(Object {
         shape,
         pose,
-        material: moon.material.build()?,
+        material: moon.material,
     })
 }

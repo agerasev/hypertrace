@@ -16,6 +16,7 @@ use crate::{
 
 mod ecology;
 mod ground_cells;
+mod material;
 mod moon;
 mod plants;
 mod stars;
@@ -23,22 +24,8 @@ mod stars;
 use ecology::{Daylight, Species};
 pub(crate) use ground_cells::Patch;
 use ground_cells::{RootSampler, TileId};
+pub(crate) use material::Material;
 use plants::Plants;
-
-#[derive(Clone, Copy, Debug)]
-pub enum Material {
-    Diffuse(Vec3),
-    Translucent { color: Vec3, transmission: f32 },
-    Emissive(Vec3),
-}
-
-impl Material {
-    pub fn color(&self) -> Vec3 {
-        match *self {
-            Self::Diffuse(color) | Self::Translucent { color, .. } | Self::Emissive(color) => color,
-        }
-    }
-}
 
 #[derive(Clone, Copy)]
 pub struct Object<S> {
@@ -222,12 +209,12 @@ pub fn world(library: &Library, config: &Config, patch: Patch) -> Result<World> 
         Object {
             shape: InfinitePlane,
             pose: earth,
-            material: config.earth.material.build()?,
+            material: config.earth.material,
         },
         Object {
             shape: InfinitePlane,
             pose: sun.pose,
-            material: Material::Emissive(Vec3::from_array(sun.radiance)),
+            material: Material::emissive(sun.radiance),
         },
     ];
     crate::projection::check_plane_capacity(

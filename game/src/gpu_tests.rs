@@ -99,12 +99,12 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
             meshes: vec![
                 Object {
                     shape: near.clone(),
-                    material: Material::Emissive(Vec3::ONE),
+                    material: Material::emissive([1.0; 3]),
                     pose: frame.move_local([0.0, 0.0, -2_f64.ln()], [0.0; 3], 1.0)?,
                 },
                 Object {
                     shape: far.clone(),
-                    material: Material::Emissive(Vec3::ONE),
+                    material: Material::emissive([1.0; 3]),
                     pose: frame.move_local([0.0, 0.0, -3_f64.ln()], [0.0; 3], 1.0)?,
                 },
             ],
@@ -147,7 +147,7 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
         objects.planes.push(Object {
             shape: InfinitePlane,
             pose: frame.move_local([0.0, 0.0, -0.7], [FRAC_PI_2, 0.0, 0.0], 1.0)?,
-            material: Material::Emissive(Vec3::Y),
+            material: Material::emissive([0.0, 1.0, 0.0]),
         });
         let drawing = projection::prepare(&objects, frame, &shader)?;
         let image = snapshot(&mut target, &projection_camera, &drawing)?;
@@ -199,7 +199,11 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         }],
         ..Objects::default()
     };
-    let earth = plane(Pose::identity(), Material::Diffuse(Vec3::ONE));
+    let white = Material {
+        reflection: [1.0; 3],
+        ..Material::default()
+    };
+    let earth = plane(Pose::identity(), white);
     let above = |foot: Pose, height: f64| {
         foot.move_local(
             [0.0, height, 0.0],
@@ -242,36 +246,71 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     let light = illuminated(sun, [1.0; 3])?;
     let moon_height = 0.35;
     let moon_pose = Pose::identity().move_local([0.0, moon_height, 0.0], [0.0; 3], 1.0)?;
-    let moon = plane(moon_pose, Material::Diffuse(Vec3::ONE));
+    let moon = plane(moon_pose, white);
     check_center(
         &render(&moon, above(moon_pose, 0.2)?, &light)?,
         (gap - moon_height).cosh().recip().powi(2),
     );
     check_center(&render(&moon, above(moon_pose, -0.2)?, &light)?, 0.0);
 
-    // A finite triangle on the same plane divides the incident radiance between its two sides.
+    // At normal incidence the entire solar disc lies on one side of the surface.
+    // Moving the eye across it exchanges the reflection and transmission terms.
+    let mixed = Material {
+        reflection: [0.4, 0.12, 0.0],
+        transmission: [0.0, 0.2, 0.55],
+        emission: [0.05, 0.025, 0.04],
+    };
+    let tint = [0.7, 0.85, 0.6];
     let leaf = Objects {
         meshes: vec![Object {
             shape: world::mesh(
                 &library,
-                &[[-0.2, 0.0, 0.8], [0.2, 0.0, 0.8], [0.0, 0.0, 1.2]]
-                    .map(|point| (point, [1.0; 3])),
+                &[[-0.2, 0.0, 0.8], [0.2, 0.0, 0.8], [0.0, 0.0, 1.2]].map(|point| (point, tint)),
                 &[0, 1, 2],
             )?,
             pose: moon_pose,
-            material: Material::Translucent {
-                color: Vec3::ONE,
-                transmission: 0.25,
-            },
+            material: mixed,
         }],
         ..Objects::default()
     };
-    let leaf_front = render(&leaf, above(moon_pose, 0.2)?, &light)?;
-    let leaf_back = render(&leaf, above(moon_pose, -0.2)?, &light)?;
-    let red = |frame: &Image<Rgba<f16>>| frame.data()[CENTER * WIDTH + CENTER].r.to_f32();
-    assert!(red(&leaf_back) > 0.0 && red(&leaf_back) < red(&leaf_front));
-    let total = f64::from(red(&leaf_front) + red(&leaf_back));
-    assert!((total - (gap - moon_height).cosh().recip().powi(2)).abs() < 0.006);
+    let sunlight = [0.8, 0.45, 0.7];
+    let ambient = [0.06, 0.09, 0.12];
+    let colored = projection::shader(
+        &library,
+        &Sun {
+            pose: sun,
+            radiance: sunlight,
+        },
+        AmbientLight {
+            night: ambient,
+            day: ambient,
+            ..NO_AMBIENT
+        },
+        None,
+    )?;
+    let extinguished = illuminated(sun, [0.0; 3])?;
+    let disc = (gap - moon_height).cosh().recip().powi(2) as f32;
+    for (surface, tint) in [(plane(moon_pose, mixed), [1.0; 3]), (leaf, tint)] {
+        for (light, height, direct, fill) in [
+            (&colored, 0.2, mixed.reflection, ambient),
+            (&colored, -0.2, mixed.transmission, ambient),
+            (&extinguished, 0.2, [0.0; 3], [0.0; 3]),
+        ] {
+            let frame = render(&surface, above(moon_pose, height)?, light)?;
+            let p = frame.data()[CENTER * WIDTH + CENTER];
+            for (i, value) in [p.r, p.g, p.b].into_iter().enumerate() {
+                let expected = tint[i]
+                    * (mixed.emission[i]
+                        + (mixed.reflection[i] + mixed.transmission[i]) * fill[i]
+                        + direct[i] * disc * sunlight[i]);
+                let actual = value.to_f32();
+                assert!(
+                    (actual - expected).abs() < 0.001 + 0.009 * expected,
+                    "surface tint {tint:?}, eye height {height}, channel {i}: {actual} vs {expected}"
+                );
+            }
+        }
+    }
 
     // Tilt the vertex normals of a flat receiver. Their spatial components
     // interpolate to (0.5,1,0) on the axis; the analytic disk is above its
@@ -286,7 +325,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
                 |[w, x, _, _]| Vec3::new((0.5 + 2.0 * x / w) as f32, 1.0, 0.0),
             )?,
             pose: Pose::identity(),
-            material: Material::Diffuse(Vec3::ONE),
+            material: white,
         }],
         ..Objects::default()
     };
@@ -309,7 +348,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         (a - a.sin() * a.cos()) / PI,
     );
 
-    let emitter = plane(sun, Material::Emissive(Vec3::ONE));
+    let emitter = plane(sun, Material::emissive([1.0; 3]));
     let looking_up = Pose::identity().move_local([0.0; 3], [FRAC_PI_2, 0.0, 0.0], 1.0)?;
     let frame = render(&emitter, looking_up, &light)?;
     // At this distance the disc's image radius is 32.5/sinh(gap) pixels.
@@ -323,7 +362,6 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         color::BLACK.to_rgba_f16()
     );
 
-    let extinguished = illuminated(sun, [0.0; 3])?;
     check_center(&render(&moon, above(moon_pose, 0.2)?, &extinguished)?, 0.0);
     check_center(&render(&emitter, looking_up, &extinguished)?, 1.0);
 
@@ -420,7 +458,7 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
             objects.planes.push(Object {
                 shape: InfinitePlane,
                 pose: foot.move_local([0.0, eye_height + distance, 0.0], [0.0; 3], 1.0)?,
-                material: Material::Emissive(Vec3::splat(0.08)),
+                material: Material::emissive([0.08; 3]),
             });
             0.08
         } else {

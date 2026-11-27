@@ -1,7 +1,9 @@
 use anyhow::{Context, Result, ensure};
 use serde::Deserialize;
 
-use super::{MaterialConfig, validate_rgb};
+use crate::world::Material;
+
+use super::validate_rgb;
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -38,7 +40,7 @@ pub(crate) struct Deciduous {
     pub height: f64,
     pub bark: [f32; 3],
     pub foliage: [f32; 3],
-    pub material: MaterialConfig,
+    pub material: Material<f32>,
     pub ecology: LightResponse,
 }
 
@@ -48,7 +50,7 @@ pub(crate) struct Pine {
     pub height: f64,
     pub bark: [f32; 3],
     pub foliage: [[f32; 3]; 3],
-    pub material: MaterialConfig,
+    pub material: Material<f32>,
     pub ecology: LightResponse,
     pub daylight_range: [f64; 2],
     pub daylight_suppression: f64,
@@ -62,7 +64,7 @@ pub(crate) struct Grass {
     pub blade_width: f64,
     pub spread_radius: f64,
     pub colors: [[f32; 3]; 3],
-    pub material: MaterialConfig,
+    pub material: Material<f32>,
     pub ecology: LightResponse,
 }
 
@@ -135,7 +137,7 @@ impl Vegetation {
             ("grass", &self.grass.material, self.grass.ecology),
         ] {
             material
-                .build()
+                .validate()
                 .with_context(|| format!("{name}.material"))?;
             ecology
                 .validate()

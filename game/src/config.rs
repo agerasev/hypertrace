@@ -3,7 +3,6 @@ use std::{fs, path::Path};
 
 use anyhow::{Context, Result, ensure};
 use serde::Deserialize;
-use wgame::glam::Vec3;
 
 use crate::world::Material;
 
@@ -37,42 +36,10 @@ pub(crate) fn validate_rgb(rgb: [f32; 3]) -> Result<()> {
     Ok(())
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
-pub(crate) enum MaterialConfig {
-    Diffuse { color: [f32; 3] },
-    Translucent { color: [f32; 3], transmission: f32 },
-    Emissive { color: [f32; 3] },
-}
-
-impl MaterialConfig {
-    pub fn build(&self) -> Result<Material> {
-        let material = match *self {
-            Self::Diffuse { color } => Material::Diffuse(Vec3::from_array(color)),
-            Self::Translucent {
-                color,
-                transmission,
-            } => {
-                ensure!(
-                    (0.0..=1.0).contains(&transmission),
-                    "transmission must be in [0, 1]"
-                );
-                Material::Translucent {
-                    color: Vec3::from_array(color),
-                    transmission,
-                }
-            }
-            Self::Emissive { color } => Material::Emissive(Vec3::from_array(color)),
-        };
-        validate_rgb(material.color().to_array())?;
-        Ok(material)
-    }
-}
-
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Earth {
-    pub material: MaterialConfig,
+    pub material: Material,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -88,7 +55,7 @@ pub(crate) struct Moon {
     pub ground_offset: [f64; 2],
     pub distance: f64,
     pub subdivisions: u32,
-    pub material: MaterialConfig,
+    pub material: Material,
 }
 
 /// Diffuse fill on a white receiver, in linear RGB.
@@ -139,7 +106,7 @@ impl Config {
     }
 
     fn validate(&self) -> Result<()> {
-        self.earth.material.build().context("earth.material")?;
+        self.earth.material.validate().context("earth.material")?;
         validate_rgb(self.sun.emission).context("sun.emission")?;
         ensure!(
             self.sun.distance > 0.0
@@ -164,7 +131,7 @@ impl Config {
             "sun.emission times atmosphere.scattering exceeds the shader range"
         );
         self.ambient.validate().context("ambient")?;
-        self.moon.material.build().context("moon.material")?;
+        self.moon.material.validate().context("moon.material")?;
         ensure!(
             self.moon.distance > 0.0
                 && (self.moon.distance.cosh()
@@ -195,19 +162,6 @@ mod tests {
     use super::*;
 
     const WORLD: &str = include_str!("../config.toml");
-
-    #[test]
-    fn emissive_color_is_the_full_radiance() -> Result<()> {
-        let definition = "kind = 'emissive'\ncolor = [0.125, 0.0, 8.0]";
-        let material: MaterialConfig = toml::from_str(definition)?;
-        assert!(
-            matches!(material.build()?, Material::Emissive(rgb) if rgb.to_array() == [0.125, 0.0, 8.0])
-        );
-        assert!(
-            toml::from_str::<MaterialConfig>(&format!("{definition}\nintensity = 2.0")).is_err()
-        );
-        Ok(())
-    }
 
     #[test]
     fn every_setting_in_the_supplied_world_is_required() -> Result<()> {

@@ -46,9 +46,16 @@ along the normal at the resulting foot. Keep the lunar gap above the highest
 jumping eye so the edge of the finite Moon stays hidden. Set `jump_height = 0`
 to disable jumping, or set the star count to zero for an empty catalogue.
 
-Materials accept `kind = "diffuse"` with a color, `"translucent"` with a color
-and transmission fraction, or `"emissive"` with its emitted RGB color. Each
-plant's material tint multiplies its bark, foliage or blade colors.
+Every material has three required coefficients. `reflection` weights light
+arriving on the visible side, `transmission` weights light arriving on the
+opposite side, and `emission` adds light of its own. Both lit terms receive
+ambient light. The shader adds the three contributions in linear RGB, with no
+requirement that the coefficients sum to one.
+
+Earth and Moon use an RGB triple for each coefficient, so a surface can reflect
+one color and emit another. Plants use three scalar coefficients with their
+bark, foliage or blade vertex colors. The supplied grass uses
+`{ reflection = 0.78, transmission = 0.22, emission = 0.0 }`.
 
 ## Permanent day and night
 
@@ -90,9 +97,8 @@ light, so a backlit blade still shows its green color. Direct sunlight is slight
 yellow in the supplied world. The shader interpolates between the night and day
 ambient radiances with weight `clamp(factor × peak × sin²(a), 0, 1)^exponent`,
 where `peak` is the largest RGB component of the Sun's emitted radiance. This
-gives cool, nearly white fill in daylight and a dim floor at night. Emissive
-materials specify their own linear RGB radiance. Overbright colors retain their
-hue when mapped to the display. The model omits cast shadows.
+gives cool, nearly white fill in daylight and a dim floor at night. Overbright
+colors retain their hue when mapped to the display. The model omits cast shadows.
 
 Stars are distant emissive geodesic planes. Each star draws one uniform
 fraction between zero and one and uses it to interpolate all three channels of
@@ -123,8 +129,9 @@ extending to the ideal horizon. RGB scattering strengths favor blue.
 
 Each `Object<S>` has a shape, a hyperbolic pose, and a material. Earth, Sun,
 and stars use the `InfinitePlane` shape. The Moon, trees, and grass use indexed
-Wgame polygons. Either shape can have a diffuse, translucent, or emissive material.
-The material tint multiplies the vertex colors. [Scene construction](src/world.rs)
+Wgame polygons. Both shapes use the same material blend. Transmission lights
+the backlit portion of a surface, which still occludes objects behind it.
+[Scene construction](src/world.rs)
 
 Mesh vertices use object-local Poincaré half-space coordinates `(u, v, h)`,
 with horizontal coordinates `u, v` and positive height `h`. The local origin

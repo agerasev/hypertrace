@@ -18,13 +18,15 @@ fn diffuse_cap(mu: f32, s: f32, c: f32) -> f32 {
     return max(0.0, (cap_arc*s*s*mu + horizon_arc - c*q)/PI);
 }
 
-fn illuminate(input: VaryingData, albedo: vec3<f32>) -> vec3<f32> {
+fn illuminate(input: VaryingData) -> vec3<f32> {
     let k = input.local_klein;
     // The fragment's visible face points toward the eye; screen Y grows down.
     let face = cross(dpdy(k), dpdx(k));
     let rho2 = 1.0 - dot(k,k);
-    if input.material.x > 0.5 { return albedo; }
-    if rho2 <= 0.0 { return vec3<f32>(0.0); }
+    let unlit = all(input.reflection == vec3<f32>(0.0)) && all(input.transmission == vec3<f32>(0.0));
+    if rho2 <= 0.0 || unlit {
+        return input.emission;
+    }
 
     // Orient the interpolated vertex normal to the visible side of the triangle.
     var n = face;
@@ -37,7 +39,7 @@ fn illuminate(input: VaryingData, albedo: vec3<f32>) -> vec3<f32> {
     // in its object frame, where finite meshes and nearby plane patches live.
     let nw = dot(n,k);
     let normal2 = dot(n,n) - nw*nw;
-    if normal2 <= 0.0 { return vec3<f32>(0.0); }
+    if normal2 <= 0.0 { return input.emission; }
     let normal = vec4<f32>(n,nw) / sqrt(normal2);
     let sun = input.sun_plane;
 
@@ -57,7 +59,9 @@ fn illuminate(input: VaryingData, albedo: vec3<f32>) -> vec3<f32> {
     let sun_peak = max(lighting.sun.r, max(lighting.sun.g, lighting.sun.b));
     let daylight = min((sun_peak * s*s) * lighting.night.w, 1.0);
     let fill = mix(lighting.night.rgb, lighting.day.rgb, pow(daylight, lighting.day.w));
-    return albedo * (fill + lighting.sun.rgb * mix(front, back, input.material.y));
+    return input.emission
+        + input.reflection * (fill + lighting.sun.rgb * front)
+        + input.transmission * (fill + lighting.sun.rgb * back);
 }
 
 // Fit overbright highlights into the display gamut while preserving their hue.

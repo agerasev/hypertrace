@@ -31,7 +31,7 @@ pub(super) fn catalogue(settings: &StarField) -> Result<Vec<Object<InfinitePlane
             Ok(Object {
                 shape: InfinitePlane,
                 pose,
-                material: Material::Emissive(color),
+                material: Material::emissive(color.to_array()),
             })
         })
         .collect()
@@ -59,7 +59,7 @@ mod tests {
         assert_eq!(first.len(), settings.count as usize);
         for (star, same) in first.iter().zip(second) {
             assert_eq!(star.pose.components()?, same.pose.components()?);
-            assert_eq!(star.material.color(), same.material.color());
+            assert_eq!(star.material.emission, same.material.emission);
 
             let [w, x, y, z] = star.pose.apply_vector([0.0, 0.0, 1.0, 0.0]);
             // The two unit spacelike plane normals have inner product cosh(gap).
@@ -93,12 +93,12 @@ mod tests {
         let mut farthest = 0.0_f64;
         for (star, plain) in stars.iter().zip(flat) {
             assert_eq!(star.pose.components()?, plain.pose.components()?);
-            assert_eq!(plain.material.color(), Vec3::new(0.17, 1.3, f32::MAX));
+            assert_eq!(plain.material.emission, [0.17, 1.3, f32::MAX]);
             let gap = star.pose.apply_vector([0.0, 0.0, 1.0, 0.0])[2].acosh();
             nearest = nearest.min(gap);
             farthest = farthest.max(gap);
 
-            let color = star.material.color();
+            let color = Vec3::from_array(star.material.emission);
             let t = color.x;
             assert!((0.0..=1.0).contains(&t));
             assert!(color.abs_diff_eq(Vec3::new(t, 1.0 - t, 2.0), 1e-6));

@@ -5,7 +5,7 @@ use hypertrace_scene::Transform;
 use wgame::{
     Library,
     gfx::{BakedScene, Camera, DepthMode, Scene, Target},
-    glam::{Mat4, Vec2, Vec3, Vec4, camera::rh::proj::directx},
+    glam::{Mat4, Vec3, Vec4, camera::rh::proj::directx},
     shader::Attribute,
     shapes::{
         Mesh, Polygon,
@@ -39,7 +39,8 @@ struct Instance {
     real: Vec4,
     imag: Vec4,
     sun_plane: Vec4,
-    material: Vec2, // (emissive, diffuse transmission fraction)
+    reflection: Vec3,
+    transmission: Vec3,
 }
 
 pub(crate) fn check_plane_capacity(library: &Library, count: u64) -> Result<()> {
@@ -60,7 +61,9 @@ struct Varyings {
     local_klein: Vec3,
     smooth_normal: Vec3,
     sun_plane: Vec4,
-    material: Vec2,
+    reflection: Vec3,
+    transmission: Vec3,
+    emission: Vec3,
 }
 
 pub(crate) fn camera_matrix(
@@ -155,11 +158,14 @@ pub(crate) fn shader(
             let c = model_matrix[2].xyz;
             output.smooth_normal = mat3x3<f32>(cross(b,c), cross(c,a), cross(a,b)) * vertex.normal;
             output.sun_plane = instance.sun_plane;
-            output.material = instance.material;
+            output.reflection = instance.reflection;
+            output.transmission = instance.transmission;
+            output.emission = instance.tex_color.rgb;
+            output.color = view_color * vertex.color;
         "
         .into(),
         fragment_color_source: format!(
-            "let linear = display_linear(illuminate(input, color.rgb) + air_to_surface(input.eye_point)); color = vec4<f32>({display}, color.a);"
+            "let linear = display_linear(color.rgb * illuminate(input) + air_to_surface(input.eye_point)); color = vec4<f32>({display}, color.a);"
         ),
         ..Default::default()
     };
@@ -247,19 +253,7 @@ impl Shader {
         material: Material,
         air: &MaterialBinding,
     ) -> Result<MaterialMesh<Instance>> {
-        let color = material.color();
-        ensure!(color.is_finite(), "invalid material color");
-        let (emission, transmission) = match material {
-            Material::Diffuse(_) => (0.0, 0.0),
-            Material::Translucent { transmission, .. } => {
-                ensure!(
-                    (0.0..=1.0).contains(&transmission),
-                    "invalid transmission fraction"
-                );
-                (0.0, transmission)
-            }
-            Material::Emissive(_) => (1.0, 0.0),
-        };
+        material.validate()?;
         let [w, x, y, z] = sun_in_object.apply_vector([0.0, 0.0, 1.0, 0.0]);
         let sun_plane = Vec4::new(x as f32, y as f32, z as f32, w as f32);
         ensure!(
@@ -271,10 +265,14 @@ impl Shader {
             real,
             imag,
             sun_plane,
-            material: Vec2::new(emission, transmission),
+            reflection: Vec3::from_array(material.reflection),
+            transmission: Vec3::from_array(material.transmission),
         };
+        // Using Wgame's built-in instance color for emission keeps the vertex
+        // layout within WebGPU's guaranteed 16 attribute locations.
+        let emission = Vec3::from_array(material.emission);
         let material = pipeline.material(vec![self.light.clone(), air.clone()], attributes)?;
-        Ok(polygon.fill_color(color).with_material(&material))
+        Ok(polygon.fill_color(emission).with_material(&material))
     }
 }
 

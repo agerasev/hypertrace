@@ -14,14 +14,14 @@ distance = 3.0
 emission = [100.0, 100.0, 60.0]
 
 [moon]
-ground_offset = [-0.971987, 0.020546]
-distance = 1.325230
-subdivisions = 128
-material.reflection = { weight = 1.0, color = [0.76, 0.76, 0.74] }
+ground_offset = [1.2, 0.0]
+distance = 2.0
+subdivisions = 16
+material.reflection = { weight = 1.0 }
 
 [ambient]
-night = [0.004, 0.005, 0.007]
-day = [0.13, 0.14, 0.15]
+night = [0.01, 0.015, 0.02]
+day = [0.2, 0.3, 0.4]
 # mix(night, day, clamp(response_factor * peak_solar_radiance * sin²(disk_radius), 0, 1)^response_exponent)
 response_factor = 1.0
 response_exponent = 1.0
@@ -39,8 +39,8 @@ seed = 0x33cd831e60109289
 ground_radius = 5.0
 gap = [6, 8]
 # Each star samples a uniform mix of these two linear RGB radiances.
-colors.start = [0.26325425, 0.30175425, 0.36125425]
-colors.end = [0.33874575, 0.29324575, 0.22324575]
+colors.start = [100.0, 80.0, 40.0]
+colors.end = [40.0, 80.0, 100.0]
 
 [observer]
 # Intrinsic ground displacements along local X, then local Z, in curvature radii.
@@ -117,6 +117,6 @@ ecology = { light_range = [
     2e-7,
     1e-5,
 ], occupancy = [
-    0.006,
-    0.78,
+    0.003,
+    0.4,
 ], minimum_size = 0.25, half_saturation = 5e-6 }

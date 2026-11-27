@@ -5,7 +5,7 @@ material = { kind = "diffuse", color = [0.23, 0.48, 0.10] }
 
 [sun]
 distance = 3.0
-emission = { color = [1.0, 0.96, 0.82], intensity = 100.0 }
+emission = { color = [1.0, 1.0, 0.6], intensity = 100.0 }
 
 [moon]
 ground_offset = [-0.971987, 0.020546]
@@ -22,8 +22,8 @@ response_exponent = 1.0
 
 [atmosphere]
 height = 0.45
-background = [0.0, 0.0, 0.0] # Sky radiance beyond the atmosphere.
-scattering = { color = [0.175, 0.3525, 0.77], intensity = 4.0 }
+background = [0.0, 0.0, 0.0]                              # Sky radiance beyond the atmosphere.
+scattering = { color = [0.1, 0.2, 0.8], intensity = 4.0 }
 
 [stars]
 # World-fixed geodesic planes. The perpendicular feet are uniform by area
@@ -31,11 +31,11 @@ scattering = { color = [0.175, 0.3525, 0.77], intensity = 4.0 }
 count = 1536
 seed = 0x33cd831e60109289
 ground_radius = 5.0
-gap = [4.9, 5.9]
+gap = [6, 8]
 cool_color = [0.72, 0.83, 1.0]
 warm_color = [1.0, 0.87, 0.67]
 # Intensity interpolates between the endpoints using U^intensity_exponent.
-intensity = [0.005, 0.125]
+intensity = [0.05, 1.25]
 intensity_exponent = 3.0
 
 [observer]
@@ -45,12 +45,12 @@ yaw_degrees = 0.0
 pitch_degrees = 8.021409
 pitch_limit_degrees = 89.0
 height = 0.01875
-walk_speed = 0.1             # curvature radii per second
-jump_height = 0.00478515625  # maximum rise from standing height
-gravity = 0.1125             # curvature radii per second squared
+walk_speed = 0.1            # curvature radii per second
+jump_height = 0.00478515625 # maximum rise from standing height
+gravity = 0.1125            # curvature radii per second squared
 
 [view]
-window_size = [960, 720]
+window_size = [1920, 1080]
 fov_degrees = 66.849622
 min_fov_degrees = 9.147843
 max_fov_degrees = 151.927513
@@ -79,7 +79,13 @@ height = 0.0625
 bark = [0.29, 0.14, 0.055]
 foliage = [0.28, 0.51, 0.10]
 material = { kind = "diffuse", color = [1.0, 1.0, 1.0] }
-ecology = { light_range = [0.055, 0.42], occupancy = [0.0, 0.40], minimum_size = 0.35, half_saturation = 0.24 }
+ecology = { light_range = [
+    0.055,
+    0.42,
+], occupancy = [
+    0.0,
+    0.40,
+], minimum_size = 0.35, half_saturation = 0.24 }
 
 [vegetation.pine]
 height = 0.055
@@ -87,7 +93,13 @@ bark = [0.29, 0.14, 0.055]
 # Foliage tiers from the bottom to the tip.
 foliage = [[0.07, 0.32, 0.14], [0.095, 0.39, 0.15], [0.15, 0.47, 0.18]]
 material = { kind = "diffuse", color = [1.0, 1.0, 1.0] }
-ecology = { light_range = [0.003, 0.10], occupancy = [0.0003, 0.30], minimum_size = 0.22, half_saturation = 0.10 }
+ecology = { light_range = [
+    0.003,
+    0.10,
+], occupancy = [
+    0.0003,
+    0.30,
+], minimum_size = 0.22, half_saturation = 0.10 }
 # Fraction of pines removed in bright daylight, with its own smooth transition.
 daylight_range = [0.055, 0.42]
 daylight_suppression = 0.55
@@ -99,5 +111,15 @@ blade_width = 0.00225
 spread_radius = 0.00925
 # Vertex tints from root to tip.
 colors = [[0.18, 0.39, 0.06], [0.28, 0.53, 0.09], [0.35, 0.61, 0.13]]
-material = { kind = "translucent", color = [1.0, 1.0, 1.0], transmission = 0.22 }
-ecology = { light_range = [0.001, 0.19], occupancy = [0.006, 0.78], minimum_size = 0.25, half_saturation = 0.06 }
+material = { kind = "translucent", color = [
+    1.0,
+    1.0,
+    1.0,
+], transmission = 0.22 }
+ecology = { light_range = [
+    0.001,
+    0.19,
+], occupancy = [
+    0.006,
+    0.78,
+], minimum_size = 0.25, half_saturation = 0.06 }

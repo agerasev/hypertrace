@@ -19,6 +19,7 @@ struct BakedTile {
     // A weak reference keeps this cache key unique even after the tile is evicted.
     source: Weak<GroundTile>,
     meshes: Vec<BakedScene>,
+    planes: Vec<BakedScene>,
     frame_buffer: wgpu::Buffer,
 }
 
@@ -55,9 +56,26 @@ impl BakedTile {
             }
             meshes.extend(batches.iter().map(Scene::bake));
         }
+        // All planes share a quad and bindings. Wgame batches their transforms
+        // and materials into one instanced draw per buffer-sized chunk.
+        let mut planes = Vec::new();
+        for chunk in tile.planes.chunks(capacity) {
+            let mut batch = Scene::default();
+            for plane in chunk {
+                batch.add(&shader.shaded_plane(
+                    &shader.tile_plane,
+                    plane,
+                    plane.pose,
+                    sun_in_tile,
+                    &binding,
+                )?);
+            }
+            planes.push(batch.bake());
+        }
         Ok(Self {
             source: Rc::downgrade(tile),
             meshes,
+            planes,
             frame_buffer,
         })
     }
@@ -83,7 +101,10 @@ impl TileCache {
         for chunk in tiles.chunks(frames_per_buffer) {
             let mut baked = Vec::new();
             let mut frames = Vec::new();
-            for tile in chunk.iter().filter(|tile| !tile.meshes.is_empty()) {
+            for tile in chunk
+                .iter()
+                .filter(|tile| !tile.meshes.is_empty() || !tile.planes.is_empty())
+            {
                 let surface = match cache.entry(Rc::as_ptr(tile)) {
                     Entry::Occupied(entry) => entry.into_mut(),
                     Entry::Vacant(entry) => entry.insert(Rc::new(BakedTile::new(shader, tile)?)),
@@ -133,9 +154,15 @@ impl TileDrawing {
         }
     }
 
-    pub(super) fn scenes(&self) -> impl Iterator<Item = &BakedScene> {
-        self.groups
-            .iter()
-            .flat_map(|group| group.baked.iter().flat_map(|tile| &tile.meshes))
+    fn tiles(&self) -> impl Iterator<Item = &Rc<BakedTile>> {
+        self.groups.iter().flat_map(|group| &group.baked)
+    }
+
+    pub(super) fn planes(&self) -> impl Iterator<Item = &BakedScene> {
+        self.tiles().flat_map(|tile| &tile.planes)
+    }
+
+    pub(super) fn meshes(&self) -> impl Iterator<Item = &BakedScene> {
+        self.tiles().flat_map(|tile| &tile.meshes)
     }
 }

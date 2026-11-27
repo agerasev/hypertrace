@@ -177,7 +177,7 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
 
 #[test]
 #[ignore = "requires a graphics adapter"]
-fn queued_tile_drawings_match_world_meshes_from_each_camera() -> Result<()> {
+fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Result<()> {
     use crate::{atmosphere::Atmosphere, world::GroundTile};
     use std::rc::Rc;
 
@@ -233,9 +233,19 @@ fn queued_tile_drawings_match_world_meshes_from_each_camera() -> Result<()> {
             },
         })
     };
+    let star = |yaw, emission| -> Result<_> {
+        Ok(Object {
+            shape: InfinitePlane,
+            pose: Pose::identity()
+                .move_local([0.0; 3], [0.48, yaw, 0.0], 1.0)?
+                .move_local([0.0, 0.0, -2.5], [FRAC_PI_2, 0.0, 0.0], 1.0)?,
+            material: Material::emissive(emission),
+        })
+    };
     let tiles = vec![
         Rc::new(GroundTile {
             pose: ground,
+            planes: vec![star(-0.34, [0.8, 0.1, 0.0])?, star(0.37, [0.0, 0.7, 0.1])?],
             meshes: vec![
                 object(
                     &triangle,
@@ -256,6 +266,7 @@ fn queued_tile_drawings_match_world_meshes_from_each_camera() -> Result<()> {
         }),
         Rc::new(GroundTile {
             pose: ground.move_local([0.4, 0.0, -0.1], [0.0, 0.25, 0.0], 1.0)?,
+            planes: vec![],
             meshes: vec![object(
                 &triangle,
                 [0.03, 0.07, -0.62],
@@ -271,6 +282,12 @@ fn queued_tile_drawings_match_world_meshes_from_each_camera() -> Result<()> {
             global.meshes.push(Object {
                 pose: tile.pose.chain(&mesh.pose)?,
                 ..mesh.clone()
+            });
+        }
+        for plane in &tile.planes {
+            global.planes.push(Object {
+                pose: tile.pose.chain(&plane.pose)?,
+                ..*plane
             });
         }
     }
@@ -303,8 +320,8 @@ fn queued_tile_drawings_match_world_meshes_from_each_camera() -> Result<()> {
     let mut outputs = [target()?, target()?];
     for (output, drawing) in outputs.iter_mut().zip(drawings.iter()) {
         // The first tile's triangle, diamond and triangle form two instanced
-        // draws. The second tile's triangle uses a separate tile transform.
-        assert_eq!(drawing.ground_batch_count(), 3);
+        // draws, and both stars batch into a third. The next tile draws one mesh.
+        assert_eq!(drawing.ground_batch_count(), 4);
         output.clear(color::BLACK);
         drawing.draw(output, &camera);
     }
@@ -318,11 +335,17 @@ fn queued_tile_drawings_match_world_meshes_from_each_camera() -> Result<()> {
     })?;
     for ((output, eye), expected) in outputs.iter_mut().zip(eyes).zip([first, second]) {
         let actual = block_on(output.readback())?;
-        for (mesh, channel) in global.meshes.iter().zip([0, 1, 0, 2]) {
-            // Compare interior pixels, clear of subpixel rounding at the triangle edges.
+        let rgb = |p: Rgba<f16>| Vec3::new(p.r.to_f32(), p.g.to_f32(), p.b.to_f32());
+        let poses = global
+            .meshes
+            .iter()
+            .map(|mesh| mesh.pose)
+            .chain(global.planes.iter().map(|plane| plane.pose));
+        for (pose, channel) in poses.zip([0, 1, 0, 2, 0, 1]) {
+            // Compare interior pixels, clear of subpixel rounding at the edges.
             let [w, x, y, z] = eye
                 .inverse()?
-                .chain(&mesh.pose)?
+                .chain(&pose)?
                 .apply_vector([1.0, 0.0, 0.0, 0.0]);
             let clip = projection * wgame::glam::Vec4::new(x as f32, y as f32, z as f32, w as f32);
             let px = (0.5 * (1.0 + clip.x / clip.w) * size.0 as f32) as usize;
@@ -331,11 +354,10 @@ fn queued_tile_drawings_match_world_meshes_from_each_camera() -> Result<()> {
                 py * size.0 as usize + px,
                 (py + 1) * size.0 as usize + px + 1,
             ] {
-                let rgb = |p: Rgba<f16>| Vec3::new(p.r.to_f32(), p.g.to_f32(), p.b.to_f32());
                 let baseline = rgb(expected.data()[index]);
                 assert!(
                     baseline[channel] > 0.20,
-                    "missing reference mesh at ({px}, {py})"
+                    "missing reference surface at ({px}, {py})"
                 );
                 let pixel = rgb(actual.data()[index]);
                 assert!(
@@ -344,6 +366,18 @@ fn queued_tile_drawings_match_world_meshes_from_each_camera() -> Result<()> {
                 );
             }
         }
+        // Include the sky around the two circular silhouettes. Omitting the
+        // open-disk clip would leave bright corners on the tile's plane quads.
+        let differing = actual
+            .data()
+            .iter()
+            .zip(expected.data())
+            .filter(|(a, b)| !rgb(**a).abs_diff_eq(rgb(**b), 0.04))
+            .count();
+        assert!(
+            differing <= 4,
+            "{differing} pixels differ around the surfaces"
+        );
     }
     Ok(())
 }

@@ -6,9 +6,8 @@ use super::validate_rgb;
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct StarField {
-    pub count: u32,
+    pub density: f64,
     pub seed: u64,
-    pub ground_radius: f64,
     pub gap: [f64; 2],
     #[serde(deserialize_with = "super::named_colors")]
     pub colors: StarColors,
@@ -22,14 +21,19 @@ pub(crate) struct StarColors {
 }
 
 impl StarField {
+    pub(crate) fn mean_per_tile(&self) -> f64 {
+        // The area of one right-angled pentagon is π/2 in square curvature radii.
+        self.density * std::f64::consts::FRAC_PI_2
+    }
+
     pub fn validate(&self) -> Result<()> {
         ensure!(
-            self.ground_radius.is_finite() && self.ground_radius >= 0.0,
-            "ground_radius must be finite and nonnegative"
+            (0.0..=f64::from(u32::MAX)).contains(&self.mean_per_tile()),
+            "density must give a finite, nonnegative star count per pentagon"
         );
         let [near, far] = self.gap;
         ensure!(
-            near > 0.0 && far >= near && ((self.ground_radius + far).sinh() as f32).is_finite(),
+            near > 0.0 && far >= near && (far.sinh() as f32).is_finite(),
             "gap must have ordered positive endpoints within the shader coordinate range"
         );
         validate_rgb(self.colors.start).context("colors.start")?;

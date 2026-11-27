@@ -100,14 +100,14 @@ pub(crate) struct Patch {
 }
 
 impl Patch {
-    pub(crate) fn new(grid: &GroundGrid, sites_per_tile: u32) -> Result<Self> {
+    /// Count all candidate plant and star sites together. Empty tiles cost one site.
+    pub(crate) fn new(grid: &GroundGrid, sites_per_tile: u64) -> Result<Self> {
         let radius = grid.view_radius;
         ensure!(
             radius.is_finite() && radius > 0.0,
             "view_radius must be finite and positive"
         );
-        let sites = (3 * u64::from(sites_per_tile)).max(1);
-        let tile_budget = u64::from(grid.max_patch_sites) / sites;
+        let tile_budget = u64::from(grid.max_patch_sites) / sites_per_tile.max(1);
         // A pentagon has area π/2 and the patch must at least cover a disk of
         // area 4π sinh²(radius/2). Reject oversized requests before traversal.
         let min_tiles = 8.0 * (0.5 * radius).sinh().powi(2);
@@ -188,7 +188,7 @@ mod tests {
     #[test]
     fn neighborhood_covers_travel_from_sides_and_corners_of_moved_tile() -> Result<()> {
         let home = TileId::default().neighbor(0).neighbor(2).neighbor(4);
-        let patch = Patch::new(&grid(1.5, 10_000), 1)?;
+        let patch = Patch::new(&grid(1.5, 10_000), 3)?;
         let tiles: BTreeSet<_> = patch.tiles(&home).collect();
         let mut reached = BTreeSet::from([home.clone()]);
         assert_eq!(tiles.len(), patch.offsets.len());
@@ -221,13 +221,13 @@ mod tests {
     }
 
     #[test]
-    fn patch_budget_counts_all_species_and_empty_tiles() -> Result<()> {
+    fn patch_budget_counts_all_sites_and_empty_tiles() -> Result<()> {
         assert!(Patch::new(&grid(1.0, 10), 0).is_err());
-        assert!(Patch::new(&grid(1.0, 32), 1).is_err());
+        assert!(Patch::new(&grid(1.0, 32), 3).is_err());
         assert!(Patch::new(&grid(1e5, u32::MAX), 0).is_err());
-        assert!(Patch::new(&grid(1.0, u32::MAX), u32::MAX).is_err());
+        assert!(Patch::new(&grid(1.0, u32::MAX), u64::MAX).is_err());
         assert!(Patch::new(&grid(f64::NAN, 1000), 0).is_err());
-        Patch::new(&grid(1.0, 33), 1)?;
+        Patch::new(&grid(1.0, 33), 3)?;
         Ok(())
     }
 }

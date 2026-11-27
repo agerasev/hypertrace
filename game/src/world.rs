@@ -10,7 +10,7 @@ use wgame::{
 
 use crate::{
     atmosphere::Atmosphere,
-    config::{AmbientLight, Config, vegetation::Vegetation},
+    config::{AmbientLight, Config, stars::StarField, vegetation::Vegetation},
     projection::Pose,
 };
 
@@ -38,11 +38,12 @@ pub struct Object<S> {
 #[derive(Clone, Copy)]
 pub struct InfinitePlane;
 
-/// A finite group of meshes with poses expressed in one Earth tile's frame.
+/// Instances batched for drawing in one Earth tile's coordinate frame.
 #[derive(Clone)]
 pub(crate) struct GroundTile {
     pub pose: Pose,
     pub meshes: Vec<Object<Polygon>>,
+    pub planes: Vec<Object<InfinitePlane>>,
 }
 
 #[derive(Default)]
@@ -61,6 +62,7 @@ pub struct World {
     pub(crate) atmosphere: Atmosphere,
     objects: Objects,
     patch: Patch,
+    stars: StarField,
     center: Option<TileId>,
     loaded: BTreeMap<TileId, usize>,
     placed: BTreeMap<TileId, Vec<Object<Polygon>>>,
@@ -132,10 +134,6 @@ struct Samples(u64);
 impl Samples {
     const STEP: u64 = 0x9e3779b97f4a7c15;
 
-    fn at_offset(seed: u64, offset: u64) -> Self {
-        Self(seed.wrapping_add(Self::STEP.wrapping_mul(offset)))
-    }
-
     fn next(&mut self) -> f64 {
         self.0 = self.0.wrapping_add(Self::STEP);
         let mut z = self.0;
@@ -194,7 +192,11 @@ impl World {
         if let Some(placed) = self.placed.get(id) {
             meshes.extend_from_slice(placed);
         }
-        Ok(GroundTile { pose, meshes })
+        Ok(GroundTile {
+            pose,
+            meshes,
+            planes: stars::in_tile(&self.stars, id)?,
+        })
     }
 
     fn plants_in_tile(&self, tile: &TileId, frame: Pose) -> Result<Vec<Object<Polygon>>> {
@@ -243,7 +245,7 @@ pub fn world(
         radiance: config.sun.emission,
     };
     let earth = Pose::identity();
-    let mut planes = vec![
+    let planes = vec![
         Object {
             shape: InfinitePlane,
             pose: earth,
@@ -255,11 +257,6 @@ pub fn world(
             material: Material::emissive(sun.radiance),
         },
     ];
-    crate::projection::check_plane_capacity(
-        library,
-        planes.len() as u64 + u64::from(config.stars.count),
-    )?;
-    planes.extend(stars::catalogue(&config.stars)?);
     let mut world = World {
         atmosphere: Atmosphere {
             ground: earth,
@@ -276,6 +273,7 @@ pub fn world(
         loaded: BTreeMap::new(),
         placed: BTreeMap::new(),
         patch,
+        stars: config.stars,
         plants: Plants::new(library, &config.vegetation)?,
         vegetation: config.vegetation.clone(),
         daylight: Daylight::new(earth, &sun)?,
@@ -300,9 +298,9 @@ mod tests {
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("config.toml");
         let mut config = Config::load(&path)?;
         config.vegetation.site_density_per_species = 0.0;
-        config.stars.count = 0;
+        config.stars.density = 2.0;
         config.earth.grid.view_radius = 1.0;
-        let patch = Patch::new(&config.earth.grid, 0)?;
+        let patch = Patch::new(&config.earth.grid, config.max_sites_per_tile())?;
         let shape = mesh(
             &library,
             &[
@@ -327,12 +325,13 @@ mod tests {
         let mut world = world(&library, &config, patch, [object(poses[0])])?;
         let loaded = |world: &World, id: &TileId| Rc::clone(&world.objects.tiles[world.loaded[id]]);
         world.objects_near(Pose::identity())?;
-        let empty = loaded(&world, &origin);
+        let origin_tile = loaded(&world, &origin);
         let first = loaded(&world, &id);
+        assert!(!first.planes.is_empty());
         world.objects_near(frame)?;
         assert!(Rc::ptr_eq(&first, &loaded(&world, &id)));
         world.place_on_ground(object(poses[1]))?;
-        assert!(Rc::ptr_eq(&empty, &loaded(&world, &origin)));
+        assert!(Rc::ptr_eq(&origin_tile, &loaded(&world, &origin)));
         assert_eq!(first.meshes.len(), 1);
         assert_eq!(loaded(&world, &id).meshes.len(), 2);
 
@@ -341,6 +340,12 @@ mod tests {
         world.objects_near(frame)?;
         let restored = loaded(&world, &id);
         assert_eq!(restored.meshes.len(), 2);
+        assert_eq!(first.planes.len(), restored.planes.len());
+        for (original, regenerated) in first.planes.iter().zip(&restored.planes) {
+            assert_eq!(original.pose.components()?, regenerated.pose.components()?);
+            assert_eq!(original.material.emission, regenerated.material.emission);
+            assert_eq!(TileId::at(restored.pose.chain(&regenerated.pose)?)?, id);
+        }
         for (mesh, pose) in restored.meshes.iter().zip(poses) {
             let relative = pose.inverse()?.chain(&restored.pose.chain(&mesh.pose)?)?;
             for axis in 0..4 {

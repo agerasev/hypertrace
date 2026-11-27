@@ -19,7 +19,7 @@ use wgpu::util::DeviceExt;
 use crate::{
     atmosphere::{AirBindings, Atmosphere},
     config::AmbientLight,
-    world::{Material, Objects, Sun},
+    world::{InfinitePlane, Material, Object, Objects, Sun},
 };
 
 mod tiles;
@@ -34,6 +34,7 @@ pub(crate) struct Shader {
     tile_mesh: MeshShader<Instance>,
     tile_cache: TileCache,
     plane: MeshShader<Instance>,
+    tile_plane: MeshShader<Instance>,
     plane_quad: Polygon,
     light: MaterialBinding,
     sun_pose: Pose,
@@ -51,16 +52,6 @@ struct Instance {
 fn instance_capacity(device: &wgpu::Device) -> u64 {
     let stride = wgame::shapes::shader::InstanceData::<Instance>::bindings().size();
     (device.limits().max_buffer_size / stride).min(u32::MAX.into())
-}
-
-pub(crate) fn check_plane_capacity(library: &Library, count: u64) -> Result<()> {
-    // Earth, Sun and stars share one instanced drawing and one vertex buffer.
-    let capacity = instance_capacity(library.state().device());
-    ensure!(
-        count <= capacity,
-        "{count} planes exceed the device's {capacity}-plane capacity"
-    );
-    Ok(())
 }
 
 #[derive(Attribute)]
@@ -197,20 +188,18 @@ pub(crate) fn shader(
         ..config.clone()
     };
     let sky = MeshShader::new(shapes, sky_config, &layouts)?;
-    let mesh = MeshShader::new(shapes, config.clone(), &layouts)?;
-    let tile_mesh = MeshShader::new(
-        shapes,
-        ShaderConfig {
-            vertex_source: surface_vertex("place_vertex(air.tile_real, air.tile_imag, placed)"),
-            ..config.clone()
-        },
-        &layouts,
-    )?;
+    let surface_shaders = |mut surface: ShaderConfig| -> Result<_> {
+        let global = MeshShader::new(shapes, surface.clone(), &layouts)?;
+        surface.vertex_source =
+            surface_vertex("place_vertex(air.tile_real, air.tile_imag, placed)");
+        Ok((global, MeshShader::new(shapes, surface, &layouts)?))
+    };
+    let (mesh, tile_mesh) = surface_shaders(config.clone())?;
     // The two triangles cover a square. Only its open unit disk is in the plane.
     config
         .fragment_color_source
         .push_str("\nif dot(input.local_klein, input.local_klein) >= 1.0 { discard; }");
-    let plane = MeshShader::new(shapes, config, &layouts)?;
+    let (plane, tile_plane) = surface_shaders(config)?;
     Ok(Shader {
         sky,
         air,
@@ -218,6 +207,7 @@ pub(crate) fn shader(
         tile_mesh,
         tile_cache: TileCache::default(),
         plane,
+        tile_plane,
         plane_quad: plane_quad(library),
         light: MaterialBinding::Uniforms(uniforms),
         sun_pose: sun.pose,
@@ -249,8 +239,8 @@ fn projective_pair(map: Pose) -> Result<[Vec4; 2]> {
     Ok(rows.map(|row| Vec4::from_array(row.map(|v| (v / scale) as f32))))
 }
 
-/// In-plane translation to the perpendicular foot of the eye. Its local
-/// spatial coordinates are (X,0,Z)/sqrt(1+Y²) for an embedded eye (W,X,Y,Z).
+/// In-plane translation to the perpendicular foot of the reference origin.
+/// Its local coordinates are (X,0,Z)/sqrt(1+Y²) for an origin at (W,X,Y,Z).
 fn plane_foot(relative: Pose) -> Result<Pose> {
     let [_, x, y, z] = relative.inverse()?.apply_vector([1.0, 0.0, 0.0, 0.0]);
     let radial = x.hypot(z);
@@ -267,6 +257,33 @@ fn plane_foot(relative: Pose) -> Result<Pose> {
 }
 
 impl Shader {
+    fn shaded_plane(
+        &self,
+        pipeline: &MeshShader<Instance>,
+        plane: &Object<InfinitePlane>,
+        relative: Pose,
+        sun: Pose,
+        air: &MaterialBinding,
+    ) -> Result<MaterialMesh<Instance>> {
+        // Center the disk at the eye's foot for global planes, or the tile
+        // center's foot for instances baked with a ground tile.
+        let foot = plane_foot(relative)?;
+        let sun_in_plane =
+            if plane.material.reflection == [0.0; 3] && plane.material.transmission == [0.0; 3] {
+                Pose::identity()
+            } else {
+                foot.inverse()?.chain(&plane.pose.inverse()?.chain(&sun)?)?
+            };
+        self.shaded_mesh(
+            &self.plane_quad,
+            pipeline,
+            relative.chain(&foot)?,
+            sun_in_plane,
+            plane.material,
+            air,
+        )
+    }
+
     fn shaded_mesh(
         &self,
         polygon: &Polygon,
@@ -309,7 +326,11 @@ pub(crate) struct Drawing {
 impl Drawing {
     #[cfg(test)]
     pub(crate) fn ground_batch_count(&self) -> usize {
-        self.tiles.scenes().map(BakedScene::len).sum()
+        self.tiles
+            .planes()
+            .chain(self.tiles.meshes())
+            .map(BakedScene::len)
+            .sum()
     }
 
     pub(crate) fn draw(&self, target: &mut impl Target, camera: &Camera) {
@@ -318,10 +339,13 @@ impl Drawing {
             target.render(camera, sky);
         }
         // Both passes use the target's depth buffer so a plane can occlude a mesh.
-        target.render(camera, &self.planes);
         target.render_iter(
             camera,
-            std::iter::once(&self.meshes).chain(self.tiles.scenes()),
+            std::iter::once(&self.planes).chain(self.tiles.planes()),
+        );
+        target.render_iter(
+            camera,
+            std::iter::once(&self.meshes).chain(self.tiles.meshes()),
         );
     }
 }
@@ -348,16 +372,11 @@ pub(crate) fn prepare(objects: &Objects, camera: Pose, shader: &Shader) -> Resul
     };
     let mut planes = Scene::default();
     for plane in &objects.planes {
-        let relative = view.chain(&plane.pose)?;
-        // Recenter the plane's drawing and lighting frames at the foot of the eye.
-        let foot = plane_foot(relative)?;
-        let sun_in_plane = plane.pose.inverse()?.chain(&shader.sun_pose)?;
-        let mesh = shader.shaded_mesh(
-            &shader.plane_quad,
+        let mesh = shader.shaded_plane(
             &shader.plane,
-            relative.chain(&foot)?,
-            foot.inverse()?.chain(&sun_in_plane)?,
-            plane.material,
+            plane,
+            view.chain(&plane.pose)?,
+            shader.sun_pose,
             &air,
         )?;
         planes.add(&mesh);

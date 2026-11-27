@@ -1,33 +1,23 @@
-//! A finite world-fixed catalogue of emitting geodesic planes.
-use std::f64::consts::TAU;
-
+//! Emitting geodesic planes rooted in the pentagonal tiling of Earth.
 use anyhow::Result;
 use ccgeom::{Geometry3, Hyperboloid3};
 use wgame::glam::Vec3;
 
-use super::{InfinitePlane, Material, Object, Pose, Samples};
+use super::{InfinitePlane, Material, Object, Pose, RootSampler, Samples, TileId};
 use crate::config::stars::StarField;
 
-pub(super) fn catalogue(settings: &StarField) -> Result<Vec<Object<InfinitePlane>>> {
-    let disk_scale = (0.5 * settings.ground_radius).sinh();
+pub(super) fn in_tile(settings: &StarField, id: &TileId) -> Result<Vec<Object<InfinitePlane>>> {
+    let mut samples = Samples(id.seed(settings.seed));
+    let count = samples.site_count(settings.mean_per_tile());
+    let sampler = RootSampler::new();
     let [near, far] = settings.gap;
     let start = Vec3::from_array(settings.colors.start).as_dvec3();
     let end = Vec3::from_array(settings.colors.end).as_dvec3();
-    (0..settings.count)
-        .map(|index| {
-            // The catalogue assigns five sample slots per star. Addressing its
-            // entry directly keeps the seeded constellation stable as colors change.
-            let mut samples = Samples::at_offset(settings.seed, u64::from(index) * 5);
-            // Place the foot of the common perpendicular uniformly by area on
-            // Earth. A disk of radius r has area 4π sinh²(r/2) in unit curvature.
-            let radius = 2.0 * (samples.next().sqrt() * disk_scale).asinh();
-            let azimuth = TAU * samples.next();
+    (0..count)
+        .map(|_| {
+            let foot = sampler.local_root(&mut samples)?;
             let gap = near + (far - near) * samples.next();
-            let pose = Pose::from_isometry(
-                Hyperboloid3::rotate_y(azimuth)
-                    .chain(Hyperboloid3::shift_z(radius))
-                    .chain(Hyperboloid3::shift_y(gap)),
-            )?;
+            let pose = foot.chain(&Pose::from_isometry(Hyperboloid3::shift_y(gap))?)?;
             let color = start.lerp(end, samples.next()).as_vec3();
             Ok(Object {
                 shape: InfinitePlane,
@@ -42,12 +32,12 @@ pub(super) fn catalogue(settings: &StarField) -> Result<Vec<Object<InfinitePlane
 mod tests {
     use super::*;
     use crate::config::stars::StarColors;
+    use std::f64::consts::FRAC_PI_2;
 
     fn field() -> StarField {
         StarField {
-            count: 32,
+            density: 20.5,
             seed: 11,
-            ground_radius: 4.0,
             gap: [3.0, 6.0],
             colors: StarColors {
                 start: [0.0, 1.0, 2.0],
@@ -57,20 +47,45 @@ mod tests {
     }
 
     #[test]
-    fn fixed_catalogue_reproduces_distant_earth_disjoint_planes() -> Result<()> {
+    fn sparse_tiles_preserve_the_requested_ground_density() -> Result<()> {
+        let tile = TileId::default();
+        let mut occupied = 0;
+        for seed in 0..1024 {
+            let settings = StarField {
+                density: 0.25 / FRAC_PI_2,
+                seed,
+                ..field()
+            };
+            let count = in_tile(&settings, &tile)?.len();
+            assert!(count <= 1);
+            occupied += count;
+        }
+        assert!((220..292).contains(&occupied), "{occupied}");
+        Ok(())
+    }
+
+    #[test]
+    fn returning_to_a_tile_reproduces_its_earth_disjoint_planes() -> Result<()> {
         let settings = field();
-        let first = catalogue(&settings)?;
-        let second = catalogue(&settings)?;
-        assert_eq!(first.len(), settings.count as usize);
+        let tile = TileId::default().neighbor(0);
+        let frame = tile.upright_frame()?;
+        let first = in_tile(&settings, &tile)?;
+        let neighbor = in_tile(&settings, &tile.neighbor(2))?;
+        assert_ne!(first[0].pose.components()?, neighbor[0].pose.components()?);
+        let second = in_tile(&settings, &tile.neighbor(2).neighbor(2))?;
+        let mean = settings.density * FRAC_PI_2;
+        assert!((mean.floor() as usize..=mean.ceil() as usize).contains(&first.len()));
+        assert_eq!(first.len(), second.len());
         for (star, same) in first.iter().zip(second) {
             assert_eq!(star.pose.components()?, same.pose.components()?);
             assert_eq!(star.material.emission, same.material.emission);
 
-            let [w, x, y, z] = star.pose.apply_vector([0.0, 0.0, 1.0, 0.0]);
+            let world = frame.chain(&star.pose)?;
+            assert_eq!(TileId::at(world)?, tile);
+            let [w, x, y, z] = world.apply_vector([0.0, 0.0, 1.0, 0.0]);
             // The two unit spacelike plane normals have inner product cosh(gap).
             assert!((settings.gap[0]..settings.gap[1]).contains(&y.acosh()));
             let sinh_gap = ((y - 1.0) * (y + 1.0)).sqrt();
-            assert!((w / sinh_gap).acosh() <= settings.ground_radius);
             // The projection of the star normal onto Earth is proportional to
             // the foot. Walk halfway there along the geodesic from noon.
             let half_w = ((1.0 + w / sinh_gap) * 0.5).sqrt();
@@ -85,17 +100,21 @@ mod tests {
     #[test]
     fn stars_sample_one_uniform_color_mix_independently_of_placement() -> Result<()> {
         let settings = StarField {
-            count: 1024,
+            density: 1024.0 / FRAC_PI_2,
             ..field()
         };
-        let stars = catalogue(&settings)?;
-        let flat = catalogue(&StarField {
-            colors: StarColors {
-                start: [0.17, 1.3, f32::MAX],
-                end: [0.17, 1.3, f32::MAX],
+        let tile = TileId::default().neighbor(4).neighbor(2);
+        let stars = in_tile(&settings, &tile)?;
+        let flat = in_tile(
+            &StarField {
+                colors: StarColors {
+                    start: [0.17, 1.3, f32::MAX],
+                    end: [0.17, 1.3, f32::MAX],
+                },
+                ..settings
             },
-            ..settings
-        })?;
+            &tile,
+        )?;
         let mut bins = [0; 4];
         let mut nearest = f64::INFINITY;
         let mut farthest = 0.0_f64;

@@ -113,6 +113,12 @@ pub(crate) struct Air {
 }
 
 impl Config {
+    /// Upper bound before stochastic rounding and plant occupancy sampling.
+    pub(crate) fn max_sites_per_tile(&self) -> u64 {
+        3 * self.vegetation.mean_sites_per_tile().ceil() as u64
+            + self.stars.mean_per_tile().ceil() as u64
+    }
+
     pub fn load(path: &Path) -> Result<Self> {
         let source = fs::read_to_string(path)
             .with_context(|| format!("reading configuration {}", path.display()))?;

@@ -295,11 +295,8 @@ fn main() -> Result<()> {
     }
     let path = path.context("missing required --config PATH; use --help")?;
     let config = Config::load(&path)?;
-    let patch = world::Patch::new(
-        &config.earth.grid,
-        config.vegetation.mean_sites_per_tile().ceil() as u32,
-    )
-    .with_context(|| format!("invalid earth.grid in {}", path.display()))?;
+    let patch = world::Patch::new(&config.earth.grid, config.max_sites_per_tile())
+        .with_context(|| format!("invalid earth.grid in {}", path.display()))?;
     let window_config = WindowConfig::default().title("Hypergame").size(if smoke {
         (320, 240)
     } else {

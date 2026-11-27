@@ -5,8 +5,8 @@ material.reflection = { weight = 1.0, color = [0.23, 0.48, 0.10] }
 
 [earth.grid]
 view_radius = 1.5 # Intrinsic radius around the observer, in curvature radii.
-# Maximum candidate sites in the visible patch, counting all three species.
-# With zero density the budget counts pentagons.
+# Maximum candidate sites in the loaded patch, counting all three plant species
+# and stars. Each loaded pentagon counts for at least one site.
 max_patch_sites = 1_048_576
 
 [sun]
@@ -32,12 +32,10 @@ background = [0.0, 0.0, 0.0] # Sky radiance beyond the atmosphere.
 scattering = [0.4, 0.8, 3.2]
 
 [stars]
-# World-fixed geodesic planes. The perpendicular feet are uniform by area
-# in a disk around noon. The gap range is the plane-to-Earth distance in R.
-count = 1536
+# Mean number of stars per R² of Earth, sampled uniformly within each pentagon.
+density = 3.3391908820476757
 seed = 0x33cd831e60109289
-ground_radius = 5.0
-gap = [6, 8]
+gap = [6, 8] # Perpendicular distance from Earth to a star plane, in R.
 # Each star samples a uniform mix of these two linear RGB radiances.
 colors.start = [100.0, 80.0, 40.0]
 colors.end = [40.0, 80.0, 100.0]

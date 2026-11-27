@@ -38,7 +38,7 @@ curvature radii and seconds.
 | `earth`, `sun`, `moon` | Earth material and ground grid, perpendicular Sun distance and emission, Moon ground location, perpendicular gap, tessellation and material |
 | `ambient` | Night and day fill radiances, response factor and exponent |
 | `atmosphere` | Air layer thickness, RGB scattering coefficients, background sky radiance |
-| `stars` | Number of planes, seed, ground footprint radius, range of gaps above Earth, two RGB colors |
+| `stars` | Stars per square curvature radius, seed, range of gaps above Earth, two RGB colors |
 | `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, species occupancy and growth, shapes, vertex colors and materials |
 | `observer`, `view` | Spawn, yaw and pitch, eye height, walk speed, jump height, gravity, window size, field of view, near clip, mouse sensitivity and frame time limit |
 
@@ -46,7 +46,7 @@ The Sun's perpendicular meets Earth at the world origin. Moon and observer
 ground offsets start there and follow local X then local Z. Heights are measured
 along the normal at the resulting foot. Keep the lunar gap above the highest
 jumping eye so the edge of the finite Moon stays hidden. Set `jump_height = 0`
-to disable jumping, or set the star count to zero for an empty catalogue.
+to disable jumping, or set `stars.density = 0` for a starless sky.
 
 `reflection` weights light arriving on the visible side, `transmission` weights
 light arriving on the opposite side, and `emission` adds the surface's own
@@ -130,15 +130,18 @@ where `peak` is the largest RGB component of the Sun's emitted radiance. This
 gives cool, nearly white fill in daylight and a dim floor at night. Overbright
 colors retain their hue when mapped to the display. The model omits cast shadows.
 
-Stars are distant emissive geodesic planes. Each star draws one uniform
-fraction between zero and one and uses it to interpolate from `stars.colors.start`
-to `stars.colors.end` in linear RGB. Equal-luminance endpoints give every star
-the same emitted luminance. The renderer draws the entire fixed
-catalogue together. Walking toward a star's nearest point on Earth
-makes its disk grow, and walking away shrinks it until it covers less than a
-pixel. Its emitted radiance stays constant. The nearest points are scattered
-uniformly by ground area within a finite disk around noon, so the sky looking
-outward beyond that region grows sparse. [Star field](src/world/stars.rs)
+Each Earth pentagon generates its own stars. A star's foot is sampled uniformly
+by area inside that pentagon. The perpendicular from the foot to the star
+plane has a length sampled uniformly from `stars.gap`.
+Moving toward the foot makes the apparent disk grow. The plane extends across
+tile boundaries and keeps its emitted color, sampled uniformly between
+`stars.colors.start` and `stars.colors.end` in linear RGB.
+
+`stars.density` sets the mean count per `R²` everywhere on Earth. Each tile's
+address and seed reproduce its stars on a return visit. Stars and vegetation
+load and unload together under `earth.grid.view_radius`. Each tile batches its
+stars in the plane pass. A visible star can disappear when its tile unloads.
+[Star field](src/world/stars.rs)
 
 ## Scattered daylight
 

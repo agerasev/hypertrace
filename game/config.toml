@@ -73,19 +73,20 @@ view_radius = 1.5 # Intrinsic radius around the observer, in curvature radii.
 max_patch_sites = 1_048_576
 
 # light_range is the fraction of noon illumination over which occupancy
-# moves smoothly between its two endpoints. Growth is relative to mature size.
+# moves smoothly between its two endpoints. Lower both limits to extend
+# a species into dusk. Lower half_saturation to keep it tall in dim light.
 [vegetation.deciduous]
 height = 0.0625
 bark = [0.29, 0.14, 0.055]
 foliage = [0.28, 0.51, 0.10]
 material.reflection = { weight = 1.0 }
 ecology = { light_range = [
-    0.055,
-    0.42,
+    0.012,
+    0.23,
 ], occupancy = [
     0.0,
     0.40,
-], minimum_size = 0.35, half_saturation = 0.24 }
+], minimum_size = 0.35, half_saturation = 0.07 }
 
 [vegetation.pine]
 height = 0.055
@@ -94,12 +95,12 @@ bark = [0.29, 0.14, 0.055]
 foliage = [[0.07, 0.32, 0.14], [0.095, 0.39, 0.15], [0.15, 0.47, 0.18]]
 material.reflection = { weight = 1.0 }
 ecology = { light_range = [
-    0.003,
-    0.10,
+    2e-6,
+    8e-5,
 ], occupancy = [
     0.0003,
     0.30,
-], minimum_size = 0.22, half_saturation = 0.10 }
+], minimum_size = 0.22, half_saturation = 3e-5 }
 # Fraction of pines removed in bright daylight, with its own smooth transition.
 daylight_range = [0.055, 0.42]
 daylight_suppression = 0.55
@@ -114,9 +115,9 @@ colors = [[0.18, 0.39, 0.06], [0.28, 0.53, 0.09], [0.35, 0.61, 0.13]]
 material.reflection = { weight = 0.78 }
 material.transmission = { weight = 0.22 }
 ecology = { light_range = [
-    0.001,
-    0.19,
+    2e-7,
+    1e-5,
 ], occupancy = [
     0.006,
     0.78,
-], minimum_size = 0.25, half_saturation = 0.06 }
+], minimum_size = 0.25, half_saturation = 5e-6 }

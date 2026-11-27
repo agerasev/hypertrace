@@ -84,6 +84,15 @@ twenty times less often, a dwarf pine. Each species also grows taller in better
 light. The plants use the direct sunlight at their roots as a fraction of the
 light at permanent noon. [Vegetation model](src/world/ecology.rs)
 
+To extend a species farther into dusk, lower both numbers in its
+`ecology.light_range`. Moving outward from noon, plants start thinning at the
+upper value and reach their night density at the lower one. Lower
+`ecology.half_saturation` to keep the plants tall in that dimmer light.
+Far from noon, direct ground light drops by a factor of ten over about
+`0.77R`, so dividing all three settings by ten shifts the outer transition
+roughly that far. In the supplied world, ground `3R` from noon receives about
+0.1% of noon light and supports an average of 31 pines per `R²`.
+
 Vegetation grows on a regular `{5,4}` grid. Each tile is a geodesic pentagon
 with five right angles, and four tiles meet at each corner. Each pentagon
 covers `πR²/2`. The setting `vegetation.site_density_per_species` counts

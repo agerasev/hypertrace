@@ -1,244 +1,223 @@
-use anyhow::{Result, ensure};
+use anyhow::Result;
 
 use crate::{
-    config::vegetation::{Ecology, LightResponse, SunVegetation, Vegetation},
+    config::{
+        Sun,
+        vegetation::{BiomeProfile, Ecology, SunVegetation},
+    },
     projection::Pose,
-    world::Sun,
 };
 
+pub(crate) use crate::config::vegetation::Species;
+
+#[derive(Clone, Copy)]
 struct SolarExposure {
-    // Unit spacelike Sun plane normal in Earth's frame (W,X,Y,Z).
-    normal: [f64; 4],
-    noon: f64,
+    // Maps points from the sampling frame to a ground frame centered at noon.
+    to_noon: Pose,
+    tanh_gap: f64,
+    noon_irradiance: f64,
     vegetation: SunVegetation,
 }
 
 impl SolarExposure {
-    fn at(&self, [w, x, _, z]: [f64; 4]) -> f64 {
-        let [nw, nx, ny, nz] = self.normal;
-        let sinh_distance = -nw * w + nx * x + nz * z;
-        // Lambertian irradiance scales as cosh(gap)/cosh(distance)^3 on
-        // Earth. Its fraction of this Sun's own noon is the cubed ratio.
-        self.noon * (ny.abs() / sinh_distance.hypot(1.0)).min(1.0).powi(3)
+    fn at(&self, root: [f64; 4]) -> (f64, f64) {
+        let [_, x, _, z] = self.to_noon.apply_vector(root);
+        let sinh_radius = x.hypot(z);
+        // For a point on Earth at ground radius r and a Sun at gap h, the
+        // plane distance d satisfies sinh(d) = sinh(h) cosh(r). The ratio of
+        // local to noon irradiance is (cosh(h)/cosh(d))³.
+        let ratio = (self.tanh_gap * sinh_radius).hypot(1.0).recip();
+        (sinh_radius.asinh(), self.noon_irradiance * ratio.powi(3))
     }
 }
 
-/// Surface illumination on Earth, relative to the brightest individual noon.
-pub struct Daylight {
+pub(crate) struct Daylight {
     sources: Vec<SolarExposure>,
 }
 
 impl Daylight {
-    pub fn new<'a>(
-        earth: Pose,
-        suns: impl IntoIterator<Item = (&'a Sun, &'a SunVegetation)>,
-    ) -> Result<Self> {
-        let world_to_earth = earth.inverse()?;
+    pub fn new<'a>(suns: impl IntoIterator<Item = (Pose, &'a Sun)>) -> Result<Self> {
         let mut sources = Vec::new();
         let mut brightest = 0.0_f64;
-        for (sun, vegetation) in suns {
-            let normal = world_to_earth
-                .chain(&sun.pose)?
-                .apply_vector([0.0, 0.0, 1.0, 0.0]);
-            ensure!(
-                normal[2].abs() > 1.0,
-                "permanent noon requires separated Earth and Sun planes"
-            );
+        for (noon_pose, sun) in suns {
             let peak = sun.surface_radiance.into_iter().fold(0.0_f32, f32::max);
-            let noon = f64::from(peak) / normal[2].powi(2);
-            if normal[0].is_sign_positive() == normal[2].is_sign_positive() && noon > 0.0 {
-                brightest = brightest.max(noon);
-                sources.push(SolarExposure {
-                    normal,
-                    noon,
-                    vegetation: *vegetation,
-                });
-            }
+            let irradiance = f64::from(peak) / sun.distance.cosh().powi(2);
+            brightest = brightest.max(irradiance);
+            sources.push(SolarExposure {
+                to_noon: noon_pose.inverse()?,
+                tanh_gap: sun.distance.tanh(),
+                noon_irradiance: irradiance,
+                vegetation: sun.vegetation,
+            });
         }
-        for sun in &mut sources {
-            sun.noon /= brightest;
+        if brightest > 0.0 {
+            for sun in &mut sources {
+                sun.noon_irradiance /= brightest;
+            }
         }
         Ok(Self { sources })
     }
 
-    /// Occupancy and maximum size at a candidate root on Earth (Y=0).
-    pub fn at(&self, root: [f64; 4], species: Species, settings: &Vegetation) -> (f64, f64) {
-        let ecology = match species {
-            Species::Deciduous => settings.deciduous.ecology,
-            Species::Pine => settings.pine.ecology,
-            Species::Grass => settings.grass.ecology,
-        };
-        ecology.response(
-            species,
-            self.sources
-                .iter()
-                .map(|sun| (&sun.vegetation, sun.at(root))),
-        )
+    /// Compose tile-to-noon frames once before sampling the tile's local roots.
+    pub fn in_frame(&self, tile: Pose) -> Result<Self> {
+        let mut sources = Vec::with_capacity(self.sources.len());
+        for sun in &self.sources {
+            sources.push(SolarExposure {
+                to_noon: sun.to_noon.chain(&tile)?,
+                ..*sun
+            });
+        }
+        Ok(Self { sources })
     }
-}
 
-#[derive(Clone, Copy, Debug)]
-pub enum Species {
-    Deciduous,
-    Pine,
-    Grass,
-}
-
-fn smoothstep([low, high]: [f64; 2], value: f64) -> f64 {
-    let t = ((value - low) / (high - low)).clamp(0.0, 1.0);
-    t * t * (3.0 - 2.0 * t)
-}
-
-impl LightResponse {
-    fn at(self, light: f64, ecology: Ecology) -> (f64, f64) {
-        let occupancy = ecology.night_occupancy
-            + (self.max_occupancy - ecology.night_occupancy) * smoothstep(self.light_range, light);
-        let vigor = light * (1.0 + self.half_saturation) / (light + self.half_saturation);
-        let size = ecology.minimum_size + (self.max_size - ecology.minimum_size) * vigor;
-        (occupancy, size)
-    }
-}
-
-impl Ecology {
-    fn response<'a>(
-        self,
-        species: Species,
-        exposures: impl Iterator<Item = (&'a SunVegetation, f64)>,
-    ) -> (f64, f64) {
-        let mut density = self.night_occupancy;
-        let mut growth = self.minimum_size;
-        for (vegetation, light) in exposures {
-            let response = match species {
-                Species::Deciduous => vegetation.deciduous.map(|curve| curve.at(light, self)),
-                Species::Grass => vegetation.grass.map(|curve| curve.at(light, self)),
-                Species::Pine => vegetation.pine.map(|pine| {
-                    let (occupancy, size) = pine.response().at(light, self);
-                    let suppress =
-                        pine.daylight_suppression * smoothstep(pine.daylight_range, light);
-                    (occupancy * (1.0 - suppress), size)
-                }),
-            };
-            if let Some((occupancy, size)) = response {
-                density = density.max(occupancy);
-                growth = growth.max(size);
+    /// Expected plants per R² and maximum mature size at a candidate root.
+    pub fn at(&self, root: [f64; 4], species: Species, floor: Ecology) -> (f64, f64) {
+        let mut density = floor.night_density;
+        let mut size = floor.minimum_size;
+        for sun in &self.sources {
+            if let Some(profile) = species.profile(&sun.vegetation) {
+                let (radius, light) = sun.at(root);
+                let (local_density, local_size) = profile.at(radius, light, floor);
+                density = density.max(local_density);
+                size = size.max(local_size);
             }
         }
-        (density, growth)
+        (density, size)
+    }
+}
+
+impl BiomeProfile {
+    fn at(self, radius: f64, light: f64, floor: Ecology) -> (f64, f64) {
+        let offset = (radius - self.peak_radius) / self.half_width;
+        let weight = (-offset.powi(2)).exp2();
+        let density = floor.night_density + (self.peak_density - floor.night_density) * weight;
+        let vigor = light * (1.0 + self.half_saturation) / (light + self.half_saturation);
+        let size = floor.minimum_size + (self.max_size - floor.minimum_size) * vigor;
+        (density, size)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::vegetation::PineResponse;
+    use crate::config::SunAmbient;
 
     const EMPTY: SunVegetation = SunVegetation {
         deciduous: None,
         pine: None,
         grass: None,
     };
-    const CURVE: LightResponse = LightResponse {
-        light_range: [0.25, 0.75],
+    const RING: BiomeProfile = BiomeProfile {
+        peak_density: 25.0,
+        peak_radius: 2.0,
+        half_width: 1.0,
         half_saturation: 0.5,
-        max_occupancy: 0.875,
         max_size: 1.0,
     };
     const FLOOR: Ecology = Ecology {
-        night_occupancy: 0.125,
+        night_density: 1.0,
         minimum_size: 0.25,
     };
 
-    #[test]
-    fn daylight_follows_the_sun_across_the_ground() -> Result<()> {
-        let gap: f64 = 1.2;
-        let noon = Pose::identity().move_local([0.8, 0.0, 0.0], [0.0; 3], 1.0)?;
-        let earth = Pose::identity().move_local([0.1, -0.4, 0.2], [0.3, 0.1, -0.4], 1.0)?;
-        let sun = Sun {
-            pose: earth
-                .chain(&noon)?
-                .move_local([0.0, gap, 0.0], [0.0; 3], 1.0)?,
-            surface_radiance: [1.0; 3],
+    fn sun(radiance: f32, profile: BiomeProfile) -> Sun {
+        Sun {
+            ground_offset: [0.0; 2],
+            distance: 1.2,
+            surface_radiance: [radiance; 3],
             scattering_radiance: [0.0; 3],
-            ambient: crate::config::SunAmbient {
+            ambient: SunAmbient {
                 color: [0.0; 3],
                 response_factor: 1.0,
                 response_exponent: 1.0,
             },
-        };
-        let source = Daylight::new(earth, [(&sun, &EMPTY)])?;
-        for radius in [0.0_f64, 0.8, 2.2] {
-            let root = noon.move_local([0.0, 0.0, radius], [0.0; 3], 1.0)?;
-            let cosh_distance = (gap.sinh() * radius.cosh()).hypot(1.0);
-            let expected = (gap.cosh() / cosh_distance).powi(3);
-            assert!(
-                (source.sources[0].at(root.apply_vector([1.0, 0.0, 0.0, 0.0])) - expected).abs()
-                    < 1e-12
-            );
+            vegetation: SunVegetation {
+                pine: Some(profile),
+                ..EMPTY
+            },
         }
-        let dim = Sun {
-            surface_radiance: [0.25, 0.0, 0.0],
-            ..sun
-        };
-        let scatter_only = Sun {
-            surface_radiance: [0.0; 3],
-            scattering_radiance: [10.0; 3],
-            ..sun
-        };
-        let daylight = Daylight::new(
-            earth,
-            [(&sun, &EMPTY), (&dim, &EMPTY), (&scatter_only, &EMPTY)],
-        )?;
-        let root = noon.apply_vector([1.0, 0.0, 0.0, 0.0]);
-        assert_eq!(daylight.sources.len(), 2);
-        assert!((daylight.sources[1].at(root) - 0.25).abs() < 1e-12);
+    }
+
+    fn close(actual: f64, expected: f64) {
+        assert!((actual - expected).abs() < 1e-10, "{actual} vs {expected}");
+    }
+
+    #[test]
+    fn ring_has_equal_half_density_at_both_edges_in_every_direction() -> Result<()> {
+        let shifted_noon = Pose::identity().move_local([1.2, 0.0, -0.8], [0.0; 3], 1.0)?;
+        let tile = shifted_noon.move_local([0.6, 0.0, -0.3], [0.0, 0.4, 0.0], 1.0)?;
+        let noon_to_tile = tile.inverse()?.chain(&shifted_noon)?;
+        let source = sun(2.0, RING);
+        let daylight = Daylight::new([(shifted_noon, &source)])?.in_frame(tile)?;
+        for (r, density) in [(0.0_f64, 2.5), (1.0, 13.0), (2.0, 25.0), (3.0, 13.0)] {
+            for bearing in [0.0_f64, 0.9, 2.7] {
+                let root = noon_to_tile.apply_vector([
+                    r.cosh(),
+                    r.sinh() * bearing.cos(),
+                    0.0,
+                    r.sinh() * bearing.sin(),
+                ]);
+                let (d, size) = daylight.at(root, Species::Pine, FLOOR);
+                close(d, density);
+                let cosh_distance = (source.distance.sinh() * r.cosh()).hypot(1.0);
+                let light = (source.distance.cosh() / cosh_distance).powi(3);
+                let expected_size = 0.25 + 0.75 * light * 1.5 / (light + 0.5);
+                close(size, expected_size);
+            }
+        }
         Ok(())
     }
 
     #[test]
-    fn each_species_uses_its_strongest_sun_response_and_its_night_floors() {
-        let warm = SunVegetation {
-            grass: Some(CURVE),
-            ..EMPTY
-        };
-        let cool = SunVegetation {
-            grass: Some(LightResponse {
-                max_occupancy: 0.75,
-                max_size: 0.5,
-                ..CURVE
-            }),
-            ..EMPTY
-        };
-        let red = SunVegetation {
-            pine: Some(PineResponse {
-                light_range: CURVE.light_range,
-                half_saturation: CURVE.half_saturation,
-                max_occupancy: CURVE.max_occupancy,
-                max_size: CURVE.max_size,
-                daylight_range: [0.5, 1.0],
-                daylight_suppression: 0.75,
-            }),
-            ..EMPTY
-        };
-        let exposures = [(&warm, 0.5), (&red, 1.0), (&cool, 1.0)];
-        assert_eq!(
-            FLOOR.response(Species::Grass, [(&warm, 0.5)].into_iter()),
-            (0.5, 0.8125)
+    fn tile_local_sampling_resolves_a_narrow_belt_at_a_distant_noon() -> Result<()> {
+        let noon = Pose::identity().move_local([12.0, 0.0, 0.0], [0.0; 3], 1.0)?;
+        let source = sun(
+            1.0,
+            BiomeProfile {
+                peak_radius: 2e-8,
+                half_width: 1e-8,
+                ..RING
+            },
         );
-        assert_eq!(
-            FLOOR.response(Species::Grass, exposures.into_iter()),
-            (0.75, 0.8125)
+        let daylight = Daylight::new([(noon, &source)])?.in_frame(noon)?;
+        let r = 1e-8_f64;
+        let root = [r.cosh(), 0.0, 0.0, r.sinh()];
+        close(daylight.at(root, Species::Pine, FLOOR).0, 13.0);
+        Ok(())
+    }
+
+    #[test]
+    fn density_and_growth_choose_their_strongest_sources_independently() -> Result<()> {
+        let dark = sun(
+            0.0,
+            BiomeProfile {
+                peak_radius: 0.0,
+                ..RING
+            },
         );
-        assert_eq!(
-            FLOOR.response(Species::Pine, exposures.into_iter()),
-            (0.875 * 0.25, 1.0)
+        let dim = sun(
+            1.0,
+            BiomeProfile {
+                peak_density: 5.0,
+                ..RING
+            },
         );
+        let mut bright = sun(4.0, RING);
+        bright.vegetation = EMPTY;
+        let foot = Pose::identity();
+        let root = [1.0, 0.0, 0.0, 0.0];
+        let daylight = Daylight::new([(foot, &dark), (foot, &dim), (foot, &bright)])?;
+        // A dark Sun defines a centered biome, while the dim Sun supplies
+        // a quarter of the brightest individual noon for this species' growth.
+        assert_eq!(daylight.at(root, Species::Pine, FLOOR), (25.0, 0.625));
+        assert_eq!(daylight.at(root, Species::Grass, FLOOR), (1.0, 0.25));
+        let unlit = Daylight::new([(foot, &dark)])?;
+        assert_eq!(unlit.at(root, Species::Pine, FLOOR), (25.0, 0.25));
+        let distant = [40.0_f64.cosh(), 40.0_f64.sinh(), 0.0, 0.0];
+        assert_eq!(unlit.at(distant, Species::Pine, FLOOR), (1.0, 0.25));
         assert_eq!(
-            FLOOR.response(Species::Deciduous, exposures.into_iter()),
-            (0.125, 0.25)
+            Daylight::new([])?.at(root, Species::Pine, FLOOR),
+            (1.0, 0.25)
         );
-        assert_eq!(
-            FLOOR.response(Species::Grass, [].into_iter()),
-            (0.125, 0.25)
-        );
+        Ok(())
     }
 }

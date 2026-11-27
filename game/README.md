@@ -40,13 +40,14 @@ curvature radii and seconds.
 | `ambient` | Shared night fill radiance for terrestrial surfaces |
 | `atmosphere` | Air layer thickness and background sky radiance |
 | `stars` | Stars per square curvature radius, seed, range of gaps above Earth, two RGB colors |
-| `vegetation` | Placement seed, candidate sites per species per square curvature radius, maturity, night occupancy, minimum size, shapes, vertex colors and materials |
+| `vegetation` | Placement seed, maturity, night densities, minimum sizes, shapes, vertex colors and materials |
 | `observer`, `view` | Spawn, yaw and pitch, eye height, walk speed, jump height, gravity, window size, field of view, near clip, mouse sensitivity and frame time limit |
 
 Give each Sun a `[[suns]]` entry (up to three), or set `suns = []` at the
 top of the file for a world with only night ambient. Sun, Moon and observer
-ground offsets start at the world origin and follow local X then local Z.
-Each Sun's `distance` is the perpendicular gap above its ground offset.
+use Fermi ground coordinates. For `[x, z]`, travel the signed distance `x`
+along Earth's reference X geodesic, then `z` along the perpendicular geodesic
+there. Each Sun's `distance` is its perpendicular gap above that ground point.
 Keep a Sun that contributes air scattering above the air layer, and the lunar gap above the highest
 jumping eye so the edge of the finite Moon stays hidden. Set `jump_height = 0`
 to disable jumping, or set `stars.density = 0` for a starless sky.
@@ -77,33 +78,35 @@ color. Pines have a `bark` color and three foliage tiers named `foliage.lower`,
 ## Permanent day and night
 
 Each Sun has a permanent noon at the foot of its perpendicular to Earth.
-As you walk away, its disk shrinks and approaches the horizon. The supplied
-warm, red and blue Suns have perpendicular gaps of `3R`, `1.65R` and
-`4.3R`, respectively.
+As you walk away, its disk shrinks and approaches the horizon.
 
 Each Sun owns a `[suns.vegetation]` table. The warm Sun supports deciduous
 trees, pines and grass. The red Sun favors pines, and the blue Sun supports
 grass alone. Omit a species to give it no contribution from that Sun, or
 set `vegetation = {}` on a Sun with no biome. Where regions overlap, each
-species takes the highest occupancy and the largest growth response offered
-by any Sun. In deep night the shared `night_occupancy` and `minimum_size`
+species takes the highest density and the largest growth response offered
+by any Sun. In deep night the shared `night_density` and `minimum_size`
 leave occasional tufts of grass and rarer small pines. [Vegetation model](src/world/ecology.rs)
 
-To extend one Sun's forest into dusk, lower both ends of its species'
-`light_range`. This interval measures direct irradiance at the root in units
-of the brightest individual noon on Earth, using the strongest RGB channel.
-`max_occupancy` is the bright-end probability of a candidate becoming a plant.
-Lower `half_saturation` to approach `max_size` in dimmer light. For pines,
-`daylight_range` and `daylight_suppression` can thin that Sun's forest in
-its brightest region.
+Each profile sets the expected plants per square curvature radius at ground
+distance `r` from that Sun's noon point. The Gaussian density is
+`night_density + (peak_density − night_density) × 2^(−((r − peak_radius) / half_width)²)`.
+`peak_radius = 0` centers a biome at noon. A positive radius forms a ring.
+One `half_width` on either side of the peak, density is halfway back to the
+night floor. The warm Sun's pine belt peaks at `4.25R` and reaches half its
+excess density at `3R` and `5.5R`.
+
+Growth follows direct irradiance at the root in units of the brightest
+individual noon on Earth, using the strongest RGB channel. Lower
+`half_saturation` to approach `max_size` in dimmer light. Changing a Sun's
+surface radiance can change plant sizes while preserving its density profile.
 
 Vegetation grows on a regular `{5,4}` grid. Each tile is a geodesic pentagon
 with five right angles, and four tiles meet at each corner. Each pentagon
-covers `πR²/2`. The setting `vegetation.site_density_per_species` counts
-candidate roots for one species per `R²`. The supplied density of about
-102.89 gives each species 161 or 162 candidates per tile, chosen by seeded
-rounding to preserve the mean. Roots are sampled uniformly by ground area
-before applying the species' light-dependent occupancy.
+covers `πR²/2`. For each species, the sampler generates candidate roots
+uniformly by ground area at the larger of its night density and its highest
+configured peak. The chance of keeping a candidate is the local density
+divided by that candidate density. Each species has its own seeded sequence.
 
 Crossing a tile boundary updates the loaded ground objects. The game keeps every
 tile that could come within `earth.grid.view_radius` of the observer's feet anywhere in

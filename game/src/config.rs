@@ -12,7 +12,7 @@ pub(crate) mod vegetation;
 
 use observer::{Observer, View};
 use stars::StarField;
-use vegetation::{SunVegetation, Vegetation};
+use vegetation::{Species, SunVegetation, Vegetation};
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -139,10 +139,24 @@ pub(crate) struct Air {
 }
 
 impl Config {
+    pub(crate) fn candidate_densities(&self) -> [f64; 3] {
+        Species::ALL.map(|species| {
+            self.suns
+                .iter()
+                .filter_map(|sun| species.profile(&sun.vegetation))
+                .map(|profile| profile.peak_density)
+                .fold(species.ecology(&self.vegetation).night_density, f64::max)
+        })
+    }
+
     /// Upper bound before stochastic rounding and plant occupancy sampling.
     pub(crate) fn max_sites_per_tile(&self) -> u64 {
-        3 * self.vegetation.mean_sites_per_tile().ceil() as u64
-            + self.stars.mean_per_tile().ceil() as u64
+        let plants: u64 = self
+            .candidate_densities()
+            .into_iter()
+            .map(|density| (density * std::f64::consts::FRAC_PI_2).ceil() as u64)
+            .sum();
+        plants + self.stars.mean_per_tile().ceil() as u64
     }
 
     pub fn load(path: &Path) -> Result<Self> {

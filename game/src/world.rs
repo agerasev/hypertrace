@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, f64::consts::TAU, rc::Rc};
+use std::{
+    collections::BTreeMap,
+    f64::consts::{FRAC_PI_2, TAU},
+    rc::Rc,
+};
 
 use anyhow::{Context, Result, ensure};
 use ccgeom::{Geometry3, Hyperboloid3, Space3};
@@ -80,6 +84,7 @@ pub struct World {
     placed: BTreeMap<TileId, Vec<Object<Polygon>>>,
     plants: Plants,
     vegetation: Vegetation,
+    candidate_densities: [f64; 3],
     daylight: Daylight,
     pub suns: Vec<Sun>,
     pub ambient: AmbientLight,
@@ -213,23 +218,23 @@ impl World {
 
     fn plants_in_tile(&self, tile: &TileId, frame: Pose) -> Result<Vec<Object<Polygon>>> {
         let vegetation = &self.vegetation;
-        let mut samples = Samples(tile.seed(vegetation.seed));
-        let count = samples.site_count(vegetation.mean_sites_per_tile());
-        if count == 0 {
-            return Ok(Vec::new());
-        }
+        let seed = tile.seed(vegetation.seed);
+        let daylight = self.daylight.in_frame(frame)?;
         let sampler = RootSampler::new();
         let mut meshes = Vec::new();
         let [min_maturity, max_maturity] = vegetation.maturity;
-        for _ in 0..count {
-            for species in [Species::Deciduous, Species::Pine, Species::Grass] {
+        for (species, envelope) in Species::ALL.into_iter().zip(self.candidate_densities) {
+            let ecology = species.ecology(vegetation);
+            // Separate streams keep a species' candidates stable while tuning its neighbors.
+            let mut samples = Samples(seed.wrapping_add(species as u64));
+            for _ in 0..samples.site_count(envelope * FRAC_PI_2) {
                 let root = sampler.local_root(&mut samples)?;
                 let occupied = samples.next();
                 let maturity = min_maturity + (max_maturity - min_maturity) * samples.next();
                 let yaw = TAU * samples.next();
-                let position = frame.apply_vector(root.apply_vector([1.0, 0.0, 0.0, 0.0]));
-                let (density, growth) = self.daylight.at(position, species, vegetation);
-                if occupied >= density {
+                let position = root.apply_vector([1.0, 0.0, 0.0, 0.0]);
+                let (density, growth) = daylight.at(position, species, ecology);
+                if occupied * envelope >= density {
                     continue;
                 }
                 let (shape, material) = self.plants.grown(species, maturity * growth);
@@ -259,12 +264,12 @@ pub fn world(
         domain: LightingDomain::Terrestrial,
     }];
     let mut suns = Vec::with_capacity(config.suns.len());
+    let mut biomes = Vec::with_capacity(config.suns.len());
     for source in &config.suns {
-        let pose = Pose::from_isometry(
-            Hyperboloid3::shift_x(source.ground_offset[0])
-                .chain(Hyperboloid3::shift_z(source.ground_offset[1]))
-                .chain(Hyperboloid3::shift_y(source.distance)),
-        )?;
+        let noon = Hyperboloid3::shift_x(source.ground_offset[0])
+            .chain(Hyperboloid3::shift_z(source.ground_offset[1]));
+        let pose = Pose::from_isometry(noon.chain(Hyperboloid3::shift_y(source.distance)))?;
+        biomes.push((Pose::from_isometry(noon)?, source));
         planes.push(Object {
             shape: InfinitePlane,
             pose,
@@ -278,10 +283,7 @@ pub fn world(
             ambient: source.ambient,
         });
     }
-    let daylight = Daylight::new(
-        earth,
-        suns.iter().zip(config.suns.iter().map(|s| &s.vegetation)),
-    )?;
+    let daylight = Daylight::new(biomes)?;
     let mut world = World {
         atmosphere: Atmosphere {
             ground: earth,
@@ -300,6 +302,7 @@ pub fn world(
         stars: config.stars,
         plants: Plants::new(library, &config.vegetation)?,
         vegetation: config.vegetation.clone(),
+        candidate_densities: config.candidate_densities(),
         daylight,
         suns,
         ambient: config.ambient,
@@ -321,7 +324,10 @@ mod tests {
         let library = headless_library()?;
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("config.toml");
         let mut config = Config::load(&path)?;
-        config.vegetation.site_density_per_species = 0.0;
+        config.suns.clear();
+        config.vegetation.deciduous.ecology.night_density = 0.0;
+        config.vegetation.pine.ecology.night_density = 0.0;
+        config.vegetation.grass.ecology.night_density = 0.0;
         config.stars.density = 2.0;
         config.earth.grid.view_radius = 1.0;
         let patch = Patch::new(&config.earth.grid, config.max_sites_per_tile())?;

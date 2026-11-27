@@ -9,8 +9,6 @@ use super::validate_rgb;
 #[serde(deny_unknown_fields)]
 pub(crate) struct Vegetation {
     pub seed: u64,
-    /// Candidate sites for each species per square curvature radius of Earth.
-    pub site_density_per_species: f64,
     pub maturity: [f64; 2],
     pub deciduous: Deciduous,
     pub pine: Pine,
@@ -20,47 +18,53 @@ pub(crate) struct Vegetation {
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Ecology {
-    pub night_occupancy: f64,
+    pub night_density: f64,
     pub minimum_size: f64,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct LightResponse {
-    pub light_range: [f64; 2],
+pub(crate) struct BiomeProfile {
+    pub peak_density: f64,
+    pub peak_radius: f64,
+    pub half_width: f64,
     pub half_saturation: f64,
-    pub max_occupancy: f64,
     pub max_size: f64,
-}
-
-#[derive(Clone, Copy, Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct PineResponse {
-    pub light_range: [f64; 2],
-    pub half_saturation: f64,
-    pub max_occupancy: f64,
-    pub max_size: f64,
-    pub daylight_range: [f64; 2],
-    pub daylight_suppression: f64,
-}
-
-impl PineResponse {
-    pub fn response(self) -> LightResponse {
-        LightResponse {
-            light_range: self.light_range,
-            half_saturation: self.half_saturation,
-            max_occupancy: self.max_occupancy,
-            max_size: self.max_size,
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct SunVegetation {
-    pub deciduous: Option<LightResponse>,
-    pub pine: Option<PineResponse>,
-    pub grass: Option<LightResponse>,
+    pub deciduous: Option<BiomeProfile>,
+    pub pine: Option<BiomeProfile>,
+    pub grass: Option<BiomeProfile>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Species {
+    Deciduous,
+    Pine,
+    Grass,
+}
+
+impl Species {
+    pub const ALL: [Self; 3] = [Self::Deciduous, Self::Pine, Self::Grass];
+
+    pub fn profile(self, settings: &SunVegetation) -> Option<BiomeProfile> {
+        match self {
+            Self::Deciduous => settings.deciduous,
+            Self::Pine => settings.pine,
+            Self::Grass => settings.grass,
+        }
+    }
+
+    pub fn ecology(self, settings: &Vegetation) -> Ecology {
+        match self {
+            Self::Deciduous => settings.deciduous.ecology,
+            Self::Pine => settings.pine.ecology,
+            Self::Grass => settings.grass.ecology,
+        }
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -121,15 +125,15 @@ fn fraction(value: f64) -> bool {
     (0.0..=1.0).contains(&value)
 }
 
-fn light_interval([low, high]: [f64; 2]) -> bool {
-    fraction(low) && fraction(high) && low < high
+fn valid_density(density: f64) -> bool {
+    (0.0..=f64::from(u32::MAX)).contains(&(density * std::f64::consts::FRAC_PI_2))
 }
 
 impl Ecology {
     fn validate(self) -> Result<()> {
         ensure!(
-            fraction(self.night_occupancy),
-            "night_occupancy must be a probability"
+            valid_density(self.night_density),
+            "night_density must give a finite, nonnegative count that fits a pentagon"
         );
         ensure!(
             fraction(self.minimum_size),
@@ -139,19 +143,23 @@ impl Ecology {
     }
 }
 
-impl LightResponse {
+impl BiomeProfile {
     fn validate(self) -> Result<()> {
         ensure!(
-            light_interval(self.light_range),
-            "light_range must increase within [0, 1]"
+            valid_density(self.peak_density),
+            "peak_density must give a finite, nonnegative count that fits a pentagon"
+        );
+        ensure!(
+            self.peak_radius.is_finite() && self.peak_radius >= 0.0,
+            "peak_radius must be finite and nonnegative"
+        );
+        ensure!(
+            positive(self.half_width),
+            "half_width must be finite and positive"
         );
         ensure!(
             positive(self.half_saturation),
             "half_saturation must be finite and positive"
-        );
-        ensure!(
-            fraction(self.max_occupancy),
-            "max_occupancy must be a probability"
         );
         ensure!(fraction(self.max_size), "max_size must be in [0, 1]");
         Ok(())
@@ -160,38 +168,21 @@ impl LightResponse {
 
 impl SunVegetation {
     pub(crate) fn validate(&self) -> Result<()> {
-        if let Some(settings) = self.deciduous {
-            settings.validate().context("deciduous")?;
-        }
-        if let Some(settings) = self.grass {
-            settings.validate().context("grass")?;
-        }
-        if let Some(pine) = self.pine {
-            pine.response().validate().context("pine")?;
-            ensure!(
-                light_interval(pine.daylight_range),
-                "pine.daylight_range must increase within [0, 1]"
-            );
-            ensure!(
-                fraction(pine.daylight_suppression),
-                "pine.daylight_suppression must be in [0, 1]"
-            );
+        for (name, profile) in [
+            ("deciduous", self.deciduous),
+            ("pine", self.pine),
+            ("grass", self.grass),
+        ] {
+            if let Some(profile) = profile {
+                profile.validate().context(name)?;
+            }
         }
         Ok(())
     }
 }
 
 impl Vegetation {
-    pub(crate) fn mean_sites_per_tile(&self) -> f64 {
-        // Angle defect of a right-angled geodesic pentagon, in square curvature radii.
-        self.site_density_per_species * std::f64::consts::FRAC_PI_2
-    }
-
     pub(crate) fn validate(&self) -> Result<()> {
-        ensure!(
-            (0.0..=f64::from(u32::MAX)).contains(&self.mean_sites_per_tile()),
-            "site_density_per_species must give a finite, nonnegative candidate count per pentagon"
-        );
         let [min, max] = self.maturity;
         ensure!(
             fraction(min) && fraction(max) && min <= max,

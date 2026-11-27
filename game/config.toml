@@ -28,10 +28,10 @@ grass = { peak_density = 41.16, peak_radius = 0.0, half_width = 4.47, half_satur
 
 [[suns]]
 # A broad red Sun over pine woodland.
-ground_offset = [-0.8, -0.3]
-distance = 1.65
-disk_radiance = [14.0, 1.3, 0.45]
-surface_radiance = [14.0, 1.3, 0.45]
+ground_offset = [-4, -1]
+distance = 1.6
+disk_radiance = [14.0, 6.0, 2.0]
+surface_radiance = [14.0, 6.0, 2.0]
 scattering_radiance = [5.5, 0.6, 0.3]
 ambient = { color = [0.095, 0.026, 0.02], response_factor = 0.8, response_exponent = 1.0 }
 
@@ -41,21 +41,21 @@ grass = { peak_density = 25.72, peak_radius = 0.0, half_width = 1.56, half_satur
 
 [[suns]]
 # A small high-radiance blue Sun over grassland.
-ground_offset = [1.2, -0.4]
-distance = 4.3
-disk_radiance = [95.0, 190.0, 360.0]
-surface_radiance = [95.0, 190.0, 360.0]
-scattering_radiance = [4.0, 20.0, 95.0]
+ground_offset = [6, -2]
+distance = 3.2
+disk_radiance = [120.0, 240.0, 360.0]
+surface_radiance = [120.0, 240.0, 360.0]
+scattering_radiance = [40.0, 200.0, 1000.0]
 ambient = { color = [0.018, 0.042, 0.12], response_factor = 2.0, response_exponent = 1.0 }
 
 [suns.vegetation]
 grass = { peak_density = 77.17, peak_radius = 0.0, half_width = 1.94, half_saturation = 0.01, max_size = 1.0 }
 
 [moon]
-ground_offset = [1.2, 0.0]
+ground_offset = [1.2, 2.0]
 distance = 2.0
 subdivisions = 16
-material.reflection = { weight = 1.0 }
+material.reflection = { weight = 1.0, color = [100.0, 100.0, 100.0] }
 
 [ambient]
 night = [0.01, 0.015, 0.02]

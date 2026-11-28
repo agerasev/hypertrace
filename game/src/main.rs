@@ -8,7 +8,7 @@ use wgame::{
     canvas::{Button, CanvasInput, Event, Key},
     gfx::{Camera, Target, types::color},
 };
-use winit::window::CursorGrabMode;
+use winit::{event::WindowEvent, window::CursorGrabMode};
 
 mod atmosphere;
 mod config;
@@ -112,6 +112,23 @@ impl Drop for MouseCapture<'_> {
     }
 }
 
+/// Stay responsive to close and focus events without requesting drawable frames.
+async fn wait_for_focus(window: &mut Window<'_>) -> bool {
+    let mut events = window.input();
+    while !window.raw().has_focus() {
+        window.wait_for_update(None).await;
+        while let Some(event) = events.try_next() {
+            if matches!(event, WindowEvent::CloseRequested | WindowEvent::Destroyed) {
+                return false;
+            }
+        }
+        if events.is_terminated() {
+            return false;
+        }
+    }
+    true
+}
+
 fn motion(
     input: &CanvasInput,
     size: (u32, u32),
@@ -169,26 +186,65 @@ async fn run(
     );
     let mut previous = Instant::now();
     let mut readout = readout::FrameReadout::new(previous);
+    let mut first_frame = true;
+    let mut resuming = false;
     let mut blocked = false;
     let mut smoke_frames = 0;
     let mut smoke_resized = false;
     let mut smoke_jumped = false;
 
-    while let Some(mut frame) = window.next_frame().await? {
-        let now = Instant::now();
-        let elapsed = (now - previous).as_secs_f64();
-        previous = now;
+    loop {
+        if resuming {
+            if !wait_for_focus(&mut window).await {
+                return Ok(());
+            }
+            raw.set_title("Hypergame");
+        }
+        let Some(mut frame) = window.next_frame().await? else {
+            break;
+        };
         let frame_size = frame.size();
         if frame_size.0 == 0 || frame_size.1 == 0 {
             frame.discard();
             continue;
         }
+        let first = std::mem::take(&mut first_frame);
         let input = frame.input();
-        let mut suppress_look = false;
+        if !smoke && !input.window_focused {
+            capture.set(false)?;
+            raw.set_title("Hypergame | Paused");
+            if first {
+                // Wayland needs an initial buffer to map the window and grant focus.
+                frame.clear(color::BLACK);
+                game.drawing.draw(&mut frame, &camera);
+                frame.present();
+            } else {
+                frame.discard();
+            }
+            resuming = true;
+            continue;
+        }
+        // Focus can leave and return between two frames. Only dispatch events
+        // from the latest focused interval and skip its accumulated look motion.
+        let resumed =
+            std::mem::take(&mut resuming) || input.events.contains(&Event::Focused(false));
+        let now = Instant::now();
+        let mut events = input.events.as_slice();
+        if resumed {
+            capture.set(false)?;
+            previous = now;
+            readout = readout::FrameReadout::new(now);
+            if let Some(i) = events.iter().rposition(|e| matches!(e, Event::Focused(_))) {
+                events = &events[i + 1..];
+            }
+        }
+        let elapsed = (now - previous).as_secs_f64();
+        previous = now;
+        let mut suppress_look = resumed;
         let mut reload = false;
         let mut jump = false;
         let mut scroll = 0.0;
-        for event in &input.events {
+        for event in events {
             match event {
                 Event::Key {
                     key: Key::Escape,
@@ -218,11 +274,6 @@ async fn run(
                         eprintln!("Unable to toggle mouse capture: {error}");
                     }
                     suppress_look = true;
-                }
-                Event::Focused(false) => {
-                    capture.set(false)?;
-                    suppress_look = true;
-                    jump = false;
                 }
                 Event::Cancelled => {
                     suppress_look = true;

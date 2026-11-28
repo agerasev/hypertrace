@@ -25,6 +25,9 @@ the viewing direction along the local ground axes and the upward normal.
 Zero yaw and pitch face `(0, -1, 0)`.
 FPS counts presented frames over half-second intervals of wall time.
 
+Switching focus away pauses movement, jumps and rendering, and releases mouse
+capture. Returning to the window resumes play from the paused position.
+
 In the supplied world, the observer stands `0.01875R` above Earth and walks at
 `0.1R` per second, where `R` is the curvature radius. Forward and sideways steps follow the ground
 even when looking straight up toward the Sun. A jump gives the observer an

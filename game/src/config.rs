@@ -330,13 +330,13 @@ mod tests {
         *biome = toml::Value::Table(toml::Table::new());
         let config = Config::parse(&toml::to_string(&document)?)?;
         assert!(config.suns[0].vegetation.pine.is_none());
-        pine.as_table_mut().unwrap().remove("max_size");
+        pine.as_table_mut().unwrap().remove("size");
         document["suns"][0]["vegetation"]
             .as_table_mut()
             .unwrap()
             .insert("pine".into(), pine);
         let error = Config::parse(&toml::to_string(&document)?).unwrap_err();
-        assert!(format!("{error:#}").contains("max_size"));
+        assert!(format!("{error:#}").contains("missing field `size`"));
         Ok(())
     }
 }

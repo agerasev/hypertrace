@@ -39,7 +39,7 @@ curvature radii and seconds.
 | `ambient` | Shared night fill radiance for terrestrial surfaces |
 | `atmosphere` | Air layer thickness and background sky radiance |
 | `stars` | Stars per square curvature radius, seed, range of gaps above Earth, two RGB colors |
-| `vegetation` | Placement seed, maturity, night densities, minimum sizes, shapes, vertex colors and materials |
+| `vegetation` | Placement seed, night densities and size ranges, shapes, vertex colors and materials |
 | `observer`, `view` | Spawn, yaw and pitch, eye height, walk speed, jump height, gravity, window size, field of view, near clip, mouse sensitivity and frame time limit |
 
 Give each Sun a `[[suns]]` entry (up to three), or set `suns = []` at the
@@ -79,13 +79,11 @@ color. Pines have a `bark` color and three foliage tiers named `foliage.lower`,
 Each Sun has a permanent noon at the foot of its perpendicular to Earth.
 As you walk away, its disk shrinks and approaches the horizon.
 
-Each Sun owns a `[suns.vegetation]` table. The warm Sun supports deciduous
-trees, pines and grass. The red Sun favors pines, and the blue Sun supports
-grass alone. Omit a species to give it no contribution from that Sun, or
-set `vegetation = {}` on a Sun with no biome. Where regions overlap, each
-species takes the highest density and the largest growth response offered
-by any Sun. In deep night the shared `night_density` and `minimum_size`
-leave occasional tufts of grass and rarer small pines. [Vegetation model](src/world/ecology.rs)
+Each Sun owns a `[suns.vegetation]` table with separate density and size
+profiles for each species it supports. Omit a species to give it no
+contribution from that Sun, or set `vegetation = {}` on a Sun with no biome.
+In deep night the shared `night_density` and `night_size` leave occasional
+tufts of grass and rarer small pines. [Vegetation model](src/world/ecology.rs)
 
 Each profile sets the expected plants per square curvature radius at ground
 distance `r` from that Sun's noon point. The Gaussian density is
@@ -95,10 +93,15 @@ One `half_width` on either side of the peak, density is halfway back to the
 night floor. The warm Sun's pine belt peaks at `4.25R` and reaches half its
 excess density at `3R` and `5.5R`.
 
-Growth follows direct irradiance at the root in units of the brightest
-individual noon on Earth, using the strongest RGB channel. Lower
-`half_saturation` to approach `max_size` in dimmer light. Changing a Sun's
-surface radiance can change plant sizes while preserving its density profile.
+The nested `size` table has its own `peak_radius` and `half_width`.
+At the size peak, a plant draws its scale uniformly from `size.peak`.
+A scale of 1 uses the species' full mesh. Both endpoints of the range
+follow the size Gaussian back toward that species' `ecology.night_size`.
+For example, `size = { peak = [0.65, 1.0], peak_radius = 4.25, half_width = 1.0 }`
+puts the largest pines on a ring at `4.25R`. At `3.25R` and `5.25R`
+each endpoint is halfway to its night value. Where biomes overlap, the
+species uses the highest local density, the highest lower size bound, and
+the highest upper size bound. Lighting has no effect on these distributions.
 
 Vegetation grows on a regular `{5,4}` grid. Each tile is a geodesic pentagon
 with five right angles, and four tiles meet at each corner. Each pentagon

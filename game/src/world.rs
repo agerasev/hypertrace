@@ -25,7 +25,7 @@ pub(crate) mod moon;
 mod plants;
 mod stars;
 
-use ecology::{Daylight, Species};
+use ecology::{Biomes, Species};
 pub(crate) use ground_cells::Patch;
 use ground_cells::{RootSampler, TileId};
 pub(crate) use material::Material;
@@ -85,7 +85,7 @@ pub struct World {
     plants: Plants,
     vegetation: Vegetation,
     candidate_densities: [f64; 3],
-    daylight: Daylight,
+    biomes: Biomes,
     pub suns: Vec<Sun>,
     pub ambient: AmbientLight,
 }
@@ -219,10 +219,9 @@ impl World {
     fn plants_in_tile(&self, tile: &TileId, frame: Pose) -> Result<Vec<Object<Polygon>>> {
         let vegetation = &self.vegetation;
         let seed = tile.seed(vegetation.seed);
-        let daylight = self.daylight.in_frame(frame)?;
+        let biomes = self.biomes.in_frame(frame)?;
         let sampler = RootSampler::new();
         let mut meshes = Vec::new();
-        let [min_maturity, max_maturity] = vegetation.maturity;
         for (species, envelope) in Species::ALL.into_iter().zip(self.candidate_densities) {
             let ecology = species.ecology(vegetation);
             // Separate streams keep a species' candidates stable while tuning its neighbors.
@@ -230,14 +229,15 @@ impl World {
             for _ in 0..samples.site_count(envelope * FRAC_PI_2) {
                 let root = sampler.local_root(&mut samples)?;
                 let occupied = samples.next();
-                let maturity = min_maturity + (max_maturity - min_maturity) * samples.next();
+                let size_quantile = samples.next();
                 let yaw = TAU * samples.next();
                 let position = root.apply_vector([1.0, 0.0, 0.0, 0.0]);
-                let (density, growth) = daylight.at(position, species, ecology);
+                let (density, [small, large]) = biomes.at(position, species, ecology);
                 if occupied * envelope >= density {
                     continue;
                 }
-                let (shape, material) = self.plants.grown(species, maturity * growth);
+                let size = small + (large - small) * size_quantile;
+                let (shape, material) = self.plants.grown(species, size);
                 meshes.push(Object {
                     shape,
                     pose: root.chain(&Pose::from_isometry(Hyperboloid3::rotate_y(yaw))?)?,
@@ -269,7 +269,7 @@ pub fn world(
         let noon = Hyperboloid3::shift_x(source.ground_offset[0])
             .chain(Hyperboloid3::shift_z(source.ground_offset[1]));
         let pose = Pose::from_isometry(noon.chain(Hyperboloid3::shift_y(source.distance)))?;
-        biomes.push((Pose::from_isometry(noon)?, source));
+        biomes.push((Pose::from_isometry(noon)?, source.vegetation));
         planes.push(Object {
             shape: InfinitePlane,
             pose,
@@ -283,7 +283,6 @@ pub fn world(
             ambient: source.ambient,
         });
     }
-    let daylight = Daylight::new(biomes)?;
     let mut world = World {
         atmosphere: Atmosphere {
             ground: earth,
@@ -303,7 +302,7 @@ pub fn world(
         plants: Plants::new(library, &config.vegetation)?,
         vegetation: config.vegetation.clone(),
         candidate_densities: config.candidate_densities(),
-        daylight,
+        biomes: Biomes::new(biomes)?,
         suns,
         ambient: config.ambient,
     };

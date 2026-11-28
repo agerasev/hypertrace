@@ -9,7 +9,6 @@ use super::validate_rgb;
 #[serde(deny_unknown_fields)]
 pub(crate) struct Vegetation {
     pub seed: u64,
-    pub maturity: [f64; 2],
     pub deciduous: Deciduous,
     pub pine: Pine,
     pub grass: Grass,
@@ -19,7 +18,7 @@ pub(crate) struct Vegetation {
 #[serde(deny_unknown_fields)]
 pub(crate) struct Ecology {
     pub night_density: f64,
-    pub minimum_size: f64,
+    pub night_size: [f64; 2],
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -28,8 +27,15 @@ pub(crate) struct BiomeProfile {
     pub peak_density: f64,
     pub peak_radius: f64,
     pub half_width: f64,
-    pub half_saturation: f64,
-    pub max_size: f64,
+    pub size: SizeProfile,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct SizeProfile {
+    pub peak: [f64; 2],
+    pub peak_radius: f64,
+    pub half_width: f64,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize)]
@@ -121,8 +127,20 @@ fn positive(value: f64) -> bool {
     value.is_finite() && value > 0.0
 }
 
-fn fraction(value: f64) -> bool {
-    (0.0..=1.0).contains(&value)
+fn valid_size_range([low, high]: [f64; 2]) -> bool {
+    0.0 <= low && low <= high && high <= 1.0
+}
+
+fn validate_gaussian(peak_radius: f64, half_width: f64) -> Result<()> {
+    ensure!(
+        peak_radius.is_finite() && peak_radius >= 0.0,
+        "peak_radius must be finite and nonnegative"
+    );
+    ensure!(
+        positive(half_width),
+        "half_width must be finite and positive"
+    );
+    Ok(())
 }
 
 fn valid_density(density: f64) -> bool {
@@ -136,8 +154,8 @@ impl Ecology {
             "night_density must give a finite, nonnegative count that fits a pentagon"
         );
         ensure!(
-            fraction(self.minimum_size),
-            "minimum_size must be in [0, 1]"
+            valid_size_range(self.night_size),
+            "night_size must be an ordered interval in [0, 1]"
         );
         Ok(())
     }
@@ -149,20 +167,12 @@ impl BiomeProfile {
             valid_density(self.peak_density),
             "peak_density must give a finite, nonnegative count that fits a pentagon"
         );
+        validate_gaussian(self.peak_radius, self.half_width)?;
         ensure!(
-            self.peak_radius.is_finite() && self.peak_radius >= 0.0,
-            "peak_radius must be finite and nonnegative"
+            valid_size_range(self.size.peak),
+            "size.peak must be an ordered interval in [0, 1]"
         );
-        ensure!(
-            positive(self.half_width),
-            "half_width must be finite and positive"
-        );
-        ensure!(
-            positive(self.half_saturation),
-            "half_saturation must be finite and positive"
-        );
-        ensure!(fraction(self.max_size), "max_size must be in [0, 1]");
-        Ok(())
+        validate_gaussian(self.size.peak_radius, self.size.half_width).context("size")
     }
 }
 
@@ -183,11 +193,6 @@ impl SunVegetation {
 
 impl Vegetation {
     pub(crate) fn validate(&self) -> Result<()> {
-        let [min, max] = self.maturity;
-        ensure!(
-            fraction(min) && fraction(max) && min <= max,
-            "maturity must be an ordered interval in [0, 1]"
-        );
         for (name, value) in [
             ("deciduous.height", self.deciduous.height),
             ("pine.height", self.pine.height),
@@ -228,6 +233,50 @@ impl Vegetation {
         validate_rgb(self.grass.colors.root).context("grass.colors.root")?;
         validate_rgb(self.grass.colors.middle).context("grass.colors.middle")?;
         validate_rgb(self.grass.colors.tip).context("grass.colors.tip")?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn size_profiles_validate_their_own_range_radius_and_width() -> Result<()> {
+        let mut biome = BiomeProfile {
+            peak_density: 2.0,
+            peak_radius: 1.0,
+            half_width: 0.5,
+            size: SizeProfile {
+                peak: [0.6, 0.6],
+                peak_radius: 0.0,
+                half_width: 2.0,
+            },
+        };
+        biome.validate()?;
+        for range in [[0.7, 0.3], [-0.1, 0.5], [0.0, 1.1], [0.0, f64::NAN]] {
+            biome.size.peak = range;
+            assert!(biome.validate().is_err());
+            assert!(
+                Ecology {
+                    night_density: 0.0,
+                    night_size: range
+                }
+                .validate()
+                .is_err()
+            );
+        }
+        biome.size.peak = [0.0, 1.0];
+        for (radius, width) in [
+            (-0.1, 1.0),
+            (f64::INFINITY, 1.0),
+            (1.0, 0.0),
+            (1.0, f64::NAN),
+        ] {
+            biome.size.peak_radius = radius;
+            biome.size.half_width = width;
+            assert!(biome.validate().is_err());
+        }
         Ok(())
     }
 }

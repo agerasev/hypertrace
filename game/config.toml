@@ -21,10 +21,26 @@ scattering_radiance = [40.0, 80.0, 192.0]
 ambient = { color = [0.19, 0.285, 0.38], response_factor = 1.0, response_exponent = 1.0 }
 
 [suns.vegetation]
-# Peak density is plants per R². Radius and half-width are ground distances in R.
-deciduous = { peak_density = 41.16, peak_radius = 0.0, half_width = 0.97, half_saturation = 0.07, max_size = 1.0 }
-pine = { peak_density = 30.87, peak_radius = 4.25, half_width = 1.25, half_saturation = 3e-5, max_size = 1.0 }
-grass = { peak_density = 41.16, peak_radius = 0.0, half_width = 4.47, half_saturation = 5e-6, max_size = 1.0 }
+# Density is plants per R². Size is a uniform range of species mesh scales.
+# Each curve has its own peak radius and half-width, in curvature radii.
+deciduous = {
+  peak_density = 41.16,
+  peak_radius = 0.0,
+  half_width = 0.97,
+  size = { peak = [0.6142, 0.9449], peak_radius = 0.0, half_width = 1.317 },
+}
+pine = {
+  peak_density = 30.87,
+  peak_radius = 4.25,
+  half_width = 1.25,
+  size = { peak = [0.65, 1.0], peak_radius = 0.0, half_width = 3.875 },
+}
+grass = {
+  peak_density = 41.16,
+  peak_radius = 0.0,
+  half_width = 4.47,
+  size = { peak = [0.65, 1.0], peak_radius = 0.0, half_width = 4.472 },
+}
 
 [[suns]]
 # A broad red Sun over pine woodland.
@@ -36,8 +52,18 @@ scattering_radiance = [5.5, 0.6, 0.3]
 ambient = { color = [0.095, 0.026, 0.02], response_factor = 0.8, response_exponent = 1.0 }
 
 [suns.vegetation]
-pine = { peak_density = 46.78, peak_radius = 0.21, half_width = 0.36, half_saturation = 0.04, max_size = 1.0 }
-grass = { peak_density = 25.72, peak_radius = 0.0, half_width = 1.56, half_saturation = 0.03, max_size = 0.70 }
+pine = {
+  peak_density = 46.78,
+  peak_radius = 0.21,
+  half_width = 0.36,
+  size = { peak = [0.6474, 0.9961], peak_radius = 0.0, half_width = 1.799 },
+}
+grass = {
+  peak_density = 25.72,
+  peak_radius = 0.0,
+  half_width = 1.56,
+  size = { peak = [0.4539, 0.6983], peak_radius = 0.0, half_width = 1.894 },
+}
 
 [[suns]]
 # A small high-radiance blue Sun over grassland.
@@ -49,7 +75,12 @@ scattering_radiance = [40.0, 200.0, 1000.0]
 ambient = { color = [0.018, 0.042, 0.12], response_factor = 2.0, response_exponent = 1.0 }
 
 [suns.vegetation]
-grass = { peak_density = 77.17, peak_radius = 0.0, half_width = 1.94, half_saturation = 0.01, max_size = 1.0 }
+grass = {
+  peak_density = 77.17,
+  peak_radius = 0.0,
+  half_width = 1.94,
+  size = { peak = [0.65, 1.0], peak_radius = 0.0, half_width = 2.226 },
+}
 
 [moon]
 ground_offset = [1.2, 2.0]
@@ -96,7 +127,6 @@ max_frame_seconds = 0.1      # maximum time advanced in one interactive frame
 
 [vegetation]
 seed = 0
-maturity = [0.65, 1.0]
 
 # Each Sun lists the species it supports. These values set the shared night
 # baseline; meshes, materials, and candidate sites belong to the species.
@@ -105,7 +135,7 @@ height = 0.0625
 bark = [0.29, 0.14, 0.055]
 foliage = [0.28, 0.51, 0.10]
 material.reflection = { weight = 1.0 }
-ecology = { night_density = 0.0, minimum_size = 0.35 }
+ecology = { night_density = 0.0, night_size = [0.2275, 0.35] }
 
 [vegetation.pine]
 height = 0.055
@@ -114,7 +144,7 @@ foliage.lower = [0.07, 0.32, 0.14]
 foliage.middle = [0.095, 0.39, 0.15]
 foliage.upper = [0.15, 0.47, 0.18]
 material.reflection = { weight = 1.0 }
-ecology = { night_density = 0.03087, minimum_size = 0.22 }
+ecology = { night_density = 0.03087, night_size = [0.143, 0.22] }
 
 [vegetation.grass]
 blades = 9
@@ -126,4 +156,4 @@ colors.middle = [0.28, 0.53, 0.09]
 colors.tip = [0.35, 0.61, 0.13]
 material.reflection = { weight = 0.78 }
 material.transmission = { weight = 0.22 }
-ecology = { night_density = 0.30866, minimum_size = 0.25 }
+ecology = { night_density = 0.30866, night_size = [0.1625, 0.25] }

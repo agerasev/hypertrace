@@ -210,7 +210,7 @@ impl Shader {
                 let inverse = surface.local_to_parent.inverse()?;
                 let mut record = [[0.0; 4]; MAX_SUNS];
                 for (plane, sun) in record.iter_mut().zip(suns) {
-                    let [w, x, y, z] = inverse.chain(sun)?.apply_vector([0.0, 0.0, 1.0, 0.0]);
+                    let [w, x, y, z] = inverse.chain(sun)?.apply_vector(InfinitePlane::NORMAL);
                     *plane = [x as f32, y as f32, z as f32, w as f32];
                     ensure!(
                         plane.iter().all(|v| v.is_finite()),

@@ -1,7 +1,12 @@
 use std::f64::consts::TAU;
 
 use anyhow::Result;
-use wgame::{Library, prelude::Transformable, shapes::Polygon};
+use wgame::{
+    Library,
+    glam::{Mat3, Vec3},
+    prelude::Transformable,
+    shapes::Polygon,
+};
 
 use crate::config::vegetation::{Deciduous, Grass, Pine, Vegetation};
 
@@ -41,12 +46,15 @@ struct Plant {
     indices: Vec<u32>,
 }
 
+// The plant's half-space patch has geodesic ground v=0. Rotate its embedded
+// frame so +v is world +Z and increasing chart height points along world -Y at the root.
+const CHART_TO_PLANT: Mat3 = Mat3::from_cols(Vec3::X, Vec3::Z, Vec3::NEG_Y);
+
 impl Plant {
-    // The root is (0,0,1) in local half-space. +y grows away from
-    // the geodesic ground plane and z is an offset in chart height.
+    // Author in a Z-up frame with the root at zero; store the chart's (u, v, h).
     fn vertex(&mut self, [x, y, z]: [f64; 3], rgb: [f32; 3]) -> u32 {
         let index = self.vertices.len() as u32;
-        self.vertices.push(([x, y, 1.0 + z], rgb));
+        self.vertices.push(([x, z, 1.0 - y], rgb));
         index
     }
 
@@ -65,7 +73,11 @@ impl Plant {
                 let angle = TAU * f64::from(side) / f64::from(sides);
                 let (sin, cos) = angle.sin_cos();
                 let i = self.vertex(
-                    [radius * height * cos, level * height, radius * height * sin],
+                    [
+                        radius * height * cos,
+                        -radius * height * sin,
+                        level * height,
+                    ],
                     color,
                 );
                 if ring > 0 {
@@ -75,7 +87,7 @@ impl Plant {
                 }
             }
         }
-        let top = self.vertex([0.0, height * tip, 0.0], color);
+        let top = self.vertex([0.0, 0.0, height * tip], color);
         for side in 0..sides {
             self.indices
                 .extend([top - sides + side, top, top - sides + (side + 1) % sides]);
@@ -86,7 +98,7 @@ impl Plant {
     }
 
     fn upload(&self, library: &Library) -> Result<Polygon> {
-        mesh(library, &self.vertices, &self.indices)
+        Ok(mesh(library, &self.vertices, &self.indices)?.transform(CHART_TO_PLANT))
     }
 }
 
@@ -125,10 +137,10 @@ fn grass(library: &Library, tuft: &Grass) -> Result<Polygon> {
         let height = low + (high - low) * f64::from(blade * 5 % 7) / 6.0;
         // The blade bends outward near its tip, where it catches sunlight
         // even when the nearly vertical lower face is in shade.
-        let mut strip = |radius: f64, width: f64, y, tint| {
+        let mut strip = |radius: f64, width: f64, z, tint| {
             [-width, width].map(|offset| {
                 plant.vertex(
-                    [radius * cos - offset * sin, y, radius * sin + offset * cos],
+                    [radius * cos - offset * sin, -radius * sin - offset * cos, z],
                     tint,
                 )
             })
@@ -146,10 +158,43 @@ fn grass(library: &Library, tuft: &Grass) -> Result<Polygon> {
             tuft.colors.middle,
         );
         let tip = plant.vertex(
-            [tuft.spread_radius * cos, height, tuft.spread_radius * sin],
+            [tuft.spread_radius * cos, -tuft.spread_radius * sin, height],
             tuft.colors.tip,
         );
         plant.indices.extend([a, b, c, b, d, c, c, d, tip]);
     }
     plant.upload(library)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ccgeom::Space3;
+
+    #[test]
+    fn a_tapered_plant_stands_on_z_zero_with_its_base_facing_down() {
+        let mut plant = Plant::default();
+        let sides = 6;
+        plant.tapered_rings(0.14, sides, &[(0.0, 0.1), (0.5, 0.08)], 1.0, [1.0; 3]);
+        let space = Space3::<f64, -1>::unit();
+        let vertices: Vec<_> = plant
+            .vertices
+            .iter()
+            .map(|&(chart, _)| {
+                let p = space.point_from_half_space(chart.into()).unwrap();
+                CHART_TO_PLANT * (Vec3::new(p[1] as f32, p[2] as f32, p[3] as f32) / p[0] as f32)
+            })
+            .collect();
+        let (faces, remainder) = plant.indices.as_chunks::<3>();
+        assert!(remainder.is_empty());
+        for face in faces {
+            let [a, b, c] = face.map(|index| vertices[index as usize]);
+            assert!(a.z >= 0.0 && b.z >= 0.0 && c.z >= 0.0);
+            if a.z == 0.0 && b.z == 0.0 && c.z == 0.0 {
+                assert!((b - a).cross(c - a).z < 0.0);
+            }
+        }
+        assert!(vertices[..sides as usize].iter().all(|v| v.z == 0.0));
+        assert!(vertices.last().unwrap().z > 0.0);
+    }
 }

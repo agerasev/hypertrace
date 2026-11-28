@@ -18,7 +18,8 @@ pub(super) fn circumradius() -> f64 {
 }
 
 pub(super) fn side_direction(side: u8) -> [f64; 2] {
-    let angle = TAU * f64::from(side) / 5.0;
+    // Tile addresses number sides clockwise from +X when viewed from above.
+    let angle = -TAU * f64::from(side) / 5.0;
     [angle.cos(), angle.sin()]
 }
 
@@ -28,15 +29,14 @@ struct Side {
 }
 
 static SIDES: LazyLock<[Side; 5]> = LazyLock::new(|| {
-    // For side zero, this half-turn about Z has exactly zero scalar part.
-    // Conjugate the side isometry by yaw to keep Earth's Y axis invariant.
-    let half_turn = Pose::from_rows([[0.0, 0.0, 0.0, 1.0], [0.0; 4]]).unwrap();
+    // For side zero, this half-turn about Y has exactly zero scalar part.
+    let half_turn = Pose::from_rows([[0.0, 0.0, 1.0, 0.0], [0.0; 4]]).unwrap();
     let across = Pose::from_isometry(Hyperboloid3::shift_x(2.0 * inradius())).unwrap();
     let reflection = across.chain(&half_turn).unwrap();
     std::array::from_fn(|index| {
         // A half-turn about the side geodesic reflects the ground pentagon
-        // and reverses +Y. Its center moves twice the inradius outward.
-        let yaw = Pose::from_isometry(Hyperboloid3::rotate_y(-TAU * index as f64 / 5.0)).unwrap();
+        // and reverses +Z. Its center moves twice the inradius outward.
+        let yaw = Pose::from_isometry(Hyperboloid3::rotate_z(-TAU * index as f64 / 5.0)).unwrap();
         Side {
             direction: side_direction(index as u8),
             reflection: yaw
@@ -107,11 +107,11 @@ impl TileId {
         })
     }
 
-    /// Local +Y points up on Earth, including for odd reflection words.
+    /// Local +Z points up on Earth, including for odd reflection words.
     pub(in crate::world) fn upright_frame(&self) -> Result<Pose> {
         let frame = self.frame()?;
         if self.flips_normal() {
-            // This half-turn reflects Z and preserves the local pentagon.
+            // This half-turn reflects Y in the ground and preserves the local pentagon.
             let half_turn = Pose::from_rows([[0.0, 1.0, 0.0, 0.0], [0.0; 4]])?;
             frame.chain(&half_turn)
         } else {
@@ -125,11 +125,11 @@ impl TileId {
         let support = inradius().tanh();
         let world_w = eye.apply_vector([1.0, 0.0, 0.0, 0.0])[0];
         loop {
-            let [w, x, _, z] = relative.apply_vector([1.0, 0.0, 0.0, 0.0]);
+            let [w, x, y, _] = relative.apply_vector([1.0, 0.0, 0.0, 0.0]);
             ensure!(w.is_finite() && w > 0.0, "eye exceeds ground tiling range");
-            // Orthogonal projection onto Earth rescales (w,x,z) equally. Thus
+            // Orthogonal projection onto Earth rescales (w,x,y) equally. Thus
             // these Klein coordinates depend only on the point under the eye.
-            let (kx, kz) = (x / w, z / w);
+            let (kx, ky) = (x / w, y / w);
             let mut outside = None;
             // Composing an eye-relative frame can cancel terms the size of its
             // world boost. Keep points on a shared side with the first chamber
@@ -140,8 +140,8 @@ impl TileId {
                 "ground tile boundary exceeds pose precision"
             );
             for (index, side) in SIDES.iter().enumerate() {
-                let [nx, nz] = side.direction;
-                let excess = nx * kx + nz * kz - support;
+                let [nx, ny] = side.direction;
+                let excess = nx * kx + ny * ky - support;
                 if excess > largest {
                     outside = Some(index);
                     largest = excess;
@@ -193,10 +193,10 @@ mod tests {
             let mut next = BTreeSet::new();
             for tile in frontier {
                 let frame = tile.frame()?;
-                let normal = frame.apply_vector([0.0, 0.0, 1.0, 0.0]);
+                let normal = frame.apply_vector([0.0, 0.0, 0.0, 1.0]);
                 let sign = if tile.flips_normal() { -1.0 } else { 1.0 };
-                assert!((normal[2] - sign).abs() < 1e-12);
-                assert!(normal[0].abs() + normal[1].abs() + normal[3].abs() < 1e-12);
+                assert!((normal[3] - sign).abs() < 1e-12);
+                assert!(normal[0].abs() + normal[1].abs() + normal[2].abs() < 1e-12);
                 for (side, geometry) in SIDES.iter().enumerate() {
                     let neighbor = tile.neighbor(side as u8);
                     let step = frame.chain(&geometry.reflection)?;
@@ -211,7 +211,7 @@ mod tests {
 
     #[test]
     fn eye_lookup_resolves_nearby_tiles_after_distant_ground_travel() -> Result<()> {
-        for direction in [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [-0.6, 0.0, 0.8]] {
+        for direction in [[1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [-0.6, -0.8, 0.0]] {
             let eye = Pose::from_isometry(
                 Space3::<f64, -1>::unit()
                     .translation(direction.into(), 20.0)
@@ -220,10 +220,10 @@ mod tests {
             let tile = TileId::at(eye)?;
             assert_eq!(TileId::at(tile.frame()?)?, tile);
             let local = tile.frame()?.inverse()?.chain(&eye)?;
-            let [w, x, _, z] = local.apply_vector([1.0, 0.0, 0.0, 0.0]);
+            let [w, x, y, _] = local.apply_vector([1.0, 0.0, 0.0, 0.0]);
             for side in SIDES.iter() {
-                let [nx, nz] = side.direction;
-                assert!((x * nx + z * nz) / w < inradius().tanh() + 1e-6);
+                let [nx, ny] = side.direction;
+                assert!((x * nx + y * ny) / w < inradius().tanh() + 1e-6);
             }
         }
         Ok(())
@@ -235,16 +235,16 @@ mod tests {
         let tile = TileId::at(far)?;
         let frame = tile.frame()?;
         for side in 0..5 {
-            let [x, z] = side_direction(side);
+            let [x, y] = side_direction(side);
             let site = |offset: f64| {
                 let boost = Space3::<f64, -1>::unit()
-                    .translation([x, 0.0, z].into(), inradius() + offset)
+                    .translation([x, y, 0.0].into(), inradius() + offset)
                     .unwrap();
                 frame.chain(&Pose::from_isometry(boost)?)
             };
             let edge = site(0.0)?;
             let owner = TileId::at(edge)?;
-            let raised = edge.move_local([0.0, 0.05, 0.0], [0.5, 1.3, 0.0], 1.0)?;
+            let raised = edge.move_local([0.0, 0.0, 0.05], [0.5, 0.0, 1.3], 1.0)?;
             assert_eq!(TileId::at(raised)?, owner);
             let neighbor = tile.neighbor(side);
             assert!(owner == tile || owner == neighbor);

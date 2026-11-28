@@ -144,7 +144,7 @@ pub(crate) fn shader(
     let shapes = library.shapes().state();
     let sky_config = ShaderConfig {
         vertex_source: "
-            let ndc = vertex.position.xz;
+            let ndc = vertex.position.xy;
             output.position = vec4<f32>(ndc, 1.0, 1.0);
             output.eye_point = vec4<f32>(ndc.x/view_matrix[0][0], ndc.y/view_matrix[1][1], -1.0, 0.0);
         ".into(),
@@ -181,8 +181,8 @@ pub(crate) fn shader(
 
 fn plane_quad(library: &Library) -> Polygon {
     let shapes = library.shapes();
-    let vertices = [(-1.0, -1.0), (-1.0, 1.0), (1.0, 1.0), (1.0, -1.0)]
-        .map(|(x, z)| Vertex::new(Vec4::new(x, 0.0, z, 1.0), Vec3::Z).with_normal(Vec3::ZERO));
+    let vertices = [(-1.0, 1.0), (-1.0, -1.0), (1.0, -1.0), (1.0, 1.0)]
+        .map(|(x, y)| Vertex::new(Vec4::new(x, y, 0.0, 1.0), Vec3::Z).with_normal(Vec3::ZERO));
     shapes.mesh(Mesh::from_arrays(
         shapes.state(),
         &vertices,
@@ -205,15 +205,15 @@ fn projective_pair(map: Pose) -> Result<[Vec4; 2]> {
 }
 
 /// In-plane translation to the perpendicular foot of the reference origin.
-/// Its local coordinates are (X,0,Z)/sqrt(1+Y²) for an origin at (W,X,Y,Z).
+/// Its spatial coordinates are (X,Y,0)/sqrt(1+Z²) for an origin at (W,X,Y,Z).
 fn plane_foot(relative: Pose) -> Result<Pose> {
     let [_, x, y, z] = relative.inverse()?.apply_vector([1.0, 0.0, 0.0, 0.0]);
-    let radial = x.hypot(z);
+    let radial = x.hypot(y);
     if radial == 0.0 {
         return Ok(Pose::identity());
     }
-    let distance = (radial / y.hypot(1.0)).asinh();
-    let axis = [x / radial, 0.0, z / radial];
+    let distance = (radial / z.hypot(1.0)).asinh();
+    let axis = [x / radial, y / radial, 0.0];
     Pose::from_isometry(
         Space3::<f64, -1>::unit()
             .translation(axis.into(), distance)

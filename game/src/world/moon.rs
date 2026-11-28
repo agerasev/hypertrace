@@ -1,5 +1,3 @@
-use std::f64::consts::FRAC_PI_2;
-
 use anyhow::{Result, ensure};
 use ccgeom::{Geometry3, Hyperboloid3};
 use wgame::{
@@ -77,12 +75,11 @@ impl HexGrid {
 
 /// A finite patch of the horosphere h=1 in its own upper-half-space chart.
 pub(super) fn moon(library: &Library, moon: &Moon) -> Result<Object<Polygon>> {
-    // The +z chart axis points away from Earth.
+    // The horosphere chart's +Z axis already follows the Earth normal.
     let pose = Pose::from_isometry(
         Hyperboloid3::shift_x(moon.ground_offset[0])
-            .chain(Hyperboloid3::shift_z(moon.ground_offset[1]))
-            .chain(Hyperboloid3::shift_y(moon.distance))
-            .chain(Hyperboloid3::rotate_x(-FRAC_PI_2)),
+            .chain(Hyperboloid3::shift_y(moon.ground_offset[1]))
+            .chain(Hyperboloid3::shift_z(moon.distance)),
     )?;
 
     let grid = HexGrid::new(moon.subdivisions)?;

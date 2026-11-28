@@ -22,7 +22,8 @@ Both triples use `(x, y, z)` order. In `pos`, `x` and `y` are the Fermi ground
 coordinates used by `spawn_ground`, and `z` is eye height above Earth, including
 any jump. All three distances are in curvature radii. The `dir` unit vector gives
 the viewing direction along the local ground axes and the upward normal.
-Zero yaw and pitch face `(0, -1, 0)`.
+At zero yaw and pitch, +X points right, +Y points forward and +Z points up.
+Positive yaw turns left about the local Earth normal. Positive pitch looks up.
 FPS counts presented frames over half-second intervals of wall time.
 
 Switching focus away pauses movement, jumps and rendering, and releases mouse
@@ -67,6 +68,9 @@ top of the file for a world with only night ambient. Sun, Moon and observer
 use Fermi ground coordinates. For `[x, y]`, travel the signed distance `x`
 along Earth's reference geodesic, then `y` along the perpendicular geodesic
 there. Each Sun's `distance` is its perpendicular gap above that ground point.
+To migrate a config from the previous Y-up frame, negate the second component
+of `observer.spawn_ground` and of each Sun and Moon `ground_offset`. Copy yaw,
+pitch and perpendicular distances as they are.
 Keep a Sun that contributes air scattering above the air layer, and the lunar gap above the highest
 jumping eye so the edge of the finite Moon stays hidden. Set `jump_height = 0`
 to disable jumping, or set `stars.density = 0` for a starless sky.
@@ -230,7 +234,9 @@ poses. On movement the host composes the inverse eye pose with each occupied
 tile's pose in `f64`. The vertex shader applies the fixed object-to-tile pose
 followed by the tile-to-eye pose in `f32`. Global objects such as the Moon use
 their own camera-relative poses. The eye stays at the origin of the rendering
-frame, looking along negative Z. [Tile rendering](src/projection/tiles.rs)
+frame, looking along camera-local −Z. The eye pose maps that axis to the
+walker's viewing direction and camera-local +Y to the top of the view.
+[Tile rendering](src/projection/tiles.rs)
 
 For a camera-relative point, `(X/W, Y/W, Z/W)` are its Klein coordinates.
 Geodesic triangles are planar in this model. Passing `(X, Y, Z, W)` to

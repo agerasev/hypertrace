@@ -5,6 +5,7 @@ use serde::Deserialize;
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct Observer {
+    /// Signed Fermi coordinates on Earth, in world X then Y.
     pub spawn_ground: [f64; 2],
     pub yaw_degrees: f64,
     pub pitch_degrees: f64,
@@ -42,9 +43,9 @@ impl Observer {
             self.jump_height.is_finite() && self.jump_height >= 0.0,
             "observer.jump_height must be finite and nonnegative"
         );
-        let [x, z] = self.spawn_ground;
+        let [x, y] = self.spawn_ground;
         ensure!(
-            (x.cosh() * z.cosh() * (self.height + self.jump_height).cosh()).is_finite(),
+            (x.cosh() * y.cosh() * (self.height + self.jump_height).cosh()).is_finite(),
             "observer spawn and peak eye position exceed f64 hyperboloid coordinates"
         );
         ensure!(

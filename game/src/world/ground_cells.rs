@@ -14,7 +14,7 @@ pub(super) use tile::TileId;
 type Vector = [f64; 4];
 
 fn dot(a: Vector, b: Vector) -> f64 {
-    -a[0] * b[0] + a[1] * b[1] + a[3] * b[3]
+    -a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 
 struct Pentagon {
@@ -28,16 +28,16 @@ impl Pentagon {
         let c = tile::circumradius();
         Self {
             normals: std::array::from_fn(|i| {
-                let [x, z] = tile::side_direction(i as u8);
-                [r.sinh(), r.cosh() * x, 0.0, r.cosh() * z]
+                let [x, y] = tile::side_direction(i as u8);
+                [r.sinh(), r.cosh() * x, r.cosh() * y, 0.0]
             }),
             vertices: std::array::from_fn(|i| {
-                let angle = (2 * i + 1) as f64 * PI / 5.0;
+                let angle = -((2 * i + 1) as f64) * PI / 5.0;
                 [
                     c.cosh(),
                     c.sinh() * angle.cos(),
-                    0.0,
                     c.sinh() * angle.sin(),
+                    0.0,
                 ]
             }),
         }
@@ -202,13 +202,13 @@ mod tests {
                         0.0
                     };
                 let step = geometry
-                    .translation([azimuth.cos(), 0.0, azimuth.sin()].into(), radius)
+                    .translation([azimuth.cos(), -azimuth.sin(), 0.0].into(), radius)
                     .unwrap();
                 let start = home.frame()?.chain(&Pose::from_isometry(step)?)?;
                 for k in 0..50 {
                     let angle = (k as f64) * 2.0 * PI / 50.0;
                     let walk = geometry
-                        .translation([angle.cos(), 0.0, angle.sin()].into(), 1.5)
+                        .translation([angle.cos(), -angle.sin(), 0.0].into(), 1.5)
                         .unwrap();
                     let end = TileId::at(start.chain(&Pose::from_isometry(walk)?)?)?;
                     assert!(tiles.contains(&end));

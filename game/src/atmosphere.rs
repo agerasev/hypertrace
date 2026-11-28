@@ -9,7 +9,7 @@ use wgpu::util::DeviceExt;
 
 use crate::{
     projection::Pose,
-    world::{MAX_SUNS, Sun},
+    world::{InfinitePlane, MAX_SUNS, Sun},
 };
 
 #[derive(Clone, Copy)]
@@ -91,10 +91,10 @@ impl AirBindings {
                 }
                 let normal = world_to_ground
                     .chain(&sun.pose)?
-                    .apply_vector([0.0, 0.0, 1.0, 0.0]);
+                    .apply_vector(InfinitePlane::NORMAL);
                 ensure!(
-                    normal[2].abs() > atmosphere.height.cosh()
-                        && normal[2].is_sign_positive() == normal[0].is_sign_positive(),
+                    normal[3].abs() > atmosphere.height.cosh()
+                        && normal[3].is_sign_positive() == normal[0].is_sign_positive(),
                     "each scattering Sun must lie above the entire atmospheric layer"
                 );
                 sources.push((sun.pose, scattering));
@@ -129,7 +129,7 @@ impl AirBindings {
         let mut frame = AirFrame::zeroed();
         if let Some(atmosphere) = self.atmosphere {
             let plane = |pose| -> Result<[f32; 4]> {
-                let [w, x, y, z] = view.chain(pose)?.apply_vector([0.0, 0.0, 1.0, 0.0]);
+                let [w, x, y, z] = view.chain(pose)?.apply_vector(InfinitePlane::NORMAL);
                 let plane = Vec4::new(x as f32, y as f32, z as f32, -w as f32);
                 ensure!(
                     plane.is_finite(),

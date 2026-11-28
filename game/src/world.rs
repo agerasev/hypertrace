@@ -45,9 +45,13 @@ pub struct Object<S> {
     pub domain: LightingDomain,
 }
 
-/// The complete geodesic plane through the local origin with normal +Y.
+/// The complete geodesic plane through the local origin with normal +Z.
 #[derive(Clone, Copy)]
 pub struct InfinitePlane;
+
+impl InfinitePlane {
+    pub(crate) const NORMAL: [f64; 4] = [0.0, 0.0, 0.0, 1.0];
+}
 
 /// Instances batched for drawing in one Earth tile's coordinate frame.
 #[derive(Clone)]
@@ -240,7 +244,7 @@ impl World {
                 let (shape, material) = self.plants.grown(species, size);
                 meshes.push(Object {
                     shape,
-                    pose: root.chain(&Pose::from_isometry(Hyperboloid3::rotate_y(yaw))?)?,
+                    pose: root.chain(&Pose::from_isometry(Hyperboloid3::rotate_z(yaw))?)?,
                     material,
                     domain: LightingDomain::Terrestrial,
                 });
@@ -267,8 +271,8 @@ pub fn world(
     let mut biomes = Vec::with_capacity(config.suns.len());
     for source in &config.suns {
         let noon = Hyperboloid3::shift_x(source.ground_offset[0])
-            .chain(Hyperboloid3::shift_z(source.ground_offset[1]));
-        let pose = Pose::from_isometry(noon.chain(Hyperboloid3::shift_y(source.distance)))?;
+            .chain(Hyperboloid3::shift_y(source.ground_offset[1]));
+        let pose = Pose::from_isometry(noon.chain(Hyperboloid3::shift_z(source.distance)))?;
         biomes.push((Pose::from_isometry(noon)?, source.vegetation));
         planes.push(Object {
             shape: InfinitePlane,
@@ -343,8 +347,8 @@ mod tests {
         let id = origin.neighbor(0);
         let frame = id.upright_frame()?;
         let poses = [
-            frame.move_local([0.1, 0.05, -0.1], [0.2, 0.1, -0.4], 1.0)?,
-            frame.move_local([-0.2, 0.04, 0.0], [0.1, -0.3, 0.7], 1.0)?,
+            frame.move_local([0.1, 0.1, 0.05], [0.2, 0.4, 0.1], 1.0)?,
+            frame.move_local([-0.2, 0.0, 0.04], [0.1, -0.7, -0.3], 1.0)?,
         ];
         let object = |pose| Object {
             shape: shape.clone(),
@@ -365,7 +369,7 @@ mod tests {
         assert_eq!(first.meshes.len(), 1);
         assert_eq!(loaded(&world, &id).meshes.len(), 2);
 
-        world.objects_near(Pose::from_isometry(Hyperboloid3::shift_z(6.0))?)?;
+        world.objects_near(Pose::from_isometry(Hyperboloid3::shift_y(-6.0))?)?;
         assert!(!world.loaded.contains_key(&id));
         world.objects_near(frame)?;
         let restored = loaded(&world, &id);

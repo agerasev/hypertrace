@@ -50,6 +50,11 @@ pub(crate) fn headless_library() -> Result<Library> {
     Ok(Library::new(&graphics))
 }
 
+// The renderer looks along local -Z. A level game observer looks along +Y with +Z up.
+fn eye_at(foot: Pose, height: f64, pitch: f64) -> Result<Pose> {
+    foot.move_local([0.0, 0.0, height], [FRAC_PI_2 + pitch, 0.0, 0.0], 1.0)
+}
+
 fn snapshot(
     target: &mut RenderTexture,
     camera: &Camera,
@@ -96,7 +101,8 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
     let far = triangle(1.0, [0.0, 0.0, 1.0])?;
     let identity = Pose::identity();
     for world_offset in [0.0, 20.0] {
-        let frame = identity.move_local([world_offset, 0.0, 0.0], [0.0; 3], 1.0)?;
+        let foot = identity.move_local([world_offset, 0.0, 0.0], [0.0; 3], 1.0)?;
+        let frame = eye_at(foot, 0.0, 0.0)?;
         // Draw the red foreground first so a painter's-order renderer would
         // incorrectly show the blue background triangle at the red probe.
         let mut objects = Objects {
@@ -153,7 +159,7 @@ fn moved_camera_sees_depth_ordered_triangles_in_a_distant_world_frame() -> Resul
         objects.planes.push(Object {
             shape: InfinitePlane,
             domain: Terrestrial,
-            pose: frame.move_local([0.0, 0.0, -0.7], [FRAC_PI_2, 0.0, 0.0], 1.0)?,
+            pose: frame.move_local([0.0, 0.0, -0.7], [0.0; 3], 1.0)?,
             material: Material::emissive([0.0, 1.0, 0.0]),
         });
         let drawing = projection::prepare(&objects, frame, &shader)?;
@@ -193,17 +199,17 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
     let target = || library.texturing().render_texture(size, Default::default());
     let projection = projection::camera_matrix(size, 0.85, 0.005);
     let camera = Camera::new(library.state(), projection);
-    let ground = Pose::identity().move_local([12.0, 0.0, 0.0], [0.0, 0.3, 0.0], 1.0)?;
+    let ground = Pose::identity().move_local([12.0, 0.0, 0.0], [0.0, 0.0, 0.3], 1.0)?;
     let shader = projection::shader(
         &library,
         &[
             plane_light(
-                ground.move_local([0.0, 1.1, 0.0], [0.0; 3], 1.0)?,
+                ground.move_local([0.0, 0.0, 1.1], [0.0; 3], 1.0)?,
                 [0.7, 0.9, 0.6],
                 [0.2, 0.5, 0.6],
             ),
             plane_light(
-                ground.move_local([0.7, 1.8, -0.3], [0.0; 3], 1.0)?,
+                ground.move_local([0.7, 0.3, 1.8], [0.0; 3], 1.0)?,
                 [0.4, 0.15, 0.0],
                 [0.1, 0.0, 0.02],
             ),
@@ -240,7 +246,10 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
         Ok(Object {
             shape: shape.scale(scale),
             domain: Terrestrial,
-            pose: Pose::identity().move_local(position, [0.0, yaw, 0.0], 1.0)?,
+            // The raw chart triangles face their local Z axis. Stand them upright.
+            pose: Pose::identity()
+                .move_local(position, [0.0, 0.0, yaw], 1.0)?
+                .move_local([0.0; 3], [FRAC_PI_2, 0.0, 0.0], 1.0)?,
             material: Material {
                 reflection: [0.42, 0.33, 0.21],
                 transmission: [0.03, 0.08, 0.16],
@@ -253,8 +262,8 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
             shape: InfinitePlane,
             domain: Celestial,
             pose: Pose::identity()
-                .move_local([0.0; 3], [0.48, yaw, 0.0], 1.0)?
-                .move_local([0.0, 0.0, -2.5], [FRAC_PI_2, 0.0, 0.0], 1.0)?,
+                .move_local([0.0; 3], [0.48, 0.0, yaw], 1.0)?
+                .move_local([0.0, 2.5, 0.0], [FRAC_PI_2, 0.0, 0.0], 1.0)?,
             // The reflective term exposes any ambient picked up by the tiled plane.
             material: Material {
                 reflection: [0.3; 3],
@@ -267,29 +276,17 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
             pose: ground,
             planes: vec![star(-0.34, [0.8, 0.1, 0.0])?, star(0.37, [0.0, 0.7, 0.1])?],
             meshes: vec![
-                object(
-                    &triangle,
-                    [-0.21, 0.10, -0.65],
-                    0.15,
-                    0.85,
-                    [0.32, 0.0, 0.0],
-                )?,
-                object(&diamond, [0.0, 0.23, -0.95], -0.20, 0.95, [0.0, 0.32, 0.0])?,
-                object(
-                    &triangle,
-                    [-0.14, 0.42, -0.73],
-                    0.04,
-                    0.8,
-                    [0.32, 0.12, 0.0],
-                )?,
+                object(&triangle, [-0.21, 0.65, 0.10], 0.15, 0.85, [0.32, 0.0, 0.0])?,
+                object(&diamond, [0.0, 0.95, 0.23], -0.20, 0.95, [0.0, 0.32, 0.0])?,
+                object(&triangle, [-0.14, 0.73, 0.42], 0.04, 0.8, [0.32, 0.12, 0.0])?,
             ],
         }),
         Rc::new(GroundTile {
-            pose: ground.move_local([0.4, 0.0, -0.1], [0.0, 0.25, 0.0], 1.0)?,
+            pose: ground.move_local([0.4, 0.1, 0.0], [0.0, 0.0, 0.25], 1.0)?,
             planes: vec![],
             meshes: vec![object(
                 &triangle,
-                [0.03, 0.07, -0.62],
+                [0.03, 0.62, 0.07],
                 0.1,
                 0.9,
                 [0.0, 0.0, 0.32],
@@ -316,8 +313,10 @@ fn queued_tile_drawings_match_global_meshes_and_planes_from_each_camera() -> Res
         ..Objects::default()
     };
     let eyes = [
-        ground.move_local([0.0, 0.12, 0.0], [0.0; 3], 1.0)?,
-        ground.move_local([0.10, 0.20, 0.04], [-0.04, -0.1, 0.02], 1.0)?,
+        eye_at(ground, 0.12, 0.0)?,
+        ground
+            .move_local([0.10, -0.04, 0.20], [0.0, 0.0, -0.1], 1.0)?
+            .move_local([0.0; 3], [FRAC_PI_2 - 0.04, 0.0, 0.02], 1.0)?,
     ];
     let mut reference = target()?;
     let first = snapshot(
@@ -438,7 +437,7 @@ fn configured_sun_disk_and_reflected_sunlight_have_independent_colors() -> Resul
         (FRAC_PI_2, Vec3::new(1.0, 0.25, 0.0)),
         (-FRAC_PI_2, Vec3::Z / 1.0_f32.cosh().powi(2)),
     ] {
-        let eye = Pose::identity().move_local([0.0, 0.1, 0.0], [pitch, 0.0, 0.0], 1.0)?;
+        let eye = eye_at(Pose::identity(), 0.1, pitch)?;
         let drawing = projection::prepare(&surfaces, eye, &shader)?;
         let image = snapshot(&mut target, &camera, &drawing)?;
         let pixel = image.data()[image.data().len() / 2];
@@ -481,13 +480,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         ..Material::default()
     };
     let earth = plane(Pose::identity(), white, Terrestrial);
-    let above = |foot: Pose, height: f64| {
-        foot.move_local(
-            [0.0, height, 0.0],
-            [-height.signum() * FRAC_PI_2, 0.0, 0.0],
-            1.0,
-        )
-    };
+    let above = |foot: Pose, height: f64| eye_at(foot, height, -height.signum() * FRAC_PI_2);
     let illuminated = |pose, surface_radiance| {
         projection::shader(
             &library,
@@ -512,7 +505,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         // Translate the light and observer along an infinite receiver. Its stored
         // pose stays fixed, even when the bright spot is 12 radii away.
         let center = Pose::identity().move_local([translation, 0.0, 0.0], [0.0; 3], 1.0)?;
-        let sun = center.move_local([0.0, gap, 0.0], [0.0; 3], 1.0)?;
+        let sun = center.move_local([0.0, 0.0, gap], [0.0; 3], 1.0)?;
         let light = illuminated(sun, [1.0; 3])?;
         for radius in [0.0_f64, 1.8, 3.0] {
             let foot = center.move_local([radius, 0.0, 0.0], [0.0; 3], 1.0)?;
@@ -525,10 +518,10 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         }
     }
 
-    let sun = Pose::identity().move_local([0.0, gap, 0.0], [0.0; 3], 1.0)?;
+    let sun = Pose::identity().move_local([0.0, 0.0, gap], [0.0; 3], 1.0)?;
     let light = illuminated(sun, [1.0; 3])?;
     let moon_height = 0.35;
-    let moon_pose = Pose::identity().move_local([0.0, moon_height, 0.0], [0.0; 3], 1.0)?;
+    let moon_pose = Pose::identity().move_local([0.0, 0.0, moon_height], [0.0; 3], 1.0)?;
     let moon = plane(moon_pose, white, Celestial);
     check_center(
         &render(&moon, above(moon_pose, 0.2)?, &light)?,
@@ -544,11 +537,10 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         emission: [0.05, 0.025, 0.04],
     };
     let tint = [0.7, 0.85, 0.6];
-    let triangle = world::mesh(
-        &library,
-        &[[-0.2, 0.0, 0.8], [0.2, 0.0, 0.8], [0.0, 0.0, 1.2]].map(|point| (point, tint)),
-        &[0, 1, 2],
-    )?;
+    // The unit hemisphere of the half-space chart maps to the Z=0 receiver.
+    let h = (1.0_f64 - 0.2_f64.powi(2)).sqrt();
+    let receiver = [[-0.16, -0.12, h], [0.16, -0.12, h], [0.0, 0.2, h]];
+    let triangle = world::mesh(&library, &receiver.map(|point| (point, tint)), &[0, 1, 2])?;
     let mesh = |domain| Objects {
         meshes: vec![Object {
             shape: triangle.clone(),
@@ -596,16 +588,15 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     }
 
     // Tilt the vertex normals of a flat receiver. Their spatial components
-    // interpolate to (0.5,1,0) on the axis; the analytic disk is above its
+    // interpolate to (0.5,0,1) on the axis; the analytic disk is above its
     // shading horizon, so irradiance scales with the inclination cosine.
     let tilted = Objects {
         meshes: vec![Object {
             shape: world::mesh_with_normals(
                 &library,
-                &[[-0.2, 0.0, 0.8], [0.2, 0.0, 0.8], [0.0, 0.0, 1.2]]
-                    .map(|point| (point, [1.0; 3])),
+                &receiver.map(|point| (point, [1.0; 3])),
                 &[0, 1, 2],
-                |[w, x, _, _]| Vec3::new((0.5 + 2.0 * x / w) as f32, 1.0, 0.0),
+                |[w, x, _, _]| Vec3::new((0.5 + 2.0 * x / w) as f32, 0.0, 1.0),
             )?,
             domain: Terrestrial,
             pose: Pose::identity(),
@@ -624,7 +615,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
 
     // Tilt the light to put its disc centre on the receiver's horizon.
     // Integrating the visible half-disc gives (a - sin(a)*cos(a))/pi.
-    let grazing_sun = Pose::identity().move_local([gap, 0.0, 0.0], [0.0, 0.0, FRAC_PI_2], 1.0)?;
+    let grazing_sun = Pose::identity().move_local([gap, 0.0, 0.0], [0.0, FRAC_PI_2, 0.0], 1.0)?;
     let grazing = illuminated(grazing_sun, [1.0; 3])?;
     let a = gap.tanh().acos();
     check_center(
@@ -633,7 +624,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
     );
 
     let emitter = plane(sun, Material::emissive([1.0; 3]), Celestial);
-    let looking_up = Pose::identity().move_local([0.0; 3], [FRAC_PI_2, 0.0, 0.0], 1.0)?;
+    let looking_up = eye_at(Pose::identity(), 0.0, FRAC_PI_2)?;
     let frame = render(&emitter, looking_up, &light)?;
     // At this distance the disc's image radius is 32.5/sinh(gap) pixels.
     // The diagonal probe is outside the disc but inside its two-triangle scaffold.
@@ -689,7 +680,7 @@ fn geodesic_plane_light_has_a_finite_disc_and_lights_diffuse_faces() -> Result<(
         (0.5, 0.8, Vec3::new(1.6, 0.75, 0.09)),
         (-0.35, 0.55, Vec3::new(0.05, 0.2, 2.5)),
     ] {
-        let pose = Pose::identity().move_local([offset, gap, 0.0], [0.0; 3], 1.0)?;
+        let pose = Pose::identity().move_local([offset, 0.0, gap], [0.0; 3], 1.0)?;
         let fill = SunAmbient {
             color: (color * 0.1).to_array(),
             response_factor: gap as f32,
@@ -747,7 +738,7 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
         (0.85, 0.95, [0.2, 0.7, 0.0]),
         (-0.45, 1.9, [0.0, 0.1, 1.0]),
     ] {
-        let pose = Pose::identity().move_local([foot, gap, 0.0], [0.0; 3], 1.0)?;
+        let pose = Pose::identity().move_local([foot, 0.0, gap], [0.0; 3], 1.0)?;
         suns.push(plane_light(pose, [0.0; 3], scattering_radiance));
     }
     let air = Atmosphere {
@@ -764,14 +755,14 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
         let start = eye.apply_vector([1.0, 0.0, 0.0, 0.0]);
         let forward = eye.apply_vector([0.0, 0.0, 0.0, -1.0]);
         let step = limit / 16384.0;
-        let [w, x, y, z] = sun.pose.apply_vector([0.0, 0.0, 1.0, 0.0]);
+        let [w, x, y, z] = sun.pose.apply_vector([0.0, 0.0, 0.0, 1.0]);
         let signed_distance_sinh = |p: [f64; 4]| -w * p[0] + x * p[1] + y * p[2] + z * p[3];
         let (a, b) = (signed_distance_sinh(start), signed_distance_sinh(forward));
         let mut sum = 0.0;
         for i in 0..16384 {
             let distance = (i as f64 + 0.5) * step;
             let (s, c) = (distance.sinh(), distance.cosh());
-            let altitude = start[2] * c + forward[2] * s;
+            let altitude = start[3] * c + forward[3] * s;
             if !(0.0..=air.height.sinh()).contains(&altitude) {
                 continue;
             }
@@ -794,14 +785,14 @@ fn atmosphere_matches_rayleigh_quadrature_to_surfaces_and_open_sky() -> Result<(
         ("near emitter", 0.0, height, FRAC_PI_2, Some(0.025)),
         ("distant emitter", 0.0, height, FRAC_PI_2, Some(0.85)),
     ] {
-        let foot = Pose::identity().move_local([0.0, 0.0, ground_offset], [0.0; 3], 1.0)?;
-        let eye = foot.move_local([0.0, eye_height, 0.0], [pitch, 0.0, 0.0], 1.0)?;
+        let foot = Pose::identity().move_local([0.0, -ground_offset, 0.0], [0.0; 3], 1.0)?;
+        let eye = eye_at(foot, eye_height, pitch)?;
         let mut objects = Objects::default();
         let emission = if let Some(distance) = hit {
             objects.planes.push(Object {
                 shape: InfinitePlane,
                 domain: Celestial,
-                pose: foot.move_local([0.0, eye_height + distance, 0.0], [0.0; 3], 1.0)?,
+                pose: foot.move_local([0.0, 0.0, eye_height + distance], [0.0; 3], 1.0)?,
                 material: Material {
                     reflection: [0.5; 3],
                     transmission: [0.5; 3],

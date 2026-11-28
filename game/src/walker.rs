@@ -1,4 +1,6 @@
-//! Walking on the geodesic Earth plane (embedded Y = 0), in curvature-radius units.
+//! Walking on the geodesic Earth plane (embedded Z = 0), in curvature-radius units.
+use std::f64::consts::FRAC_PI_2;
+
 use anyhow::{Context, Result, ensure};
 use ccgeom::{Geometry3, Hyperboloid3, Space3};
 
@@ -7,11 +9,11 @@ use crate::{config::observer::Observer, projection::Pose};
 #[derive(Clone, Copy)]
 pub(crate) struct Walker {
     observer: Observer,
-    /// Maps the origin to the ground beneath the feet and local +Y to the Earth normal.
+    /// Maps the origin to the ground beneath the feet and local +Z to the Earth normal.
     ground: Pose,
     pitch: f64,
     altitude: f64,
-    /// Ground strafe, Earth-normal speed and ground forward speed, in radii/s.
+    /// Local [right, forward, up] speed components, in curvature radii per second.
     velocity: [f64; 3],
 }
 
@@ -26,10 +28,10 @@ pub(crate) struct ObserverCoordinates {
 impl Walker {
     pub(crate) fn new(observer: Observer) -> Result<Self> {
         observer.validate()?;
-        let [x, z] = observer.spawn_ground;
+        let [x, y] = observer.spawn_ground;
         let ground = Pose::identity().move_local(
-            [x, 0.0, z],
-            [0.0, observer.yaw_degrees.to_radians(), 0.0],
+            [x, y, 0.0],
+            [0.0, 0.0, observer.yaw_degrees.to_radians()],
             1.0,
         )?;
         Ok(Self {
@@ -57,25 +59,23 @@ impl Walker {
 
     /// Highest eye height remaining in the current flight under the current gravity.
     pub(crate) fn peak_eye_height(&self) -> f64 {
-        let rise = self.velocity[1].max(0.0) / self.observer.gravity.sqrt();
+        let rise = self.velocity[2].max(0.0) / self.observer.gravity.sqrt();
         (0.5 * rise).mul_add(rise, self.eye_height())
     }
 
     pub(crate) fn coordinates(&self) -> ObserverCoordinates {
-        let [_, x, _, z] = self.ground.apply_vector([1.0, 0.0, 0.0, 0.0]);
-        // Bx(a) Bz(b) maps the origin to (cosh(a)cosh(b), sinh(a)cosh(b), 0, sinh(b)).
-        let position = [(x / z.hypot(1.0)).asinh(), z.asinh(), self.eye_height()];
-        // The X boost leaves embedded Z unchanged. In Bx(a) Bz(b) Ry(yaw)
-        // the Z components of right and back are -sin(yaw) and cos(yaw)
-        // multiplied by the same cosh(b); atan2 cancels it.
+        let [_, x, y, _] = self.ground.apply_vector([1.0, 0.0, 0.0, 0.0]);
+        // Bx(a) By(b) maps the origin to (cosh(a)cosh(b), sinh(a)cosh(b), sinh(b), 0).
+        let position = [(x / y.hypot(1.0)).asinh(), y.asinh(), self.eye_height()];
+        // In Bx(a) By(b) Rz(yaw), the Y components of right and forward
+        // are sin(yaw) and cos(yaw) multiplied by the same cosh(b).
         let right = self.ground.apply_vector([0.0, 1.0, 0.0, 0.0]);
-        let back = self.ground.apply_vector([0.0, 0.0, 0.0, 1.0]);
-        let (sin_yaw, cos_yaw) = (-right[3]).atan2(back[3]).sin_cos();
+        let forward = self.ground.apply_vector([0.0, 0.0, 1.0, 0.0]);
+        let (sin_yaw, cos_yaw) = right[2].atan2(forward[2]).sin_cos();
         let (sin_pitch, cos_pitch) = self.pitch.sin_cos();
-        // Camera forward is local -Z. The readout orders renderer axes as X, Z, Y (up).
         ObserverCoordinates {
             position,
-            direction: [-sin_yaw * cos_pitch, -cos_yaw * cos_pitch, sin_pitch],
+            direction: [-sin_yaw * cos_pitch, cos_yaw * cos_pitch, sin_pitch],
         }
     }
 
@@ -83,13 +83,17 @@ impl Walker {
         self.velocity
     }
 
+    /// Maps renderer camera coordinates (+Y up, −Z forward) into the Z-up world.
     pub(crate) fn eye_pose(&self) -> Result<Pose> {
-        self.ground
-            .move_local([0.0, self.eye_height(), 0.0], [self.pitch, 0.0, 0.0], 1.0)
+        self.ground.move_local(
+            [0.0, 0.0, self.eye_height()],
+            [FRAC_PI_2 + self.pitch, 0.0, 0.0],
+            1.0,
+        )
     }
 
     pub(crate) fn is_airborne(&self) -> bool {
-        self.altitude > 0.0 || self.velocity[1] > 0.0
+        self.altitude > 0.0 || self.velocity[2] > 0.0
     }
 
     /// Horizontal axes are fractions of full walking speed. Look deltas are
@@ -113,7 +117,7 @@ impl Walker {
         let limit = self.observer.pitch_limit_degrees.to_radians();
         let pitch = (self.pitch + pitch).clamp(-limit, limit);
         let mut altitude = self.altitude;
-        let mut up = self.velocity[1];
+        let mut up = self.velocity[2];
         if jump && !self.is_airborne() {
             up = self.observer.launch_speed();
         }
@@ -150,21 +154,21 @@ impl Walker {
         if distance > 0.0 {
             // A single in-plane boost parallel-transports the walking frame
             // along the geodesic, including when moving diagonally.
-            let axis = [strafe / magnitude, 0.0, -forward / magnitude];
+            let axis = [strafe / magnitude, forward / magnitude, 0.0];
             let step = Space3::<f64, -1>::unit()
                 .translation(axis.into(), distance)
                 .context("invalid ground displacement")?;
             ground = ground.chain(&Pose::from_isometry(step)?)?;
         }
         if yaw != 0.0 {
-            ground = ground.chain(&Pose::from_isometry(Hyperboloid3::rotate_y(yaw))?)?;
+            ground = ground.chain(&Pose::from_isometry(Hyperboloid3::rotate_z(yaw))?)?;
         }
         // Ground motion precedes yaw. Express its transported velocity in the final heading.
         let (sin_yaw, cos_yaw) = yaw.sin_cos();
         let velocity = [
             right * cos_yaw + forward_speed * sin_yaw,
-            up,
             forward_speed * cos_yaw - right * sin_yaw,
+            up,
         ];
         ensure!(
             velocity.into_iter().all(f64::is_finite),
@@ -186,7 +190,6 @@ impl Walker {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::f64::consts::FRAC_PI_2;
 
     const ORIGIN: [f64; 4] = [1.0, 0.0, 0.0, 0.0];
 
@@ -208,7 +211,26 @@ mod tests {
     }
 
     fn height(walker: Walker) -> Result<f64> {
-        Ok(walker.eye_pose()?.apply_vector(ORIGIN)[2].asinh())
+        Ok(walker.eye_pose()?.apply_vector(ORIGIN)[3].asinh())
+    }
+
+    #[test]
+    fn level_camera_maps_right_forward_and_up_into_the_world_basis() -> Result<()> {
+        let settings = observer(0.0);
+        let walker = Walker::new(settings)?;
+        let eye = walker.eye_pose()?;
+        let h = settings.height;
+        for (input, expected) in [
+            (ORIGIN, [h.cosh(), 0.0, 0.0, h.sinh()]),
+            ([0.0, 1.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0]),
+            ([0.0, 0.0, 0.0, -1.0], [0.0, 0.0, 1.0, 0.0]),
+            ([0.0, 0.0, 1.0, 0.0], [h.sinh(), 0.0, 0.0, h.cosh()]),
+        ] {
+            for (actual, expected) in eye.apply_vector(input).into_iter().zip(expected) {
+                close(actual, expected);
+            }
+        }
+        Ok(())
     }
 
     #[test]
@@ -222,8 +244,8 @@ mod tests {
                 let magnitude = strafe.hypot(forward);
                 close(w.acosh(), settings.walk_speed);
                 close(x, settings.walk_speed.sinh() * strafe / magnitude);
-                close(y, 0.0);
-                close(z, -settings.walk_speed.sinh() * forward / magnitude);
+                close(y, settings.walk_speed.sinh() * forward / magnitude);
+                close(z, 0.0);
                 close(height(walker)?, settings.height);
             }
         }
@@ -238,14 +260,14 @@ mod tests {
             ..observer(0.0)
         };
         let mut walker = Walker::new(settings)?;
-        let [dx, dz] = settings.spawn_ground;
+        let [dx, dy] = settings.spawn_ground;
         let [w, x, y, z] = walker.ground.apply_vector(ORIGIN);
-        close(w, dx.cosh() * dz.cosh());
-        close(x, dx.sinh() * dz.cosh());
-        close(y, 0.0);
-        close(z, dz.sinh());
+        close(w, dx.cosh() * dy.cosh());
+        close(x, dx.sinh() * dy.cosh());
+        close(y, dy.sinh());
+        close(z, 0.0);
 
-        let walk_frame = Pose::identity().move_local([dx, 0.0, dz], [0.0; 3], 1.0)?;
+        let walk_frame = Pose::identity().move_local([dx, dy, 0.0], [0.0; 3], 1.0)?;
         let turn = FRAC_PI_2 - settings.yaw_degrees.to_radians();
         walker.step(0.0, 0.0, turn, 0.0, false, 0.0)?;
         walker.step(0.0, 1.0, 0.0, 0.0, false, 0.8)?;
@@ -260,11 +282,11 @@ mod tests {
             let eye = walker.eye_pose()?;
             let right = eye.apply_vector([0.0, 1.0, 0.0, 0.0]);
             let up = eye.apply_vector([0.0, 0.0, 1.0, 0.0]);
-            // A tangent's Y component divided by cosh(h) is its dot product
+            // A tangent's Z component divided by cosh(h) is its dot product
             // with the local upward unit normal at height h.
-            close(right[2], 0.0);
-            close(up[2] / settings.height.cosh(), walker.pitch.cos());
-            assert!(up[2] > 0.0 && walker.pitch.abs() < FRAC_PI_2);
+            close(right[3], 0.0);
+            close(up[3] / settings.height.cosh(), walker.pitch.cos());
+            assert!(up[3] > 0.0 && walker.pitch.abs() < FRAC_PI_2);
         }
         Ok(())
     }
@@ -301,7 +323,7 @@ mod tests {
             let pitch = settings.pitch_degrees.to_radians();
             let yaw = yaw_degrees.to_radians();
             close(initial.direction[0], -yaw.sin() * pitch.cos());
-            close(initial.direction[1], -yaw.cos() * pitch.cos());
+            close(initial.direction[1], yaw.cos() * pitch.cos());
             close(initial.direction[2], pitch.sin());
 
             walker.step(0.6, 0.8, -0.8, 0.3, false, 1.4)?;
@@ -314,7 +336,7 @@ mod tests {
             let recreated = Walker::new(Observer {
                 spawn_ground: [x, y],
                 height: z,
-                yaw_degrees: (-dx).atan2(-dy).to_degrees(),
+                yaw_degrees: (-dx).atan2(dy).to_degrees(),
                 pitch_degrees: dz.asin().to_degrees(),
                 ..settings
             })?;
@@ -334,13 +356,13 @@ mod tests {
         let settings = observer(0.0);
         let mut walker = Walker::new(settings)?;
         walker.step(1.0, 1.0, 0.0, 0.0, false, 0.5)?;
-        let [right, up, forward] = walker.velocity();
+        let [right, forward, up] = walker.velocity();
         let speed = settings.walk_speed / 2.0_f64.sqrt();
         close(right, speed);
         close(up, 0.0);
         close(forward, speed);
         walker.step(0.0, 0.5, FRAC_PI_2, 0.0, false, 0.5)?;
-        let [right, _, forward] = walker.velocity();
+        let [right, forward, _] = walker.velocity();
         close(right, 0.5 * settings.walk_speed);
         close(forward, 0.0);
         assert!(!walker.step(0.0, 0.0, 0.0, 0.0, false, 0.5)?);
@@ -377,7 +399,7 @@ mod tests {
         close(height(limited)?, edited.height);
         limited.step(0.0, 1.0, 0.0, 0.0, false, 1.0)?;
         let travel = walker.ground.inverse()?.chain(&limited.ground)?;
-        close(travel.apply_vector(ORIGIN)[3], -edited.walk_speed.sinh());
+        close(travel.apply_vector(ORIGIN)[2], edited.walk_speed.sinh());
         Ok(())
     }
 
@@ -398,7 +420,7 @@ mod tests {
             walker.eye_pose()?.components()?
         );
         let initial_height = walker.eye_height();
-        let initial_velocity = walker.velocity()[1];
+        let initial_velocity = walker.velocity()[2];
         assert_eq!(restored.velocity(), walker.velocity());
         close(
             walker.peak_eye_height(),
@@ -410,7 +432,7 @@ mod tests {
         );
         restored.step(0.0, 0.0, 0.0, 0.0, false, quarter)?;
         close(
-            restored.velocity()[1],
+            restored.velocity()[2],
             initial_velocity - edited.gravity * quarter,
         );
         close(
@@ -420,7 +442,7 @@ mod tests {
         close(restored.peak_eye_height(), restored.eye_height());
         restored.step(0.0, 0.0, 0.0, 0.0, false, 2.0 * quarter)?;
         assert!(!restored.is_airborne());
-        close(restored.velocity()[1], 0.0);
+        close(restored.velocity()[2], 0.0);
         assert!(!restored.step(0.0, 0.0, 0.0, 0.0, true, quarter)?);
         Ok(())
     }

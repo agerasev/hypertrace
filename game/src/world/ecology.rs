@@ -16,8 +16,8 @@ struct Biome {
 
 impl Biome {
     fn radius(&self, root: [f64; 4]) -> f64 {
-        let [_, x, _, z] = self.to_noon.apply_vector(root);
-        x.hypot(z).asinh()
+        let [_, x, y, _] = self.to_noon.apply_vector(root);
+        x.hypot(y).asinh()
     }
 }
 
@@ -123,8 +123,8 @@ mod tests {
 
     #[test]
     fn density_and_size_follow_their_own_rings_in_every_direction() -> Result<()> {
-        let shifted_noon = Pose::identity().move_local([1.2, 0.0, -0.8], [0.0; 3], 1.0)?;
-        let tile = shifted_noon.move_local([0.6, 0.0, -0.3], [0.0, 0.4, 0.0], 1.0)?;
+        let shifted_noon = Pose::identity().move_local([1.2, 0.8, 0.0], [0.0; 3], 1.0)?;
+        let tile = shifted_noon.move_local([0.6, 0.3, 0.0], [0.0, 0.0, 0.4], 1.0)?;
         let noon_to_tile = tile.inverse()?.chain(&shifted_noon)?;
         let biomes = Biomes::new([(shifted_noon, pines(RING))])?.in_frame(tile)?;
         for (r, density, size_weight) in [
@@ -138,8 +138,8 @@ mod tests {
                 let root = noon_to_tile.apply_vector([
                     r.cosh(),
                     r.sinh() * bearing.cos(),
+                    -r.sinh() * bearing.sin(),
                     0.0,
-                    r.sinh() * bearing.sin(),
                 ]);
                 let (d, [lo, hi]) = biomes.at(root, Species::Pine, FLOOR);
                 close(d, density);
@@ -160,7 +160,7 @@ mod tests {
         });
         let biomes = Biomes::new([(noon, narrow)])?.in_frame(noon)?;
         let r = 1e-8_f64;
-        let root = [r.cosh(), 0.0, 0.0, r.sinh()];
+        let root = [r.cosh(), 0.0, -r.sinh(), 0.0];
         close(biomes.at(root, Species::Pine, FLOOR).0, 13.0);
         Ok(())
     }

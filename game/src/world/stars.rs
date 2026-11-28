@@ -17,7 +17,7 @@ pub(super) fn in_tile(settings: &StarField, id: &TileId) -> Result<Vec<Object<In
         .map(|_| {
             let foot = sampler.local_root(&mut samples)?;
             let gap = near + (far - near) * samples.next();
-            let pose = foot.chain(&Pose::from_isometry(Hyperboloid3::shift_y(gap))?)?;
+            let pose = foot.chain(&Pose::from_isometry(Hyperboloid3::shift_z(gap))?)?;
             let color = start.lerp(end, samples.next()).as_vec3();
             Ok(Object {
                 shape: InfinitePlane,
@@ -83,14 +83,14 @@ mod tests {
 
             let world = frame.chain(&star.pose)?;
             assert_eq!(TileId::at(world)?, tile);
-            let [w, x, y, z] = world.apply_vector([0.0, 0.0, 1.0, 0.0]);
+            let [w, x, y, z] = world.apply_vector(InfinitePlane::NORMAL);
             // The two unit spacelike plane normals have inner product cosh(gap).
-            assert!((settings.gap[0]..settings.gap[1]).contains(&y.acosh()));
-            let sinh_gap = ((y - 1.0) * (y + 1.0)).sqrt();
+            assert!((settings.gap[0]..settings.gap[1]).contains(&z.acosh()));
+            let sinh_gap = ((z - 1.0) * (z + 1.0)).sqrt();
             // The projection of the star normal onto Earth is proportional to
             // the foot. Walk halfway there along the geodesic from noon.
             let half_w = ((1.0 + w / sinh_gap) * 0.5).sqrt();
-            let half_sinh_d = w * half_w - (x * x + z * z) / (2.0 * half_w * sinh_gap);
+            let half_sinh_d = w * half_w - (x * x + y * y) / (2.0 * half_w * sinh_gap);
             let radius_sine = |sinh_d: f64| 1.0 / sinh_d.hypot(1.0);
             assert!(radius_sine(sinh_gap) >= radius_sine(half_sinh_d));
             assert!(radius_sine(half_sinh_d) >= radius_sine(w));
@@ -122,7 +122,7 @@ mod tests {
         for (star, plain) in stars.iter().zip(flat) {
             assert_eq!(star.pose.components()?, plain.pose.components()?);
             assert_eq!(plain.material.emission, [0.17, 1.3, f32::MAX]);
-            let gap = star.pose.apply_vector([0.0, 0.0, 1.0, 0.0])[2].acosh();
+            let gap = star.pose.apply_vector(InfinitePlane::NORMAL)[3].acosh();
             nearest = nearest.min(gap);
             farthest = farthest.max(gap);
 

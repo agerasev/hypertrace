@@ -15,6 +15,14 @@ pub(crate) struct Walker {
     velocity: [f64; 3],
 }
 
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct ObserverCoordinates {
+    /// Fermi ground coordinates in spawn order, followed by eye height, in curvature radii.
+    pub position: [f64; 3],
+    /// Unit viewing direction in the local orthonormal frame of the position axes.
+    pub direction: [f64; 3],
+}
+
 impl Walker {
     pub(crate) fn new(observer: Observer) -> Result<Self> {
         observer.validate()?;
@@ -51,6 +59,24 @@ impl Walker {
     pub(crate) fn peak_eye_height(&self) -> f64 {
         let rise = self.velocity[1].max(0.0) / self.observer.gravity.sqrt();
         (0.5 * rise).mul_add(rise, self.eye_height())
+    }
+
+    pub(crate) fn coordinates(&self) -> ObserverCoordinates {
+        let [_, x, _, z] = self.ground.apply_vector([1.0, 0.0, 0.0, 0.0]);
+        // Bx(a) Bz(b) maps the origin to (cosh(a)cosh(b), sinh(a)cosh(b), 0, sinh(b)).
+        let position = [(x / z.hypot(1.0)).asinh(), z.asinh(), self.eye_height()];
+        // The X boost leaves embedded Z unchanged. In Bx(a) Bz(b) Ry(yaw)
+        // the Z components of right and back are -sin(yaw) and cos(yaw)
+        // multiplied by the same cosh(b); atan2 cancels it.
+        let right = self.ground.apply_vector([0.0, 1.0, 0.0, 0.0]);
+        let back = self.ground.apply_vector([0.0, 0.0, 0.0, 1.0]);
+        let (sin_yaw, cos_yaw) = (-right[3]).atan2(back[3]).sin_cos();
+        let (sin_pitch, cos_pitch) = self.pitch.sin_cos();
+        // Camera forward is local -Z. The readout orders renderer axes as X, Z, Y (up).
+        ObserverCoordinates {
+            position,
+            direction: [-sin_yaw * cos_pitch, -cos_yaw * cos_pitch, sin_pitch],
+        }
     }
 
     pub(crate) fn velocity(&self) -> [f64; 3] {
@@ -251,6 +277,55 @@ mod tests {
         let clip = crate::projection::camera_matrix((640, 480), 0.66, 0.006) * ground;
         assert!(clip.z > 0.0 && clip.z < clip.w);
         assert!(clip.x.abs() < clip.w && clip.y.abs() < clip.w);
+        Ok(())
+    }
+
+    #[test]
+    fn coordinates_recover_spawn_and_reconstruct_a_transported_walking_frame() -> Result<()> {
+        for (spawn_ground, yaw_degrees) in [
+            ([-3.2, 0.0], 0.0),
+            ([1.2, -2.4], 134.0),
+            ([-0.7, 1.6], -123.0),
+        ] {
+            let settings = Observer {
+                spawn_ground,
+                yaw_degrees,
+                ..observer(0.27)
+            };
+            let mut walker = Walker::new(settings)?;
+            let initial = walker.coordinates();
+            let [x, y, z] = initial.position;
+            close(x, spawn_ground[0]);
+            close(y, spawn_ground[1]);
+            close(z, settings.height);
+            let pitch = settings.pitch_degrees.to_radians();
+            let yaw = yaw_degrees.to_radians();
+            close(initial.direction[0], -yaw.sin() * pitch.cos());
+            close(initial.direction[1], -yaw.cos() * pitch.cos());
+            close(initial.direction[2], pitch.sin());
+
+            walker.step(0.6, 0.8, -0.8, 0.3, false, 1.4)?;
+            walker.step(-0.4, 0.7, 0.35, -0.02, true, 0.09)?;
+            assert!(walker.is_airborne());
+            let location = walker.coordinates();
+            let [x, y, z] = location.position;
+            let [dx, dy, dz] = location.direction;
+            close(dx.hypot(dy).hypot(dz), 1.0);
+            let recreated = Walker::new(Observer {
+                spawn_ground: [x, y],
+                height: z,
+                yaw_degrees: (-dx).atan2(-dy).to_degrees(),
+                pitch_degrees: dz.asin().to_degrees(),
+                ..settings
+            })?;
+            for axis in [ORIGIN, [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 1.0]] {
+                let expected = walker.eye_pose()?.apply_vector(axis);
+                let actual = recreated.eye_pose()?.apply_vector(axis);
+                for (a, b) in actual.into_iter().zip(expected) {
+                    close(a, b);
+                }
+            }
+        }
         Ok(())
     }
 

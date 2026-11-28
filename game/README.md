@@ -17,6 +17,14 @@ the mouse. The horizon stays level as you turn and look up or down. Press
 Space to jump and scroll to change the field of view. Press R to reload the
 config or Escape to close.
 
+The window title shows FPS, position (`pos`) and viewing direction (`dir`).
+Both triples use `(x, y, z)` order. In `pos`, `x` and `y` are the Fermi ground
+coordinates used by `spawn_ground`, and `z` is eye height above Earth, including
+any jump. All three distances are in curvature radii. The `dir` unit vector gives
+the viewing direction along the local ground axes and the upward normal.
+Zero yaw and pitch face `(0, -1, 0)`.
+FPS counts presented frames over half-second intervals of wall time.
+
 In the supplied world, the observer stands `0.01875R` above Earth and walks at
 `0.1R` per second, where `R` is the curvature radius. Forward and sideways steps follow the ground
 even when looking straight up toward the Sun. A jump gives the observer an
@@ -53,8 +61,8 @@ stays playable and the terminal reports the error. Correct the file and press **
 
 Give each Sun a `[[suns]]` entry (up to three), or set `suns = []` at the
 top of the file for a world with only night ambient. Sun, Moon and observer
-use Fermi ground coordinates. For `[x, z]`, travel the signed distance `x`
-along Earth's reference X geodesic, then `z` along the perpendicular geodesic
+use Fermi ground coordinates. For `[x, y]`, travel the signed distance `x`
+along Earth's reference geodesic, then `y` along the perpendicular geodesic
 there. Each Sun's `distance` is its perpendicular gap above that ground point.
 Keep a Sun that contributes air scattering above the air layer, and the lunar gap above the highest
 jumping eye so the edge of the finite Moon stays hidden. Set `jump_height = 0`

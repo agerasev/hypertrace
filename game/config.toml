@@ -1,7 +1,7 @@
 #:tombi toml-version = "v1.1.0"
 
 # All colors are linear RGB. Lengths use the curvature radius R, time uses seconds.
-# Fermi coordinates on Earth follow the reference X geodesic, then its perpendicular Z.
+# Fermi coordinates [x, y] on Earth follow the reference geodesic, then its perpendicular.
 [earth]
 material.reflection = { weight = 1.0, color = [0.23, 0.48, 0.10] }
 
@@ -119,7 +119,7 @@ colors.start = [100.0, 80.0, 40.0]
 colors.end = [40.0, 80.0, 100.0]
 
 [observer]
-# Intrinsic ground displacements along local X, then local Z, in curvature radii.
+# Fermi ground coordinates [x, y] in curvature radii, as shown in the window title.
 spawn_ground = [0.0, 1.3]
 yaw_degrees = 0.0
 pitch_degrees = 8.021409

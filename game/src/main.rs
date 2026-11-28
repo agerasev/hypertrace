@@ -15,6 +15,7 @@ mod config;
 #[cfg(test)]
 mod gpu_tests;
 mod projection;
+mod readout;
 mod walker;
 mod world;
 
@@ -167,6 +168,7 @@ async fn run(
         projection::camera_matrix(size, fov, game.view.near_distance),
     );
     let mut previous = Instant::now();
+    let mut readout = readout::FrameReadout::new(previous);
     let mut blocked = false;
     let mut smoke_frames = 0;
     let mut smoke_resized = false;
@@ -324,6 +326,9 @@ async fn run(
         frame.clear(color::BLACK);
         game.drawing.draw(&mut frame, &camera);
         frame.present();
+        if let Some(title) = readout.title(Instant::now(), &game.walker) {
+            raw.set_title(&title);
+        }
 
         if smoke {
             smoke_frames += 1;

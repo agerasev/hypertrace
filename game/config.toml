@@ -1,10 +1,12 @@
+#:tombi toml-version = "v1.1.0"
+
 # All colors are linear RGB. Lengths use the curvature radius R, time uses seconds.
 # Fermi coordinates on Earth follow the reference X geodesic, then its perpendicular Z.
 [earth]
 material.reflection = { weight = 1.0, color = [0.23, 0.48, 0.10] }
 
 [earth.grid]
-view_radius = 1.5 # Intrinsic radius around the observer, in curvature radii.
+view_radius = 1.5  # Intrinsic radius around the observer, in curvature radii.
 # Maximum candidate sites in the loaded patch, counting all three plant species
 # and stars. Each loaded pentagon counts for at least one site.
 max_patch_sites = 1_048_576
@@ -18,7 +20,11 @@ distance = 3.0
 disk_radiance = [100.0, 100.0, 60.0]
 surface_radiance = [100.0, 100.0, 60.0]
 scattering_radiance = [40.0, 80.0, 192.0]
-ambient = { color = [0.19, 0.285, 0.38], response_factor = 1.0, response_exponent = 1.0 }
+ambient = {
+  color = [0.19, 0.285, 0.38],
+  response_factor = 1.0,
+  response_exponent = 1.0,
+}
 
 [suns.vegetation]
 # Density is plants per R². Size is a uniform range of species mesh scales.
@@ -49,7 +55,11 @@ distance = 1.6
 disk_radiance = [14.0, 6.0, 2.0]
 surface_radiance = [14.0, 6.0, 2.0]
 scattering_radiance = [5.5, 0.6, 0.3]
-ambient = { color = [0.095, 0.026, 0.02], response_factor = 0.8, response_exponent = 1.0 }
+ambient = {
+  color = [0.095, 0.026, 0.02],
+  response_factor = 0.8,
+  response_exponent = 1.0,
+}
 
 [suns.vegetation]
 pine = {
@@ -72,7 +82,11 @@ distance = 3.2
 disk_radiance = [120.0, 240.0, 360.0]
 surface_radiance = [120.0, 240.0, 360.0]
 scattering_radiance = [40.0, 200.0, 1000.0]
-ambient = { color = [0.018, 0.042, 0.12], response_factor = 2.0, response_exponent = 1.0 }
+ambient = {
+  color = [0.018, 0.042, 0.12],
+  response_factor = 2.0,
+  response_exponent = 1.0,
+}
 
 [suns.vegetation]
 grass = {
@@ -93,13 +107,13 @@ night = [0.01, 0.015, 0.02]
 
 [atmosphere]
 height = 0.45
-background = [0.0, 0.0, 0.0] # Sky radiance beyond the atmosphere.
+background = [0.0, 0.0, 0.0]  # Sky radiance beyond the atmosphere.
 
 [stars]
 # Mean number of stars per R² of Earth, sampled uniformly within each pentagon.
 density = 3.3391908820476757
 seed = 0x33cd831e60109289
-gap = [6, 8] # Perpendicular distance from Earth to a star plane, in R.
+gap = [6, 8]  # Perpendicular distance from Earth to a star plane, in R.
 # Each star samples a uniform mix of these two linear RGB radiances.
 colors.start = [100.0, 80.0, 40.0]
 colors.end = [40.0, 80.0, 100.0]
@@ -111,19 +125,19 @@ yaw_degrees = 0.0
 pitch_degrees = 8.021409
 pitch_limit_degrees = 89.0
 height = 0.01875
-walk_speed = 0.1            # curvature radii per second
-jump_height = 0.00478515625 # maximum rise from standing height
-gravity = 0.1125            # curvature radii per second squared
+walk_speed = 0.1  # curvature radii per second
+jump_height = 0.00478515625  # maximum rise from standing height
+gravity = 0.1125  # curvature radii per second squared
 
 [view]
 window_size = [1920, 1080]
 fov_degrees = 66.849622
 min_fov_degrees = 9.147843
 max_fov_degrees = 151.927513
-near_distance = 0.005        # curvature radii along the optical axis
-look_sensitivity = 2.0       # radians per viewport width or height of motion
-zoom_sensitivity = 0.002     # multiplier in exp(-scroll * sensitivity)
-max_frame_seconds = 0.1      # maximum time advanced in one interactive frame
+near_distance = 0.005  # curvature radii along the optical axis
+look_sensitivity = 2.0  # radians per viewport width or height of motion
+zoom_sensitivity = 0.002  # multiplier in exp(-scroll * sensitivity)
+max_frame_seconds = 0.1  # maximum time advanced in one interactive frame
 
 [vegetation]
 seed = 0

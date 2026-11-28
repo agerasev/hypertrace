@@ -51,12 +51,21 @@ impl Observer {
             self.flight_time().is_finite() && (self.jump_height == 0.0 || self.flight_time() > 0.0),
             "observer.jump_height and gravity give an unrepresentable flight time"
         );
+        ensure!(
+            self.launch_speed().is_finite()
+                && (self.jump_height == 0.0 || self.launch_speed() > 0.0),
+            "observer.jump_height and gravity give an unrepresentable launch speed"
+        );
         Ok(())
     }
 
     pub fn flight_time(&self) -> f64 {
         // T = 2 sqrt(2 h / g). Taking the roots first keeps h/g in range.
         2.0 * std::f64::consts::SQRT_2 * self.jump_height.sqrt() / self.gravity.sqrt()
+    }
+
+    pub fn launch_speed(&self) -> f64 {
+        std::f64::consts::SQRT_2 * self.jump_height.sqrt() * self.gravity.sqrt()
     }
 }
 

@@ -7,11 +7,12 @@ use crate::{config::observer::Observer, projection::Pose};
 #[derive(Clone, Copy)]
 pub(crate) struct Walker {
     observer: Observer,
-    /// Maps the origin to the feet and local +Y to the Earth normal.
+    /// Maps the origin to the ground beneath the feet and local +Y to the Earth normal.
     ground: Pose,
     pitch: f64,
-    /// Seconds since takeoff, or None while standing on the surface.
-    jump_time: Option<f64>,
+    altitude: f64,
+    /// Ground strafe, Earth-normal speed and ground forward speed, in radii/s.
+    velocity: [f64; 3],
 }
 
 impl Walker {
@@ -27,29 +28,46 @@ impl Walker {
             observer,
             ground,
             pitch: observer.pitch_degrees.to_radians(),
-            jump_time: None,
+            altitude: 0.0,
+            velocity: [0.0; 3],
         })
     }
 
+    pub(crate) fn reconfigured(self, observer: Observer) -> Result<Self> {
+        observer.validate()?;
+        let limit = observer.pitch_limit_degrees.to_radians();
+        Ok(Self {
+            observer,
+            pitch: self.pitch.clamp(-limit, limit),
+            ..self
+        })
+    }
+
+    fn eye_height(&self) -> f64 {
+        self.observer.height + self.altitude
+    }
+
+    /// Highest eye height remaining in the current flight under the current gravity.
+    pub(crate) fn peak_eye_height(&self) -> f64 {
+        let rise = self.velocity[1].max(0.0) / self.observer.gravity.sqrt();
+        (0.5 * rise).mul_add(rise, self.eye_height())
+    }
+
+    pub(crate) fn velocity(&self) -> [f64; 3] {
+        self.velocity
+    }
+
     pub(crate) fn eye_pose(&self) -> Result<Pose> {
-        // The constant-gravity parabola peaks at jump_height halfway through flight.
-        let jump = self.jump_time.map_or(0.0, |t| {
-            let phase = t / self.observer.flight_time();
-            self.observer.jump_height * (4.0 * phase * (1.0 - phase))
-        });
-        self.ground.move_local(
-            [0.0, self.observer.height + jump, 0.0],
-            [self.pitch, 0.0, 0.0],
-            1.0,
-        )
+        self.ground
+            .move_local([0.0, self.eye_height(), 0.0], [self.pitch, 0.0, 0.0], 1.0)
     }
 
     pub(crate) fn is_airborne(&self) -> bool {
-        self.jump_time.is_some()
+        self.altitude > 0.0 || self.velocity[1] > 0.0
     }
 
     /// Horizontal axes are fractions of full walking speed. Look deltas are
-    /// radians, and jump is a fresh press. Returns whether the state changed.
+    /// radians, and jump is a fresh press. Returns whether the eye pose changed.
     pub(crate) fn step(
         &mut self,
         strafe: f64,
@@ -68,15 +86,39 @@ impl Walker {
         );
         let limit = self.observer.pitch_limit_degrees.to_radians();
         let pitch = (self.pitch + pitch).clamp(-limit, limit);
-        let jump_time = self.jump_time.or(jump.then_some(0.0)).and_then(|t| {
-            let elapsed = t + dt;
-            (elapsed < self.observer.flight_time()).then_some(elapsed)
-        });
-        let magnitude = strafe.hypot(forward);
-        let distance = self.observer.walk_speed * dt * magnitude.min(1.0);
-        if distance == 0.0 && yaw == 0.0 && pitch == self.pitch && jump_time == self.jump_time {
-            return Ok(false);
+        let mut altitude = self.altitude;
+        let mut up = self.velocity[1];
+        if jump && !self.is_airborne() {
+            up = self.observer.launch_speed();
         }
+        if dt > 0.0 && (altitude > 0.0 || up > 0.0) {
+            let end_speed = (-self.observer.gravity).mul_add(dt, up);
+            // Under constant gravity the mean endpoint velocity is exact.
+            altitude = (0.5 * (up + end_speed)).mul_add(dt, altitude);
+            if altitude <= 0.0 {
+                altitude = 0.0;
+                up = 0.0;
+            } else {
+                ensure!(
+                    altitude.is_finite() && end_speed.is_finite(),
+                    "vertical movement exceeds f64 range"
+                );
+                up = end_speed;
+            }
+        }
+        let magnitude = strafe.hypot(forward);
+        ensure!(
+            magnitude.is_finite(),
+            "walking input magnitude exceeds f64 range"
+        );
+        let distance = (self.observer.walk_speed * magnitude.min(1.0)) * dt;
+        ensure!(
+            distance.is_finite(),
+            "ground displacement exceeds f64 range"
+        );
+        let scale = magnitude.max(1.0);
+        let right = self.observer.walk_speed * (strafe / scale);
+        let forward_speed = self.observer.walk_speed * (forward / scale);
 
         let mut ground = self.ground;
         if distance > 0.0 {
@@ -91,13 +133,27 @@ impl Walker {
         if yaw != 0.0 {
             ground = ground.chain(&Pose::from_isometry(Hyperboloid3::rotate_y(yaw))?)?;
         }
+        // Ground motion precedes yaw. Express its transported velocity in the final heading.
+        let (sin_yaw, cos_yaw) = yaw.sin_cos();
+        let velocity = [
+            right * cos_yaw + forward_speed * sin_yaw,
+            up,
+            forward_speed * cos_yaw - right * sin_yaw,
+        ];
+        ensure!(
+            velocity.into_iter().all(f64::is_finite),
+            "observer velocity exceeds f64 range"
+        );
+        let moved =
+            distance > 0.0 || yaw != 0.0 || pitch != self.pitch || altitude != self.altitude;
         *self = Self {
             ground,
             pitch,
-            jump_time,
+            altitude,
+            velocity,
             ..*self
         };
-        Ok(true)
+        Ok(moved)
     }
 }
 
@@ -199,6 +255,102 @@ mod tests {
     }
 
     #[test]
+    fn ground_velocity_is_relative_to_final_heading_and_clears_on_release() -> Result<()> {
+        let settings = observer(0.0);
+        let mut walker = Walker::new(settings)?;
+        walker.step(1.0, 1.0, 0.0, 0.0, false, 0.5)?;
+        let [right, up, forward] = walker.velocity();
+        let speed = settings.walk_speed / 2.0_f64.sqrt();
+        close(right, speed);
+        close(up, 0.0);
+        close(forward, speed);
+        walker.step(0.0, 0.5, FRAC_PI_2, 0.0, false, 0.5)?;
+        let [right, _, forward] = walker.velocity();
+        close(right, 0.5 * settings.walk_speed);
+        close(forward, 0.0);
+        assert!(!walker.step(0.0, 0.0, 0.0, 0.0, false, 0.5)?);
+        assert_eq!(walker.velocity(), [0.0; 3]);
+        Ok(())
+    }
+
+    #[test]
+    fn reload_preserves_walked_pose_and_applies_new_movement_settings() -> Result<()> {
+        let settings = observer(0.1);
+        let mut walker = Walker::new(settings)?;
+        walker.step(0.4, 0.8, 0.6, 0.5, false, 0.7)?;
+        let edited = Observer {
+            spawn_ground: [-1.2, 2.0],
+            yaw_degrees: -55.0,
+            pitch_degrees: 0.0,
+            walk_speed: 2.0 * settings.walk_speed,
+            ..settings
+        };
+        let restored = walker.reconfigured(edited)?;
+        assert_eq!(
+            restored.eye_pose()?.components()?,
+            walker.eye_pose()?.components()?
+        );
+
+        let edited = Observer {
+            height: 0.12,
+            pitch_limit_degrees: 20.0,
+            ..edited
+        };
+        let mut limited = restored.reconfigured(edited)?;
+        assert_eq!(limited.ground.components()?, walker.ground.components()?);
+        close(limited.pitch, 20_f64.to_radians());
+        close(height(limited)?, edited.height);
+        limited.step(0.0, 1.0, 0.0, 0.0, false, 1.0)?;
+        let travel = walker.ground.inverse()?.chain(&limited.ground)?;
+        close(travel.apply_vector(ORIGIN)[3], -edited.walk_speed.sinh());
+        Ok(())
+    }
+
+    #[test]
+    fn reload_during_jump_preserves_height_and_velocity_and_applies_new_gravity() -> Result<()> {
+        let settings = observer(0.0);
+        let mut walker = Walker::new(settings)?;
+        let quarter = settings.flight_time() / 4.0;
+        walker.step(0.0, 0.0, 0.0, 0.0, true, quarter)?;
+        let edited = Observer {
+            jump_height: 0.0,
+            gravity: 2.0 * settings.gravity,
+            ..settings
+        };
+        let mut restored = walker.reconfigured(edited)?;
+        assert_eq!(
+            restored.eye_pose()?.components()?,
+            walker.eye_pose()?.components()?
+        );
+        let initial_height = walker.eye_height();
+        let initial_velocity = walker.velocity()[1];
+        assert_eq!(restored.velocity(), walker.velocity());
+        close(
+            walker.peak_eye_height(),
+            settings.height + settings.jump_height,
+        );
+        close(
+            restored.peak_eye_height(),
+            initial_height + initial_velocity.powi(2) / (2.0 * edited.gravity),
+        );
+        restored.step(0.0, 0.0, 0.0, 0.0, false, quarter)?;
+        close(
+            restored.velocity()[1],
+            initial_velocity - edited.gravity * quarter,
+        );
+        close(
+            restored.eye_height(),
+            initial_height + initial_velocity * quarter - 0.5 * edited.gravity * quarter.powi(2),
+        );
+        close(restored.peak_eye_height(), restored.eye_height());
+        restored.step(0.0, 0.0, 0.0, 0.0, false, 2.0 * quarter)?;
+        assert!(!restored.is_airborne());
+        close(restored.velocity()[1], 0.0);
+        assert!(!restored.step(0.0, 0.0, 0.0, 0.0, true, quarter)?);
+        Ok(())
+    }
+
+    #[test]
     fn jump_follows_normal_ballistics_and_lands_under_variable_steps() -> Result<()> {
         let settings = observer(0.3);
         let launch_speed = (2.0 * settings.gravity * settings.jump_height).sqrt();
@@ -223,6 +375,9 @@ mod tests {
         assert!(!walker.step(0.0, 0.0, 0.0, 0.0, false, 1.0)?);
         assert!(walker.step(0.0, 0.0, 0.0, 0.0, true, 0.01)?);
         assert!(height(walker)? > settings.height);
+        assert!(walker.step(0.0, 0.0, 0.0, 0.0, false, f64::MAX)?);
+        assert_eq!(walker.eye_height(), settings.height);
+        assert!(!walker.is_airborne());
 
         let mut grounded = Walker::new(Observer {
             jump_height: 0.0,

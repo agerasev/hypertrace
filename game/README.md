@@ -14,7 +14,8 @@ cargo run --release -p hypergame -- --config game/config.toml
 
 Walk with WASD or the arrow keys. Left-drag to look, or press Tab to capture
 the mouse. The horizon stays level as you turn and look up or down. Press
-Space to jump, scroll to change the field of view, R to reset, and Escape to close.
+Space to jump and scroll to change the field of view. Press R to reload the
+config or Escape to close.
 
 In the supplied world, the observer stands `0.01875R` above Earth and walks at
 `0.1R` per second, where `R` is the curvature radius. Forward and sideways steps follow the ground
@@ -28,9 +29,17 @@ You can keep walking and turning during the jump.
 Pass a TOML file with `--config` on every launch. Copy [config.toml](config.toml)
 to make another world. World settings and material tables are required. Within
 a material table, list only the terms that contribute. The game reports unknown
-keys and missing required fields at startup. Light colors specify the final
+keys and missing required fields when loading the file. Light colors specify the final
 linear RGB radiance. Values above one are valid. Distances and speeds use
 curvature radii and seconds.
+
+To try an edit while walking, save the file and press **R**. Hypergame rebuilds
+the world around your current ground position and heading. An airborne observer
+keeps their height above the ground and vertical velocity, so changing gravity
+affects the rest of the flight. Changing standing eye height shifts the view,
+and a tighter pitch limit clamps it. Edited spawn coordinates and angles take
+effect the next time you launch the game. If a reload fails, the current world
+stays playable and the terminal reports the error. Correct the file and press **R** again.
 
 | Section | Settings |
 | --- | --- |
@@ -239,4 +248,4 @@ GPU checks read back projected triangles, check occlusion between meshes and
 planes, and exercise illumination independently of the demo layout.
 CPU tests cover walking speed, horizon alignment, and jump
 height and landing. The windowed smoke check exercises walking, looking,
-jumping, landing, reset, resize, and presentation.
+jumping, reloading in flight, landing, resize, and presentation.
